@@ -132,7 +132,7 @@ describe('noterScenario', () => {
 
   it('marque en erreur un scanner qui dépasse le timeout de la config, avec le message des locales', async () => {
     const timeoutMs = 100;
-    const configCourte: ConfigBanc = { ...config, scan: { timeoutMs } };
+    const configCourte: ConfigBanc = { ...config, scan: { ...config.scan, timeoutMs } };
     const debut = Date.now();
 
     const resultat = await noterScenario(F01_M01_FR, { scanner: scannerLent(timeoutMs * 50), config: configCourte, dico, obtenirGabarit });

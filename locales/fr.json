@@ -1,6 +1,7 @@
 {
   "banc": {
-    "usage": "Usage : pnpm banc --scenario <id> | pnpm banc --tous",
+    "usage": "Usage : pnpm banc [--sujet reel|factice] --scenario <id> | --tous",
+    "sujetInconnu": "Sujet inconnu : {{sujet}} (sujets connus : {{sujets}})",
     "scenarioIntrouvable": "Scénario introuvable : {{id}}",
     "aucunScenario": "Aucun scénario dans {{dossier}} — lancez d'abord : pnpm banc:generer",
     "demarrage": "Banc d'essai — {{nombre}} scénario(s) à noter, sujet : {{scanner}}",
@@ -8,7 +9,8 @@
     "scenarioTermine": "  {{id}} : {{detectes}}/{{attendus}} détecté(s), {{fauxPositifs}} faux positif(s), {{dureeMs}} ms",
     "scenarioErreur": "  {{id}} : ERREUR — {{erreur}}",
     "timeoutScan": "le scanner n'a pas répondu en {{timeoutMs}} ms",
-    "resultatsEcrits": "Scorecard écrite : {{fichier}}"
+    "resultatsEcrits": "Scorecard écrite : {{fichier}}",
+    "resultatsPurges": "{{nombre}} ancienne(s) scorecard(s) purgée(s) (rétention : {{retention}})"
   },
   "scorecard": {
     "titre": "SCORECARD",

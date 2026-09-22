@@ -1,0 +1,334 @@
+{
+  "$schema": "./actions-interdites.schema.json",
+  "$commentaire": "Deuxième ligne de défense du robot (la première : jugement IA, brique 4+). Trois classes d'attributs, deux listes. (1) motifsTexte (catégorie de risque → langue → motifs, marchés de lancement fr/en/es/de/it/pt) confronté au LANGAGE HUMAIN de l'élément déclencheur : texte visible et attributsTexte (aria-label, title, value). (2) motifsUrl (verbes destructifs sans ambiguïté d'identifiant, jamais paiement ni communication : un tunnel d'achat doit être exploré puis stoppé au bouton, pas interdit de visite) confronté au VOCABULAIRE TECHNIQUE : attributsUrl (href, action, formaction : segments de chemin et valeurs de paramètres de requête, jamais en sous-chaîne sur l'URL entière) et attributsIdentifiants (name, id, data-action : tokenisés sur -, _ et camelCase). Appariement texte : casse et accents ignorés ; motif multi-mots = sous-chaîne normalisée ; motif d'un seul mot = préfixe de token si sa longueur ≥ appariement.seuilPrefixe, sinon token exact (« supprim » attrape supprimer/suppression, « post » n'attrape pas postuler). Appariement URL/identifiants : token exact. Le filtre d'actions est le SEUL code qui lit ce fichier ; il l'applique après la décision et journalise canal (texte | url | identifiant), catégorie, langue et motif.",
+  "appariement": {
+    "seuilPrefixe": 5
+  },
+  "motifsTexte": {
+    "destruction": {
+      "fr": [
+        "suppr",
+        "effac",
+        "vider",
+        "réinitialiser",
+        "purge",
+        "détrui",
+        "supprimer mon compte",
+        "fermer mon compte",
+        "fermer le compte",
+        "clôturer le compte"
+      ],
+      "en": [
+        "delete",
+        "remove",
+        "erase",
+        "destroy",
+        "purge",
+        "wipe",
+        "clear all",
+        "reset",
+        "delete my account",
+        "delete account",
+        "close account",
+        "deactivate account"
+      ],
+      "es": [
+        "eliminar",
+        "borrar",
+        "suprimir",
+        "restablecer",
+        "eliminar mi cuenta",
+        "cerrar cuenta",
+        "desactivar cuenta"
+      ],
+      "de": [
+        "löschen",
+        "entfernen",
+        "zurücksetzen",
+        "konto löschen",
+        "konto schließen",
+        "konto deaktivieren",
+        "loeschen"
+      ],
+      "it": [
+        "elimina",
+        "cancella",
+        "rimuovi",
+        "ripristina",
+        "elimina account",
+        "chiudi account",
+        "disattiva account"
+      ],
+      "pt": [
+        "exclu",
+        "eliminar",
+        "apagar",
+        "redefinir",
+        "excluir conta",
+        "encerrar conta",
+        "desativar conta"
+      ]
+    },
+    "paiement": {
+      "fr": [
+        "payer",
+        "paiement",
+        "paie",
+        "achet",
+        "commander",
+        "confirmer la commande",
+        "valider le paiement",
+        "finaliser l'achat",
+        "faire un don",
+        "virement"
+      ],
+      "en": [
+        "pay",
+        "pay now",
+        "buy",
+        "purchase",
+        "place order",
+        "confirm order",
+        "checkout",
+        "complete purchase",
+        "donate",
+        "send money",
+        "transfer"
+      ],
+      "es": [
+        "pagar",
+        "comprar",
+        "realizar pedido",
+        "confirmar pedido",
+        "finalizar compra",
+        "donar",
+        "transferencia"
+      ],
+      "de": [
+        "bezahlen",
+        "kaufen",
+        "jetzt kaufen",
+        "bestellung abschicken",
+        "zahlungspflichtig bestellen",
+        "kauf abschließen",
+        "spenden",
+        "überweisung"
+      ],
+      "it": [
+        "paga",
+        "acquista",
+        "ordina",
+        "conferma ordine",
+        "completa acquisto",
+        "dona",
+        "bonifico"
+      ],
+      "pt": [
+        "pagar",
+        "comprar",
+        "fazer pedido",
+        "confirmar pedido",
+        "finalizar compra",
+        "doar",
+        "transferência"
+      ]
+    },
+    "engagement": {
+      "fr": [
+        "résil",
+        "se désabonner",
+        "désabonn",
+        "annuler l'abonnement",
+        "annul",
+        "souscri",
+        "abonn"
+      ],
+      "en": [
+        "cancel subscription",
+        "cancel",
+        "unsubscribe",
+        "terminate",
+        "subscribe",
+        "start free trial",
+        "upgrade plan",
+        "downgrade"
+      ],
+      "es": [
+        "cancelar suscripción",
+        "darse de baja",
+        "suscribirse",
+        "contratar"
+      ],
+      "de": [
+        "kündigen",
+        "abo kündigen",
+        "abbestellen",
+        "abonnieren",
+        "vertrag abschließen",
+        "kuendigen"
+      ],
+      "it": [
+        "disdici",
+        "annulla abbonamento",
+        "disiscriviti",
+        "abbonati",
+        "sottoscrivi"
+      ],
+      "pt": [
+        "cancelar assinatura",
+        "cancelar inscrição",
+        "assinar",
+        "subscrever"
+      ]
+    },
+    "communication": {
+      "fr": [
+        "envoyer à tous",
+        "publier",
+        "partager publiquement",
+        "inviter"
+      ],
+      "en": [
+        "send to all",
+        "publish",
+        "post",
+        "share publicly",
+        "invite",
+        "broadcast"
+      ],
+      "es": [
+        "enviar a todos",
+        "publicar",
+        "compartir públicamente",
+        "invitar"
+      ],
+      "de": [
+        "an alle senden",
+        "veröffentlichen",
+        "öffentlich teilen",
+        "einladen"
+      ],
+      "it": [
+        "invia a tutti",
+        "pubblica",
+        "condividi pubblicamente",
+        "invita"
+      ],
+      "pt": [
+        "enviar para todos",
+        "publicar",
+        "compartilhar publicamente",
+        "convidar"
+      ]
+    },
+    "acces": {
+      "fr": [
+        "changer le mot de passe",
+        "révoqu",
+        "déconnex",
+        "déconnecter tous les appareils",
+        "transférer la propriété",
+        "bloquer"
+      ],
+      "en": [
+        "change password",
+        "revoke",
+        "logout",
+        "log out",
+        "sign out",
+        "signout",
+        "sign out all devices",
+        "transfer ownership",
+        "grant access",
+        "make admin",
+        "block"
+      ],
+      "es": [
+        "cambiar contraseña",
+        "revocar",
+        "cerrar sesión en todos",
+        "transferir propiedad"
+      ],
+      "de": [
+        "passwort ändern",
+        "widerrufen",
+        "überall abmelden",
+        "eigentum übertragen",
+        "passwort aendern"
+      ],
+      "it": [
+        "cambia password",
+        "revoca",
+        "disconnetti tutti",
+        "trasferisci proprietà"
+      ],
+      "pt": [
+        "alterar senha",
+        "revogar",
+        "sair de todos os dispositivos",
+        "transferir propriedade"
+      ]
+    }
+  },
+  "motifsUrl": [
+    "delete",
+    "remove",
+    "destroy",
+    "supprimer",
+    "suppression",
+    "effacer",
+    "logout",
+    "signout",
+    "deconnexion",
+    "unsubscribe",
+    "desabonnement",
+    "resilier",
+    "resiliation",
+    "cancel",
+    "revoke",
+    "revoquer",
+    "abmelden",
+    "loeschen",
+    "loschen",
+    "kuendigen",
+    "kundigen",
+    "entfernen",
+    "eliminar",
+    "borrar",
+    "cancelar",
+    "baja",
+    "excluir",
+    "apagar",
+    "elimina",
+    "cancella",
+    "rimuovi",
+    "disdici",
+    "revoca",
+    "revogar"
+  ],
+  "exceptionsSandbox": [
+    "paiement"
+  ],
+  "attributsTexte": [
+    "aria-label",
+    "alt",
+    "title",
+    "value"
+  ],
+  "attributsDescendantsExamines": [
+    "alt",
+    "aria-label",
+    "title"
+  ],
+  "attributsUrl": [
+    "href",
+    "action",
+    "formaction"
+  ],
+  "attributsIdentifiants": [
+    "name",
+    "id",
+    "data-action"
+  ],
+  "texteVisibleExamine": true
+}

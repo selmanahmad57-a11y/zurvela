@@ -1,4 +1,4 @@
-import { mkdtemp, readFile, rm } from 'node:fs/promises';
+import { mkdir, mkdtemp, readdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeAll, describe, expect, it } from 'vitest';
@@ -7,7 +7,7 @@ import type { Anomalie, Categorie } from '../../core/types.js';
 import { depuisRacine } from '../outils/racine.js';
 import { configFactice } from '../scenarios/factices.js';
 import type { AttenduManifeste, ResultatAttendu, ResultatScenario } from '../types.js';
-import { calculerScorecard, ecrireScorecard, rendreScorecardConsole } from './scorecard.js';
+import { calculerScorecard, ecrireScorecard, purgerResultats, rendreScorecardConsole } from './scorecard.js';
 
 const HORODATAGE = '2026-09-22T10:20:30.000Z';
 const config = configFactice();
@@ -224,5 +224,65 @@ describe('ecrireScorecard', () => {
     const contenu = await readFile(fichier, 'utf8');
     expect(contenu.endsWith('\n')).toBe(true);
     expect(JSON.parse(contenu)).toEqual(JSON.parse(JSON.stringify(scorecard)));
+  });
+});
+
+describe('purgerResultats', () => {
+  const dossiers: string[] = [];
+
+  afterEach(async () => {
+    await Promise.all(dossiers.splice(0).map((dossier) => rm(dossier, { recursive: true, force: true })));
+  });
+
+  /** Un dossier temporaire peuplé de scorecards nommées par horodatage, écrites dans le DÉSORDRE, plus des intrus. */
+  async function dossierPeuple(horodatages: string[]): Promise<string> {
+    const dossier = await mkdtemp(path.join(tmpdir(), 'zurvela-purge-'));
+    dossiers.push(dossier);
+    for (const horodatage of [...horodatages].reverse()) {
+      await writeFile(path.join(dossier, `${horodatage}.json`), '{}\n', 'utf8');
+    }
+    await writeFile(path.join(dossier, '.gitkeep'), '', 'utf8');
+    await writeFile(path.join(dossier, 'notes.txt'), 'pas une scorecard', 'utf8');
+    await mkdir(path.join(dossier, 'archive.json'));
+    return dossier;
+  }
+
+  const HORODATAGES = [
+    '2026-09-20T10-00-00.000Z',
+    '2026-09-21T09-00-00.000Z',
+    '2026-09-21T23-59-59.999Z',
+    '2026-09-22T00-00-00.000Z',
+    '2026-09-22T10-20-30.000Z',
+  ];
+
+  it('garde les N scorecards les plus récentes (ordre des noms), supprime les autres et retourne leurs chemins', async () => {
+    const dossier = await dossierPeuple(HORODATAGES);
+
+    const purges = await purgerResultats(dossier, 2);
+
+    expect(purges).toEqual(HORODATAGES.slice(0, 3).map((horodatage) => path.join(dossier, `${horodatage}.json`)));
+    const restants = (await readdir(dossier)).sort();
+    expect(restants).toEqual(['.gitkeep', '2026-09-22T00-00-00.000Z.json', '2026-09-22T10-20-30.000Z.json', 'archive.json', 'notes.txt']);
+  });
+
+  it('ne supprime rien quand le dossier contient au plus N scorecards, et laisse .gitkeep et les non-.json en paix', async () => {
+    const dossier = await dossierPeuple(HORODATAGES);
+    const avant = (await readdir(dossier)).sort();
+
+    expect(await purgerResultats(dossier, HORODATAGES.length)).toEqual([]);
+    expect(await purgerResultats(dossier, 100)).toEqual([]);
+    expect((await readdir(dossier)).sort()).toEqual(avant);
+  });
+
+  it('s’enchaîne avec ecrireScorecard : la scorecard qui vient d’être écrite est la plus récente et survit', async () => {
+    const dossier = await dossierPeuple(HORODATAGES.slice(0, 2));
+    const fichier = await ecrireScorecard(calculerScorecard(resultats, config, HORODATAGE), dossier);
+
+    const purges = await purgerResultats(dossier, 1);
+
+    expect(purges).toHaveLength(2);
+    expect(purges).not.toContain(fichier);
+    const scorecards = (await readdir(dossier, { withFileTypes: true })).filter((entree) => entree.isFile() && entree.name.endsWith('.json'));
+    expect(scorecards.map((entree) => entree.name)).toEqual([path.basename(fichier)]);
   });
 });

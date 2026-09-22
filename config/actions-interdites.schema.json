@@ -1,0 +1,108 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "zurvela/config/actions-interdites",
+  "title": "Liste noire des actions destructives ou engageantes",
+  "description": "Deuxième ligne de défense du robot (constitution §3). Deux listes pour trois classes d'attributs : motifsTexte pour le langage humain (texte visible, aria-label, title, value), motifsUrl pour le vocabulaire technique (URL de destination par segment ; identifiants name/id/data-action par token). Seul le filtre d'actions consomme ce fichier.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "appariement",
+    "motifsTexte",
+    "motifsUrl",
+    "exceptionsSandbox",
+    "attributsTexte",
+    "attributsDescendantsExamines",
+    "attributsUrl",
+    "attributsIdentifiants",
+    "texteVisibleExamine"
+  ],
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "$commentaire": {
+      "type": "string"
+    },
+    "appariement": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "seuilPrefixe"
+      ],
+      "properties": {
+        "seuilPrefixe": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Longueur minimale d'un motif d'un seul mot pour être apparié comme préfixe de token ; en dessous, correspondance de token exacte uniquement."
+        }
+      }
+    },
+    "motifsTexte": {
+      "type": "object",
+      "minProperties": 1,
+      "description": "Catégorie de risque → langue (code BCP 47) → motifs, confrontés au texte accessible et aux attributs texte de l'élément déclencheur (et du formulaire).",
+      "additionalProperties": {
+        "type": "object",
+        "minProperties": 1,
+        "additionalProperties": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 2
+          }
+        }
+      }
+    },
+    "motifsUrl": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 2
+      },
+      "description": "Verbes destructifs sans ambiguïté d'identifiant, appariés par token exact sur les segments de chemin et les valeurs de paramètres des URL (attributsUrl) et sur les identifiants techniques tokenisés sur -, _ et camelCase (attributsIdentifiants). Jamais en sous-chaîne."
+    },
+    "exceptionsSandbox": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string"
+      },
+      "description": "Catégories de motifsTexte qui restent interdites même en mode sandbox (usage futur : le mode sandbox lève l'interdit sur les autres)."
+    },
+    "attributsTexte": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Attributs portant du langage humain (aria-label, title, value), confrontés à motifsTexte avec le texte visible."
+    },
+    "attributsDescendantsExamines": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Attributs de NOMMAGE lus sur les descendants du déclencheur (bouton-icône : alt d une image, aria-label, title), confrontés à motifsTexte."
+    },
+    "attributsUrl": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Attributs portant une URL de destination, confrontés à motifsUrl."
+    },
+    "attributsIdentifiants": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Attributs portant des identifiants techniques (name, id, data-action), tokenisés sur -, _ et camelCase puis confrontés à motifsUrl par token exact."
+    },
+    "texteVisibleExamine": {
+      "type": "boolean",
+      "description": "Si vrai, le texte visible de l'élément déclencheur est confronté à motifsTexte (le code ne connaît pas les mots : ils sont ici)."
+    }
+  }
+}

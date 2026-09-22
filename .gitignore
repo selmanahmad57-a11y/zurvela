@@ -3,3 +3,4 @@ banc/resultats/*
 !banc/resultats/.gitkeep
 *.tsbuildinfo
 .DS_Store
+.scratch/

@@ -1,0 +1,492 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "zurvela/config/scanner",
+  "title": "Configuration du scanner",
+  "description": "Tous les seuils, dimensions, identités et réglages du moteur. Aucune de ces valeurs ne vit dans le code (constitution §2).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "navigateur",
+    "robot",
+    "viewports",
+    "exploration",
+    "remplissage",
+    "detecteurs",
+    "ia"
+  ],
+  "definitions": {
+    "gravite": {
+      "type": "string",
+      "enum": [
+        "bloquant",
+        "important",
+        "mineur"
+      ]
+    },
+    "categorie": {
+      "type": "string",
+      "enum": [
+        "fonctionnel",
+        "performance",
+        "accessibilite",
+        "seo",
+        "securite",
+        "visuel",
+        "mobile"
+      ]
+    },
+    "confiance": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    }
+  },
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "navigateur": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "canal",
+        "sansTete"
+      ],
+      "properties": {
+        "canal": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Canal Playwright (ex. `chrome` pour le Chrome installé) ; null = Chromium fourni par Playwright."
+        },
+        "sansTete": {
+          "type": "boolean",
+          "description": "Navigateur sans interface graphique."
+        }
+      }
+    },
+    "robot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "userAgent",
+        "enTete",
+        "valeurEnTete"
+      ],
+      "properties": {
+        "userAgent": {
+          "type": "string",
+          "description": "Le robot se signale (constitution §3)."
+        },
+        "enTete": {
+          "type": "string",
+          "description": "Nom de l'en-tête HTTP ajouté à chaque requête."
+        },
+        "valeurEnTete": {
+          "type": "string"
+        }
+      }
+    },
+    "viewports": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "nom",
+          "largeur",
+          "hauteur",
+          "mobile"
+        ],
+        "properties": {
+          "nom": {
+            "type": "string"
+          },
+          "largeur": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "hauteur": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "mobile": {
+            "type": "boolean",
+            "description": "Les anomalies de recouvrement constatées sur ce viewport sont de catégorie `mobile`."
+          }
+        }
+      }
+    },
+    "exploration": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "profondeurMax",
+        "pagesMax",
+        "chargementPageMs",
+        "attenteEffetMaxMs",
+        "stabilisationMs",
+        "clicMs",
+        "saisieMs",
+        "sondageMs",
+        "margeEcheanceMs",
+        "evaluationMs",
+        "mutationsMax",
+        "bruitFondRepetitions",
+        "elementsInteractifsMax",
+        "liensParPageMax"
+      ],
+      "properties": {
+        "profondeurMax": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Profondeur maximale de suivi des liens internes depuis l'URL de départ."
+        },
+        "pagesMax": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Nombre maximal de pages distinctes visitées par viewport."
+        },
+        "chargementPageMs": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Délai maximal de chargement d'une page."
+        },
+        "attenteEffetMaxMs": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Fenêtre maximale d'observation des effets d'une action."
+        },
+        "stabilisationMs": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Durée sans requête ni mutation après laquelle une page est considérée stable."
+        },
+        "clicMs": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Délai accordé à un clic avant de le déclarer bloqué (ex. intercepté)."
+        },
+        "saisieMs": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Délai accordé à la saisie d'un champ (remplissage, choix d'option) avant de la déclarer en échec."
+        },
+        "sondageMs": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Intervalle entre deux relevés (requêtes en vol, mutations) pendant la fenêtre d'observation des effets d'une action."
+        },
+        "margeEcheanceMs": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Marge gardée avant l'échéance du scan pour rendre le rapport."
+        },
+        "evaluationMs": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Délai maximal d'une évaluation de script dans la page (extraction, géométrie, lecture du tampon) ; au-delà, l'évaluation est abandonnée (page qui ne répond plus, navigation pendante)."
+        },
+        "mutationsMax": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Nombre maximal de mutations DOM conservées dans le tampon en page entre deux lectures ; au-delà, elles sont seulement comptées (page qui mute en continu)."
+        },
+        "bruitFondRepetitions": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Nombre d'instants distincts, après le chargement, à partir duquel une cible qui mute encore est du bruit de fond (carrousel, horloge) : ses mutations suivantes ne comptent plus comme réaction de la page ni pour la stabilisation."
+        },
+        "elementsInteractifsMax": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Nombre maximal d'éléments interactifs soumis au contrôle géométrique (recouvrement) par page ; au-delà, le contrôle est tronqué et journalisé."
+        },
+        "liensParPageMax": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Nombre maximal de liens internes conservés par page pour la file d'exploration."
+        }
+      }
+    },
+    "remplissage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "regles",
+        "valeurTexteParDefaut",
+        "typesIgnores"
+      ],
+      "description": "Données de test MARQUÉES et règles d'attribution par attributs techniques (type, autocomplete) — jamais par libellé.",
+      "properties": {
+        "regles": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "types",
+              "autocomplete",
+              "valeur"
+            ],
+            "properties": {
+              "types": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "autocomplete": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "valeur": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "valeurTexteParDefaut": {
+          "type": "string"
+        },
+        "typesIgnores": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Types d'input jamais remplis."
+        }
+      }
+    },
+    "detecteurs": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "http",
+        "inerte",
+        "echecMuet",
+        "lenteur",
+        "image",
+        "recouvrement"
+      ],
+      "properties": {
+        "http": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "confiance5xx",
+            "confiance5xxSoumission",
+            "confiance404",
+            "gravite5xxSoumission",
+            "gravite5xx",
+            "gravite404",
+            "categorieParTypeRessource",
+            "categorieParDefaut"
+          ],
+          "properties": {
+            "confiance5xx": {
+              "$ref": "#/definitions/confiance",
+              "description": "Confiance d'une réponse ≥ 500 hors soumission (palier bas)."
+            },
+            "confiance404": {
+              "$ref": "#/definitions/confiance"
+            },
+            "gravite5xxSoumission": {
+              "$ref": "#/definitions/gravite"
+            },
+            "gravite5xx": {
+              "$ref": "#/definitions/gravite"
+            },
+            "gravite404": {
+              "$ref": "#/definitions/gravite"
+            },
+            "categorieParTypeRessource": {
+              "type": "object",
+              "additionalProperties": {
+                "$ref": "#/definitions/categorie"
+              },
+              "description": "Catégorie d'une ressource interne en 404 selon son type Playwright (image, stylesheet…)."
+            },
+            "categorieParDefaut": {
+              "$ref": "#/definitions/categorie"
+            },
+            "confiance5xxSoumission": {
+              "$ref": "#/definitions/confiance",
+              "description": "Confiance d'une réponse ≥ 500 survenue pendant une soumission : le signal le plus fort du détecteur HTTP (palier haut)."
+            }
+          }
+        },
+        "inerte": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "confiance",
+            "gravite"
+          ],
+          "properties": {
+            "confiance": {
+              "$ref": "#/definitions/confiance",
+              "description": "Confiance unique : D-INERTE conclut d'une ABSENCE d'effet, le signal le plus fragile du moteur (il dépend de la fenêtre d'observation). La brique 3 la calibrera par re-exécution."
+            },
+            "gravite": {
+              "$ref": "#/definitions/gravite"
+            }
+          }
+        },
+        "echecMuet": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "confiance",
+            "gravite",
+            "typesRequete"
+          ],
+          "properties": {
+            "confiance": {
+              "$ref": "#/definitions/confiance",
+              "description": "Confiance unique : D-ECHEC-MUET conclut en partie d'une absence de réaction visible, signal fragile. La brique 3 la calibrera par re-exécution."
+            },
+            "gravite": {
+              "$ref": "#/definitions/gravite"
+            },
+            "typesRequete": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "string"
+              },
+              "description": "Types Playwright des requêtes capables de porter une soumission (document, xhr, fetch) ; l'échec d'une ressource annexe (image, ping, script…) n'est pas un échec de la soumission."
+            }
+          }
+        },
+        "lenteur": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "seuilMs",
+            "paliers",
+            "gravite"
+          ],
+          "properties": {
+            "seuilMs": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Durée d'une requête liée à une action au-delà de laquelle elle est lente. Doit rester inférieure au délai de R01 du banc."
+            },
+            "paliers": {
+              "type": "array",
+              "minItems": 1,
+              "description": "Paliers de confiance par ratio durée/seuil, du plus bas au plus haut : le palier retenu est celui de plus grand ratioMin satisfait. Plus la requête dépasse le seuil, plus la lenteur est certaine.",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "ratioMin",
+                  "confiance"
+                ],
+                "properties": {
+                  "ratioMin": {
+                    "type": "number",
+                    "minimum": 1,
+                    "description": "Ratio durée/seuil à partir duquel ce palier s'applique."
+                  },
+                  "confiance": {
+                    "$ref": "#/definitions/confiance"
+                  }
+                }
+              }
+            },
+            "gravite": {
+              "$ref": "#/definitions/gravite"
+            }
+          }
+        },
+        "image": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "confianceSignalSimple",
+            "confianceSignalDouble",
+            "gravite"
+          ],
+          "properties": {
+            "confianceSignalSimple": {
+              "$ref": "#/definitions/confiance",
+              "description": "Confiance d'un signal unique : dimension naturelle nulle OU ressource en échec (palier bas)."
+            },
+            "confianceSignalDouble": {
+              "$ref": "#/definitions/confiance",
+              "description": "Confiance du double signal : dimension naturelle nulle ET ressource en échec (palier haut)."
+            },
+            "gravite": {
+              "$ref": "#/definitions/gravite"
+            }
+          }
+        },
+        "recouvrement": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "confianceGeometrie",
+            "confianceGeometrieEtClic",
+            "gravite"
+          ],
+          "properties": {
+            "confianceGeometrie": {
+              "$ref": "#/definitions/confiance",
+              "description": "Confiance d'un recouvrement constaté par la seule géométrie (elementFromPoint) : palier bas."
+            },
+            "confianceGeometrieEtClic": {
+              "$ref": "#/definitions/confiance",
+              "description": "Confiance d'un recouvrement constaté par la géométrie ET par un clic refusé par le navigateur : double signal, palier haut."
+            },
+            "gravite": {
+              "$ref": "#/definitions/gravite"
+            }
+          }
+        }
+      }
+    },
+    "ia": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "variableCle",
+        "modeles"
+      ],
+      "properties": {
+        "variableCle": {
+          "type": "string",
+          "description": "Nom de la variable d'environnement portant la clé API ; absente → mode dégradé."
+        },
+        "modeles": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "navigation",
+            "diagnostic",
+            "redaction"
+          ],
+          "properties": {
+            "navigation": {
+              "type": "string",
+              "description": "Modèle rapide/économique pour les décisions de navigation."
+            },
+            "diagnostic": {
+              "type": "string",
+              "description": "Modèle puissant pour le diagnostic."
+            },
+            "redaction": {
+              "type": "string",
+              "description": "Modèle puissant pour les rapports."
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,10 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { scanner } from './index.js';
+import { scanner, scannerFactice as scannerFacticeExporte } from './index.js';
 import { scannerFactice } from './scanner-factice.js';
 
 describe('scannerFactice', () => {
-  it('est le scanner exposé par core/index tant que le moteur n’existe pas', () => {
-    expect(scanner).toBe(scannerFactice);
+  it('reste exporté par core/index, distinct du scanner réel (le banc peut noter l’un ou l’autre)', () => {
+    expect(scannerFacticeExporte).toBe(scannerFactice);
+    expect(scanner).not.toBe(scannerFactice);
+    expect(scanner.name).toBe('scannerReel');
+    expect(scannerFactice.name).toBe('scannerFactice');
   });
 
   it('rend un rapport vide qui respecte le contrat : URL reprise, aucune anomalie, coût nul, journal structuré', async () => {

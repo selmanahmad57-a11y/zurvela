@@ -10,7 +10,8 @@
     "nombrePortsEssayes": 50
   },
   "scan": {
-    "timeoutMs": 60000
+    "timeoutMs": 60000,
+    "sujetParDefaut": "reel"
   },
   "scorecard": {
     "seuilAlarmeEcartLanguesPoints": 5,

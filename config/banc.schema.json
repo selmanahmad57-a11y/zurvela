@@ -57,13 +57,22 @@
       "type": "object",
       "additionalProperties": false,
       "required": [
-        "timeoutMs"
+        "timeoutMs",
+        "sujetParDefaut"
       ],
       "properties": {
         "timeoutMs": {
           "type": "integer",
           "minimum": 1,
           "description": "Durée maximale accordée au scanner pour un scénario ; au-delà, le scénario est noté en erreur."
+        },
+        "sujetParDefaut": {
+          "type": "string",
+          "enum": [
+            "reel",
+            "factice"
+          ],
+          "description": "Sujet noté par défaut par `pnpm banc` (option --sujet) : `reel` = le moteur, `factice` = le scanner factice, qui ne détecte rien et sert à vérifier que le banc lui-même n'a pas régressé."
         }
       }
     },

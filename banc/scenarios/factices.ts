@@ -31,7 +31,7 @@ export function configFactice(surcharges: Partial<ConfigBanc> = {}): ConfigBanc 
     langueConsole: 'fr',
     langues: ['fr', 'en'],
     serveur: { portDeBase: 4800, nombrePortsEssayes: 5 },
-    scan: { timeoutMs: 1000 },
+    scan: { timeoutMs: 1000, sujetParDefaut: 'reel' },
     scorecard: { seuilAlarmeEcartLanguesPoints: 5, dossierResultats: 'banc/resultats', retentionRuns: 100 },
     scenarios: { dossier: 'banc/scenarios', jetonSain: 'sain', combinaisons: [['F01', 'M01']] },
     site: { delaiReponseApiMs: 0 },

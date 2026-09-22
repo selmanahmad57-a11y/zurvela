@@ -1,0 +1,189 @@
+{
+  "$schema": "./scanner.schema.json",
+  "navigateur": {
+    "canal": null,
+    "sansTete": true
+  },
+  "robot": {
+    "userAgent": "ZurvelaBot/0.1 (+https://zurvela.com)",
+    "enTete": "X-Zurvela-Scan",
+    "valeurEnTete": "1"
+  },
+  "viewports": [
+    {
+      "nom": "desktop",
+      "largeur": 1280,
+      "hauteur": 800,
+      "mobile": false
+    },
+    {
+      "nom": "mobile",
+      "largeur": 390,
+      "hauteur": 844,
+      "mobile": true
+    }
+  ],
+  "exploration": {
+    "profondeurMax": 2,
+    "pagesMax": 20,
+    "chargementPageMs": 15000,
+    "attenteEffetMaxMs": 8000,
+    "stabilisationMs": 500,
+    "clicMs": 2000,
+    "saisieMs": 2000,
+    "sondageMs": 50,
+    "margeEcheanceMs": 5000,
+    "evaluationMs": 15000,
+    "mutationsMax": 5000,
+    "bruitFondRepetitions": 2,
+    "elementsInteractifsMax": 500,
+    "liensParPageMax": 500
+  },
+  "remplissage": {
+    "regles": [
+      {
+        "types": [
+          "email"
+        ],
+        "autocomplete": [
+          "email"
+        ],
+        "valeur": "test@zurvela-scan.invalid"
+      },
+      {
+        "types": [
+          "tel"
+        ],
+        "autocomplete": [
+          "tel",
+          "tel-national"
+        ],
+        "valeur": "+33000000000"
+      },
+      {
+        "types": [
+          "url"
+        ],
+        "autocomplete": [
+          "url"
+        ],
+        "valeur": "https://zurvela-scan.invalid"
+      },
+      {
+        "types": [
+          "number"
+        ],
+        "autocomplete": [],
+        "valeur": "1"
+      },
+      {
+        "types": [
+          "date"
+        ],
+        "autocomplete": [
+          "bday"
+        ],
+        "valeur": "2000-01-01"
+      },
+      {
+        "types": [
+          "password"
+        ],
+        "autocomplete": [
+          "new-password",
+          "current-password"
+        ],
+        "valeur": "Zurvela-scan-test-1!"
+      },
+      {
+        "types": [],
+        "autocomplete": [
+          "given-name",
+          "family-name",
+          "name",
+          "organization"
+        ],
+        "valeur": "Zurvela Scan Test"
+      }
+    ],
+    "valeurTexteParDefaut": "Zurvela scan test",
+    "typesIgnores": [
+      "hidden",
+      "submit",
+      "button",
+      "reset",
+      "file",
+      "image",
+      "checkbox",
+      "radio",
+      "range",
+      "color"
+    ]
+  },
+  "detecteurs": {
+    "http": {
+      "confiance5xx": 0.9,
+      "confiance404": 0.85,
+      "gravite5xxSoumission": "bloquant",
+      "gravite5xx": "important",
+      "gravite404": "mineur",
+      "categorieParTypeRessource": {
+        "image": "visuel",
+        "media": "visuel",
+        "font": "visuel",
+        "stylesheet": "visuel"
+      },
+      "categorieParDefaut": "fonctionnel",
+      "confiance5xxSoumission": 0.95
+    },
+    "inerte": {
+      "confiance": 0.75,
+      "gravite": "bloquant"
+    },
+    "echecMuet": {
+      "confiance": 0.8,
+      "gravite": "bloquant",
+      "typesRequete": [
+        "document",
+        "xhr",
+        "fetch"
+      ]
+    },
+    "lenteur": {
+      "seuilMs": 3000,
+      "gravite": "important",
+      "paliers": [
+        {
+          "ratioMin": 1,
+          "confiance": 0.7
+        },
+        {
+          "ratioMin": 1.5,
+          "confiance": 0.85
+        },
+        {
+          "ratioMin": 3,
+          "confiance": 0.95
+        }
+      ]
+    },
+    "image": {
+      "gravite": "mineur",
+      "confianceSignalSimple": 0.8,
+      "confianceSignalDouble": 0.95
+    },
+    "recouvrement": {
+      "gravite": "bloquant",
+      "confianceGeometrie": 0.8,
+      "confianceGeometrieEtClic": 0.95
+    }
+  },
+  "ia": {
+    "variableCle": "ANTHROPIC_API_KEY",
+    "modeles": {
+      "navigation": "claude-haiku-4-5-20251001",
+      "diagnostic": "claude-opus-5",
+      "redaction": "claude-opus-5"
+    }
+  }
+}

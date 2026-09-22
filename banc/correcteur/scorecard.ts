@@ -3,7 +3,7 @@
  * catégorie de bug, écart de détection inter-langues, rendu console et
  * journalisation JSON.
  */
-import { mkdir, writeFile } from 'node:fs/promises';
+import { mkdir, readdir, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { traduire, type Dictionnaire } from '../../core/i18n.js';
 import type { Anomalie } from '../../core/types.js';
@@ -219,10 +219,30 @@ export function rendreScorecardConsole(scorecard: Scorecard, dico: Dictionnaire,
 // Journalisation JSON (constitution §5)
 // ---------------------------------------------------------------------------
 
+const EXTENSION_SCORECARD = '.json';
+
 /** Écrit `<dossier>/<horodatage>.json` (les `:` de l'ISO 8601 sont remplacés par `-` : nom de fichier portable) et retourne le chemin. */
 export async function ecrireScorecard(scorecard: Scorecard, dossier: string): Promise<string> {
   await mkdir(dossier, { recursive: true });
-  const fichier = path.join(dossier, `${scorecard.horodatage.replaceAll(':', '-')}.json`);
+  const fichier = path.join(dossier, `${scorecard.horodatage.replaceAll(':', '-')}${EXTENSION_SCORECARD}`);
   await writeFile(fichier, `${JSON.stringify(scorecard, null, 2)}\n`, 'utf8');
   return fichier;
+}
+
+/**
+ * Ne conserve dans `dossier` que les `retention` scorecards les plus récentes
+ * (cahier brique 2 §0, `scorecard.retentionRuns`). Les fichiers sont nommés
+ * par leur horodatage ISO : l'ordre des noms est l'ordre chronologique. Tout
+ * ce qui n'est pas une scorecard (`.gitkeep`, sous-dossiers) est ignoré.
+ * Retourne les chemins supprimés.
+ */
+export async function purgerResultats(dossier: string, retention: number): Promise<string[]> {
+  const entrees = await readdir(dossier, { withFileTypes: true });
+  const scorecards = entrees
+    .filter((entree) => entree.isFile() && entree.name.endsWith(EXTENSION_SCORECARD))
+    .map((entree) => entree.name)
+    .sort();
+  const aSupprimer = scorecards.slice(0, Math.max(0, scorecards.length - retention)).map((nom) => path.join(dossier, nom));
+  await Promise.all(aSupprimer.map((fichier) => rm(fichier)));
+  return aSupprimer;
 }

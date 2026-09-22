@@ -3,7 +3,7 @@
  * mini-site, lance le sujet à noter (`scanner`, contrat de core/), compare
  * son rapport au manifeste de vérité terrain, puis produit la scorecard.
  *
- * Mode CLI : `pnpm banc --scenario <id> | --tous`.
+ * Mode CLI : `pnpm banc [--sujet reel|factice] --scenario <id> | --tous`.
  */
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -16,7 +16,7 @@ import { deriverManifeste } from '../scenarios/manifeste.js';
 import { demarrerServeur } from '../serveur.js';
 import type { ConfigBanc, Gabarit, ResultatAttendu, ResultatScenario, Scenario, Scorecard } from '../types.js';
 import { apparier } from './appariement.js';
-import { calculerScorecard, ecrireScorecard, rendreScorecardConsole } from './scorecard.js';
+import { calculerScorecard, ecrireScorecard, purgerResultats, rendreScorecardConsole } from './scorecard.js';
 
 export interface ParametresNotation {
   scanner: Scanner;
@@ -128,13 +128,25 @@ export async function executerBanc(params: ParametresBanc): Promise<Scorecard> {
 }
 
 // ---------------------------------------------------------------------------
-// Mode CLI : pnpm banc --scenario <id> | --tous
+// Mode CLI : pnpm banc [--sujet reel|factice] --scenario <id> | --tous
 // ---------------------------------------------------------------------------
 
-function lireOptions(): { scenario?: string; tous: boolean } | null {
+export interface OptionsCli {
+  scenario?: string;
+  tous: boolean;
+  /** Nom du sujet demandé ; absent = sujet par défaut de la config. */
+  sujet?: string;
+}
+
+/** Analyse les arguments (ceux du processus par défaut) ; null si la ligne de commande est mal formée. */
+export function lireOptions(args?: string[]): OptionsCli | null {
   try {
-    const { values } = parseArgs({ options: { scenario: { type: 'string' }, tous: { type: 'boolean' } }, strict: true });
-    return { scenario: values.scenario, tous: values.tous === true };
+    const { values } = parseArgs({
+      args,
+      options: { scenario: { type: 'string' }, tous: { type: 'boolean' }, sujet: { type: 'string' } },
+      strict: true,
+    });
+    return { scenario: values.scenario, tous: values.tous === true, sujet: values.sujet };
   } catch {
     return null;
   }
@@ -151,13 +163,19 @@ async function principal(): Promise<void> {
     return;
   }
 
-  // Imports différés : le moteur, le registre des gabarits et le chargement des
+  // Imports différés : les sujets, le registre des gabarits et le chargement des
   // scénarios ne sont nécessaires qu'en mode CLI (les tests injectent les leurs).
-  const [{ scanner }, { obtenirGabarit }, { chargerScenario, chargerScenarios, ErreurScenarioIntrouvable }] = await Promise.all([
-    import('../../core/index.js'),
-    import('../gabarits/index.js'),
-    import('../scenarios/charger.js'),
-  ]);
+  const [{ SUJETS, NOMS_SUJETS, estNomSujet }, { obtenirGabarit }, { chargerScenario, chargerScenarios, ErreurScenarioIntrouvable }] =
+    await Promise.all([import('./sujets.js'), import('../gabarits/index.js'), import('../scenarios/charger.js')]);
+
+  const nomSujet = options.sujet ?? config.scan.sujetParDefaut;
+  if (!estNomSujet(nomSujet)) {
+    console.error(traduire(dico, 'banc.sujetInconnu', { sujet: nomSujet, sujets: NOMS_SUJETS.join(', ') }));
+    console.error(traduire(dico, 'banc.usage'));
+    process.exitCode = 2;
+    return;
+  }
+  const scanner = SUJETS[nomSujet];
 
   const dossierScenarios = depuisRacine(config.scenarios.dossier);
   let scenarios: Scenario[];
@@ -181,8 +199,13 @@ async function principal(): Promise<void> {
 
   const scorecard = await executerBanc({ scenarios, scanner, config, dico, obtenirGabarit, journal: console.log });
   console.log(rendreScorecardConsole(scorecard, dico, config.langueConsole));
-  const fichier = await ecrireScorecard(scorecard, depuisRacine(config.scorecard.dossierResultats));
+  const dossierResultats = depuisRacine(config.scorecard.dossierResultats);
+  const fichier = await ecrireScorecard(scorecard, dossierResultats);
   console.log(traduire(dico, 'banc.resultatsEcrits', { fichier }));
+  const purges = await purgerResultats(dossierResultats, config.scorecard.retentionRuns);
+  if (purges.length > 0) {
+    console.log(traduire(dico, 'banc.resultatsPurges', { nombre: purges.length, retention: config.scorecard.retentionRuns }));
+  }
 }
 
 if (path.resolve(process.argv[1] ?? '') === fileURLToPath(import.meta.url)) {

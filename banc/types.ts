@@ -11,11 +11,14 @@ import type { Anomalie, Categorie, Gravite, Rapport } from '../core/types.js';
 // Configuration (miroir typé de config/banc.json, validé par config/banc.schema.json)
 // ---------------------------------------------------------------------------
 
+/** Sujets que le banc sait noter : le moteur réel, ou le scanner factice (contrôle du banc lui-même). */
+export type NomSujet = 'reel' | 'factice';
+
 export interface ConfigBanc {
   langueConsole: string;
   langues: string[];
   serveur: { portDeBase: number; nombrePortsEssayes: number };
-  scan: { timeoutMs: number };
+  scan: { timeoutMs: number; sujetParDefaut: NomSujet };
   scorecard: { seuilAlarmeEcartLanguesPoints: number; dossierResultats: string; retentionRuns: number };
   scenarios: { dossier: string; jetonSain: string; combinaisons: string[][] };
   site: { delaiReponseApiMs: number };

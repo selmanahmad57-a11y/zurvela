@@ -8,6 +8,9 @@ Cahiers des charges des briques : [docs/cahiers/](docs/cahiers/).
 
 - Node.js ≥ 22 (cible : 24 LTS)
 - pnpm via corepack : `corepack enable`
+- Chromium pour Playwright : `pnpm exec playwright install chromium` (après `pnpm install`)
+
+> **Contrainte de la machine de développement** (macOS 12) : Playwright est épinglé en 1.61.1, dernière version fournissant un Chromium pour macOS 12. Ce n'est pas une contrainte du projet — voir [docs/DETTES.md](docs/DETTES.md), dette n°1.
 
 ## Commandes
 
