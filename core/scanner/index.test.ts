@@ -7,22 +7,34 @@ import { beforeAll, describe, expect, it } from 'vitest';
 import { creerClientIa, type ClientIa } from '../ia/index.js';
 import type {
   AnomalieCandidate,
+  ContexteConfirmation,
   ContexteExploration,
   Detecteur,
   Explorateur,
   Observateur,
   Parcours,
   ProtocoleConfirmation,
+  Reexecuteur,
   Signal,
 } from '../types.js';
 import { chargerConfigScanner, type ConfigScanner } from './config.js';
+import { autoDiagnosticMecanique } from './confirmation/auto-diagnostic.js';
 import { protocolePassePlat } from './confirmation/passe-plat.js';
-import { creerScanner, type DependancesScanner } from './index.js';
+import { reexecuteurFactice } from './confirmation/fabriques-test.js';
+import { creerProtocole } from './confirmation/protocole.js';
+import { MOTIF_REPRODUITE } from './confirmation/verdict.js';
+import { DESCRIPTION_404_INTERNE, creerDetecteurHttp } from './detection/d-http.js';
+import { DESCRIPTION_IMAGE_CASSEE, creerDetecteurImage } from './detection/d-image.js';
+import { creerScanner, RAISON_CONFIRMATION_EN_ERREUR, type DependancesScanner, type SessionRejeu } from './index.js';
 
 const ORIGINE = 'http://127.0.0.1:4800';
 const URL_CONTACT = `${ORIGINE}/contact`;
 const BOUTON = { balise: 'button', selecteur: '#envoyer', attributs: { type: 'button' } };
 const FORMULAIRE = { balise: 'form', selecteur: '#contact', attributs: { action: '/api/contact' } };
+const URL_LOGO = `${ORIGINE}/statique/logo.svg`;
+const LOGO = { balise: 'img', selecteur: 'img#logo', attributs: { id: 'logo' } };
+/** Clé structurelle du groupe que forment les deux lectures du logo mort (méthode + chemin de la ressource). */
+const CLE_GROUPE_LOGO = 'reseau:GET:/statique/logo.svg';
 
 let config: ConfigScanner;
 let ia: ClientIa;
@@ -141,6 +153,78 @@ function detecteurInerteSimule(contexteVu: { viewports: string[] }): Detecteur {
 
 const detecteurMuet: Detecteur = { nom: 'd-muet', dependDuViewport: false, detecter: () => [] };
 
+/**
+ * Le logo interne répond 404 APRÈS la soumission `a1`, et l'image reste sans
+ * dimension : un seul défaut, deux lectures — la cause technique
+ * (`ressource-interne-404`, portée par D-HTTP, qui tient l'action à rejouer)
+ * et le symptôme visible (`image-cassee`, porté par D-IMAGE).
+ */
+function signauxLogoMort(page: string, viewport: string): Signal[] {
+  const horodatage = new Date().toISOString();
+  return [
+    {
+      type: 'reponse-reseau',
+      horodatage,
+      page,
+      viewport,
+      actionId: 'a1',
+      urlRessource: URL_LOGO,
+      methode: 'GET',
+      statut: 404,
+      typeRessource: 'image',
+      dureeMs: 12,
+      interne: true,
+    },
+    // Sans `actionId` : c'est l'état de l'image, pas l'effet de l'action —
+    // c'est ce qui prive D-IMAGE du contexte de rejeu, et lui coûte le rôle
+    // de représentant.
+    { type: 'etat-image', horodatage, page, viewport, ressource: URL_LOGO, element: LOGO, complete: true, largeurNaturelle: 0, hauteurNaturelle: 0 },
+  ];
+}
+
+/** Explorateur qui rejoue la scène du logo mort sur un seul viewport. */
+function explorateurLogoMort(viewport: string): Explorateur {
+  return {
+    nom: 'explorateur-logo-mort',
+    async explorer(contexte, observateur) {
+      for (const signal of signauxLogoMort(URL_CONTACT, viewport)) {
+        observateur.emettre(signal);
+      }
+      return parcoursSimule(contexte.urlDepart, viewport);
+    },
+  };
+}
+
+/** Re-exécuteur qui re-constate exactement la même scène : le défaut se reproduit. */
+const reexecuteurLogoMort: Reexecuteur = {
+  rejouer: (reproduction, viewport) =>
+    Promise.resolve({
+      signaux: signauxLogoMort(reproduction.url, viewport.nom),
+      parcours: parcoursSimule(reproduction.url, viewport.nom),
+      echecOutillage: false,
+      dureeMs: 20,
+    }),
+};
+
+/** Session de rejeu simulée : compte ses ouvertures et ses fermetures (elle doit être fermée dans TOUS les cas). */
+function fabriqueSession(): { ouvrir: DependancesScanner['ouvrirRejeu']; ouvertures: number; fermetures: number } {
+  const suivi = {
+    ouvertures: 0,
+    fermetures: 0,
+    ouvrir: (): SessionRejeu => {
+      suivi.ouvertures += 1;
+      return {
+        reexecuteur: reexecuteurFactice([]),
+        fermer: () => {
+          suivi.fermetures += 1;
+          return Promise.resolve();
+        },
+      };
+    },
+  };
+  return suivi;
+}
+
 function dependances(surcharges: Partial<DependancesScanner> = {}): DependancesScanner {
   return {
     config,
@@ -148,6 +232,7 @@ function dependances(surcharges: Partial<DependancesScanner> = {}): DependancesS
     observateur: fabriqueObservateur().fabrique,
     detecteurs: [detecteurMuet],
     protocole: protocolePassePlat,
+    ouvrirRejeu: fabriqueSession().ouvrir,
     ia,
     ...surcharges,
   };
@@ -197,6 +282,10 @@ describe('creerScanner', () => {
     expect(rapport.anomalies[0]?.reproduction?.actionsPrealables).toEqual([]);
     expect(rapport.anomalies[0]?.observations).toEqual([{ viewport: 'desktop' }, { viewport: 'mobile' }]);
     expect(rapport.ecartees).toEqual([]);
+    // Le passe-plat ne consolide ni ne rejoue : le rapport ne prétend PAS le
+    // contraire avec des listes vides. Son comportement est inchangé.
+    expect(rapport.groupes).toBeUndefined();
+    expect(rapport.decouvertes).toBeUndefined();
 
     // Journal : l'ordre des étapes, avec les entrées de l'explorateur et du protocole intercalées.
     expect(rapport.journal.map((entree) => entree.type)).toEqual([
@@ -296,6 +385,51 @@ describe('creerScanner', () => {
     expect(rapport.journal.at(-1)?.details).toMatchObject({ coutApi: 0.25, nbAnomalies: 0 });
   });
 
+  it('donne au protocole le contexte COMPLET de confirmation, et ferme la session de rejeu', async () => {
+    const session = fabriqueSession();
+    let vu: ContexteConfirmation | undefined;
+    const protocole: ProtocoleConfirmation = {
+      nom: 'protocole-temoin',
+      async confirmer(candidates, contexte) {
+        vu = contexte;
+        return { retenues: [...candidates], ecartees: [], coutApi: 0 };
+      },
+    };
+    const detecteurs = [detecteurInerteSimule({ viewports: [] }), detecteurMuet];
+
+    await creerScanner(dependances({ detecteurs, protocole, ouvrirRejeu: session.ouvrir }))(ORIGINE, { timeoutMs: 2000 });
+
+    // Les mêmes détecteurs que l'étape DÉTECTION : la re-exécution ne duplique aucune règle.
+    expect(vu?.detecteurs).toBe(detecteurs);
+    expect(vu?.viewports).toBe(config.viewports);
+    expect(vu?.reexecuteur).toBeDefined();
+    expect(session.ouvertures).toBe(1);
+    expect(session.fermetures).toBe(1);
+  });
+
+  it('une panne du protocole donne un rapport PARTIEL : rien n’est affirmé, tout est écarté avec sa raison, session fermée', async () => {
+    const session = fabriqueSession();
+    const protocole: ProtocoleConfirmation = {
+      nom: 'protocole-en-panne',
+      confirmer: () => Promise.reject(new Error('rejeu impossible')),
+    };
+    const scanner = creerScanner(
+      dependances({ detecteurs: [detecteurInerteSimule({ viewports: [] })], protocole, ouvrirRejeu: session.ouvrir }),
+    );
+
+    const rapport = await scanner(ORIGINE, { timeoutMs: 2000 });
+
+    expect(rapport.anomalies).toEqual([]);
+    expect(rapport.candidates).toHaveLength(1);
+    expect(rapport.ecartees?.[0]?.raison).toBe(RAISON_CONFIRMATION_EN_ERREUR);
+    expect(rapport.journal.find((entree) => entree.type === 'scan.erreur')?.details).toEqual({
+      etape: 'confirmation',
+      message: 'rejeu impossible',
+    });
+    expect(rapport.journal.at(-1)?.type).toBe('scan.fin');
+    expect(session.fermetures).toBe(1);
+  });
+
   it('refuse une URL de départ non http(s) SANS explorer (aucun navigateur lancé, aucun fichier local lu)', async () => {
     const explorateur: Explorateur = {
       nom: 'explorateur-jamais-appele',
@@ -322,5 +456,68 @@ describe('creerScanner', () => {
     expect(instances[0]).not.toBe(instances[1]);
     expect(premier.journal.find((entree) => entree.type === 'detection.fin')?.details).toMatchObject({ nbSignaux: 2 });
     expect(second.journal.find((entree) => entree.type === 'detection.fin')?.details).toMatchObject({ nbSignaux: 2 });
+  });
+});
+
+describe('creerScanner — traçabilité du protocole dans le Rapport', () => {
+  /** Le pipeline complet, avec les VRAIS détecteurs et le VRAI protocole (aucun navigateur). */
+  async function scannerLogoMort() {
+    const detecteurs = [creerDetecteurHttp(config.detecteurs.http), creerDetecteurImage(config.detecteurs.image)];
+    const protocole = creerProtocole({ config: config.confirmation, autoDiagnostic: autoDiagnosticMecanique });
+    const scanner = creerScanner(
+      dependances({
+        explorateur: explorateurLogoMort('desktop'),
+        detecteurs,
+        protocole,
+        ouvrirRejeu: () => ({ reexecuteur: reexecuteurLogoMort, fermer: () => Promise.resolve() }),
+      }),
+    );
+    return scanner(ORIGINE, { timeoutMs: 60000 });
+  }
+
+  it('le symptôme visible survit au choix du représentant, et reste atteignable depuis l’anomalie retenue', async () => {
+    const rapport = await scannerLogoMort();
+
+    // Deux candidates, une seule cause : le protocole ne paie qu'une confirmation.
+    expect(rapport.candidates).toHaveLength(2);
+    expect(rapport.groupes).toHaveLength(1);
+    expect(rapport.anomalies).toHaveLength(1);
+
+    // Le représentant est la candidate D-HTTP (elle seule porte l'action à
+    // rejouer) : le symptôme que voit un humain, « image-cassee », n'est PAS
+    // ce que l'anomalie retenue affiche.
+    const anomalie = rapport.anomalies[0];
+    expect(anomalie?.detecteur).toBe('d-http');
+    expect(anomalie?.description).toBe(DESCRIPTION_404_INTERNE);
+
+    // Le rapport est relu SANS son journal, et sérialisé : c'est la preuve
+    // qu'aucune de ces informations n'oblige à re-parser quoi que ce soit.
+    const publie = JSON.parse(JSON.stringify({ ...rapport, journal: [] })) as typeof rapport;
+    const retenue = publie.anomalies[0];
+    expect(retenue?.verdict).toBe('confirmee');
+    expect(retenue?.motif).toBe(MOTIF_REPRODUITE);
+    expect(retenue?.groupe).toBe(CLE_GROUPE_LOGO);
+
+    // De l'anomalie à son groupe, par la seule clé qu'elle porte…
+    const resultat = publie.groupes?.find((candidat) => candidat.groupe.cle === retenue?.groupe);
+    expect(resultat).toBeDefined();
+    expect(resultat?.verdict).toBe('confirmee');
+    expect(resultat?.motif).toBe(retenue?.motif);
+    expect(resultat?.tentatives).toHaveLength(config.confirmation.reExecutions);
+    // … et du groupe au symptôme perdu par la consolidation.
+    expect(resultat?.groupe.descriptions).toEqual([DESCRIPTION_404_INTERNE, DESCRIPTION_IMAGE_CASSEE]);
+    expect(resultat?.groupe.membres.map((membre) => membre.detecteur)).toEqual(['d-http', 'd-image']);
+
+    // Les rejeux n'ont rien constaté d'inconnu : aucune découverte.
+    expect(publie.decouvertes).toEqual([]);
+  });
+
+  it('les groupes couvrent TOUTES les candidates, retenues comme écartées : compter en groupes est possible', async () => {
+    const rapport = await scannerLogoMort();
+    const membres = rapport.groupes?.flatMap((resultat) => resultat.groupe.membres) ?? [];
+    expect(membres).toHaveLength(rapport.candidates?.length ?? 0);
+    const retenus = rapport.groupes?.filter((resultat) => resultat.verdict === 'confirmee') ?? [];
+    expect(retenus).toHaveLength(rapport.anomalies.length);
+    expect(rapport.ecartees).toEqual([]);
   });
 });

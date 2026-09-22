@@ -39,6 +39,14 @@ export interface Anomalie {
   reproduction?: ContexteReproduction;
   /** Où la même anomalie a été observée. Une anomalie vue sur un seul viewport reste ainsi distinguable (« mobile uniquement »). */
   observations?: Observation[];
+  /** Verdict rendu par le protocole de confirmation. */
+  verdict?: VerdictConfirmation;
+  /** Identifiant technique du motif du verdict (jamais de prose) : l'anomalie porte son « pourquoi », pas seulement le journal. */
+  motif?: string;
+  /** Clé du groupe de cause racine dont elle est issue : le lien entre l'anomalie et `Rapport.groupes`. */
+  groupe?: string;
+  /** Autres endroits où la MÊME cause racine se manifeste (consolidation). */
+  localisations?: LocalisationCause[];
 }
 
 /** Une occurrence d'une anomalie : le dédoublonnage les accumule au lieu de les effacer. */
@@ -70,6 +78,14 @@ export interface Rapport {
   candidates?: AnomalieCandidate[];
   /** Candidates écartées par le protocole de confirmation, avec la raison. */
   ecartees?: CandidateEcartee[];
+  /**
+   * Un résultat par groupe de cause racine. C'est ce qui permet de compter en
+   * GROUPES et non en signalements (cahier de la brique 3, §1a) : sans lui, il
+   * faudrait re-parser le journal.
+   */
+  groupes?: ResultatGroupe[];
+  /** Anomalies constatées pendant les re-exécutions seulement (troisième état : constatée une fois). */
+  decouvertes?: Anomalie[];
 }
 
 /** Options d'un scan. */
@@ -239,7 +255,14 @@ export type Signal =
       urlRessource: string;
       methode: string;
       typeRessource: TypeRessource;
+      /** Code d'erreur réseau du navigateur (standard technique, ex. `net::ERR_CONNECTION_REFUSED`). */
       erreur: string;
+      /**
+       * Requête de NAVIGATION du cadre principal : c'est la page elle-même
+       * qui a échoué, et non un sous-cadre (iframe tiers, widget) ni une
+       * sous-ressource. Un sous-cadre annulé n'est pas une page inaccessible.
+       */
+      cadrePrincipal: boolean;
       interne: boolean;
     })
   | (SignalBase & {
@@ -335,13 +358,26 @@ export interface Detecteur {
   /** true si la même anomalie constatée sur deux viewports est comptée deux fois (ex. recouvrement). */
   dependDuViewport: boolean;
   detecter(signaux: Signal[], contexte: ContexteDetection): AnomalieCandidate[];
+  /**
+   * Mesure brute que porte une candidate, quand le détecteur est GRADUÉ
+   * (durée observée pour la lenteur). Avec `seuilMesure`, elle permet au
+   * protocole de confirmation de juger sur l'agrégat des re-exécutions
+   * plutôt que sur un simple comptage — sans rien savoir du détecteur.
+   */
+  mesureDe?(candidate: AnomalieCandidate): number | undefined;
+  /** Seuil auquel la mesure agrégée des re-exécutions est comparée (détecteur gradué). */
+  seuilMesure?: number;
 }
 
 // ---- Confirmation ---------------------------------------------------------
 
 export interface CandidateEcartee {
   candidate: AnomalieCandidate;
+  /** Identifiant technique stable de la raison (jamais de prose). */
   raison: string;
+  verdict?: VerdictConfirmation;
+  /** Détail de la confirmation du groupe auquel la candidate appartenait. */
+  resultat?: ResultatGroupe;
 }
 
 export interface ContexteConfirmation {
@@ -350,12 +386,33 @@ export interface ContexteConfirmation {
   /** Instant (epoch ms) avant lequel la confirmation doit avoir rendu son résultat. */
   echeance: number;
   journaliser(type: string, details?: unknown): void;
+  /** Capacité de rejeu fournie par le pipeline : le protocole ne pilote jamais le navigateur lui-même. */
+  reexecuteur: Reexecuteur;
+  /** Les mêmes détecteurs que l'étape DÉTECTION : la re-exécution ne duplique aucune règle. */
+  detecteurs: Detecteur[];
+  viewports: Viewport[];
 }
 
 export interface ResultatConfirmation {
   retenues: Anomalie[];
   ecartees: CandidateEcartee[];
   coutApi: number;
+  /** Un résultat par groupe de cause racine : ce que la confirmation a fait et pourquoi. */
+  groupes?: ResultatGroupe[];
+  /**
+   * Anomalies DÉCOUVERTES pendant les re-exécutions, qui ne correspondaient à
+   * aucun groupe d'origine — typiquement un site devenu injoignable entre le
+   * scan et la confirmation. Elles sont retenues : se taire parce que la
+   * panne est survenue trop tard serait le pire des faux négatifs.
+   *
+   * C'est un TROISIÈME ÉTAT ÉPISTÉMIQUE : ni confirmée, ni écartée —
+   * **constatée une fois**. Elles portent la confiance de leur détecteur,
+   * sans facteur de calibration, parce qu'elles n'ont pas été re-confirmées.
+   * Le rapport business devra le dire au client dans ces termes (« détecté
+   * pendant la vérification, non re-testé ») : l'honnêteté sur le statut de
+   * chaque affirmation commence dans ce type.
+   */
+  decouvertes?: Anomalie[];
 }
 
 /**
@@ -365,4 +422,172 @@ export interface ResultatConfirmation {
 export interface ProtocoleConfirmation {
   nom: string;
   confirmer(candidates: AnomalieCandidate[], contexte: ContexteConfirmation): Promise<ResultatConfirmation>;
+}
+
+// ===========================================================================
+// Protocole anti-faux-positifs (brique 3) : CONSOLIDATION → RE-EXÉCUTION →
+// VERDICT → CALIBRATION, à l'intérieur de l'étape CONFIRMATION.
+// ===========================================================================
+
+/**
+ * Verdict rendu sur un groupe de cause racine.
+ *
+ * `limite-automatisation` est délibérément distinct de `non-reproduite` :
+ * c'est la catégorie que le secteur confond avec un défaut du site
+ * (constitution §1, auto-diagnostic « défaut du site ou limite de mon
+ * automatisation ? »).
+ */
+export type VerdictConfirmation =
+  | 'confirmee'
+  | 'intermittente'
+  | 'non-reproduite'
+  | 'limite-automatisation'
+  | 'basse-confiance';
+
+/** Verdicts dont les anomalies sont RETENUES dans le rapport final. */
+export const VERDICTS_RETENUS: readonly VerdictConfirmation[] = ['confirmee', 'intermittente'];
+
+/** Un endroit où une cause racine se manifeste. */
+export interface LocalisationCause {
+  urlOuEtape: string;
+  element?: LocalisationElement;
+  viewport?: string;
+}
+
+/**
+ * Groupe de candidates partageant une CAUSE RACINE : on ne paie qu'une
+ * confirmation par cause (une ressource en échec sur cinq pages est un seul
+ * défaut). La clé est structurelle, jamais textuelle.
+ */
+export interface GroupeCause {
+  /** Clé structurelle du groupe (détecteur, type de signal, identité de la ressource ou de l'action). */
+  cle: string;
+  /** Membre le plus riche en contexte : celui qu'on re-exécute. */
+  representant: AnomalieCandidate;
+  membres: AnomalieCandidate[];
+  /** Toutes les manifestations de la cause, dans l'ordre de première apparition. */
+  localisations: LocalisationCause[];
+  /** Tous les viewports où le groupe a été observé : l'asymétrie « mobile uniquement » reste intacte. */
+  observations: Observation[];
+  /** Confiance la plus haute des membres (leçon de la bascule de la brique 2). */
+  confiance: number;
+  /**
+   * Descriptions distinctes des membres, dans l'ordre de première apparition.
+   * La consolidation ne garde qu'un représentant : sans cette liste, le
+   * symptôme le plus parlant pour un humain (« image-cassee ») disparaîtrait
+   * derrière le plus riche en contexte (« ressource-interne-404 »), et le
+   * rapport business devrait re-parser le journal pour le retrouver.
+   */
+  descriptions: string[];
+}
+
+/**
+ * Cause d'un échec de rejeu. La distinction est CRITIQUE : une page devenue
+ * inchargeable au moment de la re-exécution peut être l'incident le plus
+ * grave qui existe — le site vient de tomber pendant le scan. La classer en
+ * limite d'automatisation et l'écarter serait le pire faux négatif possible :
+ * le moteur se tairait au moment de la panne totale.
+ *
+ * - `outil`        : le rejeu n'a pas pu avoir lieu (navigateur perdu,
+ *                    contexte qui ne s'ouvre pas, délai de l'outil). Tentative
+ *                    NON exploitable → limite d'automatisation.
+ * - `reseau-site`  : le SITE n'a pas répondu (connexion refusée, DNS en
+ *                    échec, 5xx sur la navigation, délai réseau). Ce n'est
+ *                    pas un verdict sur la candidate d'origine : c'est une
+ *                    nouvelle anomalie, potentiellement plus grave, que
+ *                    l'observation du rejeu doit faire remonter.
+ * - `indetermine`  : ni l'un ni l'autre avec certitude. Tentative non
+ *                    exploitable, et client légitime de l'auto-diagnostic IA.
+ */
+export type CauseEchecRejeu = 'outil' | 'reseau-site' | 'indetermine';
+
+/** Résultat d'un rejeu isolé, rendu par le `Reexecuteur` au protocole. */
+export interface ResultatRejeu {
+  signaux: Signal[];
+  parcours: Parcours;
+  /**
+   * true si le rejeu LUI-MÊME a échoué. Ne dit PAS à qui la faute :
+   * `causeEchec` le dit, et seuls `outil` et `indetermine` rendent la
+   * tentative non exploitable.
+   */
+  echecOutillage: boolean;
+  /** À qui la faute. Renseignée dès que `echecOutillage` est vrai. */
+  causeEchec?: CauseEchecRejeu;
+  /** Identifiant technique de l'échec, si échec. */
+  erreur?: string;
+  dureeMs: number;
+}
+
+/**
+ * Capacité de re-exécution : rejoue un contexte de reproduction dans un
+ * contexte navigateur NEUF (cache froid, stockage vierge — déjà une
+ * variation de contexte).
+ */
+export interface Reexecuteur {
+  rejouer(reproduction: ContexteReproduction, viewport: Viewport): Promise<ResultatRejeu>;
+}
+
+/** Une tentative de re-exécution d'un groupe. */
+export interface TentativeReexecution {
+  /** Numéro de la tentative, à partir de 1. */
+  numero: number;
+  viewport: string;
+  /** L'anomalie a-t-elle été re-constatée par les mêmes détecteurs ? */
+  reproduite: boolean;
+  /** Le rejeu a-t-il échoué pour une cause d'outillage ? Une telle tentative n'est pas exploitable. */
+  echecOutillage: boolean;
+  /** À qui la faute, quand la tentative a échoué. */
+  causeEchec?: CauseEchecRejeu;
+  /** Identifiant technique de l'échec, le cas échéant. */
+  erreur?: string;
+  /** Mesure brute quand le détecteur est gradué (durée observée pour D-LENTEUR). */
+  mesureMs?: number;
+  dureeMs: number;
+}
+
+/**
+ * Contre-épreuve d'une anomalie dépendant du viewport : la même action
+ * rejouée dans l'AUTRE viewport. L'asymétrie attendue (mobile KO, desktop
+ * OK) renforce la confiance ; une symétrie inattendue la dégrade.
+ */
+export interface ContreEpreuve {
+  viewport: string;
+  reproduite: boolean;
+  echecOutillage: boolean;
+  /** true si le résultat est celui qu'on attendait (non reproduite dans l'autre viewport). */
+  attendue: boolean;
+}
+
+export interface ResultatGroupe {
+  groupe: GroupeCause;
+  verdict: VerdictConfirmation;
+  /** Identifiant technique stable du motif du verdict (jamais de prose). */
+  motif: string;
+  tentatives: TentativeReexecution[];
+  contreEpreuve?: ContreEpreuve;
+  /** Reproduites / tentatives exploitables ; null si aucune tentative exploitable. */
+  tauxReproduction: number | null;
+  /** Agrégat des mesures brutes des tentatives, pour les détecteurs gradués. */
+  mesureAgregee?: number;
+  confianceInitiale: number;
+  confianceFinale: number;
+  coutApi: number;
+}
+
+/**
+ * Logement de l'auto-diagnostic (brique 4+) : « défaut du site ou limite de
+ * mon automatisation ? ». Cette brique en fournit une implémentation
+ * MÉCANIQUE ; l'IA viendra derrière la même interface.
+ */
+export interface AutoDiagnostic {
+  nom: string;
+  /** Rend un verdict de substitution et son motif, ou `null` quand il n'a pas d'avis. */
+  diagnostiquer(resultat: ResultatGroupe, contexte: ContexteConfirmation): Promise<AvisDiagnostic | null>;
+}
+
+export interface AvisDiagnostic {
+  verdict: VerdictConfirmation;
+  /** Identifiant technique du motif. */
+  motif: string;
+  coutApi: number;
 }

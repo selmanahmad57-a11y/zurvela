@@ -30,6 +30,9 @@ describe('genererScenarios (gabarit factice)', () => {
       'gabarit-factice--r01--fr',
       'gabarit-factice--v01--fr',
       'gabarit-factice--m01--fr',
+      'gabarit-factice--i01--fr',
+      'gabarit-factice--t01--fr',
+      'gabarit-factice--l01--fr',
       'gabarit-factice--f01-m01--fr',
       'gabarit-factice--sain--en',
       'gabarit-factice--f01--en',
@@ -37,6 +40,9 @@ describe('genererScenarios (gabarit factice)', () => {
       'gabarit-factice--r01--en',
       'gabarit-factice--v01--en',
       'gabarit-factice--m01--en',
+      'gabarit-factice--i01--en',
+      'gabarit-factice--t01--en',
+      'gabarit-factice--l01--en',
       'gabarit-factice--f01-m01--en',
     ]);
   });
@@ -44,7 +50,7 @@ describe('genererScenarios (gabarit factice)', () => {
   it('remplit gabarit, langue et bugsActifs, sans champ parametres', () => {
     const scenarios = genererScenarios(gabarit, config);
     expect(scenarios[0]).toEqual({ id: 'gabarit-factice--sain--fr', gabarit: 'gabarit-factice', langue: 'fr', bugsActifs: [] });
-    expect(scenarios[6]).toEqual({
+    expect(scenarios[1 + BUGS_FACTICES.length]).toEqual({
       id: 'gabarit-factice--f01-m01--fr',
       gabarit: 'gabarit-factice',
       langue: 'fr',
@@ -58,7 +64,19 @@ describe('genererScenarios (gabarit factice)', () => {
   it('suit l’ordre du registre du gabarit et l’ordre déclaré des combinaisons', () => {
     const inverse = gabaritFactice('g', [...BUGS_FACTICES].reverse());
     const ids = genererScenarios(inverse, configFactice({ langues: ['fr'], scenarios: { dossier: 'x', jetonSain: 'ok', combinaisons: [['V01', 'F02'], ['M01', 'F01']] } })).map((scenario) => scenario.id);
-    expect(ids).toEqual(['g--ok--fr', 'g--m01--fr', 'g--v01--fr', 'g--r01--fr', 'g--f02--fr', 'g--f01--fr', 'g--v01-f02--fr', 'g--m01-f01--fr']);
+    expect(ids).toEqual([
+      'g--ok--fr',
+      'g--l01--fr',
+      'g--t01--fr',
+      'g--i01--fr',
+      'g--m01--fr',
+      'g--v01--fr',
+      'g--r01--fr',
+      'g--f02--fr',
+      'g--f01--fr',
+      'g--v01-f02--fr',
+      'g--m01-f01--fr',
+    ]);
   });
 
   it('lève si une combinaison cite un bug inconnu du gabarit', () => {
@@ -106,7 +124,7 @@ describe('ecrireScenarios', () => {
     expect(noms).not.toContain('ancien--x--fr.scenario.json');
     expect(noms).toContain('scenario.schema.json');
     expect(noms).toContain('charger.ts');
-    expect(noms.filter((nom) => nom.endsWith('.scenario.json'))).toHaveLength(7);
+    expect(noms.filter((nom) => nom.endsWith('.scenario.json'))).toHaveLength(1 + BUGS_FACTICES.length + 1);
   });
 });
 
@@ -120,5 +138,15 @@ describe('genererScenarios (registre réel)', () => {
     expect(scenarios).toHaveLength(attendusParLangue * config.langues.length);
     expect(scenarios.map((scenario) => scenario.id)).toContain('formulaire-contact--f01-m01--fr');
     expect(scenarios.map((scenario) => scenario.id)).toContain('formulaire-contact--sain--en');
+  });
+
+  it('couvre les trois bugs de confirmation et la combinaison I01+V01 dans les deux langues', async () => {
+    const config = await chargerConfig();
+    const ids = genererScenarios(obtenirGabarit('formulaire-contact'), config).map((scenario) => scenario.id);
+    for (const jeton of ['i01', 't01', 'l01', 'i01-v01']) {
+      for (const langue of config.langues) {
+        expect(ids).toContain(`formulaire-contact--${jeton}--${langue}`);
+      }
+    }
   });
 });

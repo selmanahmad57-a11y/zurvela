@@ -29,7 +29,8 @@ entrée indique la brique ou la phase où elle a vocation à être traitée.
   collecté par l'observateur mais aucun détecteur ne le consomme (hors
   périmètre de la brique 2). Les erreurs JS d'une page passent donc
   inaperçues. Cible : une brique de couverture ultérieure.
-- **Regroupement des anomalies par cause** : sur le banc, V01 (un logo
+- ~~**Regroupement des anomalies par cause**~~ — PROMU dans le périmètre de la brique 3 (consolidation, décision du 2026-09-22).
+- **(archivé) Regroupement des anomalies par cause** : sur le banc, V01 (un logo
   cassé présent sur 3 pages) produit 6 anomalies (2 détecteurs × 3 pages) et
   F02 en produit 2. Le banc les apparie au même attendu, mais un rapport
   business doit présenter une anomalie par cause, pas par page et par
@@ -49,3 +50,31 @@ entrée indique la brique ou la phase où elle a vocation à être traitée.
   n'a pas eu lieu. Techniquement juste, mais un lecteur du rapport pourrait
   comprendre « le bouton mort n'existe qu'en desktop ». Cible : rédaction du
   rapport business.
+- **Re-confirmation des anomalies découvertes au rejeu** : une anomalie
+  constatée pendant une re-exécution (site devenu injoignable) est retenue
+  avec la confiance de son détecteur, sans passer elle-même par le protocole
+  (ce serait récursif). Origine : annexe C du cahier de la brique 3
+  (2026-09-22). Cible : une brique ultérieure du protocole.
+- **Représentant le plus LISIBLE, pas le plus riche** : sur un groupe
+  consolidé, le représentant est la candidate la plus riche en contexte
+  (`d-http` / `ressource-interne-404`), pas la plus parlante pour un humain
+  (`d-image` / `image-cassee`). Rien n'est faux — catégorie, localisations et
+  `GroupeCause.descriptions` conservent tout — mais le rapport devra choisir
+  son porte-parole autrement. Origine : validation de la brique 3
+  (2026-09-22). Cible : brique du rapport business (Phase 1).
+- **Surveillance chiffrée de la durée des scénarios** : au dernier run connu,
+  R01 consomme 29,3 s soit 49 % du timeout de 60 s du banc (il était à 15,6 s
+  avant la brique 3 : la re-exécution re-mesure deux fois une API à 5 s).
+  Règle à tenir : **tout scénario dépassant 50 % du timeout au dernier run
+  connu doit être signalé avant la prochaine extension du banc** (bug plus
+  lent, re-exécution supplémentaire ou viewport de plus le feraient sauter).
+  Origine : validation de la brique 3 (2026-09-22).
+- **Pont des vocabulaires diagnostic ↔ verdict (brique 4c)** :
+  `Diagnostic.verdict` de `core/ia` (`defaut-du-site | limite-automatisation
+  | indetermine`) et `VerdictConfirmation` du protocole (`confirmee |
+  intermittente | non-reproduite | limite-automatisation | basse-confiance`)
+  ne doivent PAS être alignés : ils parlent de choses différentes — le
+  diagnostic qualifie une **cause**, le verdict qualifie une **décision du
+  protocole**. Le pont sera une traduction explicite, jamais une fausse
+  symétrie de types. Origine : préparation de la brique 4 (2026-09-22).
+  Cible : brique 4c (auto-diagnostic).

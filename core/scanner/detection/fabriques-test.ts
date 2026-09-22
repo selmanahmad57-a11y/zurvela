@@ -20,6 +20,9 @@ export const CONFIG_TEST: ConfigScanner['detecteurs'] = {
     categorieParTypeRessource: { image: 'visuel', stylesheet: 'visuel' },
     categorieParDefaut: 'fonctionnel',
     confiance5xxSoumission: 0.95,
+    confianceDocumentInjoignable: 0.9,
+    graviteDocumentInjoignable: 'bloquant',
+    erreursReseauIgnorees: ['net::ERR_ABORTED'],
   },
   inerte: { confiance: 0.75, gravite: 'bloquant' },
   echecMuet: { confiance: 0.8, gravite: 'bloquant', typesRequete: ['document', 'xhr', 'fetch'] },
@@ -99,6 +102,7 @@ export function requeteEchouee(surcharges: Surcharges<'requete-echouee'> = {}): 
     methode: 'POST',
     typeRessource: 'fetch',
     erreur: 'net::ERR_CONNECTION_RESET',
+    cadrePrincipal: false,
     interne: true,
     ...surcharges,
   };

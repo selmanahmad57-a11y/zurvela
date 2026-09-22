@@ -10,6 +10,9 @@ export const BUGS_FACTICES: BugInjectable[] = [
   { id: 'R01', nom: 'api-lente', categorie: 'performance', gravite: 'important', pages: ['/contact'] },
   { id: 'V01', nom: 'image-cassee', categorie: 'visuel', gravite: 'mineur', pages: ['/', '/contact', '/confirmation'] },
   { id: 'M01', nom: 'bouton-masque-mobile', categorie: 'mobile', gravite: 'bloquant', pages: ['/contact'] },
+  { id: 'I01', nom: 'api-intermittente', categorie: 'fonctionnel', gravite: 'important', pages: ['/contact'], verdictAttendu: 'intermittente' },
+  { id: 'T01', nom: 'echec-transitoire', categorie: 'fonctionnel', gravite: 'bloquant', pages: ['/contact'], verdictAttendu: 'non-reproduite' },
+  { id: 'L01', nom: 'lenteur-transitoire', categorie: 'performance', gravite: 'important', pages: ['/contact'], verdictAttendu: 'non-reproduite' },
 ];
 
 export function gabaritFactice(nom = 'gabarit-factice', bugs: BugInjectable[] = BUGS_FACTICES): Gabarit {

@@ -67,6 +67,15 @@ export interface PageBranchee {
   statutDocument(): number | null;
   /** true si une navigation du cadre principal est partie sans avoir abouti (réponse jamais reçue). */
   navigationEnCours(): boolean;
+  /**
+   * Émet `requete-en-attente` pour les requêtes de navigation du cadre
+   * principal encore en vol, HORS de toute fenêtre d'effet, et rend leur
+   * nombre. Sans cela, un serveur qui accepte la connexion et ne répond
+   * jamais ne laisse AUCUNE trace observable : la navigation sort en délai
+   * dépassé et aucune requête n'échoue. Constater l'absence de réponse est
+   * la seule façon de ne pas confondre un site figé avec une limite du robot.
+   */
+  signalerNavigationEnAttente(): number;
   debrancher(): void;
 }
 
@@ -81,6 +90,9 @@ export interface EtatFenetre {
   /** true si la page (ou son navigateur) est fermée : plus rien à attendre. */
   pageFermee(): boolean;
 }
+
+/** Contexte commun d'un signal : viewport, page, action en cours. */
+type BaseSignal = { viewport: string; page: string; actionId?: string };
 
 export interface Horloge {
   maintenant(): number;
@@ -184,10 +196,13 @@ function mesurerReponse(requete: Request): { dureeMs: number | null; horodatage:
 
 export function brancherPage(page: Page, params: ParametresBranchement): PageBranchee {
   const { observateur, viewport, origine } = params;
-  const base = (): { viewport: string; page: string; actionId?: string } => {
+  const base = (): BaseSignal => {
     const actionId = params.actionCouranteId();
     return actionId === undefined ? { viewport, page: params.pageCourante() } : { viewport, page: params.pageCourante(), actionId };
   };
+  /** Requête de NAVIGATION du cadre principal : le document de la page elle-même, jamais un sous-cadre. */
+  const estNavigationPrincipale = (requete: Request): boolean =>
+    requete.isNavigationRequest() && requete.frame() === page.mainFrame();
 
   // Fenêtre d'effet courante : requêtes en vol parties DEPUIS l'ouverture, activité, navigation.
   let enVol = new Map<Request, number>();
@@ -209,10 +224,36 @@ export function brancherPage(page: Page, params: ParametresBranchement): PageBra
     activite();
   };
 
+  /**
+   * Émet `requete-en-attente` pour les requêtes encore en vol, éventuellement
+   * restreintes à la navigation du cadre principal. Rend le nombre émis.
+   */
+  const emettreAttentes = (commun: BaseSignal, navigationSeulement: boolean): number => {
+    const maintenant = Date.now();
+    let nb = 0;
+    for (const [requete, debut] of enVol) {
+      if (navigationSeulement && !estNavigationPrincipale(requete)) {
+        continue;
+      }
+      observateur.emettre({
+        ...commun,
+        type: 'requete-en-attente',
+        horodatage: iso(maintenant),
+        urlRessource: requete.url(),
+        methode: requete.method(),
+        typeRessource: requete.resourceType(),
+        attenteMs: maintenant - debut,
+        interne: estInterne(requete.url(), origine),
+      });
+      nb += 1;
+    }
+    return nb;
+  };
+
   const surRequete = (requete: Request): void => {
     enVol.set(requete, Date.now());
     requetes += 1;
-    if (requete.isNavigationRequest() && requete.frame() === page.mainFrame()) {
+    if (estNavigationPrincipale(requete)) {
       navigationEnCours = true;
     }
     activite();
@@ -221,7 +262,7 @@ export function brancherPage(page: Page, params: ParametresBranchement): PageBra
     const requete = reponse.request();
     const { dureeMs, horodatage } = mesurerReponse(requete);
     // Le document d'une navigation est attribué à sa propre URL : `page.url()` n'a pas encore changé.
-    const estDocument = requete.isNavigationRequest() && requete.frame() === page.mainFrame();
+    const estDocument = estNavigationPrincipale(requete);
     if (estDocument) {
       statutDocument = reponse.status();
     }
@@ -241,6 +282,7 @@ export function brancherPage(page: Page, params: ParametresBranchement): PageBra
     terminerRequete(requete);
   };
   const surEchec = (requete: Request): void => {
+    const principale = estNavigationPrincipale(requete);
     if (!repondues.has(requete)) {
       observateur.emettre({
         ...base(),
@@ -250,10 +292,13 @@ export function brancherPage(page: Page, params: ParametresBranchement): PageBra
         methode: requete.method(),
         typeRessource: requete.resourceType(),
         erreur: requete.failure()?.errorText ?? '',
+        // Le cadre qualifie la portée du constat : l'échec du document de la
+        // page n'a pas la même gravité que celui d'un iframe tiers.
+        cadrePrincipal: principale,
         interne: estInterne(requete.url(), origine),
       });
     }
-    if (requete.isNavigationRequest() && requete.frame() === page.mainFrame()) {
+    if (principale) {
       navigationEnCours = false;
     }
     terminerRequete(requete);
@@ -323,19 +368,8 @@ export function brancherPage(page: Page, params: ParametresBranchement): PageBra
       for (const lot of regrouperParInstant(lecture.mutations)) {
         observateur.emettre({ ...commun, type: 'mutation-dom', horodatage: iso(lot.t), nb: lot.nb, nbZone: lot.nbZone });
       }
+      emettreAttentes(commun, false);
       const maintenant = Date.now();
-      for (const [requete, debut] of enVol) {
-        observateur.emettre({
-          ...commun,
-          type: 'requete-en-attente',
-          horodatage: iso(maintenant),
-          urlRessource: requete.url(),
-          methode: requete.method(),
-          typeRessource: requete.resourceType(),
-          attenteMs: maintenant - debut,
-          interne: estInterne(requete.url(), origine),
-        });
-      }
       const effets: EffetsAction = {
         requetes,
         requetesEnAttente: enVol.size,
@@ -355,6 +389,10 @@ export function brancherPage(page: Page, params: ParametresBranchement): PageBra
 
     navigationEnCours() {
       return navigationEnCours;
+    },
+
+    signalerNavigationEnAttente() {
+      return emettreAttentes(base(), true);
     },
 
     debrancher() {

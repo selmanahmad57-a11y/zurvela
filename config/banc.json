@@ -25,6 +25,10 @@
       [
         "F01",
         "M01"
+      ],
+      [
+        "I01",
+        "V01"
       ]
     ]
   },
@@ -40,6 +44,16 @@
     },
     "M01": {
       "largeurMaxMobilePx": 767
+    },
+    "I01": {
+      "requetesParEchec": 2
+    },
+    "T01": {
+      "nbPremieresRequetesEnEchec": 1
+    },
+    "L01": {
+      "nbPremieresRequetesLentes": 1,
+      "delaiReponseMs": 5000
     }
   }
 }

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { AnomalieCandidate, ContexteConfirmation, EntreeJournal } from '../../types.js';
+import { reexecuteurFactice } from './fabriques-test.js';
 import { NOM_PROTOCOLE_PASSE_PLAT, protocolePassePlat } from './passe-plat.js';
 
 const PAGE = 'http://127.0.0.1:4800/contact';
@@ -18,12 +19,22 @@ function candidate(confiance: number, description: string): AnomalieCandidate {
   };
 }
 
+/**
+ * Le passe-plat reçoit le contexte COMPLET de la brique 3 (re-exécuteur,
+ * détecteurs, viewports) : c'est le témoin — il doit continuer à ne rien en
+ * faire, et le test le vérifie (`appels` reste vide).
+ */
+const rejeu = reexecuteurFactice([{ enEchec: true }]);
+
 function contexte(journal: EntreeJournal[]): ContexteConfirmation {
   return {
     urlDepart: 'http://127.0.0.1:4800',
     options: { timeoutMs: 1000 },
     echeance: Date.now() + 1000,
     journaliser: (type, details) => journal.push({ horodatage: new Date().toISOString(), type, details }),
+    reexecuteur: rejeu,
+    detecteurs: [],
+    viewports: [VIEWPORT],
   };
 }
 
@@ -41,6 +52,8 @@ describe('protocolePassePlat', () => {
     expect(resultat.coutApi).toBe(0);
     // La liste rendue est distincte de celle reçue : le protocole ne partage pas son tableau avec l'appelant.
     expect(resultat.retenues).not.toBe(candidates);
+    // Témoin : le passe-plat ne re-exécute RIEN, quoi que le contexte lui offre.
+    expect(rejeu.appels).toEqual([]);
   });
 
   it('journalise confirmation.passe-plat avec le nombre de candidates, même sans candidate', async () => {

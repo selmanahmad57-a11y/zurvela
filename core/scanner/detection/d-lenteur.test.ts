@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { creerDetecteurLenteur, DESCRIPTION_LENTE, NOM_DETECTEUR_LENTEUR } from './d-lenteur.js';
+import { detecter } from './index.js';
 import {
   BOUTON,
   CONFIG_TEST,
@@ -109,5 +110,40 @@ describe('D-LENTEUR', () => {
   it('le seuil vient de la config reçue', () => {
     const strict = creerDetecteurLenteur({ ...CONFIG_TEST.lenteur, seuilMs: 10 });
     expect(strict.detecter([reponse({ actionId: 'a1', dureeMs: 11 })], contexte([soumission('a1')]))).toHaveLength(1);
+  });
+});
+
+/**
+ * D-LENTEUR est le seul détecteur GRADUÉ : il expose au protocole de
+ * confirmation la mesure brute de ses candidates et le seuil auquel la
+ * comparer. Le protocole n'a ainsi rien à savoir de la lenteur.
+ */
+describe('D-LENTEUR — détecteur gradué', () => {
+  it('expose le seuil de sa config comme seuilMesure', () => {
+    expect(detecteur.seuilMesure).toBe(seuil);
+    expect(creerDetecteurLenteur({ ...CONFIG_TEST.lenteur, seuilMs: 42 }).seuilMesure).toBe(42);
+  });
+
+  it('mesureDe rend la durée observée de la candidate, réponse reçue comme requête encore en attente', () => {
+    const [lente] = detecteur.detecter([reponse({ actionId: 'a1', dureeMs: seuil + 1500 })], contexte([soumission('a1')]));
+    expect(lente !== undefined && detecteur.mesureDe?.(lente)).toBe(seuil + 1500);
+    const [enAttente] = detecteur.detecter([requeteEnAttente({ actionId: 'a1', attenteMs: seuil + 200 })], contexte([soumission('a1')]));
+    expect(enAttente !== undefined && detecteur.mesureDe?.(enAttente)).toBe(seuil + 200);
+  });
+
+  it('mesureDe rend la PIRE durée quand le dédoublonnage a fusionné plusieurs preuves', () => {
+    const candidates = detecter(
+      [reponse({ actionId: 'a1', dureeMs: seuil + 100 }), reponse({ actionId: 'a1', dureeMs: seuil + 9000, viewport: 'mobile' })],
+      contexte([soumission('a1')]),
+      [detecteur],
+    );
+    expect(candidates).toHaveLength(1);
+    const fusionnee = candidates[0];
+    expect(fusionnee !== undefined && detecteur.mesureDe?.(fusionnee)).toBe(seuil + 9000);
+  });
+
+  it('mesureDe ne rend rien pour une candidate sans preuve de requête mesurable', () => {
+    const [lente] = detecteur.detecter([reponse({ actionId: 'a1', dureeMs: seuil + 1 })], contexte([soumission('a1')]));
+    expect(lente !== undefined && detecteur.mesureDe?.({ ...lente, preuves: [] })).toBeUndefined();
   });
 });

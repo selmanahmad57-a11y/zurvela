@@ -134,7 +134,12 @@
         "stylesheet": "visuel"
       },
       "categorieParDefaut": "fonctionnel",
-      "confiance5xxSoumission": 0.95
+      "confiance5xxSoumission": 0.95,
+      "confianceDocumentInjoignable": 0.9,
+      "graviteDocumentInjoignable": "bloquant",
+      "erreursReseauIgnorees": [
+        "net::ERR_ABORTED"
+      ]
     },
     "inerte": {
       "confiance": 0.75,
@@ -184,6 +189,35 @@
       "navigation": "claude-haiku-4-5-20251001",
       "diagnostic": "claude-opus-5",
       "redaction": "claude-opus-5"
+    }
+  },
+  "confirmation": {
+    "politique": "complet",
+    "seuilConfirmationDirecte": 0.9,
+    "reExecutions": 2,
+    "variations": [
+      "contexte-neuf"
+    ],
+    "tauxReproduction": 1,
+    "contreEpreuve": true,
+    "agregationMesures": "mediane",
+    "seuilRetenue": 0.6,
+    "rejeu": {
+      "chargementPageMs": 15000,
+      "actionMs": 10000,
+      "margeEcheanceMs": 3000,
+      "budgetMinimalMs": 8000
+    },
+    "calibration": {
+      "facteurVerdict": {
+        "confirmee": 1.05,
+        "intermittente": 0.85
+      },
+      "poidsTauxReproduction": 0.1,
+      "bonusContreEpreuve": 0.05,
+      "malusSymetrieInattendue": 0.25,
+      "confianceMin": 0.05,
+      "confianceMax": 0.99
     }
   }
 }

@@ -1,0 +1,9 @@
+{
+  "id": "formulaire-contact--i01-v01--fr",
+  "gabarit": "formulaire-contact",
+  "langue": "fr",
+  "bugsActifs": [
+    "I01",
+    "V01"
+  ]
+}

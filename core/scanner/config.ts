@@ -51,6 +51,10 @@ export interface ConfigScanner {
       gravite404: Gravite;
       categorieParTypeRessource: Record<string, Categorie>;
       categorieParDefaut: Categorie;
+      confianceDocumentInjoignable: number;
+      graviteDocumentInjoignable: Gravite;
+      /** Codes d'erreur réseau qui ne disent rien du site (annulation côté client). */
+      erreursReseauIgnorees: string[];
     };
     inerte: { confiance: number; gravite: Gravite };
     echecMuet: { confiance: number; gravite: Gravite; typesRequete: string[] };
@@ -58,7 +62,29 @@ export interface ConfigScanner {
     image: { confianceSignalSimple: number; confianceSignalDouble: number; gravite: Gravite };
     recouvrement: { confianceGeometrie: number; confianceGeometrieEtClic: number; gravite: Gravite };
   };
+  confirmation: ConfigConfirmation;
   ia: { variableCle: string; modeles: { navigation: string; diagnostic: string; redaction: string } };
+}
+
+/** Politique du protocole anti-faux-positifs (brique 3). */
+export interface ConfigConfirmation {
+  politique: 'complet' | 'econome';
+  seuilConfirmationDirecte: number;
+  reExecutions: number;
+  variations: string[];
+  tauxReproduction: number;
+  contreEpreuve: boolean;
+  agregationMesures: 'mediane' | 'moyenne' | 'max';
+  seuilRetenue: number;
+  rejeu: { chargementPageMs: number; actionMs: number; margeEcheanceMs: number; budgetMinimalMs: number };
+  calibration: {
+    facteurVerdict: { confirmee: number; intermittente: number };
+    poidsTauxReproduction: number;
+    bonusContreEpreuve: number;
+    malusSymetrieInattendue: number;
+    confianceMin: number;
+    confianceMax: number;
+  };
 }
 
 /** Liste noire des actions destructives (constitution §3). Seul le filtre d'actions la consomme. */

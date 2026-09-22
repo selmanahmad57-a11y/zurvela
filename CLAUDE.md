@@ -39,6 +39,10 @@ configuration. Concrètement :
   LE WEB, jamais LE MONDE.
 - La liste d'actions destructives interdites (supprimer, payer, etc.)
   vit dans `config/actions-interdites.json`, jamais dans le code.
+- Frontière code/config : les INVARIANTS vivent en code, les RÉGLAGES en
+  config. Une valeur de config protège tant que personne ne la change, ce
+  qui n'est pas une protection : une borne que le produit ne doit jamais
+  franchir (une confiance > 1) est un invariant, pas un réglage.
 
 Avant de livrer un fichier, tu te poses les trois questions :
 « Ce code fonctionnerait-il tel quel sur un site japonais ? »

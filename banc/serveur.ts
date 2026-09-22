@@ -68,7 +68,7 @@ function resoudreBugsActifs(scenario: Scenario, gabarit: Gabarit, config: Config
     }
     const parametres = { ...config.bugs[id], ...scenario.parametres?.[id] };
     bug.validerParametres?.(parametres);
-    return { bug, contexte: { parametres, langue: scenario.langue } };
+    return { bug, contexte: { parametres, langue: scenario.langue, etat: {} } };
   });
 }
 

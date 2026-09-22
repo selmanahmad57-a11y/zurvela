@@ -1,6 +1,6 @@
 import { afterEach, beforeAll, describe, expect, it } from 'vitest';
 import { chargerDictionnaire, traduire, type Dictionnaire } from '../../core/i18n.js';
-import type { Anomalie, Rapport, Scanner } from '../../core/types.js';
+import type { Anomalie, AnomalieCandidate, Rapport, ResultatGroupe, Scanner, VerdictConfirmation } from '../../core/types.js';
 import { chargerConfig } from '../config.js';
 import { obtenirGabarit } from '../gabarits/index.js';
 import { formulaireContact } from '../gabarits/formulaire-contact/index.js';
@@ -8,6 +8,7 @@ import { PAGE_ACCUEIL, PAGE_CONTACT } from '../gabarits/formulaire-contact/struc
 import { depuisRacine } from '../outils/racine.js';
 import { compterBalises } from '../outils/transformations.js';
 import type { ConfigBanc, Scenario } from '../types.js';
+import { RAISON_ECARTEES_SANS_GROUPES, comptesProtocoleZero } from './appariement.js';
 import { executerBanc, noterScenario } from './index.js';
 
 /** Trace structurelle de F01 : un bouton `type="button"` (le sain n’en a aucun). */
@@ -30,6 +31,39 @@ function anomalie(categorie: Anomalie['categorie'], urlOuEtape: string): Anomali
 
 function rapport(url: string, anomalies: Anomalie[], coutApi = 0): Rapport {
   return { url, anomalies, coutApi, dureeMs: 0, journal: [{ horodatage: new Date().toISOString(), type: 'scan.test' }] };
+}
+
+const VIEWPORT = { nom: 'bureau', largeur: 1280, hauteur: 800, mobile: false };
+
+function candidate(categorie: Anomalie['categorie'], urlOuEtape: string): AnomalieCandidate {
+  return {
+    ...anomalie(categorie, urlOuEtape),
+    detecteur: 'd-test',
+    reproduction: { url: urlOuEtape, viewport: VIEWPORT, actionsPrealables: [], action: null },
+    preuves: [],
+  };
+}
+
+/** Résultat de groupe minimal : le banc n'en lit que le verdict et les membres. */
+function resultatGroupe(verdict: VerdictConfirmation, membre: AnomalieCandidate): ResultatGroupe {
+  return {
+    groupe: {
+      cle: `${membre.detecteur}|${membre.urlOuEtape}`,
+      representant: membre,
+      membres: [membre],
+      localisations: [{ urlOuEtape: membre.urlOuEtape }],
+      observations: [{ viewport: VIEWPORT.nom }],
+      confiance: membre.confiance,
+      descriptions: [membre.description],
+    },
+    verdict,
+    motif: 'motif-de-test',
+    tentatives: [],
+    tauxReproduction: null,
+    confianceInitiale: membre.confiance,
+    confianceFinale: membre.confiance,
+    coutApi: 0,
+  };
 }
 
 /** Preuve que le serveur tourne pendant le scan : /contact répond 200. */
@@ -68,7 +102,12 @@ async function serveurFerme(url: string): Promise<boolean> {
 }
 
 beforeAll(async () => {
-  config = await chargerConfig();
+  // Plage de ports RÉSERVÉE à ce fichier. Il affirme qu'un port redevient
+  // libre après l'arrêt d'un serveur de scénario ; dans la plage commune, le
+  // serveur d'un autre fichier de test (exécutés en parallèle) peut le
+  // reprendre entre l'arrêt et la vérification et faire mentir l'assertion.
+  const chargee = await chargerConfig();
+  config = { ...chargee, serveur: { portDeBase: 4880, nombrePortsEssayes: 10 } };
   dico = await chargerDictionnaire(depuisRacine('locales'), config.langueConsole);
 });
 
@@ -165,6 +204,77 @@ describe('noterScenario', () => {
     expect(resultat.attendus.map((attendu) => attendu.verdict)).toEqual(['rate', 'rate']);
     expect(resultat).toMatchObject({ fauxPositifs: [], coutApi: 0 });
     expect(resultat.rapport).toBeDefined();
+  });
+
+  it('calcule les comptes du protocole du rapport, en distinguant évitée, perdue et non appariée', async () => {
+    // Trois groupes : l'un n'apparie aucun attendu (le banc ne tranche pas),
+    // l'autre apparie F01 qui devait être RETENU (perte), le dernier est retenu.
+    const scannerProtocole: Scanner = async function scannerProtocole(url) {
+      return {
+        ...rapport(url, []),
+        candidates: [candidate('seo', PAGE_ACCUEIL), candidate('fonctionnel', `${url}${PAGE_CONTACT}`), candidate('mobile', `${url}${PAGE_CONTACT}`)],
+        groupes: [
+          resultatGroupe('non-reproduite', candidate('seo', PAGE_ACCUEIL)),
+          resultatGroupe('non-reproduite', candidate('fonctionnel', `${url}${PAGE_CONTACT}`)),
+          resultatGroupe('confirmee', candidate('mobile', `${url}${PAGE_CONTACT}`)),
+        ],
+      };
+    };
+
+    const resultat = await noterScenario(F01_M01_FR, { scanner: scannerProtocole, config, dico, obtenirGabarit });
+
+    expect(resultat.protocole).toEqual({
+      nbCandidates: 3,
+      nbGroupes: 3,
+      nbGroupesRetenus: 1,
+      nbGroupesEcartes: 2,
+      nbFaussesAlertesEvitees: 0,
+      nbPertesProtocole: 1,
+      nbEcartesNonApparies: 1,
+    });
+  });
+
+  it('D1 — met en ERREUR un rapport qui porte des écartées sans groupes : jamais 100 % de détection quand le protocole est tombé', async () => {
+    // Exactement ce que produit le pipeline quand la confirmation lève : toutes
+    // les candidates écartées avec leur raison, et AUCUN groupe.
+    const scannerProtocoleTombe: Scanner = async function scannerProtocoleTombe(url) {
+      const candidates = [candidate('fonctionnel', `${url}${PAGE_CONTACT}`), candidate('mobile', `${url}${PAGE_CONTACT}`)];
+      return {
+        ...rapport(url, []),
+        candidates,
+        ecartees: candidates.map((candidate) => ({ candidate, raison: 'confirmation-en-erreur' })),
+      };
+    };
+
+    const resultat = await noterScenario(F01_M01_FR, { scanner: scannerProtocoleTombe, config, dico, obtenirGabarit });
+
+    expect(resultat.statut).toBe('erreur');
+    expect(resultat.erreur).toBe(RAISON_ECARTEES_SANS_GROUPES);
+    // Sans l'invariant, les deux attendus étaient « détectés » (appariés parmi
+    // les écartées) : 100 % de détection sur un scan qui n'a rien retenu.
+    expect(resultat.attendus.map((attendu) => attendu.verdict)).toEqual(['rate', 'rate']);
+    expect(resultat.protocole).toEqual(comptesProtocoleZero());
+    expect(resultat.fauxPositifs).toEqual([]);
+    // Le rapport est conservé comme pièce à conviction.
+    expect(resultat.rapport?.ecartees).toHaveLength(2);
+  });
+
+  it('D1 — n’alarme pas un protocole qui écarte zéro candidate (passe-plat) ni un scanner sans protocole', async () => {
+    const scannerPassePlat: Scanner = async function scannerPassePlat(url) {
+      return { ...rapport(url, [anomalie('fonctionnel', `${url}${PAGE_CONTACT}`)]), candidates: [candidate('fonctionnel', `${url}${PAGE_CONTACT}`)], ecartees: [] };
+    };
+    const resultat = await noterScenario(F01_M01_FR, { scanner: scannerPassePlat, config, dico, obtenirGabarit });
+    expect(resultat.statut).toBe('ok');
+    expect(resultat.protocole).toMatchObject({ nbCandidates: 1, nbGroupes: 0, nbGroupesEcartes: 0 });
+    expect(resultat.attendus.map((attendu) => attendu.verdict)).toEqual(['detecte', 'rate']);
+  });
+
+  it('rend des comptes de protocole à zéro pour un sujet qui n’en a pas, et pour un scénario en erreur', async () => {
+    const zero = comptesProtocoleZero();
+    const sansProtocole = await noterScenario(F01_M01_FR, { scanner: scannerControle, config, dico, obtenirGabarit });
+    expect(sansProtocole.protocole).toEqual(zero);
+    const enErreur = await noterScenario(F01_M01_FR, { scanner: scannerEnPanne, config, dico, obtenirGabarit });
+    expect(enErreur.protocole).toEqual(zero);
   });
 
   it('compte en faux positif une anomalie à la localisation mal formée sans interrompre l’exécution', async () => {

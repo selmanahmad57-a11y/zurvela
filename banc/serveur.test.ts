@@ -170,6 +170,12 @@ describe('site sain', () => {
     ['R01', { delaiReponseMs: 'cinq' }],
     ['R01', { delaiReponseMs: -1 }],
     ['V01', { cheminRessourceIntrouvable: 42 }],
+    ['I01', { requetesParEchec: 1 }],
+    ['I01', { requetesParEchec: 2.5 }],
+    ['T01', { nbPremieresRequetesEnEchec: 0 }],
+    ['T01', { nbPremieresRequetesEnEchec: 'une' }],
+    ['L01', { nbPremieresRequetesLentes: 0, delaiReponseMs: 10 }],
+    ['L01', { nbPremieresRequetesLentes: 1, delaiReponseMs: -1 }],
   ] as const)('lève au démarrage si un paramètre de %s est invalide (%o), sans jamais servir', async (bug, parametres) => {
     await expect(demarrerServeur(scenario([bug], 'fr', { [bug]: parametres }), formulaireContact, config)).rejects.toThrow(new RegExp(bug));
   });
@@ -376,5 +382,96 @@ describe('combinaison F01 + M01', () => {
     expect(contact).toContain('<html lang="en">');
     expect(compterBalises(contact, BOUTON_BUTTON)).toBe(1);
     expect(contact).toContain(`class="${CLASSE_RECOUVREMENT}"`);
+  });
+});
+
+/**
+ * Les trois bugs à compteur de la brique 3. Le banc exige TROIS exécutions
+ * identiques : leur séquence de réponses ne doit dépendre que du rang de la
+ * requête dans la vie du scénario, jamais de l'horloge ni d'un aléa.
+ */
+async function sequenceStatuts(serveur: ServeurScenario, nombre: number): Promise<number[]> {
+  const statuts: number[] = [];
+  for (let i = 0; i < nombre; i += 1) {
+    statuts.push((await poster(serveur, CORPS_VALIDE)).status);
+  }
+  return statuts;
+}
+
+describe('I01 api-intermittente', () => {
+  it('échoue une requête sur deux, en commençant par la première, le reste du site restant sain', async () => {
+    const serveur = await servir(['I01']);
+    expect(config.bugs['I01']?.['requetesParEchec']).toBe(2);
+    expect(await sequenceStatuts(serveur, 6)).toEqual([500, 200, 500, 200, 500, 200]);
+
+    const contact = await page(serveur, PAGE_CONTACT);
+    expect(compterBalises(contact, BOUTON_SUBMIT)).toBe(1);
+    expect(contact).toContain(`src="${CHEMIN_LOGO}"`);
+    expect(await (await fetch(serveur.url + CHEMIN_SCRIPT_FORMULAIRE)).text()).toContain(`@bloc:${BLOC_GESTION_ERREUR}`);
+  });
+
+  it('suit la périodicité du scénario', async () => {
+    const serveur = await servir(['I01'], 'fr', { I01: { requetesParEchec: 3 } });
+    expect(await sequenceStatuts(serveur, 6)).toEqual([500, 200, 200, 500, 200, 200]);
+  });
+});
+
+describe('T01 echec-transitoire', () => {
+  it('n’échoue que sur les premières requêtes de la vie du scénario', async () => {
+    const serveur = await servir(['T01']);
+    expect(config.bugs['T01']?.['nbPremieresRequetesEnEchec']).toBe(1);
+    const statuts = await sequenceStatuts(serveur, 4);
+    expect(statuts).toEqual([500, 200, 200, 200]);
+    expect(await (await poster(serveur, CORPS_VALIDE)).json()).toEqual({ ok: true });
+
+    // Le reste du site est sain : rien ne distingue T01 d'un vrai défaut AVANT la re-exécution.
+    const contact = await page(serveur, PAGE_CONTACT);
+    expect(compterBalises(contact, BOUTON_SUBMIT)).toBe(1);
+    expect(await (await fetch(serveur.url + CHEMIN_SCRIPT_FORMULAIRE)).text()).toContain(`@bloc:${BLOC_GESTION_ERREUR}`);
+  });
+
+  it('honore le nombre d’échecs du scénario', async () => {
+    const serveur = await servir(['T01'], 'en', { T01: { nbPremieresRequetesEnEchec: 3 } });
+    expect(await sequenceStatuts(serveur, 5)).toEqual([500, 500, 500, 200, 200]);
+  });
+});
+
+describe('L01 lenteur-transitoire', () => {
+  it('ne retarde que les premières requêtes, contenu intact', async () => {
+    const delai = 150;
+    const serveur = await servir(['L01'], 'fr', { L01: { nbPremieresRequetesLentes: 1, delaiReponseMs: delai } });
+
+    const debut = performance.now();
+    const premiere = await poster(serveur, CORPS_VALIDE);
+    const dureePremiere = performance.now() - debut;
+    expect(premiere.status).toBe(200);
+    expect(await premiere.json()).toEqual({ ok: true });
+    expect(dureePremiere).toBeGreaterThanOrEqual(delai * 0.95);
+
+    const apres = performance.now();
+    const seconde = await poster(serveur, CORPS_VALIDE);
+    const dureeSeconde = performance.now() - apres;
+    expect(seconde.status).toBe(200);
+    expect(dureeSeconde).toBeLessThan(delai * 0.5);
+  });
+});
+
+describe('déterminisme des bugs à compteur', () => {
+  it.each([['I01'], ['T01']])('rejoue la même séquence de réponses à chaque démarrage du scénario (%s)', async (bug) => {
+    const premier = await servir([bug]);
+    const sequencePremier = await sequenceStatuts(premier, 5);
+    await premier.arreter();
+    serveurs.splice(serveurs.indexOf(premier), 1);
+
+    const second = await servir([bug]);
+    expect(await sequenceStatuts(second, 5)).toEqual(sequencePremier);
+    // Et la séquence reprend bien au rang 1 : la première requête du second scénario échoue comme celle du premier.
+    expect(sequencePremier[0]).toBe(500);
+  });
+
+  it('donne à chaque bug actif son propre compteur, sans interférence', async () => {
+    const serveur = await servir(['T01', 'I01'], 'fr', { T01: { nbPremieresRequetesEnEchec: 2 } });
+    // T01 impose 500 aux rangs 1-2 ; I01 impose 500 aux rangs impairs. Rang 4 : les deux laissent passer.
+    expect(await sequenceStatuts(serveur, 4)).toEqual([500, 500, 500, 200]);
   });
 });

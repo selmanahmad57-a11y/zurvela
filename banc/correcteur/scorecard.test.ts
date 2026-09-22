@@ -6,7 +6,7 @@ import { chargerDictionnaire, traduire, type Dictionnaire } from '../../core/i18
 import type { Anomalie, Categorie } from '../../core/types.js';
 import { depuisRacine } from '../outils/racine.js';
 import { configFactice } from '../scenarios/factices.js';
-import type { AttenduManifeste, ResultatAttendu, ResultatScenario } from '../types.js';
+import type { AttenduManifeste, ComptesProtocole, ResultatAttendu, ResultatScenario } from '../types.js';
 import { calculerScorecard, ecrireScorecard, purgerResultats, rendreScorecardConsole } from './scorecard.js';
 
 const HORODATAGE = '2026-09-22T10:20:30.000Z';
@@ -16,10 +16,16 @@ function anomalie(categorie: Categorie, urlOuEtape: string): Anomalie {
   return { categorie, description: '', urlOuEtape, graviteEstimee: 'important', confiance: 0.9 };
 }
 
-function attendu(bugId: string, categorie: Categorie, verdict: 'detecte' | 'rate', doublons = 1): ResultatAttendu {
-  const declaration: AttenduManifeste = { bugId, nom: bugId.toLowerCase(), categorie, pages: ['/contact'], gravite: 'bloquant' };
+function attendu(
+  bugId: string,
+  categorie: Categorie,
+  verdict: 'detecte' | 'rate',
+  doublons = 1,
+  bienJuge = verdict === 'detecte',
+): ResultatAttendu {
+  const declaration: AttenduManifeste = { bugId, nom: bugId.toLowerCase(), categorie, pages: ['/contact'], gravite: 'bloquant', verdictAttendu: 'confirmee' };
   const anomaliesAppariees = verdict === 'detecte' ? Array.from({ length: doublons }, () => anomalie(categorie, '/contact')) : [];
-  return { attendu: declaration, verdict, anomaliesAppariees };
+  return { attendu: declaration, verdict, anomaliesAppariees, verdictRendu: bienJuge ? 'confirmee' : null, bienJuge };
 }
 
 function resultat(surcharges: Partial<ResultatScenario> & { scenarioId: string; langue: string }): ResultatScenario {
@@ -27,16 +33,48 @@ function resultat(surcharges: Partial<ResultatScenario> & { scenarioId: string; 
 }
 
 /**
+ * Comptes du protocole d'un scénario, dans l'ordre des colonnes affichées :
+ * candidates → groupes → retenus → écartés → évitées → perdues → non appariés.
+ * `nbGroupes` est passé EXPLICITEMENT (et non déduit) pour que l'assertion de
+ * cohérence `nbGroupes === nbGroupesRetenus + nbGroupesEcartes` porte sur une
+ * valeur qu'un jeu d'essai pourrait démentir.
+ */
+function protocole(
+  nbCandidates: number,
+  nbGroupes: number,
+  nbGroupesRetenus: number,
+  nbGroupesEcartes: number,
+  nbFaussesAlertesEvitees: number,
+  nbPertesProtocole: number,
+  nbEcartesNonApparies: number,
+): ComptesProtocole {
+  return {
+    nbCandidates,
+    nbGroupes,
+    nbGroupesRetenus,
+    nbGroupesEcartes,
+    nbFaussesAlertesEvitees,
+    nbPertesProtocole,
+    nbEcartesNonApparies,
+  };
+}
+
+/**
  * Jeu de résultats de référence :
  * - fr : sain (1 faux positif seo), f01 (détecté, 2 doublons), v01 (raté) → détection 50 %
- * - en : f01 (détecté), v01 (détecté) → détection 100 % ; r01 en erreur (raté, rien signalé)
+ * - en : f01 (détecté, bien jugé), v01 (détecté mais MAL jugé) ; r01 en erreur (raté, rien signalé)
+ *
+ * Côté protocole : `f01--en` n'a AUCUN compte (sujet sans protocole), `r01--en`
+ * en erreur en a d'explicitement nuls, `sain--fr` a un groupe écarté NON
+ * APPARIÉ (ni crédité, ni imputé) et `v01--fr` a une anomalie réelle PERDUE —
+ * de quoi vérifier que le chiffre commercial ne se lit pas seul.
  */
 const resultats: ResultatScenario[] = [
-  resultat({ scenarioId: 'sain--fr', langue: 'fr', fauxPositifs: [anomalie('seo', '/')], coutApi: 1, dureeMs: 10 }),
-  resultat({ scenarioId: 'f01--fr', langue: 'fr', attendus: [attendu('F01', 'fonctionnel', 'detecte', 2)], coutApi: 2, dureeMs: 20 }),
-  resultat({ scenarioId: 'v01--fr', langue: 'fr', attendus: [attendu('V01', 'visuel', 'rate')], coutApi: 3, dureeMs: 30 }),
+  resultat({ scenarioId: 'sain--fr', langue: 'fr', fauxPositifs: [anomalie('seo', '/')], coutApi: 1, dureeMs: 10, protocole: protocole(3, 3, 1, 2, 1, 0, 1) }),
+  resultat({ scenarioId: 'f01--fr', langue: 'fr', attendus: [attendu('F01', 'fonctionnel', 'detecte', 2)], coutApi: 2, dureeMs: 20, protocole: protocole(4, 3, 2, 1, 1, 0, 0) }),
+  resultat({ scenarioId: 'v01--fr', langue: 'fr', attendus: [attendu('V01', 'visuel', 'rate')], coutApi: 3, dureeMs: 30, protocole: protocole(2, 1, 0, 1, 0, 1, 0) }),
   resultat({ scenarioId: 'f01--en', langue: 'en', attendus: [attendu('F01', 'fonctionnel', 'detecte')], coutApi: 4, dureeMs: 40 }),
-  resultat({ scenarioId: 'v01--en', langue: 'en', attendus: [attendu('V01', 'visuel', 'detecte')], coutApi: 5, dureeMs: 50 }),
+  resultat({ scenarioId: 'v01--en', langue: 'en', attendus: [attendu('V01', 'visuel', 'detecte', 1, false)], coutApi: 5, dureeMs: 50, protocole: protocole(1, 1, 1, 0, 0, 0, 0) }),
   resultat({
     scenarioId: 'r01--en',
     langue: 'en',
@@ -44,6 +82,7 @@ const resultats: ResultatScenario[] = [
     erreur: 'panne',
     attendus: [attendu('R01', 'performance', 'rate')],
     dureeMs: 60,
+    protocole: protocole(0, 0, 0, 0, 0, 0, 0),
   }),
 ];
 
@@ -67,7 +106,16 @@ describe('calculerScorecard', () => {
       nbRates: 2,
       nbSignalements: 5,
       nbFauxPositifs: 1,
+      nbVerdictsCorrects: 2,
+      nbCandidates: 10,
+      nbGroupes: 8,
+      nbGroupesRetenus: 4,
+      nbGroupesEcartes: 4,
+      nbFaussesAlertesEvitees: 2,
+      nbPertesProtocole: 1,
+      nbEcartesNonApparies: 1,
       tauxDetection: 60,
+      tauxVerdictsCorrects: 40,
       tauxFauxPositifs: 20,
       coutApi: 15,
       dureeMs: 210,
@@ -84,7 +132,9 @@ describe('calculerScorecard', () => {
       nbRates: 1,
       nbSignalements: 3,
       nbFauxPositifs: 1,
+      nbVerdictsCorrects: 1,
       tauxDetection: 50,
+      tauxVerdictsCorrects: 50,
       tauxFauxPositifs: 33.3,
       coutApi: 6,
       dureeMs: 60,
@@ -97,7 +147,9 @@ describe('calculerScorecard', () => {
       nbRates: 1,
       nbSignalements: 2,
       nbFauxPositifs: 0,
+      nbVerdictsCorrects: 1,
       tauxDetection: 66.7,
+      tauxVerdictsCorrects: 33.3,
       tauxFauxPositifs: 0,
       dureeMs: 150,
     });
@@ -111,12 +163,23 @@ describe('calculerScorecard', () => {
       nbDetectes: 2,
       nbSignalements: 3,
       nbFauxPositifs: 0,
+      nbVerdictsCorrects: 2,
       tauxDetection: 100,
+      tauxVerdictsCorrects: 100,
       tauxFauxPositifs: 0,
       coutApi: 6,
       dureeMs: 60,
     });
-    expect(scorecard.parCategorie['visuel']).toMatchObject({ nbScenarios: 2, nbAttendus: 2, nbDetectes: 1, tauxDetection: 50, dureeMs: 80 });
+    // Visuel : un attendu détecté mais mal jugé → détection 50 %, verdicts corrects 0 %.
+    expect(scorecard.parCategorie['visuel']).toMatchObject({
+      nbScenarios: 2,
+      nbAttendus: 2,
+      nbDetectes: 1,
+      nbVerdictsCorrects: 0,
+      tauxDetection: 50,
+      tauxVerdictsCorrects: 0,
+      dureeMs: 80,
+    });
     expect(scorecard.parCategorie['performance']).toMatchObject({ nbScenarios: 1, nbErreurs: 1, nbAttendus: 1, nbDetectes: 0, tauxDetection: 0 });
     // Catégorie sans attendu : seulement des faux positifs, aucun scénario compté.
     expect(scorecard.parCategorie['seo']).toMatchObject({
@@ -124,7 +187,9 @@ describe('calculerScorecard', () => {
       nbAttendus: 0,
       nbSignalements: 1,
       nbFauxPositifs: 1,
+      nbVerdictsCorrects: 0,
       tauxDetection: null,
+      tauxVerdictsCorrects: null,
       tauxFauxPositifs: 100,
       coutApi: 0,
       dureeMs: 0,
@@ -134,12 +199,14 @@ describe('calculerScorecard', () => {
   it('rend null les taux sans dénominateur', () => {
     const vide = calculerScorecard([], config, HORODATAGE);
     expect(vide.global.tauxDetection).toBeNull();
+    expect(vide.global.tauxVerdictsCorrects).toBeNull();
     expect(vide.global.tauxFauxPositifs).toBeNull();
     expect(vide.parCategorie).toEqual({});
     expect(vide.ecartLangues).toEqual({ points: null, seuil: config.scorecard.seuilAlarmeEcartLanguesPoints, alarme: false });
 
     const sansSignalement = calculerScorecard([resultat({ scenarioId: 'v01--fr', langue: 'fr', attendus: [attendu('V01', 'visuel', 'rate')] })], config, HORODATAGE);
     expect(sansSignalement.global.tauxDetection).toBe(0);
+    expect(sansSignalement.global.tauxVerdictsCorrects).toBe(0);
     expect(sansSignalement.global.tauxFauxPositifs).toBeNull();
   });
 
@@ -167,13 +234,19 @@ describe('rendreScorecardConsole', () => {
     for (const cle of ['titre', 'global', 'parLangue', 'parCategorie', 'alarme']) {
       expect(rendu).toContain(traduire(dico, `scorecard.${cle}`));
     }
-    for (const colonne of ['perimetre', 'scenarios', 'detection', 'detectes', 'fauxPositifs', 'rates', 'erreurs', 'coutApi', 'duree']) {
+    for (const colonne of ['perimetre', 'scenarios', 'detection', 'verdictsCorrects', 'detectes', 'fauxPositifs', 'rates', 'erreurs', 'coutApi', 'duree']) {
       expect(rendu).toContain(traduire(dico, `scorecard.colonnes.${colonne}`));
     }
-    // Une ligne de données par périmètre : le périmètre en tête de ligne, puis le nombre de scénarios (une sous-chaîne d'en-tête ne suffit pas).
+    // Le périmètre est en tête de ligne, suivi d'un nombre (une sous-chaîne
+    // d'en-tête ne suffit pas). Une langue apparaît DEUX fois (tableau de
+    // détection + tableau du protocole), une catégorie de bug UNE seule :
+    // le protocole ne se ventile pas par catégorie.
     const lignes = rendu.split('\n');
-    for (const perimetre of [...config.langues, ...Object.keys(scorecard.parCategorie)]) {
-      expect(lignes.filter((ligne) => new RegExp(`^${perimetre}\\s{2,}\\d`).test(ligne))).toHaveLength(1);
+    for (const langue of config.langues) {
+      expect(lignes.filter((ligne) => new RegExp(`^${langue}\\s{2,}\\d`).test(ligne))).toHaveLength(2);
+    }
+    for (const categorie of Object.keys(scorecard.parCategorie)) {
+      expect(lignes.filter((ligne) => new RegExp(`^${categorie}\\s{2,}\\d`).test(ligne))).toHaveLength(1);
     }
     const pourcentage = new Intl.NumberFormat(config.langueConsole, { style: 'percent', minimumFractionDigits: 1, maximumFractionDigits: 1 });
     expect(rendu).toContain(pourcentage.format(0.6));
@@ -193,15 +266,230 @@ describe('rendreScorecardConsole', () => {
     expect(rendu).not.toContain(traduire(dico, 'scorecard.alarme'));
   });
 
+  it('place « Verdicts corrects » juste après « Détection » et rend le taux de chaque périmètre', () => {
+    const rendu = rendreScorecardConsole(calculerScorecard(resultats, config, HORODATAGE), dico, config.langueConsole);
+    const lignes = rendu.split('\n');
+    const entete = lignes.find((ligne) => ligne.includes(traduire(dico, 'scorecard.colonnes.perimetre'))) ?? '';
+    const positions = ['detection', 'verdictsCorrects', 'detectes'].map((colonne) => entete.indexOf(traduire(dico, `scorecard.colonnes.${colonne}`)));
+    expect(positions[0]).toBeGreaterThanOrEqual(0);
+    expect(positions).toEqual([...positions].sort((a, b) => a - b));
+
+    const pourcentage = new Intl.NumberFormat(config.langueConsole, { style: 'percent', minimumFractionDigits: 1, maximumFractionDigits: 1 });
+    const ligneGlobale = lignes.find((ligne) => new RegExp(`^${traduire(dico, 'scorecard.global')}\\s{2,}\\d`).test(ligne)) ?? '';
+    // Détection 60 % puis verdicts corrects 40 % : deux colonnes distinctes, dans cet ordre.
+    expect(ligneGlobale.indexOf(pourcentage.format(0.4))).toBeGreaterThan(ligneGlobale.indexOf(pourcentage.format(0.6)));
+    expect(ligneGlobale.indexOf(pourcentage.format(0.6))).toBeGreaterThan(0);
+  });
+
   it('aligne les colonnes : toutes les lignes d’un tableau ont la même largeur', () => {
     const rendu = rendreScorecardConsole(calculerScorecard(resultats, config, HORODATAGE), dico, config.langueConsole);
     const blocs = rendu.split('\n\n');
-    // Blocs 1 à 3 = les trois tableaux (titre avant, écart après).
-    for (const bloc of blocs.slice(1, 4)) {
+    // Blocs 1 à 4 = les quatre tableaux (titre avant, synthèse et écart après).
+    for (const bloc of blocs.slice(1, 5)) {
       const lignes = bloc.split('\n').slice(1);
       const largeurs = new Set(lignes.map((ligne) => ligne.length));
       expect(largeurs.size).toBe(1);
     }
+  });
+});
+
+describe('agrégats du protocole anti-faux-positifs', () => {
+  const scorecard = calculerScorecard(resultats, config, HORODATAGE);
+
+  it('somme les sept compteurs par langue', () => {
+    // fr : sain (3,3,1,2,1,0,1) + f01 (4,3,2,1,1,0,0) + v01 (2,1,0,1,0,1,0).
+    expect(scorecard.parLangue['fr']).toMatchObject({
+      nbCandidates: 9,
+      nbGroupes: 7,
+      nbGroupesRetenus: 3,
+      nbGroupesEcartes: 4,
+      nbFaussesAlertesEvitees: 2,
+      nbPertesProtocole: 1,
+      nbEcartesNonApparies: 1,
+    });
+    // en : f01 SANS comptes (sujet sans protocole) + v01 (1,1,1,0,0,0,0) + r01 en erreur (tout à zéro).
+    expect(scorecard.parLangue['en']).toMatchObject({
+      nbCandidates: 1,
+      nbGroupes: 1,
+      nbGroupesRetenus: 1,
+      nbGroupesEcartes: 0,
+      nbFaussesAlertesEvitees: 0,
+      nbPertesProtocole: 0,
+      nbEcartesNonApparies: 0,
+    });
+  });
+
+  it('D4/D5 — assertion de cohérence : sur un périmètre qui PARTITIONNE, nbGroupes === nbGroupesRetenus + nbGroupesEcartes', () => {
+    for (const agregat of [scorecard.global, ...Object.values(scorecard.parLangue)]) {
+      expect(agregat.nbGroupes).toBe(agregat.nbGroupesRetenus + agregat.nbGroupesEcartes);
+    }
+    // La somme des langues égale le global : c'est ce qui définit un périmètre
+    // qui partitionne, et ce qui rend le tableau affiché lisible verticalement.
+    const langues = Object.values(scorecard.parLangue);
+    for (const cle of ['nbCandidates', 'nbGroupes', 'nbGroupesRetenus', 'nbGroupesEcartes', 'nbFaussesAlertesEvitees', 'nbPertesProtocole', 'nbEcartesNonApparies'] as const) {
+      expect(langues.reduce((total, agregat) => total + agregat[cle], 0)).toBe(scorecard.global[cle]);
+    }
+  });
+
+  it('garde les compteurs par catégorie dans le JSON, en sachant qu’ils ne partitionnent PAS', () => {
+    expect(scorecard.parCategorie['fonctionnel']).toMatchObject({
+      nbCandidates: 4,
+      nbGroupes: 3,
+      nbGroupesRetenus: 2,
+      nbGroupesEcartes: 1,
+      nbFaussesAlertesEvitees: 1,
+      nbPertesProtocole: 0,
+      nbEcartesNonApparies: 0,
+    });
+    expect(scorecard.parCategorie['visuel']).toMatchObject({
+      nbCandidates: 3,
+      nbGroupes: 2,
+      nbGroupesRetenus: 1,
+      nbGroupesEcartes: 1,
+      nbFaussesAlertesEvitees: 0,
+      nbPertesProtocole: 1,
+      nbEcartesNonApparies: 0,
+    });
+    // La catégorie du scénario en ERREUR ne compte rien : son résultat porte des comptes nuls.
+    expect(scorecard.parCategorie['performance']).toMatchObject({ nbCandidates: 0, nbGroupes: 0, nbGroupesEcartes: 0 });
+    // seo n'a aucun attendu : aucun scénario compté, donc aucune candidate —
+    // alors même que le scénario sain qui l'a produite en a trois au global.
+    expect(scorecard.parCategorie['seo']).toMatchObject({ nbCandidates: 0, nbGroupes: 0, nbFaussesAlertesEvitees: 0 });
+  });
+
+  it('D4/D5 — un scénario multi-catégories est compté ENTIER dans chaque catégorie : la somme dépasse le global', () => {
+    const multi = calculerScorecard(
+      [
+        resultat({
+          scenarioId: 'f01-v01--fr',
+          langue: 'fr',
+          attendus: [attendu('F01', 'fonctionnel', 'detecte'), attendu('V01', 'visuel', 'detecte')],
+          protocole: protocole(5, 3, 2, 1, 1, 0, 0),
+        }),
+      ],
+      config,
+      HORODATAGE,
+    );
+    expect(multi.global.nbCandidates).toBe(5);
+    expect(multi.parCategorie['fonctionnel']?.nbCandidates).toBe(5);
+    expect(multi.parCategorie['visuel']?.nbCandidates).toBe(5);
+    // 5 + 5 = 10 candidates pour un global de 5 : additionner ces lignes n'a
+    // aucun sens, c'est pourquoi le rendu console ne les affiche pas.
+    const sommeCategories = Object.values(multi.parCategorie).reduce((total, agregat) => total + agregat.nbCandidates, 0);
+    expect(sommeCategories).toBeGreaterThan(multi.global.nbCandidates);
+  });
+
+  it('rend zéro et jamais undefined quand aucun scénario ne porte de comptes', () => {
+    const sansProtocole = calculerScorecard([resultat({ scenarioId: 'f01--fr', langue: 'fr', attendus: [attendu('F01', 'fonctionnel', 'detecte')] })], config, HORODATAGE);
+    for (const agregat of [sansProtocole.global, sansProtocole.parLangue['fr'], sansProtocole.parCategorie['fonctionnel']]) {
+      expect(agregat).toMatchObject({
+        nbCandidates: 0,
+        nbGroupes: 0,
+        nbGroupesRetenus: 0,
+        nbGroupesEcartes: 0,
+        nbFaussesAlertesEvitees: 0,
+        nbPertesProtocole: 0,
+        nbEcartesNonApparies: 0,
+      });
+    }
+    expect(calculerScorecard([], config, HORODATAGE).global).toMatchObject({ nbCandidates: 0, nbPertesProtocole: 0, nbEcartesNonApparies: 0 });
+  });
+});
+
+describe('rendreScorecardConsole — tableau du protocole', () => {
+  /** Lignes du bloc « Protocole anti-faux-positifs » (titre, en-têtes, trait, puis une ligne par périmètre). */
+  function blocProtocole(rendu: string): string[] {
+    const titre = traduire(dico, 'scorecard.protocole');
+    return (rendu.split('\n\n').find((bloc) => bloc.startsWith(titre)) ?? '').split('\n');
+  }
+
+  /** Le dictionnaire n'est chargé qu'au `beforeAll` : le rendu se calcule dans le test, pas à la collecte. */
+  const rendre = (): string => rendreScorecardConsole(calculerScorecard(resultats, config, HORODATAGE), dico, config.langueConsole);
+
+  it('affiche les huit colonnes du protocole, dans l’ordre du périmètre vers les non appariés', () => {
+    const entete = blocProtocole(rendre())[1] ?? '';
+    const positions = ['perimetre', 'candidates', 'groupes', 'retenues', 'ecartees', 'faussesAlertesEvitees', 'anomaliesPerdues', 'ecartesNonApparies'].map(
+      (colonne) => entete.indexOf(traduire(dico, `scorecard.colonnes.${colonne}`)),
+    );
+    expect(positions.every((position) => position >= 0)).toBe(true);
+    expect(positions).toEqual([...positions].sort((a, b) => a - b));
+  });
+
+  it('D4/D5 — n’affiche QUE les périmètres qui partitionnent (global, langues), aux valeurs exactes', () => {
+    const lignes = blocProtocole(rendre())
+      .slice(3)
+      .map((ligne) => ligne.trim().split(/\s+/));
+    expect(lignes).toEqual([
+      [traduire(dico, 'scorecard.global'), '10', '8', '4', '4', '2', '1', '1'],
+      ['fr', '9', '7', '3', '4', '2', '1', '1'],
+      ['en', '1', '1', '1', '0', '0', '0', '0'],
+    ]);
+  });
+
+  it('D4/D5 — aucune ligne de catégorie de bug dans le tableau du protocole (un groupe de cause racine ne s’y ventile pas)', () => {
+    const scorecard = calculerScorecard(resultats, config, HORODATAGE);
+    const lignes = blocProtocole(rendre()).slice(3);
+    for (const categorie of Object.keys(scorecard.parCategorie)) {
+      expect(lignes.some((ligne) => ligne.startsWith(categorie))).toBe(false);
+    }
+    // Les catégories restent affichées dans le tableau de détection, lui.
+    expect(rendre()).toContain(traduire(dico, 'scorecard.parCategorie'));
+  });
+
+  it('D4/D5 — chaque ligne affichée est arithmétiquement juste : groupes = retenus + écartés', () => {
+    for (const ligne of blocProtocole(rendre()).slice(3)) {
+      const cellules = ligne.trim().split(/\s+/);
+      const [groupes, retenus, ecartes] = [cellules[2], cellules[3], cellules[4]].map((valeur) => Number(valeur));
+      expect(groupes).toBe((retenus ?? 0) + (ecartes ?? 0));
+    }
+  });
+
+  it('D8 — la synthèse cite les TROIS nombres : évitées, perdues et non appariées', () => {
+    const rendu = rendre();
+    expect(rendu).toContain(
+      traduire(dico, 'scorecard.syntheseProtocole', {
+        candidates: '10',
+        groupes: '8',
+        retenues: '4',
+        ecartees: '4',
+        evitees: '2',
+        perdues: '1',
+        nonApparies: '1',
+        scenarios: '6',
+      }),
+    );
+
+    // Même sans perte ni non-apparié, les trois nombres restent cités : le
+    // chiffre commercial ne s'imprime jamais seul.
+    const sansPerte = resultats.map((resultat) =>
+      resultat.protocole === undefined
+        ? resultat
+        : { ...resultat, protocole: { ...resultat.protocole, nbPertesProtocole: 0, nbEcartesNonApparies: 0 } },
+    );
+    const renduSansPerte = rendreScorecardConsole(calculerScorecard(sansPerte, config, HORODATAGE), dico, config.langueConsole);
+    expect(renduSansPerte).toContain(
+      traduire(dico, 'scorecard.syntheseProtocole', {
+        candidates: '10',
+        groupes: '8',
+        retenues: '4',
+        ecartees: '4',
+        evitees: '2',
+        perdues: '0',
+        nonApparies: '0',
+        scenarios: '6',
+      }),
+    );
+  });
+
+  it('lève l’alarme des pertes dès qu’une anomalie réelle a été écartée, et se tait sinon', () => {
+    expect(rendre()).toContain(traduire(dico, 'scorecard.alarmePertes', { perdues: '1' }));
+
+    const sansPerte = resultats.map((resultat) =>
+      resultat.protocole === undefined ? resultat : { ...resultat, protocole: { ...resultat.protocole, nbPertesProtocole: 0 } },
+    );
+    const renduSansPerte = rendreScorecardConsole(calculerScorecard(sansPerte, config, HORODATAGE), dico, config.langueConsole);
+    expect(renduSansPerte).not.toContain(traduire(dico, 'scorecard.alarmePertes', { perdues: '0' }));
+    expect(renduSansPerte).toContain(traduire(dico, 'scorecard.protocole'));
   });
 });
 

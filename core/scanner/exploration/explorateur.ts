@@ -62,14 +62,14 @@ export const RAISON_VALIDATION_NATIVE = 'validation-native';
 export const RAISON_CLIC_INTERCEPTE = 'clic-intercepte';
 
 /** Fragment de journal Playwright signalant un clic intercepté (contrat technique de l'outil, pas un texte de page). */
-const MARQUE_INTERCEPTION = 'intercepts pointer events';
+export const MARQUE_INTERCEPTION = 'intercepts pointer events';
 
 /**
  * Types de champ qui « bloquent la soumission implicite » (standard HTML) :
  * sans bouton de soumission, la touche Entrée ne soumet que si le formulaire
  * en compte exactement un.
  */
-const TYPES_SOUMISSION_IMPLICITE = ['text', 'search', 'email', 'tel', 'url', 'password', 'number', 'date', 'month', 'week', 'time', 'datetime-local'];
+export const TYPES_SOUMISSION_IMPLICITE = ['text', 'search', 'email', 'tel', 'url', 'password', 'number', 'date', 'month', 'week', 'time', 'datetime-local'];
 
 /**
  * URL normalisée pour la file d'exploration, ou null si elle n'est pas à

@@ -66,3 +66,26 @@ dette est levée (le commit qui la lève renvoie à ce fichier).
 - **Condition de levée** : dès qu'un détecteur peut produire deux candidates
   de même clé et de gravités différentes — alors décider explicitement si la
   gravité suit la confiance retenue.
+
+## 6. L'échéance d'un scan est souple, non contraignante (2026-09-22)
+
+- **Quoi** : à l'approche de l'échéance (`options.timeoutMs`), le pipeline
+  cesse d'**engager** du travail neuf — plus de navigation, plus de groupe
+  re-exécuté — mais il n'**interrompt** pas ce qui est en vol. Le rapport
+  peut donc être rendu légèrement après l'échéance.
+- **Mesure** : sous la contention de la suite complète (plusieurs Chromium
+  sur 4 cœurs), un scan à budget 60 000 ms a rendu son rapport en
+  62 408 ms (+4 %). En exécution séquentielle (le banc), aucun dépassement :
+  le scénario le plus long consomme 49 % de son budget.
+- **Borne** : le dépassement est majoré par la plus longue opération qu'un
+  rejeu peut avoir en cours, soit `confirmation.rejeu.actionMs`. C'est cette
+  borne dérivée que le test de bout en bout vérifie.
+- **Pourquoi ne pas durcir aujourd'hui** : une interruption franche du
+  travail en vol (abandon d'un contexte navigateur en pleine action) risque
+  de laisser des ressources ouvertes — exactement le défaut que la revue de
+  la brique 2 a fait corriger. Un durcissement demande un mécanisme
+  d'annulation propre, pas un `race`.
+- **Condition de levée** : quand un appelant aura un besoin dur de
+  l'échéance (une API publique avec un contrat de latence, Phase 2), doter
+  le pipeline d'une annulation coopérative de bout en bout (signal propagé
+  jusqu'aux appels Playwright) et rendre la borne exacte.

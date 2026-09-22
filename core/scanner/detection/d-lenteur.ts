@@ -44,11 +44,36 @@ function palierPour(paliersTries: PalierConfiance[], ratio: number): PalierConfi
   return retenu;
 }
 
+/**
+ * Durée la plus longue parmi les preuves d'une candidate : le dédoublonnage
+ * fusionne les preuves de plusieurs viewports, la mesure retenue est alors
+ * la pire observée — la même logique que la confiance maximale.
+ */
+function dureeMax(candidate: AnomalieCandidate): number | undefined {
+  let mesure: number | undefined;
+  for (const preuve of candidate.preuves) {
+    if (!estRequete(preuve)) {
+      continue;
+    }
+    const duree = dureeObservee(preuve);
+    if (duree !== null && (mesure === undefined || duree > mesure)) {
+      mesure = duree;
+    }
+  }
+  return mesure;
+}
+
 export function creerDetecteurLenteur(config: ConfigScanner['detecteurs']['lenteur']): Detecteur {
   const paliersTries = [...config.paliers].sort((a, b) => a.ratioMin - b.ratioMin);
   return {
     nom: NOM_DETECTEUR_LENTEUR,
     dependDuViewport: false,
+    // Détecteur GRADUÉ : la durée observée est la mesure brute que le
+    // protocole de confirmation agrège sur ses re-exécutions, et `seuilMesure`
+    // ce à quoi il la compare. Le protocole ne sait rien de la lenteur ; le
+    // détecteur ne sait rien de la re-exécution.
+    mesureDe: dureeMax,
+    seuilMesure: config.seuilMs,
     detecter(signaux, contexte) {
       const candidates: AnomalieCandidate[] = [];
       for (const requete of signaux) {

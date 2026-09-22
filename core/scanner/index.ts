@@ -7,6 +7,7 @@
  */
 import type { ClientIa } from '../ia/index.js';
 import type {
+  CandidateEcartee,
   Detecteur,
   EntreeJournal,
   Explorateur,
@@ -14,10 +15,24 @@ import type {
   Parcours,
   ProtocoleConfirmation,
   Rapport,
+  Reexecuteur,
+  ResultatConfirmation,
   Scanner,
 } from '../types.js';
 import type { ConfigScanner } from './config.js';
 import { detecter } from './detection/index.js';
+
+/**
+ * Ressource de rejeu d'un scan : le protocole de confirmation re-exécute
+ * dans un navigateur, qui doit vivre APRÈS l'exploration et être fermé dans
+ * tous les cas. Le pipeline ne sait pas ce qu'il y a derrière (l'assemblage
+ * réel n'ouvre son navigateur qu'au premier rejeu, un site sain n'en paie
+ * donc aucun).
+ */
+export interface SessionRejeu {
+  reexecuteur: Reexecuteur;
+  fermer(): Promise<void>;
+}
 
 export interface DependancesScanner {
   config: ConfigScanner;
@@ -26,6 +41,8 @@ export interface DependancesScanner {
   observateur: () => Observateur;
   detecteurs: Detecteur[];
   protocole: ProtocoleConfirmation;
+  /** Ouvre la capacité de rejeu du scan ; elle reçoit le journal et l'échéance du scan en cours. */
+  ouvrirRejeu: (journaliser: (type: string, details?: unknown) => void, echeance: number) => SessionRejeu;
   ia: ClientIa;
 }
 
@@ -60,8 +77,11 @@ function compterParDetecteur(detecteurs: Detecteur[], candidates: { detecteur: s
   return comptes;
 }
 
+/** Identifiant technique de l'écart : la confirmation elle-même est tombée. */
+export const RAISON_CONFIRMATION_EN_ERREUR = 'confirmation-en-erreur';
+
 export function creerScanner(dependances: DependancesScanner): Scanner {
-  const { config, explorateur, detecteurs, protocole, ia } = dependances;
+  const { config, explorateur, detecteurs, protocole, ouvrirRejeu, ia } = dependances;
 
   return async function scanner(url, options): Promise<Rapport> {
     const debut = Date.now();
@@ -112,13 +132,39 @@ export function creerScanner(dependances: DependancesScanner): Scanner {
       parDetecteur: compterParDetecteur(detecteurs, candidates),
     });
 
-    // 4. Confirmation.
-    const confirmation = await protocole.confirmer(candidates, { urlDepart: url, options, echeance, journaliser });
+    // 4. Confirmation. Le protocole rejoue dans un navigateur : sa session
+    // est fermée dans tous les cas, et une panne de sa part donne un rapport
+    // partiel — sans confirmation, aucune anomalie n'est AFFIRMÉE, elles
+    // sont écartées avec leur raison plutôt que signalées sans preuve.
+    const session = ouvrirRejeu(journaliser, echeance);
+    let confirmation: ResultatConfirmation;
+    try {
+      confirmation = await protocole.confirmer(candidates, {
+        urlDepart: url,
+        options,
+        echeance,
+        journaliser,
+        reexecuteur: session.reexecuteur,
+        detecteurs,
+        viewports: config.viewports,
+      });
+    } catch (cause: unknown) {
+      journaliser('scan.erreur', { etape: 'confirmation', message: messageErreur(cause) });
+      const ecartees: CandidateEcartee[] = candidates.map((candidate) => ({ candidate, raison: RAISON_CONFIRMATION_EN_ERREUR }));
+      confirmation = { retenues: [], ecartees, coutApi: 0 };
+    } finally {
+      await session.fermer().catch(() => undefined);
+    }
 
     const coutApi = COUT_API_EXPLORATION + confirmation.coutApi;
     const dureeMs = Date.now() - debut;
     journaliser('scan.fin', { dureeMs, coutApi, nbAnomalies: confirmation.retenues.length, arret: parcours.arret });
 
+    // `groupes` et `decouvertes` ne sont présents que si le protocole en rend :
+    // le passe-plat ne consolide pas et ne rejoue rien, son rapport ne doit
+    // donc pas prétendre le contraire avec des listes vides. Portés par le
+    // Rapport, ils permettent de compter en GROUPES (cahier §1a) et de
+    // remonter d'une anomalie à sa cause sans re-parser le journal.
     return {
       url,
       anomalies: confirmation.retenues,
@@ -128,6 +174,8 @@ export function creerScanner(dependances: DependancesScanner): Scanner {
       parcours,
       candidates,
       ecartees: confirmation.ecartees,
+      ...(confirmation.groupes === undefined ? {} : { groupes: confirmation.groupes }),
+      ...(confirmation.decouvertes === undefined ? {} : { decouvertes: confirmation.decouvertes }),
     };
   };
 }

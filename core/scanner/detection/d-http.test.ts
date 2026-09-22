@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { creerDetecteurHttp, DESCRIPTION_404_INTERNE, DESCRIPTION_5XX, NOM_DETECTEUR_HTTP } from './d-http.js';
+import {
+  creerDetecteurHttp,
+  DESCRIPTION_404_INTERNE,
+  DESCRIPTION_5XX,
+  DESCRIPTION_DOCUMENT_INJOIGNABLE,
+  NOM_DETECTEUR_HTTP,
+} from './d-http.js';
 import {
   BOUTON,
   CONFIG_TEST,
@@ -9,6 +15,7 @@ import {
   navigationAction,
   ORIGINE,
   reponse,
+  requeteEchouee,
   signauxSains,
   soumission,
   URL_ACCUEIL,
@@ -95,6 +102,53 @@ describe('D-HTTP', () => {
       reponse({ urlRessource: 'https://cdn.exemple.invalid/lib.js', typeRessource: 'script', statut: 404, interne: false }),
       reponse({ urlRessource: URL_API, statut: 403 }),
       reponse({ urlRessource: URL_API, statut: 422 }),
+    ];
+    expect(detecteur.detecter(signaux, contexte())).toEqual([]);
+  });
+
+  it('requête de DOCUMENT interne échouée → document-injoignable, localisé sur l’URL demandée', () => {
+    // Le site ne répond plus : la page n'a pas obtenu de réponse du tout.
+    // C'est un constat sur le SITE, jamais une limite du robot.
+    const signal = requeteEchouee({
+      urlRessource: URL_CONTACT,
+      methode: 'GET',
+      typeRessource: 'document',
+      erreur: 'net::ERR_CONNECTION_REFUSED',
+      cadrePrincipal: true,
+    });
+    const candidates = detecteur.detecter([signal], contexte());
+
+    expect(candidates).toHaveLength(1);
+    expect(candidates[0]).toMatchObject({
+      detecteur: NOM_DETECTEUR_HTTP,
+      description: DESCRIPTION_DOCUMENT_INJOIGNABLE,
+      categorie: CONFIG_TEST.http.categorieParDefaut,
+      graviteEstimee: CONFIG_TEST.http.graviteDocumentInjoignable,
+      confiance: CONFIG_TEST.http.confianceDocumentInjoignable,
+      urlOuEtape: URL_CONTACT,
+      preuves: [signal],
+    });
+  });
+
+  it('une requête échouée qui n’est pas un document, ou qui est externe, ne concerne pas D-HTTP', () => {
+    const signaux = [
+      // Une ressource interne échouée relève de son détecteur (image, échec muet), pas du document.
+      requeteEchouee({ urlRessource: URL_API, typeRessource: 'fetch' }),
+      // Un document EXTERNE n'est pas le site scanné.
+      requeteEchouee({ urlRessource: 'https://exemple.invalid/page', typeRessource: 'document', interne: false, cadrePrincipal: true }),
+    ];
+    expect(detecteur.detecter(signaux, contexte())).toEqual([]);
+  });
+
+  it('abandon côté CLIENT ou document de sous-cadre → aucune candidate : ce n’est pas une page inaccessible', () => {
+    // Le cas symétrique du précédent, et le plus dangereux : le robot qui
+    // quitte une page annule lui-même la navigation en cours (net::ERR_ABORTED),
+    // et un iframe retiré par la page fait échouer un document sans que la
+    // page, elle, soit injoignable. Affirmer « bloquant » là serait le faux
+    // positif le plus grave du moteur.
+    const signaux = [
+      requeteEchouee({ urlRessource: URL_CONTACT, methode: 'POST', typeRessource: 'document', erreur: 'net::ERR_ABORTED', cadrePrincipal: true }),
+      requeteEchouee({ urlRessource: `${ORIGINE}/cadre`, methode: 'GET', typeRessource: 'document', erreur: 'net::ERR_EMPTY_RESPONSE', cadrePrincipal: false }),
     ];
     expect(detecteur.detecter(signaux, contexte())).toEqual([]);
   });

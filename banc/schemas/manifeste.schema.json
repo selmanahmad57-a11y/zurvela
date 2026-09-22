@@ -29,7 +29,7 @@
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["bugId", "nom", "categorie", "pages", "gravite"],
+        "required": ["bugId", "nom", "categorie", "pages", "gravite", "verdictAttendu"],
         "properties": {
           "bugId": {
             "type": "string",
@@ -57,6 +57,11 @@
             "type": "string",
             "enum": ["bloquant", "important", "mineur"],
             "description": "Gravité attendue du point de vue métier, informative : ne participe pas à l'appariement."
+          },
+          "verdictAttendu": {
+            "type": "string",
+            "enum": ["confirmee", "intermittente", "non-reproduite", "limite-automatisation", "basse-confiance"],
+            "description": "Verdict que le protocole de confirmation doit rendre sur ce bug (défaut confirmee, dérivé de la déclaration du bug). Un verdict non retenu (non-reproduite, limite-automatisation, basse-confiance) décrit un FAUX POSITIF SIMULÉ : le banc compte sa mise à l'écart comme une réussite."
           }
         }
       }

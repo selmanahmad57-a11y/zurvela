@@ -12,7 +12,8 @@
     "exploration",
     "remplissage",
     "detecteurs",
-    "ia"
+    "ia",
+    "confirmation"
   ],
   "definitions": {
     "gravite": {
@@ -285,7 +286,10 @@
             "gravite5xx",
             "gravite404",
             "categorieParTypeRessource",
-            "categorieParDefaut"
+            "categorieParDefaut",
+            "confianceDocumentInjoignable",
+            "graviteDocumentInjoignable",
+            "erreursReseauIgnorees"
           ],
           "properties": {
             "confiance5xx": {
@@ -317,6 +321,21 @@
             "confiance5xxSoumission": {
               "$ref": "#/definitions/confiance",
               "description": "Confiance d'une réponse ≥ 500 survenue pendant une soumission : le signal le plus fort du détecteur HTTP (palier haut)."
+            },
+            "confianceDocumentInjoignable": {
+              "$ref": "#/definitions/confiance",
+              "description": "Confiance d'une requête de DOCUMENT interne échouée au niveau réseau (connexion refusée, DNS) : la page elle-même n'a pas pu être chargée."
+            },
+            "graviteDocumentInjoignable": {
+              "$ref": "#/definitions/gravite",
+              "description": "Gravité d'un document interne injoignable."
+            },
+            "erreursReseauIgnorees": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "Codes d'erreur réseau du navigateur qui ne sont PAS un constat sur le site : l'annulation d'une requête par le client (net::ERR_ABORTED) vient du robot lui-même, pas du serveur. La liste évoluera avec les navigateurs."
             }
           }
         },
@@ -483,6 +502,177 @@
             "redaction": {
               "type": "string",
               "description": "Modèle puissant pour les rapports."
+            }
+          }
+        }
+      }
+    },
+    "confirmation": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Protocole anti-faux-positifs : consolidation par cause, re-exécution, verdict, calibration. Toute la politique vit ici, aucune règle en dur (constitution §2).",
+      "required": [
+        "politique",
+        "seuilConfirmationDirecte",
+        "reExecutions",
+        "variations",
+        "tauxReproduction",
+        "contreEpreuve",
+        "agregationMesures",
+        "seuilRetenue",
+        "rejeu",
+        "calibration"
+      ],
+      "properties": {
+        "politique": {
+          "type": "string",
+          "enum": [
+            "complet",
+            "econome"
+          ],
+          "description": "« complet » : tout groupe est re-exécuté. « econome » : seuls les groupes sous seuilConfirmationDirecte le sont (prépare l'échelle ; le banc tourne en complet)."
+        },
+        "seuilConfirmationDirecte": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "En politique « econome », confiance de détecteur au-dessus de laquelle un groupe est confirmé sans re-exécution."
+        },
+        "reExecutions": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Nombre de re-exécutions par groupe."
+        },
+        "variations": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "enum": [
+              "contexte-neuf"
+            ]
+          },
+          "description": "Variations de contexte appliquées aux re-exécutions. « contexte-neuf » : cache froid et stockage vierge. Les autres valeurs (IP, second navigateur) sont réservées à une brique ultérieure."
+        },
+        "tauxReproduction": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 1,
+          "description": "Part des tentatives exploitables qui doivent reproduire l'anomalie pour un verdict « confirmee ». Entre 0 exclu et ce seuil : « intermittente ». Zéro : « non-reproduite »."
+        },
+        "contreEpreuve": {
+          "type": "boolean",
+          "description": "Rejouer une anomalie dépendant du viewport dans l'AUTRE viewport : l'asymétrie attendue renforce la confiance, une symétrie inattendue la dégrade."
+        },
+        "agregationMesures": {
+          "type": "string",
+          "enum": [
+            "mediane",
+            "moyenne",
+            "max"
+          ],
+          "description": "Comment agréger les mesures brutes des tentatives pour un détecteur gradué (durée de D-LENTEUR)."
+        },
+        "seuilRetenue": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Confiance finale en dessous de laquelle une anomalie retenue est rétrogradée en « basse-confiance » et écartée."
+        },
+        "rejeu": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "chargementPageMs",
+            "actionMs",
+            "margeEcheanceMs",
+            "budgetMinimalMs"
+          ],
+          "properties": {
+            "chargementPageMs": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Délai maximal de chargement d'une page pendant un rejeu ; dépassé, la tentative est un échec d'outillage."
+            },
+            "actionMs": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Délai maximal d'une action rejouée et de l'observation de ses effets."
+            },
+            "margeEcheanceMs": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Marge gardée avant l'échéance du scan pour rendre le résultat de confirmation."
+            },
+            "budgetMinimalMs": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Budget minimal (ms) exigé avant de LANCER une tentative de rejeu : sous ce reste, le groupe est déclaré limite-automatisation au lieu d'être jugé sur une tentative tronquée par l'échéance."
+            }
+          },
+          "description": "Budgets de temps d'une re-exécution. Un rejeu qui ne tient pas dans son budget est un échec d'OUTIL, jamais une non-reproduction."
+        },
+        "calibration": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "Facteurs de la confiance finale. La FORMULE vit dans le code, ses facteurs ici.",
+          "required": [
+            "facteurVerdict",
+            "poidsTauxReproduction",
+            "bonusContreEpreuve",
+            "malusSymetrieInattendue",
+            "confianceMin",
+            "confianceMax"
+          ],
+          "properties": {
+            "facteurVerdict": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "confirmee",
+                "intermittente"
+              ],
+              "description": "Facteur multiplicatif appliqué à la confiance du détecteur selon le verdict retenu.",
+              "properties": {
+                "confirmee": {
+                  "type": "number",
+                  "minimum": 0,
+                  "description": "Facteur appliqué à la confiance du détecteur quand le groupe est reproduit à hauteur de tauxReproduction. Peut dépasser 1 : la borne dure du code empêche tout débordement."
+                },
+                "intermittente": {
+                  "type": "number",
+                  "minimum": 0,
+                  "description": "Facteur appliqué quand le groupe n'est reproduit que partiellement. Inférieur à 1 : le doute ne monte jamais la confiance."
+                }
+              }
+            },
+            "poidsTauxReproduction": {
+              "type": "number",
+              "minimum": 0,
+              "description": "Poids de l'écart entre le taux de reproduction observé et 1."
+            },
+            "bonusContreEpreuve": {
+              "type": "number",
+              "minimum": 0,
+              "description": "Renfort quand la contre-épreuve donne le résultat attendu."
+            },
+            "malusSymetrieInattendue": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1,
+              "description": "Dégradation quand la contre-épreuve reproduit l'anomalie là où on ne l'attendait pas."
+            },
+            "confianceMin": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1,
+              "description": "Plancher de la confiance finale : une anomalie retenue ne descend jamais en dessous (elle est écartée par seuilRetenue avant, le cas échéant)."
+            },
+            "confianceMax": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1,
+              "description": "Plafond de la confiance finale issu de la configuration. Le code applique en plus une BORNE DURE à 1 : une confiance supérieure à 1 est un invariant interdit, pas un réglage (constitution §2)."
             }
           }
         }

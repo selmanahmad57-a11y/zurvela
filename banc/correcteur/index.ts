@@ -15,7 +15,7 @@ import { depuisRacine } from '../outils/racine.js';
 import { deriverManifeste } from '../scenarios/manifeste.js';
 import { demarrerServeur } from '../serveur.js';
 import type { ConfigBanc, Gabarit, ResultatAttendu, ResultatScenario, Scenario, Scorecard } from '../types.js';
-import { apparier } from './appariement.js';
+import { apparier, calculerComptesProtocole, comptesProtocoleZero } from './appariement.js';
 import { calculerScorecard, ecrireScorecard, purgerResultats, rendreScorecardConsole } from './scorecard.js';
 
 export interface ParametresNotation {
@@ -81,21 +81,32 @@ export async function noterScenario(scenario: Scenario, params: ParametresNotati
   const manifeste = deriverManifeste(scenario, gabarit);
   const base = { scenarioId: scenario.id, gabarit: gabarit.nom, langue: scenario.langue, dureeMs };
 
+  // Rien n'est détecté, donc aucun verdict de confirmation n'a été rendu :
+  // l'attendu est raté ET mal jugé.
   const toutRate = (): ResultatAttendu[] =>
-    manifeste.attendus.map((attendu): ResultatAttendu => ({ attendu, verdict: 'rate', anomaliesAppariees: [] }));
+    manifeste.attendus.map((attendu): ResultatAttendu => ({ attendu, verdict: 'rate', anomaliesAppariees: [], verdictRendu: null, bienJuge: false }));
 
+  // Un scénario en ERREUR rend des comptes de protocole à zéro : rien n'a pu
+  // être apparié au manifeste, et un compteur non apparié ferait mentir la
+  // mesure des fausses alertes évitées dans un sens ou dans l'autre.
   if (rapport === undefined) {
     // Scanner en échec : rien n'est détecté, rien n'est signalé.
-    return { ...base, statut: 'erreur', erreur, attendus: toutRate(), fauxPositifs: [], coutApi: 0 };
+    return { ...base, protocole: comptesProtocoleZero(), statut: 'erreur', erreur, attendus: toutRate(), fauxPositifs: [], coutApi: 0 };
   }
   try {
+    // Les deux mesures se calculent ENSEMBLE : les comptes du protocole lisent
+    // l'appariement (un attendu déjà couvert par une anomalie retenue n'est pas
+    // une anomalie perdue), et l'invariant de `calculerComptesProtocole` protège
+    // l'appariement d'un rapport qui se lirait « 100 % de détection » alors que
+    // le protocole est tombé.
     const { attendus, fauxPositifs } = apparier(rapport, manifeste);
-    return { ...base, statut: 'ok', attendus, fauxPositifs, coutApi: rapport.coutApi, rapport };
+    const protocole = calculerComptesProtocole(rapport, manifeste, attendus);
+    return { ...base, protocole, statut: 'ok', attendus, fauxPositifs, coutApi: rapport.coutApi, rapport };
   } catch (cause: unknown) {
-    // Rapport inexploitable (structure inattendue) : faute du sujet noté, pas du
-    // banc — le scénario est en erreur, l'exécution continue. Le rapport est
-    // conservé comme pièce à conviction.
-    return { ...base, statut: 'erreur', erreur: messageErreur(cause), attendus: toutRate(), fauxPositifs: [], coutApi: 0, rapport };
+    // Rapport inexploitable (structure inattendue, ou candidates écartées sans
+    // groupes) : faute du sujet noté, pas du banc — le scénario est en erreur,
+    // l'exécution continue. Le rapport est conservé comme pièce à conviction.
+    return { ...base, protocole: comptesProtocoleZero(), statut: 'erreur', erreur: messageErreur(cause), attendus: toutRate(), fauxPositifs: [], coutApi: 0, rapport };
   }
 }
 
