@@ -1,0 +1,5 @@
+# Réglages pnpm (depuis pnpm 10, les réglages vivent ici et non dans package.json).
+# esbuild (dépendance de tsx et vitest) a un script post-installation qui
+# vérifie son binaire natif : build autorisé explicitement.
+allowBuilds:
+  esbuild: true

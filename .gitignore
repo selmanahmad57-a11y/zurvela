@@ -1,0 +1,5 @@
+node_modules/
+banc/resultats/*
+!banc/resultats/.gitkeep
+*.tsbuildinfo
+.DS_Store

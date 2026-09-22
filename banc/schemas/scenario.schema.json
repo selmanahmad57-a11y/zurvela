@@ -1,0 +1,37 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "zurvela/banc/scenario",
+  "title": "Scénario du banc d'essai",
+  "description": "Un scénario = un gabarit servi dans une langue avec un ensemble de bugs actifs. Les fichiers *.scenario.json sont générés par pnpm banc:generer, jamais édités à la main.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "gabarit", "langue", "bugsActifs"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Identifiant unique du scénario, égal au nom du fichier sans le suffixe .scenario.json : <gabarit>--<bugs actifs en minuscules joints par '-' ou jeton sain>--<langue>."
+    },
+    "gabarit": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Nom du gabarit (mini-site) servi, tel que déclaré dans le registre banc/gabarits."
+    },
+    "langue": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Langue dans laquelle le site est servi (un fichier <langue>.json doit exister dans les locales du gabarit)."
+    },
+    "bugsActifs": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 1 },
+      "description": "Identifiants des bugs injectés (ex. F01), dans l'ordre d'application par le serveur. Vide pour un scénario sain."
+    },
+    "parametres": {
+      "type": "object",
+      "additionalProperties": { "type": "object" },
+      "description": "Surcharges des paramètres des bugs actifs, clé = identifiant du bug ; les défauts vivent dans config/banc.json (bugs.<id>)."
+    }
+  }
+}

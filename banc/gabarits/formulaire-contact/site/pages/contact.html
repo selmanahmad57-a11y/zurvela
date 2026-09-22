@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="{{langue}}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{contact.titre}} — {{site.nom}}</title>
+  <meta name="description" content="{{site.slogan}}">
+  <link rel="stylesheet" href="/statique/style.css">
+  <link rel="icon" href="/statique/images/logo.svg" type="image/svg+xml">
+  <script src="/statique/formulaire.js" defer></script>
+</head>
+<body>
+  <header class="entete">
+    <a class="marque" href="/">
+      <img data-role="logo" src="/statique/images/logo.svg" alt="{{site.nom}}" width="40" height="40">
+      <span>{{site.nom}}</span>
+    </a>
+    <nav aria-label="{{nav.libelle}}">
+      <ul>
+        <li><a href="/">{{nav.accueil}}</a></li>
+        <li><a href="/contact" aria-current="page">{{nav.contact}}</a></li>
+      </ul>
+    </nav>
+  </header>
+  <main class="contenu">
+    <h1>{{contact.titre}}</h1>
+    <p class="intro">{{contact.intro}}</p>
+    <form data-role="formulaire-contact" method="post" action="/api/contact" data-url-confirmation="/confirmation">
+      <div class="champ">
+        <label for="nom">{{contact.champs.nom}}</label>
+        <input id="nom" name="nom" type="text" autocomplete="name" required>
+      </div>
+      <div class="champ">
+        <label for="email">{{contact.champs.email}}</label>
+        <input id="email" name="email" type="email" autocomplete="email" required>
+      </div>
+      <div class="champ">
+        <label for="message">{{contact.champs.message}}</label>
+        <textarea id="message" name="message" rows="6" required></textarea>
+      </div>
+      <p data-role="message-erreur" class="erreur" hidden role="alert">{{contact.erreur}}</p>
+      <div class="actions" data-role="zone-envoi">
+        <button type="submit" data-role="envoyer">{{contact.envoyer}}</button>
+      </div>
+    </form>
+  </main>
+  <footer class="pied">
+    <p>{{pied.mentions}}</p>
+  </footer>
+</body>
+</html>

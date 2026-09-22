@@ -1,0 +1,44 @@
+{
+  "banc": {
+    "usage": "Usage : pnpm banc --scenario <id> | pnpm banc --tous",
+    "scenarioIntrouvable": "Scénario introuvable : {{id}}",
+    "aucunScenario": "Aucun scénario dans {{dossier}} — lancez d'abord : pnpm banc:generer",
+    "demarrage": "Banc d'essai — {{nombre}} scénario(s) à noter, sujet : {{scanner}}",
+    "scenarioEnCours": "▶ {{id}}",
+    "scenarioTermine": "  {{id}} : {{detectes}}/{{attendus}} détecté(s), {{fauxPositifs}} faux positif(s), {{dureeMs}} ms",
+    "scenarioErreur": "  {{id}} : ERREUR — {{erreur}}",
+    "timeoutScan": "le scanner n'a pas répondu en {{timeoutMs}} ms",
+    "resultatsEcrits": "Scorecard écrite : {{fichier}}"
+  },
+  "scorecard": {
+    "titre": "SCORECARD",
+    "global": "Global",
+    "parLangue": "Par langue",
+    "parCategorie": "Par catégorie de bug",
+    "colonnes": {
+      "perimetre": "Périmètre",
+      "scenarios": "Scénarios",
+      "detection": "Détection",
+      "detectes": "Détectés/attendus",
+      "fauxPositifs": "Faux positifs",
+      "rates": "Ratés",
+      "erreurs": "Erreurs",
+      "coutApi": "Coût API (€)",
+      "duree": "Durée (ms)"
+    },
+    "nonApplicable": "—",
+    "ecartLangues": "Écart de détection inter-langues : {{points}} pt(s) (seuil d'alarme : {{seuil}})",
+    "ecartLanguesNonCalculable": "Écart de détection inter-langues : non calculable (moins de deux langues avec des attendus)",
+    "alarme": "⚠ ALARME BIAIS : l'écart inter-langues dépasse le seuil — codage en dur résiduel probable (Mur 3)"
+  },
+  "serveur": {
+    "usage": "Usage : pnpm banc:servir --scenario <id>",
+    "demarre": "Scénario {{id}} servi sur {{url}} (langue : {{langue}}, bugs actifs : {{bugs}}) — Ctrl+C pour arrêter",
+    "aucunBug": "aucun",
+    "arrete": "Serveur arrêté",
+    "aucunPortLibre": "Aucun port libre entre {{premier}} et {{dernier}}"
+  },
+  "generer": {
+    "termine": "{{nombre}} scénario(s) écrit(s) dans {{dossier}}"
+  }
+}

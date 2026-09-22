@@ -1,0 +1,40 @@
+{
+  "langue": "fr",
+  "site": {
+    "nom": "Atelier Brumelle",
+    "slogan": "Menuiserie et agencement sur mesure"
+  },
+  "nav": {
+    "libelle": "Navigation principale",
+    "accueil": "Accueil",
+    "contact": "Contact"
+  },
+  "accueil": {
+    "titre": "Bienvenue à l'Atelier Brumelle",
+    "intro": "Depuis vingt ans, nous concevons et fabriquons des meubles et des aménagements intérieurs adaptés à chaque espace.",
+    "prestationsTitre": "Nos prestations",
+    "prestation1": "Cuisines et dressings sur mesure",
+    "prestation2": "Bibliothèques et rangements intégrés",
+    "prestation3": "Restauration de mobilier ancien",
+    "appel": "Demander un devis"
+  },
+  "contact": {
+    "titre": "Contactez-nous",
+    "intro": "Décrivez votre projet, nous vous répondons sous deux jours ouvrés.",
+    "champs": {
+      "nom": "Nom",
+      "email": "Adresse e-mail",
+      "message": "Message"
+    },
+    "envoyer": "Envoyer",
+    "erreur": "Votre message n'a pas pu être envoyé. Veuillez réessayer dans un instant."
+  },
+  "confirmation": {
+    "titre": "Message envoyé",
+    "texte": "Merci, nous avons bien reçu votre message et revenons vers vous rapidement.",
+    "retour": "Retour à l'accueil"
+  },
+  "pied": {
+    "mentions": "Atelier Brumelle — entreprise fictive servant de gabarit de test."
+  }
+}

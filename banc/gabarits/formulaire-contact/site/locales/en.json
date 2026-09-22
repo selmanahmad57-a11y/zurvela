@@ -1,0 +1,40 @@
+{
+  "langue": "en",
+  "site": {
+    "nom": "Atelier Brumelle",
+    "slogan": "Bespoke joinery and interior fittings"
+  },
+  "nav": {
+    "libelle": "Main navigation",
+    "accueil": "Home",
+    "contact": "Contact"
+  },
+  "accueil": {
+    "titre": "Welcome to Atelier Brumelle",
+    "intro": "For twenty years we have designed and built furniture and interior fittings tailored to every space.",
+    "prestationsTitre": "Our services",
+    "prestation1": "Bespoke kitchens and wardrobes",
+    "prestation2": "Built-in bookcases and storage",
+    "prestation3": "Antique furniture restoration",
+    "appel": "Request a quote"
+  },
+  "contact": {
+    "titre": "Contact us",
+    "intro": "Tell us about your project and we will get back to you within two working days.",
+    "champs": {
+      "nom": "Name",
+      "email": "Email address",
+      "message": "Message"
+    },
+    "envoyer": "Send",
+    "erreur": "Your message could not be sent. Please try again in a moment."
+  },
+  "confirmation": {
+    "titre": "Message sent",
+    "texte": "Thank you, we have received your message and will get back to you shortly.",
+    "retour": "Back to home"
+  },
+  "pied": {
+    "mentions": "Atelier Brumelle — fictional company used as a test template."
+  }
+}

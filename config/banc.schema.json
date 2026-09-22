@@ -1,0 +1,149 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "zurvela/config/banc",
+  "title": "Configuration du banc d'essai",
+  "description": "Tous les seuils et réglages du banc d'essai. Aucune de ces valeurs ne vit dans le code (constitution §2).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "langueConsole",
+    "langues",
+    "serveur",
+    "scan",
+    "scorecard",
+    "scenarios",
+    "site",
+    "bugs"
+  ],
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "langueConsole": {
+      "type": "string",
+      "description": "Langue des textes affichés en console par le banc (fichier locales/<langue>.json)."
+    },
+    "langues": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string"
+      },
+      "description": "Langues dans lesquelles chaque gabarit est servi et noté."
+    },
+    "serveur": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "portDeBase",
+        "nombrePortsEssayes"
+      ],
+      "properties": {
+        "portDeBase": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 65535,
+          "description": "Premier port essayé pour servir un scénario."
+        },
+        "nombrePortsEssayes": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Nombre de ports consécutifs essayés à partir du port de base avant d'abandonner."
+        }
+      }
+    },
+    "scan": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "timeoutMs"
+      ],
+      "properties": {
+        "timeoutMs": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Durée maximale accordée au scanner pour un scénario ; au-delà, le scénario est noté en erreur."
+        }
+      }
+    },
+    "scorecard": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "seuilAlarmeEcartLanguesPoints",
+        "dossierResultats",
+        "retentionRuns"
+      ],
+      "properties": {
+        "seuilAlarmeEcartLanguesPoints": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Écart de taux de détection entre langues (en points) au-delà duquel la scorecard affiche une ALARME de biais (Mur 3)."
+        },
+        "dossierResultats": {
+          "type": "string",
+          "description": "Dossier (relatif à la racine du dépôt) où chaque exécution écrit sa scorecard JSON."
+        },
+        "retentionRuns": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Nombre de scorecards JSON conservées dans dossierResultats (les plus récentes) ; les autres sont purgées à chaque exécution du banc."
+        }
+      }
+    },
+    "scenarios": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "dossier",
+        "jetonSain",
+        "combinaisons"
+      ],
+      "properties": {
+        "dossier": {
+          "type": "string",
+          "description": "Dossier (relatif à la racine) des fichiers *.scenario.json."
+        },
+        "jetonSain": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Jeton utilisé dans l'identifiant des scénarios sans aucun bug actif."
+        },
+        "combinaisons": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "minItems": 2,
+            "uniqueItems": true,
+            "items": {
+              "type": "string"
+            }
+          },
+          "description": "Combinaisons de bugs générées en plus des scénarios sains et des bugs isolés."
+        }
+      }
+    },
+    "site": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "delaiReponseApiMs"
+      ],
+      "properties": {
+        "delaiReponseApiMs": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Délai de réponse de l'API du formulaire d'un site SAIN."
+        }
+      }
+    },
+    "bugs": {
+      "type": "object",
+      "description": "Paramètres par défaut de chaque bug injectable, clé = identifiant du bug. Un scénario peut les surcharger via son champ parametres.",
+      "additionalProperties": {
+        "type": "object"
+      }
+    }
+  }
+}

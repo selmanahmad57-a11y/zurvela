@@ -1,0 +1,65 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "zurvela/banc/manifeste",
+  "title": "Manifeste de vérité terrain",
+  "description": "Ce que le correcteur attend du rapport pour un scénario donné. Dérivé automatiquement du scénario et des déclarations des bugs du gabarit (banc/scenarios/manifeste.ts), jamais écrit à la main. Schéma commun à tous les gabarits ; son emplacement est imposé par le cahier des charges de la brique 1 (§2).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["scenarioId", "gabarit", "langue", "attendus"],
+  "properties": {
+    "scenarioId": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Identifiant du scénario dont ce manifeste est dérivé."
+    },
+    "gabarit": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Nom du gabarit servi par le scénario."
+    },
+    "langue": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Langue dans laquelle le site est servi."
+    },
+    "attendus": {
+      "type": "array",
+      "uniqueItems": true,
+      "description": "Un attendu par bug actif, dans l'ordre des bugs actifs du scénario. Vide pour un scénario sain : tout signalement y est un faux positif.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["bugId", "nom", "categorie", "pages", "gravite"],
+        "properties": {
+          "bugId": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Identifiant stable du bug injectable (ex. F01)."
+          },
+          "nom": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Nom court du bug en kebab-case (ex. bouton-mort), informatif : jamais utilisé pour l'appariement."
+          },
+          "categorie": {
+            "type": "string",
+            "enum": ["fonctionnel", "performance", "accessibilite", "seo", "securite", "visuel", "mobile"],
+            "description": "Catégorie d'anomalie attendue (première clé d'appariement avec le rapport)."
+          },
+          "pages": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": { "type": "string", "minLength": 1 },
+            "description": "Chemins d'URL des pages où l'anomalie est constatable (seconde clé d'appariement)."
+          },
+          "gravite": {
+            "type": "string",
+            "enum": ["bloquant", "important", "mineur"],
+            "description": "Gravité attendue du point de vue métier, informative : ne participe pas à l'appariement."
+          }
+        }
+      }
+    }
+  }
+}
