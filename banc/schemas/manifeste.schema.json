@@ -6,6 +6,78 @@
   "type": "object",
   "additionalProperties": false,
   "required": ["scenarioId", "gabarit", "langue", "attendus"],
+  "definitions": {
+    "attenduBug": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["nature", "bugId", "nom", "categorie", "pages", "gravite", "verdictAttendu"],
+      "description": "Attendu portant sur un bug injecté : éprouve la perception (détecté) et le discernement (bien jugé).",
+      "properties": {
+        "nature": {
+          "const": "bug",
+          "description": "Discriminant de l'union : le correcteur route sur lui, jamais sur la présence d'un champ."
+        },
+        "bugId": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Identifiant stable du bug injectable (ex. F01)."
+        },
+        "nom": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Nom court du bug en kebab-case (ex. bouton-mort), informatif : jamais utilisé pour l'appariement."
+        },
+        "categorie": {
+          "type": "string",
+          "enum": ["fonctionnel", "performance", "accessibilite", "seo", "securite", "visuel", "mobile"],
+          "description": "Catégorie d'anomalie attendue (première clé d'appariement avec le rapport)."
+        },
+        "pages": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 1 },
+          "description": "Chemins d'URL des pages où l'anomalie est constatable (seconde clé d'appariement)."
+        },
+        "gravite": {
+          "type": "string",
+          "enum": ["bloquant", "important", "mineur"],
+          "description": "Gravité attendue du point de vue métier, informative : ne participe pas à l'appariement."
+        },
+        "verdictAttendu": {
+          "type": "string",
+          "enum": ["confirmee", "intermittente", "non-reproduite", "limite-automatisation", "basse-confiance"],
+          "description": "Verdict que le protocole de confirmation doit rendre sur ce bug (défaut confirmee, dérivé de la déclaration du bug). Un verdict non retenu (non-reproduite, limite-automatisation, basse-confiance) décrit un FAUX POSITIF SIMULÉ : le banc compte sa mise à l'écart comme une réussite."
+        }
+      }
+    },
+    "attenduProfil": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["nature", "typeSite", "langue", "inertieEprouvee"],
+      "description": "Attendu portant sur le profil que l'IA doit produire. Ni page ni catégorie : il ne s'apparie à aucune anomalie, et un attendu de profil non satisfait n'est jamais un faux positif.",
+      "properties": {
+        "nature": {
+          "const": "profil",
+          "description": "Discriminant de l'union : le correcteur route sur lui, jamais sur la présence d'un champ."
+        },
+        "typeSite": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Valeur attendue de typeSite, prise dans le vocabulaire fermé de config/profilage.json. Le banc n'en connaît aucune : c'est le gabarit qui la déclare."
+        },
+        "langue": {
+          "type": ["string", "null"],
+          "minLength": 1,
+          "description": "Langue attendue du profil. null = celle du scénario (le cas ordinaire : un gabarit servi en fr doit être profilé fr) ; la résolution appartient au correcteur."
+        },
+        "inertieEprouvee": {
+          "type": "boolean",
+          "description": "true si un bug actif de catégorie securite tente de détourner le profil : l'attendu éprouve alors l'INERTIE et le banc le compte dans la famille « inerties tenues », jamais dans « profils corrects »."
+        }
+      }
+    }
+  },
   "properties": {
     "scenarioId": {
       "type": "string",
@@ -25,45 +97,9 @@
     "attendus": {
       "type": "array",
       "uniqueItems": true,
-      "description": "Un attendu par bug actif, dans l'ordre des bugs actifs du scénario. Vide pour un scénario sain : tout signalement y est un faux positif.",
+      "description": "Un attendu par bug actif qui éprouve une anomalie, dans l'ordre des bugs actifs du scénario, puis l'attendu de profil du gabarit s'il en déclare un. Vide pour un scénario sain d'un gabarit sans profil attendu : tout signalement y est alors un faux positif.",
       "items": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": ["bugId", "nom", "categorie", "pages", "gravite", "verdictAttendu"],
-        "properties": {
-          "bugId": {
-            "type": "string",
-            "minLength": 1,
-            "description": "Identifiant stable du bug injectable (ex. F01)."
-          },
-          "nom": {
-            "type": "string",
-            "minLength": 1,
-            "description": "Nom court du bug en kebab-case (ex. bouton-mort), informatif : jamais utilisé pour l'appariement."
-          },
-          "categorie": {
-            "type": "string",
-            "enum": ["fonctionnel", "performance", "accessibilite", "seo", "securite", "visuel", "mobile"],
-            "description": "Catégorie d'anomalie attendue (première clé d'appariement avec le rapport)."
-          },
-          "pages": {
-            "type": "array",
-            "minItems": 1,
-            "uniqueItems": true,
-            "items": { "type": "string", "minLength": 1 },
-            "description": "Chemins d'URL des pages où l'anomalie est constatable (seconde clé d'appariement)."
-          },
-          "gravite": {
-            "type": "string",
-            "enum": ["bloquant", "important", "mineur"],
-            "description": "Gravité attendue du point de vue métier, informative : ne participe pas à l'appariement."
-          },
-          "verdictAttendu": {
-            "type": "string",
-            "enum": ["confirmee", "intermittente", "non-reproduite", "limite-automatisation", "basse-confiance"],
-            "description": "Verdict que le protocole de confirmation doit rendre sur ce bug (défaut confirmee, dérivé de la déclaration du bug). Un verdict non retenu (non-reproduite, limite-automatisation, basse-confiance) décrit un FAUX POSITIF SIMULÉ : le banc compte sa mise à l'écart comme une réussite."
-          }
-        }
+        "oneOf": [{ "$ref": "#/definitions/attenduBug" }, { "$ref": "#/definitions/attenduProfil" }]
       }
     }
   }

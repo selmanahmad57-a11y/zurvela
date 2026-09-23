@@ -34,9 +34,16 @@ describe('registre des sujets', () => {
 
 describe('lireOptions', () => {
   it('accepte --sujet avec --scenario ou --tous, et le laisse absent sinon', () => {
-    expect(lireOptions(['--sujet', 'factice', '--scenario', 'x'])).toEqual({ scenario: 'x', tous: false, sujet: 'factice' });
-    expect(lireOptions(['--tous', '--sujet', 'reel'])).toEqual({ scenario: undefined, tous: true, sujet: 'reel' });
-    expect(lireOptions(['--tous'])).toEqual({ scenario: undefined, tous: true, sujet: undefined });
+    expect(lireOptions(['--sujet', 'factice', '--scenario', 'x'])).toEqual({ scenario: 'x', tous: false, sujet: 'factice', sansIa: false });
+    expect(lireOptions(['--tous', '--sujet', 'reel'])).toEqual({ scenario: undefined, tous: true, sujet: 'reel', sansIa: false });
+    expect(lireOptions(['--tous'])).toEqual({ scenario: undefined, tous: true, sujet: undefined, sansIa: false });
+  });
+
+  it('accepte --sans-ia, qui est un drapeau et vaut faux par défaut', () => {
+    expect(lireOptions(['--tous', '--sans-ia'])).toEqual({ scenario: undefined, tous: true, sujet: undefined, sansIa: true });
+    expect(lireOptions(['--scenario', 'x', '--sans-ia'])?.sansIa).toBe(true);
+    // Le drapeau ne prend pas de valeur : `--sans-ia faux` est une ligne mal formée.
+    expect(lireOptions(['--tous', '--sans-ia=faux'])).toBeNull();
   });
 
   it('rejette une ligne de commande mal formée', () => {
@@ -53,7 +60,7 @@ describe('sujet factice', () => {
     ];
     const lignes: string[] = [];
 
-    const scorecard = await executerBanc({ scenarios, scanner: SUJETS.factice, config, dico, obtenirGabarit, journal: (ligne) => lignes.push(ligne) });
+    const scorecard = await executerBanc({ scenarios, scanner: SUJETS.factice, config, dico, obtenirGabarit, iaDeclareeAbsente: true, journal: (ligne) => lignes.push(ligne) });
 
     expect(lignes[0]).toBe(traduire(dico, 'banc.demarrage', { nombre: 2, scanner: 'scannerFactice' }));
     expect(scorecard.global).toMatchObject({

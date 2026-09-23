@@ -1,0 +1,19 @@
+{
+  "$schema": "./profilage.schema.json",
+  "$commentaire": "Vocabulaire et réglages du profilage (brique 4a). Le schéma Ajv de validation de la réponse du modèle est DÉRIVÉ de ce fichier : ajouter un type de site ici suffit, le code n'en connaît aucun. La valeur d'échappement (`autre`) est obligatoire : une énumération fermée sans échappatoire pousse le modèle à mentir — forcer un site inclassable dans la case la moins fausse est pire qu'un `autre` honnête accompagné de sa description libre.",
+  "typesSite": [
+    "vitrine-contact",
+    "boutique",
+    "reservation",
+    "blog-contenu",
+    "application",
+    "autre"
+  ],
+  "valeurEchappement": "autre",
+  "contexteMaxChars": 6000,
+  "enTeteMaxChars": 300,
+  "maxTokensReponse": 512,
+  "relancesMax": 1,
+  "facteurConfianceApresRelance": 0.8,
+  "varianceAppels": 5
+}

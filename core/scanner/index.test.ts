@@ -4,7 +4,14 @@
  * ses signaux, le protocole passe-plat.
  */
 import { beforeAll, describe, expect, it } from 'vitest';
-import { creerClientIa, type ClientIa } from '../ia/index.js';
+import {
+  RAISON_CLE_ABSENTE,
+  creerClientIa,
+  type ClientIa,
+  type ContexteProfilage,
+  type ProfilPage,
+  type ResultatIa,
+} from '../ia/index.js';
 import type {
   AnomalieCandidate,
   ContexteConfirmation,
@@ -17,7 +24,7 @@ import type {
   Reexecuteur,
   Signal,
 } from '../types.js';
-import { chargerConfigScanner, type ConfigScanner } from './config.js';
+import { chargerConfigScanner, type ConfigProfilage, type ConfigScanner } from './config.js';
 import { autoDiagnosticMecanique } from './confirmation/auto-diagnostic.js';
 import { protocolePassePlat } from './confirmation/passe-plat.js';
 import { reexecuteurFactice } from './confirmation/fabriques-test.js';
@@ -26,6 +33,12 @@ import { MOTIF_REPRODUITE } from './confirmation/verdict.js';
 import { DESCRIPTION_404_INTERNE, creerDetecteurHttp } from './detection/d-http.js';
 import { DESCRIPTION_IMAGE_CASSEE, creerDetecteurImage } from './detection/d-image.js';
 import { creerScanner, RAISON_CONFIRMATION_EN_ERREUR, type DependancesScanner, type SessionRejeu } from './index.js';
+import {
+  RAISON_CONTEXTE_ABSENT,
+  RAISON_PROFILAGE_EN_ERREUR,
+  type CollecteProfilage,
+  type ExplorateurProfilant,
+} from './profilage.js';
 
 const ORIGINE = 'http://127.0.0.1:4800';
 const URL_CONTACT = `${ORIGINE}/contact`;
@@ -294,6 +307,9 @@ describe('creerScanner', () => {
       'exploration.viewport',
       'exploration.viewport',
       'exploration.fin',
+      // Le profilage n'est pas assemblé dans ces dépendances : il se TAIT
+      // bruyamment plutôt que de disparaître du journal.
+      'profilage.indisponible',
       'detection.fin',
       'confirmation.passe-plat',
       'scan.fin',
@@ -343,6 +359,7 @@ describe('creerScanner', () => {
       'scan.debut',
       'ia.mode',
       'scan.erreur',
+      'profilage.indisponible',
       'detection.fin',
       'confirmation.passe-plat',
       'scan.fin',
@@ -519,5 +536,197 @@ describe('creerScanner — traçabilité du protocole dans le Rapport', () => {
     const retenus = rapport.groupes?.filter((resultat) => resultat.verdict === 'confirmee') ?? [];
     expect(retenus).toHaveLength(rapport.anomalies.length);
     expect(rapport.ecartees).toEqual([]);
+  });
+});
+
+// ===========================================================================
+// Profilage IA (brique 4a) : un appel par scan, une estampille, et un mode
+// dégradé qui ne coûte rien et ne tue rien.
+// ===========================================================================
+
+const CONFIG_PROFILAGE: ConfigProfilage = {
+  typesSite: ['vitrine-contact', 'boutique', 'autre'],
+  valeurEchappement: 'autre',
+  contexteMaxChars: 6000,
+  enTeteMaxChars: 300,
+  maxTokensReponse: 512,
+  relancesMax: 1,
+  facteurConfianceApresRelance: 0.8,
+  varianceAppels: 5,
+};
+
+const MODELE_PROFILAGE = 'claude-haiku-4-5';
+
+const PROFIL_RENDU: ProfilPage = {
+  typeSite: 'vitrine-contact',
+  natureLibre: null,
+  langue: 'fr',
+  confiance: 0.92,
+  versionPrompt: 'v1',
+  modeleDemande: MODELE_PROFILAGE,
+  modeleServi: `${MODELE_PROFILAGE}-20251001`,
+  apresRelance: false,
+};
+
+/**
+ * Explorateur qui propose un contexte de profilage PAR VIEWPORT : c'est le
+ * cas défavorable, celui qui prouve que l'unicité de l'appel ne dépend pas
+ * de la discipline de l'explorateur.
+ */
+function explorateurProposant(viewports: string[]): ExplorateurProfilant & { propositions: number } {
+  const suivi = {
+    nom: 'explorateur-proposant',
+    propositions: 0,
+    async explorer(contexte: ContexteExploration, observateur: Observateur, collecte?: CollecteProfilage): Promise<Parcours> {
+      for (const viewport of viewports) {
+        observateur.emettre(finActionInerte(viewport));
+        suivi.propositions += 1;
+        collecte?.proposer({ url: `${contexte.urlDepart}#${viewport}`, texte: `body:\n${viewport}`, langueDeclaree: 'fr' });
+      }
+      return parcoursSimule(contexte.urlDepart, viewports[0] ?? '');
+    },
+  };
+  return suivi;
+}
+
+/** Client IA factice : compte ses appels de profilage. JAMAIS de réseau. */
+function iaFactice(reponse: ResultatIa<ProfilPage>): ClientIa & { appels: ContexteProfilage[] } {
+  const appels: ContexteProfilage[] = [];
+  return {
+    ...ia,
+    appels,
+    profiler: async (contexte) => {
+      appels.push(contexte);
+      return reponse;
+    },
+  };
+}
+
+/** Protocole qui ne fait rien mais FACTURE : de quoi vérifier que les coûts s'additionnent. */
+function protocoleCoutant(coutApi: number): ProtocoleConfirmation {
+  return {
+    nom: 'protocole-coutant',
+    confirmer: (candidates) => Promise.resolve({ retenues: [], ecartees: candidates.map((candidate) => ({ candidate, raison: 'simule' })), coutApi }),
+  };
+}
+
+describe('creerScanner — profilage IA', () => {
+  it('appelle le profileur UNE SEULE FOIS par scan, sur le premier contexte proposé, et estampille le rapport', async () => {
+    const explorateur = explorateurProposant(['desktop', 'mobile']);
+    const clientIa = iaFactice({ disponible: true, valeur: PROFIL_RENDU, coutApi: 0.004 });
+    const scanner = creerScanner(
+      dependances({ explorateur, ia: clientIa, profilage: { config: CONFIG_PROFILAGE, modele: MODELE_PROFILAGE } }),
+    );
+
+    const rapport = await scanner(ORIGINE, { timeoutMs: 60000 });
+
+    expect(explorateur.propositions).toBe(2);
+    expect(clientIa.appels).toHaveLength(1);
+    expect(clientIa.appels[0]?.url).toBe(`${ORIGINE}#desktop`);
+    expect(rapport.profil).toEqual({
+      typeSite: 'vitrine-contact',
+      natureLibre: null,
+      langue: 'fr',
+      confiance: 0.92,
+      versionPrompt: 'v1',
+      modeleDemande: MODELE_PROFILAGE,
+      modeleServi: `${MODELE_PROFILAGE}-20251001`,
+      apresRelance: false,
+    });
+    const fin = rapport.journal.find((entree) => entree.type === 'profilage.fin')?.details as Record<string, unknown> | undefined;
+    expect(fin).toMatchObject({
+      typeSite: 'vitrine-contact',
+      langue: 'fr',
+      confiance: 0.92,
+      coutApi: 0.004,
+      versionPrompt: 'v1',
+      modeleDemande: MODELE_PROFILAGE,
+      modeleServi: `${MODELE_PROFILAGE}-20251001`,
+    });
+    // Le journal porte le profilage entre l'exploration et la détection.
+    const types = rapport.journal.map((entree) => entree.type);
+    expect(types.indexOf('profilage.debut')).toBeGreaterThan(types.indexOf('exploration.fin'));
+    expect(types.indexOf('profilage.fin')).toBeLessThan(types.indexOf('detection.fin'));
+  });
+
+  it('le coût du profilage entre dans Rapport.coutApi, additionné à celui de la confirmation', async () => {
+    const scanner = creerScanner(
+      dependances({
+        explorateur: explorateurProposant(['desktop']),
+        detecteurs: [detecteurInerteSimule({ viewports: [] })],
+        protocole: protocoleCoutant(0.01),
+        ia: iaFactice({ disponible: true, valeur: PROFIL_RENDU, coutApi: 0.004 }),
+        profilage: { config: CONFIG_PROFILAGE, modele: MODELE_PROFILAGE },
+      }),
+    );
+
+    const rapport = await scanner(ORIGINE, { timeoutMs: 60000 });
+
+    expect(rapport.coutApi).toBeCloseTo(0.014, 10);
+    expect(rapport.journal.find((entree) => entree.type === 'scan.fin')?.details).toMatchObject({ coutApi: rapport.coutApi });
+  });
+
+  it('client indisponible : le scan reste vert, le rapport n’a pas de profil, le coût reste nul et le journal dit pourquoi', async () => {
+    const clientIa = iaFactice({ disponible: false, raison: RAISON_CLE_ABSENTE });
+    const explorateur = explorateurProposant(['desktop', 'mobile']);
+    const contexteDetection = { viewports: [] as string[] };
+    const scanner = creerScanner(
+      dependances({
+        explorateur,
+        detecteurs: [detecteurInerteSimule(contexteDetection), detecteurMuet],
+        ia: clientIa,
+        profilage: { config: CONFIG_PROFILAGE, modele: MODELE_PROFILAGE },
+      }),
+    );
+
+    const rapport = await scanner(ORIGINE, { timeoutMs: 60000 });
+
+    // Le scan a produit exactement ce qu'il produit sans IA : rien n'a bougé.
+    expect(rapport.profil).toBeUndefined();
+    expect(rapport.coutApi).toBe(0);
+    expect(rapport.parcours?.arret).toBe('complet');
+    expect(rapport.anomalies).toHaveLength(1);
+    expect(clientIa.appels).toHaveLength(1);
+    expect(rapport.journal.find((entree) => entree.type === 'profilage.indisponible')?.details).toMatchObject({
+      raison: RAISON_CLE_ABSENTE,
+      coutApi: 0,
+    });
+    expect(rapport.journal.map((entree) => entree.type)).not.toContain('profilage.fin');
+  });
+
+  it('profileur qui LÈVE : aucune exception ne sort du scan, le rapport est complet et sans profil', async () => {
+    const clientIa: ClientIa = { ...ia, profiler: () => Promise.reject(new Error('api injoignable')) };
+    const scanner = creerScanner(
+      dependances({
+        explorateur: explorateurProposant(['desktop']),
+        detecteurs: [detecteurInerteSimule({ viewports: [] })],
+        ia: clientIa,
+        profilage: { config: CONFIG_PROFILAGE, modele: MODELE_PROFILAGE },
+      }),
+    );
+
+    const rapport = await scanner(ORIGINE, { timeoutMs: 60000 });
+
+    expect(rapport.profil).toBeUndefined();
+    expect(rapport.coutApi).toBe(0);
+    expect(rapport.anomalies).toHaveLength(1);
+    expect(rapport.journal.find((entree) => entree.type === 'profilage.indisponible')?.details).toMatchObject({
+      raison: RAISON_PROFILAGE_EN_ERREUR,
+      message: 'api injoignable',
+    });
+  });
+
+  it('exploration qui ne propose aucun texte : le profileur n’est pas appelé, et le journal le nomme', async () => {
+    const clientIa = iaFactice({ disponible: true, valeur: PROFIL_RENDU, coutApi: 1 });
+    const scanner = creerScanner(
+      dependances({ explorateur: explorateurSimule(['desktop']), ia: clientIa, profilage: { config: CONFIG_PROFILAGE, modele: MODELE_PROFILAGE } }),
+    );
+
+    const rapport = await scanner(ORIGINE, { timeoutMs: 60000 });
+
+    expect(clientIa.appels).toEqual([]);
+    expect(rapport.profil).toBeUndefined();
+    expect(rapport.coutApi).toBe(0);
+    expect(rapport.journal.find((entree) => entree.type === 'profilage.indisponible')?.details).toMatchObject({ raison: RAISON_CONTEXTE_ABSENT });
   });
 });

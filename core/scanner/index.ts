@@ -1,6 +1,6 @@
 /**
- * Pipeline du scanner (cahier §1) : EXPLORATION → OBSERVATION → DÉTECTION
- * → CONFIRMATION. Ce module orchestre les étapes et tient le journal
+ * Pipeline du scanner (cahier §1) : EXPLORATION → OBSERVATION → PROFILAGE
+ * → DÉTECTION → CONFIRMATION. Ce module orchestre les étapes et tient le journal
  * (constitution §5) ; il ne connaît ni Playwright ni les détecteurs
  * concrets : tout lui est injecté (`creerScannerParDefaut` dans defaut.ts
  * fait l'assemblage réel, les tests injectent des doublures).
@@ -10,7 +10,6 @@ import type {
   CandidateEcartee,
   Detecteur,
   EntreeJournal,
-  Explorateur,
   Observateur,
   Parcours,
   ProtocoleConfirmation,
@@ -21,6 +20,7 @@ import type {
 } from '../types.js';
 import type { ConfigScanner } from './config.js';
 import { detecter } from './detection/index.js';
+import { ouvrirCollecte, profilerSite, type ExplorateurProfilant, type OptionsProfilage } from './profilage.js';
 
 /**
  * Ressource de rejeu d'un scan : le protocole de confirmation re-exécute
@@ -36,7 +36,7 @@ export interface SessionRejeu {
 
 export interface DependancesScanner {
   config: ConfigScanner;
-  explorateur: Explorateur;
+  explorateur: ExplorateurProfilant;
   /** Fabrique d'un observateur neuf par scan (tampon de signaux). */
   observateur: () => Observateur;
   detecteurs: Detecteur[];
@@ -44,9 +44,15 @@ export interface DependancesScanner {
   /** Ouvre la capacité de rejeu du scan ; elle reçoit le journal et l'échéance du scan en cours. */
   ouvrirRejeu: (journaliser: (type: string, details?: unknown) => void, echeance: number) => SessionRejeu;
   ia: ClientIa;
+  /**
+   * Réglages du profilage IA (brique 4a). ABSENTS : le scan tourne sans
+   * profil et le journal le dit — le moteur ne dépend jamais de l'IA
+   * (constitution §4).
+   */
+  profilage?: OptionsProfilage;
 }
 
-/** Coût des appels IA hors confirmation : aucun dans cette brique (mode dégradé permanent, cahier §4). */
+/** Coût des appels IA de l'exploration elle-même : aucun (la politique reste déterministe). */
 const COUT_API_EXPLORATION = 0;
 
 function messageErreur(erreur: unknown): string {
@@ -115,13 +121,41 @@ export function creerScanner(dependances: DependancesScanner): Scanner {
     // page hostile) donne un rapport PARTIEL, jamais une exception : le banc
     // note un rapport. Les signaux déjà collectés restent exploitables.
     const observateur = dependances.observateur();
+    // La collecte est NEUVE à chaque scan : c'est elle qui garantit l'appel
+    // unique, même si l'exploration proposait un contexte par viewport.
+    //
+    // Elle est ouverte dès que le profilage est ASSEMBLÉ, y compris sans clé
+    // d'API : l'extraction en page s'exécute alors à chaque scan, même
+    // dégradé. C'est délibéré — le mode dégradé protège l'exécution, il ne
+    // vérifie rien, et un chemin que rien n'exécute pourrit en silence
+    // (APPRENTISSAGES n°5).
+    const collecteProfilage = ouvrirCollecte({
+      maxChars: dependances.profilage?.config.contexteMaxChars ?? 0,
+      enTeteMaxChars: dependances.profilage?.config.enTeteMaxChars ?? 0,
+    });
     let parcours: Parcours;
     try {
-      parcours = await explorateur.explorer({ urlDepart: url, echeance, journaliser }, observateur);
+      parcours = await explorateur.explorer(
+        { urlDepart: url, echeance, journaliser },
+        observateur,
+        dependances.profilage === undefined ? undefined : collecteProfilage.collecte,
+      );
     } catch (cause: unknown) {
       journaliser('scan.erreur', { etape: 'exploration', message: messageErreur(cause) });
       parcours = { urlDepart: url, pages: [], actions: [], arret: 'erreur' };
     }
+
+    // 2 bis. Profilage IA : UN appel par scan, sur le texte de la page de
+    // départ déjà lue par l'exploration. Rien ne le consomme encore (4b sera
+    // son premier lecteur) ; cette brique le produit, l'estampille et le
+    // mesure. Aucune panne d'IA ne tue un scan.
+    const profilage = await profilerSite({
+      ia,
+      ...(dependances.profilage === undefined ? {} : { options: dependances.profilage }),
+      contexte: collecteProfilage.capture(),
+      journaliser,
+      echeance,
+    });
 
     // 3. Détection.
     const signaux = observateur.signaux();
@@ -156,7 +190,7 @@ export function creerScanner(dependances: DependancesScanner): Scanner {
       await session.fermer().catch(() => undefined);
     }
 
-    const coutApi = COUT_API_EXPLORATION + confirmation.coutApi;
+    const coutApi = COUT_API_EXPLORATION + profilage.coutApi + confirmation.coutApi;
     const dureeMs = Date.now() - debut;
     journaliser('scan.fin', { dureeMs, coutApi, nbAnomalies: confirmation.retenues.length, arret: parcours.arret });
 
@@ -176,6 +210,7 @@ export function creerScanner(dependances: DependancesScanner): Scanner {
       ecartees: confirmation.ecartees,
       ...(confirmation.groupes === undefined ? {} : { groupes: confirmation.groupes }),
       ...(confirmation.decouvertes === undefined ? {} : { decouvertes: confirmation.decouvertes }),
+      ...(profilage.profil === undefined ? {} : { profil: profilage.profil }),
     };
   };
 }

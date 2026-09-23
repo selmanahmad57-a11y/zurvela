@@ -10,14 +10,21 @@
  */
 /// <reference lib="dom" />
 import { createServer } from 'node:http';
-import { chargerActionsInterdites, chargerConfigScanner } from '../config.js';
+import { chargerActionsInterdites, chargerConfigProfilage, chargerConfigScanner } from '../config.js';
 import { creerContexte, lancerNavigateur, NOM_TAMPON } from '../navigateur.js';
-import { etatsImages, extrairePage, lireDeclencheur, lireMutations, recouvrements, validiteFormulaire } from './en-page.js';
+import { etatsImages, extrairePage, extraireTexte, lireDeclencheur, lireMutations, recouvrements, validiteFormulaire } from './en-page.js';
 import { attributsLus } from './filtre-actions.js';
 
-/** Page minimale : un formulaire avec déclencheur, une image et un lien. Aucun texte n'est lu. */
+/**
+ * Page minimale : un formulaire avec déclencheur, une image et un lien. Le
+ * `lang`, le `title`, la métadonnée et le paragraphe visible ne servent qu'à
+ * la commande de profilage ; le reste des commandes n'en lit rien.
+ */
 const HTML =
-  '<!doctype html><html><body><div><form id="f" method="post" action="/api">' +
+  '<!doctype html><html lang="fr"><head><title>Sonde</title>' +
+  '<meta name="description" content="Metadonnee de sonde">' +
+  '<style>.x { color: red }</style></head><body><p>Paragraphe visible.</p>' +
+  '<p style="display:none">Masque</p><div><form id="f" method="post" action="/api">' +
   '<input name="a" type="email"><button type="submit" name="b"></button></form></div>' +
   '<o:p><form id="g" method="post" action="/api2"><input name="c" type="text">' +
   '<input type="image" name="d" alt="x" src="/image.svg"></form></o:p>' +
@@ -26,7 +33,11 @@ const HTML =
 const IMAGE_SVG = '<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10"></svg>';
 
 async function principal(): Promise<void> {
-  const [config, actionsInterdites] = await Promise.all([chargerConfigScanner(), chargerActionsInterdites()]);
+  const [config, actionsInterdites, configProfilage] = await Promise.all([
+    chargerConfigScanner(),
+    chargerActionsInterdites(),
+    chargerConfigProfilage(),
+  ]);
   const viewport = config.viewports[0];
   if (viewport === undefined) {
     throw new Error('config.viewports vide');
@@ -55,6 +66,7 @@ async function principal(): Promise<void> {
     });
     const resultat = {
       page: await extrairePage(page),
+      texte: await extraireTexte(page, configProfilage.contexteMaxChars, config.exploration.evaluationMs),
       images: await etatsImages(page),
       recouvrements: (await recouvrements(page, { max: config.exploration.elementsInteractifsMax, budgetMs: config.exploration.evaluationMs })).recouvrements,
       mutations: (await lireMutations(page, NOM_TAMPON, '#f')).mutations,

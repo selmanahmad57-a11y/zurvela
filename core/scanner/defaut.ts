@@ -3,15 +3,21 @@
  * politique déterministe, filtre d'actions, six détecteurs, protocole
  * anti-faux-positifs (consolidation, re-exécution, verdict, calibration)
  * avec son auto-diagnostic mécanique, client IA (mode dégradé sans clé,
- * constitution §4).
+ * constitution §4) et profilage IA de la page de départ (brique 4a).
  *
  * Seul module du moteur qui relie le pipeline aux modules concrets
  * (navigateur, exploration, observation, détection, re-exécution).
  */
-import { creerClientIa } from '../ia/index.js';
+import { creerClientIa, type ClientIa } from '../ia/index.js';
 import type { Browser } from 'playwright';
-import type { Explorateur, Scanner } from '../types.js';
-import { chargerActionsInterdites, chargerConfigScanner, type ActionsInterdites, type ConfigScanner } from './config.js';
+import type { Scanner } from '../types.js';
+import {
+  chargerActionsInterdites,
+  chargerConfigProfilage,
+  chargerConfigScanner,
+  type ActionsInterdites,
+  type ConfigScanner,
+} from './config.js';
 import { autoDiagnosticMecanique } from './confirmation/auto-diagnostic.js';
 import { creerProtocole } from './confirmation/protocole.js';
 import { creerDetecteurs } from './detection/index.js';
@@ -21,6 +27,7 @@ import { politiqueDeterministe } from './exploration/politique.js';
 import { creerScanner, type SessionRejeu } from './index.js';
 import { lancerNavigateur } from './navigateur.js';
 import { creerObservateur } from './observation/observateur.js';
+import type { ExplorateurProfilant } from './profilage.js';
 import { creerReexecuteur } from './reexecuteur.js';
 
 export const NOM_EXPLORATEUR_NAVIGATEUR = 'explorateur-navigateur';
@@ -35,12 +42,12 @@ export const NOM_EXPLORATEUR_NAVIGATEUR = 'explorateur-navigateur';
  * l'exploration n'a pas rendu la main (page qui ne répond plus) ; les
  * attentes en cours échouent alors et le rapport partiel est rendu.
  */
-function explorateurAvecNavigateur(config: ConfigScanner, actionsInterdites: ActionsInterdites): Explorateur {
+function explorateurAvecNavigateur(config: ConfigScanner, actionsInterdites: ActionsInterdites): ExplorateurProfilant {
   const filtre = creerFiltre(actionsInterdites);
   const politique = politiqueDeterministe(config.remplissage);
   return {
     nom: NOM_EXPLORATEUR_NAVIGATEUR,
-    async explorer(contexte, observateur) {
+    async explorer(contexte, observateur, collecte) {
       const navigateur = await lancerNavigateur(config);
       const garde = setTimeout(() => {
         contexte.journaliser('exploration.echeance.fermeture', { echeance: new Date(contexte.echeance).toISOString() });
@@ -49,7 +56,7 @@ function explorateurAvecNavigateur(config: ConfigScanner, actionsInterdites: Act
       garde.unref();
       try {
         const explorateur = creerExplorateur({ config, politique, filtre, navigateur });
-        return await explorateur.explorer(contexte, observateur);
+        return await explorateur.explorer(contexte, observateur, collecte);
       } finally {
         clearTimeout(garde);
         await navigateur.close();
@@ -99,8 +106,22 @@ function sessionRejeu(
   };
 }
 
-export async function creerScannerParDefaut(): Promise<Scanner> {
-  const [config, actionsInterdites] = await Promise.all([chargerConfigScanner(), chargerActionsInterdites()]);
+/** Ce que l'appelant peut substituer dans l'assemblage réel. */
+export interface OptionsAssemblage {
+  /**
+   * Client IA à utiliser. Par défaut, celui de `core/ia` — dégradé tant
+   * qu'aucune capacité n'est installée. Le banc injecte ici son client
+   * REJOUABLE : l'instrument de mesure ne doit dépendre d'aucun réseau.
+   */
+  ia?: ClientIa;
+}
+
+export async function creerScannerParDefaut(options: OptionsAssemblage = {}): Promise<Scanner> {
+  const [config, actionsInterdites, configProfilage] = await Promise.all([
+    chargerConfigScanner(),
+    chargerActionsInterdites(),
+    chargerConfigProfilage(),
+  ]);
   return creerScanner({
     config,
     explorateur: explorateurAvecNavigateur(config, actionsInterdites),
@@ -108,6 +129,10 @@ export async function creerScannerParDefaut(): Promise<Scanner> {
     detecteurs: creerDetecteurs(config.detecteurs),
     protocole: creerProtocole({ config: config.confirmation, autoDiagnostic: autoDiagnosticMecanique }),
     ouvrirRejeu: (journaliser, echeance) => sessionRejeu(config, journaliser, echeance),
-    ia: creerClientIa(config.ia),
+    ia: options.ia ?? creerClientIa(config.ia),
+    // Le profilage est TOUJOURS assemblé : c'est le client IA, et lui seul,
+    // qui décide s'il peut répondre. Un scan sans clé n'a donc pas de profil,
+    // mais il a une raison au journal (constitution §4, cahier §1).
+    profilage: { config: configProfilage, modele: config.ia.modeles.profilage },
   });
 }

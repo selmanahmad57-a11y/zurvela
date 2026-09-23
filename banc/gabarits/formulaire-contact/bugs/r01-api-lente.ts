@@ -24,8 +24,7 @@ export const R01: BugInjectable = {
   },
   async transformerReponseApi(reponse, _requete, contexte) {
     const delai = lireDelai(contexte.parametres);
-    // unref : un délai en cours ne retient pas le processus quand le banc a fini.
-    await new Promise<void>((resoudre) => setTimeout(resoudre, delai).unref());
+    await contexte.attendre(delai);
     return reponse;
   },
 };

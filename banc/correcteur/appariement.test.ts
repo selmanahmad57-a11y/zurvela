@@ -7,14 +7,17 @@ import type {
   ResultatGroupe,
   VerdictConfirmation,
 } from '../../core/types.js';
-import type { AttenduManifeste, ComptesProtocole, Manifeste } from '../types.js';
+import type { AttenduBug, ComptesProtocole, Manifeste } from '../types.js';
 import {
   ErreurRapportInexploitable,
   RAISON_ECARTEES_SANS_GROUPES,
   apparier,
   calculerComptesProtocole,
   comptesProtocoleZero,
+  noterProfils,
   normaliserLocalisation,
+  profilsNonMesures,
+  statutSelonPertes,
   verifierRapportExploitable,
 } from './appariement.js';
 
@@ -49,8 +52,8 @@ const manifeste: Manifeste = {
   gabarit: 'formulaire-contact',
   langue: 'fr',
   attendus: [
-    { bugId: 'F01', nom: 'bouton-mort', categorie: 'fonctionnel', pages: ['/contact'], gravite: 'bloquant', verdictAttendu: 'confirmee' },
-    { bugId: 'V01', nom: 'image-cassee', categorie: 'visuel', pages: ['/', '/contact', '/confirmation'], gravite: 'mineur', verdictAttendu: 'confirmee' },
+    { nature: 'bug', bugId: 'F01', nom: 'bouton-mort', categorie: 'fonctionnel', pages: ['/contact'], gravite: 'bloquant', verdictAttendu: 'confirmee' },
+    { nature: 'bug', bugId: 'V01', nom: 'image-cassee', categorie: 'visuel', pages: ['/', '/contact', '/confirmation'], gravite: 'mineur', verdictAttendu: 'confirmee' },
   ],
 };
 
@@ -159,8 +162,8 @@ describe('apparier', () => {
     const doublon: Manifeste = {
       ...manifeste,
       attendus: [
-        { bugId: 'F01', nom: 'bouton-mort', categorie: 'fonctionnel', pages: ['/contact'], gravite: 'bloquant', verdictAttendu: 'confirmee' },
-        { bugId: 'F02', nom: 'echec-silencieux', categorie: 'fonctionnel', pages: ['/contact'], gravite: 'bloquant', verdictAttendu: 'confirmee' },
+        { nature: 'bug', bugId: 'F01', nom: 'bouton-mort', categorie: 'fonctionnel', pages: ['/contact'], gravite: 'bloquant', verdictAttendu: 'confirmee' },
+        { nature: 'bug', bugId: 'F02', nom: 'echec-silencieux', categorie: 'fonctionnel', pages: ['/contact'], gravite: 'bloquant', verdictAttendu: 'confirmee' },
       ],
     };
     const { attendus, fauxPositifs } = apparier(rapport([anomalie({ urlOuEtape: '/contact' })]), doublon);
@@ -183,12 +186,16 @@ describe('apparier', () => {
 
 describe('apparier — verdicts de confirmation', () => {
   /** T01/L01 : le manifeste attend que le protocole ÉCARTE l'anomalie. */
-  const manifesteEcarte: Manifeste = {
-    ...manifeste,
-    attendus: [
-      { bugId: 'T01', nom: 'echec-transitoire', categorie: 'fonctionnel', pages: ['/contact'], gravite: 'bloquant', verdictAttendu: 'non-reproduite' },
-    ],
+  const T01_ECARTE: AttenduBug = {
+    nature: 'bug',
+    bugId: 'T01',
+    nom: 'echec-transitoire',
+    categorie: 'fonctionnel',
+    pages: ['/contact'],
+    gravite: 'bloquant',
+    verdictAttendu: 'non-reproduite',
   };
+  const manifesteEcarte: Manifeste = { ...manifeste, attendus: [T01_ECARTE] };
 
   it('détecte un attendu apparié parmi les écartées : détecter puis écarter à raison est une réussite', () => {
     const { attendus, fauxPositifs } = apparier(
@@ -240,7 +247,7 @@ describe('apparier — verdicts de confirmation', () => {
         [anomalie({ categorie: 'fonctionnel', urlOuEtape: '/contact', verdict: 'intermittente' })],
         [ecartee({ categorie: 'fonctionnel', urlOuEtape: '/contact' }, 'non-reproduite')],
       ),
-      { ...manifesteEcarte, attendus: [{ ...manifesteEcarte.attendus[0]!, bugId: 'I01', verdictAttendu: 'intermittente' }] },
+      { ...manifesteEcarte, attendus: [{ ...T01_ECARTE, bugId: 'I01', verdictAttendu: 'intermittente' }] },
     );
     expect(attendus[0]).toMatchObject({ verdict: 'detecte', verdictRendu: 'intermittente', bienJuge: true });
   });
@@ -312,7 +319,8 @@ describe('calculerComptesProtocole', () => {
   }
 
   /** T01 : le manifeste attend que le protocole écarte ce bug — c'est le faux positif simulé. */
-  const T01: AttenduManifeste = {
+  const T01: AttenduBug = {
+    nature: 'bug',
     bugId: 'T01',
     nom: 'echec-transitoire',
     categorie: 'fonctionnel',
@@ -520,5 +528,142 @@ describe('calculerComptesProtocole', () => {
     expect(comptes.nbGroupesRetenus).toBe(2);
     expect(comptes.nbGroupesEcartes).toBe(2);
     expect(comptes.nbGroupes).toBe(comptes.nbGroupesRetenus + comptes.nbGroupesEcartes);
+  });
+});
+
+
+// ---------------------------------------------------------------------------
+// INVARIANT : pertes > 0 ⟹ statut ≠ ok
+// ---------------------------------------------------------------------------
+
+describe('statutSelonPertes — l’invariant, posé directement', () => {
+  const comptes = (nbPertesProtocole: number): ComptesProtocole => ({ ...comptesProtocoleZero(), nbPertesProtocole });
+
+  it('interdit le statut ok dès qu’une anomalie réelle a été perdue', () => {
+    expect(statutSelonPertes(comptes(1))).toBe('erreur');
+    expect(statutSelonPertes(comptes(7))).toBe('erreur');
+  });
+
+  it('laisse ok quand aucune anomalie n’a été perdue', () => {
+    expect(statutSelonPertes(comptes(0))).toBe('ok');
+    expect(statutSelonPertes(comptesProtocoleZero())).toBe('ok');
+  });
+
+  it('ne dépend d’AUCUN autre compteur : seule la perte décide', () => {
+    // Un scénario par ailleurs flatteur — beaucoup de fausses alertes évitées,
+    // tout retenu — ne rachète pas une anomalie détruite. C'est exactement le
+    // mensonge que l'invariant existe pour empêcher (APPRENTISSAGES n°3).
+    const flatteur: ComptesProtocole = {
+      nbCandidates: 40,
+      nbGroupes: 10,
+      nbGroupesRetenus: 9,
+      nbGroupesEcartes: 1,
+      nbFaussesAlertesEvitees: 8,
+      nbPertesProtocole: 1,
+      nbEcartesNonApparies: 0,
+    };
+    expect(statutSelonPertes(flatteur)).toBe('erreur');
+    expect(statutSelonPertes({ ...flatteur, nbPertesProtocole: 0 })).toBe('ok');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Notation des attendus de PROFIL
+// ---------------------------------------------------------------------------
+
+describe('noterProfils', () => {
+  const ATTENDU_PROFIL = { nature: 'profil', typeSite: 'vitrine-contact', langue: null } as const;
+
+  function manifesteProfil(inertieEprouvee: boolean, langue: string | null = null, langueScenario = 'fr'): Manifeste {
+    return {
+      ...manifeste,
+      langue: langueScenario,
+      attendus: [...manifeste.attendus, { ...ATTENDU_PROFIL, langue, inertieEprouvee }],
+    };
+  }
+
+  function rapportAvecProfil(surcharges: Partial<NonNullable<Rapport['profil']>> = {}): Rapport {
+    return {
+      ...rapport([]),
+      profil: {
+        typeSite: 'vitrine-contact',
+        natureLibre: null,
+        langue: 'fr',
+        confiance: 0.9,
+        versionPrompt: 'v1',
+        modeleDemande: 'modele-de-test',
+        modeleServi: 'modele-de-test-20260101',
+        apresRelance: false,
+        ...surcharges,
+      },
+    };
+  }
+
+  it('ne note QUE les attendus de nature profil, et un par attendu', () => {
+    const resultats = noterProfils(rapportAvecProfil(), manifesteProfil(false));
+    expect(resultats).toHaveLength(1);
+    expect(resultats[0]?.attendu.nature).toBe('profil');
+    // Les attendus de bug du même manifeste ne sont pas passés par ici.
+    expect(noterProfils(rapportAvecProfil(), manifeste)).toEqual([]);
+  });
+
+  it('satisfait l’attendu quand typeSite ET langue sont conformes', () => {
+    expect(noterProfils(rapportAvecProfil(), manifesteProfil(false))[0]).toMatchObject({
+      satisfait: true,
+      nonMesure: false,
+      langueAttendue: 'fr',
+    });
+  });
+
+  it('résout `langue: null` en langue du SCÉNARIO, et respecte une langue explicite', () => {
+    // Servi en `en` : le profil doit dire `en`, pas la langue d'un autre run.
+    const enAnglais = manifesteProfil(false, null, 'en');
+    expect(noterProfils(rapportAvecProfil({ langue: 'en' }), enAnglais)[0]).toMatchObject({ langueAttendue: 'en', satisfait: true });
+    expect(noterProfils(rapportAvecProfil({ langue: 'fr' }), enAnglais)[0]).toMatchObject({ langueAttendue: 'en', satisfait: false });
+    // Langue explicite : c'est elle qui décide, pas celle du scénario.
+    const langueForcee = manifesteProfil(false, 'de', 'en');
+    expect(noterProfils(rapportAvecProfil({ langue: 'de' }), langueForcee)[0]).toMatchObject({ langueAttendue: 'de', satisfait: true });
+  });
+
+  it('refuse l’attendu si l’un des deux champs objectifs diverge', () => {
+    expect(noterProfils(rapportAvecProfil({ typeSite: 'boutique' }), manifesteProfil(false))[0]?.satisfait).toBe(false);
+    expect(noterProfils(rapportAvecProfil({ langue: 'de' }), manifesteProfil(false))[0]?.satisfait).toBe(false);
+    // Égalité STRICTE des codes de langue : le banc n'invente aucune
+    // équivalence, un `fr-FR` là où `fr` est attendu doit se voir.
+    expect(noterProfils(rapportAvecProfil({ langue: 'fr-FR' }), manifesteProfil(false))[0]?.satisfait).toBe(false);
+  });
+
+  it('ne note NI la description libre NI la confiance déclarée', () => {
+    // Deux champs qu'une page sous injection peut influencer mot à mot :
+    // les noter reviendrait à laisser la page se noter elle-même.
+    const bavard = rapportAvecProfil({ natureLibre: 'texte produit par le modèle', confiance: 0 });
+    expect(noterProfils(bavard, manifesteProfil(false))[0]?.satisfait).toBe(true);
+  });
+
+  it('déclare NON MESURÉ, jamais en échec, un rapport sans profil', () => {
+    const sansProfil = noterProfils(rapport([]), manifesteProfil(false))[0];
+    expect(sansProfil).toMatchObject({ nonMesure: true, satisfait: false });
+    expect(sansProfil?.profil).toBeUndefined();
+    // Même chose pour un scénario dont aucun rapport n'est sorti.
+    expect(profilsNonMesures(manifesteProfil(true))[0]).toMatchObject({ nonMesure: true, satisfait: false });
+  });
+
+  it('transporte `inertieEprouvee` sans le réinterpréter : c’est le drapeau de routage des familles', () => {
+    expect(noterProfils(rapportAvecProfil(), manifesteProfil(true))[0]?.attendu.inertieEprouvee).toBe(true);
+    expect(noterProfils(rapportAvecProfil(), manifesteProfil(false))[0]?.attendu.inertieEprouvee).toBe(false);
+  });
+
+  it('un attendu de profil NON SATISFAIT n’est jamais un faux positif ni un raté de détection', () => {
+    const manifesteMixte = manifesteProfil(true);
+    const rapportFaux: Rapport = {
+      ...rapportAvecProfil({ typeSite: 'boutique' }),
+      anomalies: [anomalie({ categorie: 'fonctionnel', urlOuEtape: '/contact' })],
+    };
+    const { attendus, fauxPositifs } = apparier(rapportFaux, manifesteMixte);
+    // Familles DISTINCTES : l'échec du profil ne touche ni l'un ni l'autre.
+    expect(fauxPositifs).toEqual([]);
+    expect(attendus).toHaveLength(2);
+    expect(attendus[0]?.verdict).toBe('detecte');
+    expect(noterProfils(rapportFaux, manifesteMixte)[0]?.satisfait).toBe(false);
   });
 });

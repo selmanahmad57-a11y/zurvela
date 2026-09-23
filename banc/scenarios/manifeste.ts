@@ -8,7 +8,7 @@
 import { VERDICTS_RETENUS, type VerdictConfirmation } from '../../core/types.js';
 import { normaliserLocalisation } from '../correcteur/appariement.js';
 import { depuisRacine } from '../outils/racine.js';
-import type { AttenduManifeste, Gabarit, Manifeste, Scenario } from '../types.js';
+import type { AttenduBug, AttenduManifeste, AttenduProfil, BugInjectable, Gabarit, Manifeste, Scenario } from '../types.js';
 
 /** Schéma commun à tous les manifestes. */
 export const FICHIER_SCHEMA_MANIFESTE = depuisRacine('banc', 'schemas', 'manifeste.schema.json');
@@ -36,7 +36,7 @@ const VERDICT_ATTENDU_DEFAUT: VerdictConfirmation = 'confirmee';
  * fonction que l'appariement : c'est sa notion de « même page » qui décide,
  * pas une seconde règle qui pourrait en diverger.
  */
-function verifierManifesteNonAmbigu(scenarioId: string, attendus: AttenduManifeste[]): void {
+function verifierManifesteNonAmbigu(scenarioId: string, attendus: AttenduBug[]): void {
   const pagesNormalisees = attendus.map((attendu) => new Set(attendu.pages.map(normaliserLocalisation)));
   for (let i = 0; i < attendus.length; i += 1) {
     for (let j = i + 1; j < attendus.length; j += 1) {
@@ -59,6 +59,40 @@ function verifierManifesteNonAmbigu(scenarioId: string, attendus: AttenduManifes
   }
 }
 
+/**
+ * Catégorie d'un bug qui, ACTIF, fait de l'attendu de profil une épreuve
+ * d'INERTIE plutôt qu'un simple attendu de discernement. La règle est la
+ * catégorie et non l'identifiant du bug : elle vaudra pour le prochain bug de
+ * sécurité sans qu'on ait à revenir ici.
+ */
+const CATEGORIE_CHARGE_SECURITE = 'securite';
+
+/**
+ * L'attendu de PROFIL du scénario, ou null si le gabarit ne se prononce pas.
+ *
+ * La langue déclarée par le gabarit est recopiée TELLE QUELLE, `null`
+ * compris : sa résolution en langue du scénario appartient au correcteur, qui
+ * seul note (`ResultatProfil.langueAttendue`). Le manifeste dit ce que le
+ * gabarit promet, pas ce qu'un scénario particulier en fait.
+ *
+ * `inertieEprouvee`, lui, est vrai dès qu'un bug ACTIF est de catégorie
+ *   `securite` : le même attendu physique (profil conforme) change alors de
+ *   famille comptable, parce qu'une charge tente de le détourner. Tenir sous
+ *   la charge et être correct au repos ne sont pas le même exploit.
+ */
+function deriverAttenduProfil(gabarit: Gabarit, bugsActifs: readonly BugInjectable[]): AttenduProfil | null {
+  const profilAttendu = gabarit.profilAttendu;
+  if (profilAttendu === undefined) {
+    return null;
+  }
+  return {
+    nature: 'profil',
+    typeSite: profilAttendu.typeSite,
+    langue: profilAttendu.langue,
+    inertieEprouvee: bugsActifs.some((bug) => bug.categorie === CATEGORIE_CHARGE_SECURITE),
+  };
+}
+
 export function deriverManifeste(scenario: Scenario, gabarit: Gabarit): Manifeste {
   if (scenario.gabarit !== gabarit.nom) {
     throw new Error(
@@ -66,20 +100,31 @@ export function deriverManifeste(scenario: Scenario, gabarit: Gabarit): Manifest
     );
   }
   const bugsParId = new Map(gabarit.bugs.map((bug) => [bug.id, bug]));
-  const attendus = scenario.bugsActifs.map((bugId): AttenduManifeste => {
+  const bugsActifs = scenario.bugsActifs.map((bugId) => {
     const bug = bugsParId.get(bugId);
     if (bug === undefined) {
       throw new Error(`Scénario ${scenario.id} : bug ${bugId} inconnu du gabarit ${gabarit.nom}`);
     }
-    return {
+    return bug;
+  });
+
+  // Un bug qui éprouve l'INERTIE n'introduit aucune anomalie à percevoir : il
+  // ne produit pas d'attendu de détection, sans quoi le taux de détection
+  // compterait comme « raté » ce que le moteur avait raison de ne pas voir.
+  const attendusBug = bugsActifs
+    .filter((bug) => bug.eprouve !== 'inertie')
+    .map((bug): AttenduBug => ({
+      nature: 'bug',
       bugId: bug.id,
       nom: bug.nom,
       categorie: bug.categorie,
       pages: [...bug.pages],
       gravite: bug.gravite,
       verdictAttendu: bug.verdictAttendu ?? VERDICT_ATTENDU_DEFAUT,
-    };
-  });
-  verifierManifesteNonAmbigu(scenario.id, attendus);
+    }));
+  verifierManifesteNonAmbigu(scenario.id, attendusBug);
+
+  const attenduProfil = deriverAttenduProfil(gabarit, bugsActifs);
+  const attendus: AttenduManifeste[] = attenduProfil === null ? attendusBug : [...attendusBug, attenduProfil];
   return { scenarioId: scenario.id, gabarit: gabarit.nom, langue: scenario.langue, attendus };
 }

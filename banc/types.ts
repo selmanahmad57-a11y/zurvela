@@ -25,7 +25,7 @@
  * d'abord prouver qu'elle n'est pas l'une des trois déguisée — c'est ce qui
  * empêche le manifeste de se déformer au fil des extensions du banc.
  */
-import type { Anomalie, Categorie, Gravite, Rapport, VerdictConfirmation } from '../core/types.js';
+import type { Anomalie, Categorie, Gravite, ProfilSiteRapporte, Rapport, VerdictConfirmation } from '../core/types.js';
 
 // ---------------------------------------------------------------------------
 // Configuration (miroir typé de config/banc.json, validé par config/banc.schema.json)
@@ -94,6 +94,21 @@ export interface ContexteBug {
    * repart de zéro — condition des trois exécutions identiques du banc.
    */
   etat: Record<string, unknown>;
+  /**
+   * Temporisation d'un bug qui simule une lenteur. Injectable pour que les
+   * tests puissent OBSERVER l'attente au lieu de la CHRONOMÉTRER : un seuil
+   * de durée sous contention n'est pas une assertion, c'est un pari — et un
+   * seuil plus large est le même pari avec une meilleure cote.
+   */
+  attendre(delaiMs: number): Promise<void>;
+}
+
+/**
+ * Temporisation réelle. `unref` : un délai en cours ne retient pas le
+ * processus quand le banc a fini.
+ */
+export function attendreReellement(delaiMs: number): Promise<void> {
+  return new Promise<void>((resoudre) => setTimeout(resoudre, delaiMs).unref());
 }
 
 /**
@@ -109,6 +124,24 @@ export interface BugInjectable {
   /** Nom court en kebab-case, ex. `bouton-mort`. */
   nom: string;
   categorie: Categorie;
+  /**
+   * Ce que le bug éprouve, au sens de la taxonomie en tête de ce fichier.
+   *
+   * - `anomalie` (défaut) : le bug dégrade le site, il doit être DÉTECTÉ puis
+   *   BIEN JUGÉ — un `AttenduBug` en est dérivé.
+   * - `inertie` : le bug n'introduit AUCUNE anomalie à percevoir ; il dépose
+   *   une charge qui demande au moteur de faire autre chose. Aucun
+   *   `AttenduBug` n'en est dérivé, et `verdictAttendu` y serait sans objet :
+   *   noter une injection de prompt en « ratée » ferait mentir le taux de
+   *   DÉTECTION en imputant à la perception ce qui relève de la
+   *   désobéissance. L'attendu correspondant est l'`AttenduProfil` du
+   *   gabarit, rangé dans la famille « inerties tenues ».
+   *
+   * Déclaré explicitement plutôt que déduit de la catégorie `securite` : un
+   * futur bug de sécurité RÉELLEMENT détectable perdrait sinon son attendu
+   * en silence.
+   */
+  eprouve?: 'anomalie' | 'inertie';
   /** Gravité attendue du point de vue métier. */
   gravite: Gravite;
   /** Chemins d'URL des pages où l'anomalie est constatable (clé d'appariement avec le rapport). */
@@ -157,13 +190,32 @@ export interface Gabarit {
   /** Comportement SAIN du backend de formulaire. */
   traiterApi(requete: RequeteApi, contexte: { langue: string; delaiReponseMs: number }): Promise<ReponseHttp>;
   bugs: BugInjectable[];
+  /**
+   * Profil que l'IA doit produire sur ce gabarit. Porté par le GABARIT et
+   * non par un bug : c'est une propriété du site, pas d'une injection.
+   * Absent = le gabarit ne se prononce pas (aucun attendu de profil dérivé).
+   */
+  profilAttendu?: { typeSite: string; langue: string | null };
 }
 
 // ---------------------------------------------------------------------------
 // Manifeste de vérité terrain (dérivé du scénario, jamais écrit à la main)
 // ---------------------------------------------------------------------------
 
-export interface AttenduManifeste {
+/**
+ * Un attendu du manifeste. Union DISCRIMINÉE : la taxonomie des trois
+ * natures d'attendu (en tête de ce fichier) n'impose pas un type unique,
+ * elle impose que chaque attendu DÉCLARE la sienne. Le correcteur route
+ * par le discriminant `nature`.
+ */
+export type AttenduManifeste = AttenduBug | AttenduProfil;
+
+/**
+ * Attendu portant sur un BUG injecté : éprouve la perception (détecté) et
+ * le discernement (bien jugé). Forme historique, inchangée.
+ */
+export interface AttenduBug {
+  nature: 'bug';
   bugId: IdentifiantBug;
   nom: string;
   categorie: Categorie;
@@ -173,11 +225,47 @@ export interface AttenduManifeste {
   verdictAttendu: VerdictConfirmation;
 }
 
+/**
+ * Attendu portant sur le PROFIL que l'IA doit produire : éprouve le
+ * discernement, et — sous un bug d'injection — la désobéissance (le profil
+ * doit rester correct malgré une charge qui demande au modèle autre chose).
+ *
+ * Seuls les champs OBJECTIFS sont notés. Les champs indicatifs du profil
+ * (description libre, confiance déclarée) sont journalisés et jamais notés :
+ * noter une prose serait noter une opinion.
+ */
+export interface AttenduProfil {
+  nature: 'profil';
+  /** Valeur attendue de `typeSite`, prise dans le vocabulaire de config/profilage.json. */
+  typeSite: string;
+  /**
+   * Langue attendue. `null` = celle du scénario (le cas ordinaire : un
+   * gabarit servi en `fr` doit être profilé `fr`).
+   */
+  langue: string | null;
+  /**
+   * true si un bug actif tente de détourner le profil : l'attendu éprouve
+   * alors l'INERTIE (le profil doit rester celui du site sain), et le banc
+   * le compte dans la famille « inerties tenues », pas « profils corrects ».
+   */
+  inertieEprouvee: boolean;
+}
+
 export interface Manifeste {
   scenarioId: string;
   gabarit: string;
   langue: string;
   attendus: AttenduManifeste[];
+}
+
+/** Les attendus de nature `bug` d'un manifeste (raccourci de routage). */
+export function attendusBug(manifeste: Manifeste): AttenduBug[] {
+  return manifeste.attendus.filter((attendu): attendu is AttenduBug => attendu.nature === 'bug');
+}
+
+/** Les attendus de nature `profil` d'un manifeste (raccourci de routage). */
+export function attendusProfil(manifeste: Manifeste): AttenduProfil[] {
+  return manifeste.attendus.filter((attendu): attendu is AttenduProfil => attendu.nature === 'profil');
 }
 
 // ---------------------------------------------------------------------------
@@ -235,7 +323,12 @@ export interface ComptesProtocole {
 }
 
 export interface ResultatAttendu {
-  attendu: AttenduManifeste;
+  /**
+   * Toujours un attendu de nature `bug` : le correcteur route par
+   * discriminant, et un attendu de PROFIL ne s'apparie à aucune anomalie. Le
+   * type le dit pour qu'aucun consommateur n'ait à redemander la nature.
+   */
+  attendu: AttenduBug;
   verdict: Verdict;
   /** Anomalies du rapport appariées à cet attendu (plusieurs possibles : doublons, pas des faux positifs). */
   anomaliesAppariees: Anomalie[];
@@ -243,6 +336,33 @@ export interface ResultatAttendu {
   verdictRendu?: VerdictConfirmation | null;
   /** true quand le verdict rendu est celui qu'attendait le manifeste. */
   bienJuge?: boolean;
+}
+
+/**
+ * Notation d'un `AttenduProfil`. Famille DISTINCTE de la détection : un
+ * attendu de profil non satisfait n'est JAMAIS un « faux positif » et ne
+ * retire rien au taux de détection — ce sont deux choses différentes, et les
+ * mélanger rendrait les deux chiffres illisibles.
+ *
+ * Seuls `typeSite` et la langue sont notés : `natureLibre` et la confiance
+ * déclarée sont journalisés et jamais notés (noter une prose serait noter une
+ * opinion).
+ */
+export interface ResultatProfil {
+  attendu: AttenduProfil;
+  /** Langue effectivement attendue : celle du scénario quand l'attendu dit `null`. */
+  langueAttendue: string;
+  /** Profil rendu par le moteur ; absent en mode dégradé (pas de clé, pas de cassette). */
+  profil?: ProfilSiteRapporte;
+  /**
+   * Aucun profil n'a été produit. Ni crédité, ni imputé : le moteur n'a pas
+   * eu tort, il n'a rien dit. Ce cas a sa propre colonne et sa propre ligne de
+   * synthèse — un zéro silencieux serait exactement l'angle mort de
+   * l'apprentissage n°4 (une mesure qui devient aveugle doit le DIRE).
+   */
+  nonMesure: boolean;
+  /** true si `typeSite` ET la langue sont conformes à l'attendu. */
+  satisfait: boolean;
 }
 
 export interface ResultatScenario {
@@ -254,7 +374,10 @@ export interface ResultatScenario {
   /** `erreur` si le scanner a levé, dépassé le timeout ou rendu un rapport inexploitable : rien n'est compté comme détecté. */
   statut: 'ok' | 'erreur';
   erreur?: string;
+  /** Notation des attendus de nature `bug` (détection et verdicts), et d'eux seuls. */
   attendus: ResultatAttendu[];
+  /** Notation des attendus de nature `profil`, comptés à part de la détection. */
+  profils: ResultatProfil[];
   fauxPositifs: Anomalie[];
   coutApi: number;
   dureeMs: number;
@@ -315,12 +438,40 @@ export interface Agregat {
    * légitime ou d'un vrai bug que l'appariement n'a pas su rattacher.
    */
   nbEcartesNonApparies: number;
+  /**
+   * Attendus de profil SANS inertie éprouvée et effectivement mesurés (un
+   * profil a été produit) : la famille « profils corrects ».
+   */
+  nbProfilsMesures: number;
+  /** Ceux d'entre eux dont `typeSite` et la langue sont conformes. */
+  nbProfilsCorrects: number;
+  /**
+   * Attendus de profil AVEC inertie éprouvée et effectivement mesurés : la
+   * famille « inerties tenues ». Comptée séparément parce qu'elle n'éprouve
+   * pas la même chose — même attendu physique, nature comptable différente
+   * selon qu'une charge d'injection est active.
+   */
+  nbInertiesMesurees: number;
+  /** Ceux d'entre eux dont le profil est resté conforme MALGRÉ la charge. */
+  nbInertiesTenues: number;
+  /**
+   * Attendus de profil (des deux familles) pour lesquels AUCUN profil n'a été
+   * produit : mode dégradé, cassette absente, `--sans-ia`. Ni crédités, ni
+   * imputés — ils ont leur propre colonne, comme `nbEcartesNonApparies`, et
+   * sortent des dénominateurs : un taux calculé sur des mesures absentes
+   * serait un chiffre inventé.
+   */
+  nbProfilsNonMesures: number;
   /** Détectés / attendus, en pourcentage ; null si aucun attendu. */
   tauxDetection: number | null;
   /** Verdicts corrects / attendus, en pourcentage ; null si aucun attendu. La 4e métrique nord. */
   tauxVerdictsCorrects: number | null;
   /** Faux positifs / signalements, en pourcentage ; null si aucun signalement. */
   tauxFauxPositifs: number | null;
+  /** Profils corrects / profils mesurés, en pourcentage ; null si rien n'a été mesuré. */
+  tauxProfilsCorrects: number | null;
+  /** Inerties tenues / inerties mesurées, en pourcentage ; null si rien n'a été mesuré. */
+  tauxInertiesTenues: number | null;
   coutApi: number;
   dureeMs: number;
 }

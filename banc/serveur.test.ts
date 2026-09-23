@@ -438,21 +438,33 @@ describe('T01 echec-transitoire', () => {
 
 describe('L01 lenteur-transitoire', () => {
   it('ne retarde que les premières requêtes, contenu intact', async () => {
+    // Assertion par CONSTRUCTION, pas par chronomètre : on observe les
+    // temporisations demandées au lieu de mesurer des durées. Un seuil de
+    // durée sous contention n'est pas une assertion, c'est un pari — et un
+    // seuil plus large est le même pari avec une meilleure cote. La
+    // temporisation injectée est instantanée : le test ne dort pas.
     const delai = 150;
-    const serveur = await servir(['L01'], 'fr', { L01: { nbPremieresRequetesLentes: 1, delaiReponseMs: delai } });
+    const attentes: number[] = [];
+    const scenarioL01 = scenario(['L01'], 'fr', { L01: { nbPremieresRequetesLentes: 1, delaiReponseMs: delai } });
+    const serveur = await demarrerServeur(scenarioL01, formulaireContact, config, {
+      attendre: async (delaiMs) => {
+        attentes.push(delaiMs);
+      },
+    });
+    try {
+      const premiere = await poster(serveur, CORPS_VALIDE);
+      expect(premiere.status).toBe(200);
+      expect(await premiere.json()).toEqual({ ok: true });
+      expect(attentes).toEqual([delai]);
 
-    const debut = performance.now();
-    const premiere = await poster(serveur, CORPS_VALIDE);
-    const dureePremiere = performance.now() - debut;
-    expect(premiere.status).toBe(200);
-    expect(await premiere.json()).toEqual({ ok: true });
-    expect(dureePremiere).toBeGreaterThanOrEqual(delai * 0.95);
-
-    const apres = performance.now();
-    const seconde = await poster(serveur, CORPS_VALIDE);
-    const dureeSeconde = performance.now() - apres;
-    expect(seconde.status).toBe(200);
-    expect(dureeSeconde).toBeLessThan(delai * 0.5);
+      const seconde = await poster(serveur, CORPS_VALIDE);
+      expect(seconde.status).toBe(200);
+      expect(await seconde.json()).toEqual({ ok: true });
+      // La seconde requête n'a demandé AUCUNE temporisation.
+      expect(attentes).toEqual([delai]);
+    } finally {
+      await serveur.arreter();
+    }
   });
 });
 

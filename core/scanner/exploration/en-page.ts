@@ -28,6 +28,58 @@ export const SELECTEURS_INTERACTIFS = 'a[href], button, input:not([type=hidden])
 /** Attributs techniques conservés dans une LocalisationElement (plus tout `aria-*`). */
 export const ATTRIBUTS_CONSERVES = ['id', 'name', 'type', 'role', 'href', 'action', 'method', 'autocomplete', 'for'];
 
+/**
+ * Noms de métadonnées standard (HTML et Open Graph) retenus pour le
+ * profilage. Même nature que `ATTRIBUTS_CONSERVES` : des jetons du WEB, pas
+ * du MONDE (constitution §2) — aucun mot de langue naturelle, aucune
+ * connaissance de secteur. Ce que le site y met reste une DONNÉE NON FIABLE.
+ */
+export const METADONNEES_CONSERVEES = [
+  'description',
+  'keywords',
+  'author',
+  'application-name',
+  'generator',
+  'og:title',
+  'og:description',
+  'og:site_name',
+  'og:type',
+];
+
+/**
+ * Ce que la page rend au profilage : du TEXTE, jamais de balisage. C'est la
+ * surface d'injection minimale voulue par le cahier (§3) — le HTML brut
+ * exposerait le modèle aux attributs, aux scripts et aux commentaires sans
+ * rien lui apprendre de plus sur la nature du site.
+ */
+export interface ExtractionTexte {
+  /** `document.title`, vide s'il n'y en a pas. */
+  titre: string;
+  /** Attribut `lang` du document : un indice technique, pas une vérité. */
+  langueDeclaree: string | null;
+  /** Métadonnées retenues, clé en minuscules → contenu. */
+  metadonnees: Record<string, string>;
+  /**
+   * Texte RENDU du corps (`innerText`), borné en page.
+   *
+   * Ce qu'il exclut, exactement : le balisage, les scripts, les styles, les
+   * sous-arbres non rendus (`display:none`, `content-visibility:hidden`) et le
+   * texte en `visibility:hidden`. Ce qu'il INCLUT, et qui n'est pas visible
+   * pour un humain : le texte hors écran, transparent, de taille nulle, de la
+   * couleur du fond, écrêté, ou marqué `aria-hidden`.
+   *
+   * Cette précision n'est pas cosmétique : c'est la seule entrée de contenu
+   * non fiable dans un prompt. Annoncer « ni élément masqué » y installerait
+   * une confiance que la mesure dément, alors que le vecteur d'injection
+   * réaliste est précisément le texte adressé au modèle seul. Tout ce qui sort
+   * d'ici est une DONNÉE NON FIABLE (constitution §3) — c'est au prompt de la
+   * baliser, pas à l'extraction de la censurer.
+   */
+  texteVisible: string;
+  /** true si le texte visible a été coupé à la borne. */
+  tronque: boolean;
+}
+
 export interface ExtractionPage {
   /** `href` résolus de tous les liens, bruts (le filtrage d'origine se fait côté Node). */
   liens: string[];
@@ -89,6 +141,7 @@ export interface ValiditeFormulaire {
 
 type Commande =
   | { commande: 'page'; attributsConserves: string[] }
+  | { commande: 'texte'; maxChars: number; metadonnees: string[] }
   | { commande: 'images'; attributsConserves: string[] }
   | {
       commande: 'geometrie';
@@ -355,6 +408,38 @@ function enPage(arg: Commande): unknown {
       const resultat: ExtractionPage = { liens, formulaires, champsIgnores };
       return resultat;
     }
+    case 'texte': {
+      // Le PROFILAGE lit du texte, et seulement du texte. `innerText` rend le
+      // texte RENDU : ni balisage, ni script, ni style, ni sous-arbre
+      // `display:none` ou `content-visibility:hidden`, ni texte en
+      // `visibility:hidden`. Le masquage purement visuel — hors écran,
+      // transparent, taille nulle, couleur du fond, écrêté, `aria-hidden` —
+      // n'est PAS un filtre : ce texte-là est collecté. Tout ce qui en sort
+      // est une DONNÉE NON FIABLE (constitution §3) : rien n'est interprété
+      // ici, ni côté Node.
+      const metadonnees: Record<string, string> = {};
+      for (const meta of Array.from(document.querySelectorAll('meta'))) {
+        const nom = (meta.getAttribute('name') ?? meta.getAttribute('property') ?? '').trim().toLowerCase();
+        const contenu = meta.getAttribute('content');
+        if (nom !== '' && contenu !== null && contenu !== '' && arg.metadonnees.includes(nom)) {
+          metadonnees[nom] = contenu;
+        }
+      }
+      const langue = (document.documentElement.getAttribute('lang') ?? '').trim();
+      // `document.body` est absent d'un document non HTML (XML servi tel quel).
+      const corps: HTMLElement | null = document.body;
+      const texte = corps === null ? '' : corps.innerText;
+      const resultat: ExtractionTexte = {
+        titre: document.title,
+        langueDeclaree: langue === '' ? null : langue,
+        metadonnees,
+        // Borne posée EN PAGE : une page-catalogue ne fait pas transiter des
+        // mégaoctets de texte vers Node pour être tronquée ensuite.
+        texteVisible: texte.slice(0, arg.maxChars),
+        tronque: texte.length > arg.maxChars,
+      };
+      return resultat;
+    }
     case 'images': {
       // Une image sans `src` (ou `src=""`, motif des bibliothèques de chargement
       // différé) n'a demandé aucune ressource : sa ressource est vide, jamais
@@ -532,6 +617,15 @@ function evaluer(page: Page, commande: Commande, delaiMs?: number): Promise<unkn
 
 export async function extrairePage(page: Page, delaiMs?: number): Promise<ExtractionPage> {
   return (await evaluer(page, { commande: 'page', attributsConserves: ATTRIBUTS_CONSERVES }, delaiMs)) as ExtractionPage;
+}
+
+/**
+ * Texte de la page pour le profilage IA, lu sur la page DÉJÀ CHARGÉE par
+ * l'exploration. `maxChars` borne le texte visible dès la page ; la
+ * troncature qui fait foi reste celle de Node (`composerContexteProfilage`).
+ */
+export async function extraireTexte(page: Page, maxChars: number, delaiMs?: number): Promise<ExtractionTexte> {
+  return (await evaluer(page, { commande: 'texte', maxChars, metadonnees: METADONNEES_CONSERVEES }, delaiMs)) as ExtractionTexte;
 }
 
 export async function etatsImages(page: Page, delaiMs?: number): Promise<EtatImage[]> {

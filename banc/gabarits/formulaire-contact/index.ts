@@ -51,4 +51,15 @@ export const formulaireContact: Gabarit = {
   cheminApiFormulaire: CHEMIN_API_FORMULAIRE,
   traiterApi,
   bugs,
+  /**
+   * Ce que l'IA doit dire de ce site : une vitrine d'entreprise avec un
+   * formulaire de contact. `langue: null` = celle du scénario — le site est
+   * intégralement traduit, un gabarit servi en `en` doit être profilé `en`,
+   * et un écart entre les deux langues serait un biais à voir (Mur 3).
+   *
+   * Porté par le GABARIT et non par un bug : c'est une propriété du site.
+   * `typeSite` est une valeur du vocabulaire de `config/profilage.json` ; le
+   * banc n'en connaît aucune, il recopie ce que le gabarit déclare.
+   */
+  profilAttendu: { typeSite: 'vitrine-contact', langue: null },
 };

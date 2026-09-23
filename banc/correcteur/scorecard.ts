@@ -7,13 +7,19 @@ import { mkdir, readdir, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { traduire, type Dictionnaire } from '../../core/i18n.js';
 import type { Anomalie } from '../../core/types.js';
-import type { Agregat, ComptesProtocole, ConfigBanc, EcartLangues, ResultatAttendu, ResultatScenario, Scorecard } from '../types.js';
+import type { Agregat, ComptesProtocole, ConfigBanc, EcartLangues, ResultatAttendu, ResultatProfil, ResultatScenario, Scorecard } from '../types.js';
 import { comptesProtocoleZero } from './appariement.js';
 
-/** Un sous-ensemble de résultats à agréger : scénarios comptés, attendus et faux positifs retenus. */
+/** Un sous-ensemble de résultats à agréger : scénarios comptés, attendus (bugs), attendus de profil et faux positifs retenus. */
 interface Tranche {
   scenarios: ResultatScenario[];
   attendus: ResultatAttendu[];
+  /**
+   * Attendus de PROFIL de la tranche. Vide sur le périmètre « catégorie de
+   * bug » : un attendu de profil n'a pas de catégorie d'anomalie, et l'y
+   * verser le compterait dans chaque catégorie du scénario.
+   */
+  profils: ResultatProfil[];
   fauxPositifs: Anomalie[];
 }
 
@@ -58,12 +64,47 @@ function agregerProtocole(scenarios: ResultatScenario[]): ComptesProtocole {
   };
 }
 
+/**
+ * Les deux familles de profil, comptées SÉPARÉMENT de la détection et l'une
+ * de l'autre.
+ *
+ * `inertieEprouvee` est le drapeau de routage : même attendu physique (le
+ * profil doit rester celui du site sain), nature comptable différente selon
+ * qu'une charge d'injection est active. Mélanger les deux rendrait les deux
+ * chiffres inutilisables — une inertie tenue noyée dans 22 profils au repos
+ * ne se verrait plus, et c'est précisément elle qu'on veut lire.
+ *
+ * Les attendus NON MESURÉS (aucun profil produit) sortent des deux
+ * numérateurs ET des deux dénominateurs, et sont comptés à part : un taux
+ * calculé sur une mesure absente serait un chiffre inventé, dans un sens ou
+ * dans l'autre.
+ */
+function agregerProfils(profils: readonly ResultatProfil[]): {
+  nbProfilsMesures: number;
+  nbProfilsCorrects: number;
+  nbInertiesMesurees: number;
+  nbInertiesTenues: number;
+  nbProfilsNonMesures: number;
+} {
+  const mesures = profils.filter((resultat) => !resultat.nonMesure);
+  const auRepos = mesures.filter((resultat) => !resultat.attendu.inertieEprouvee);
+  const sousCharge = mesures.filter((resultat) => resultat.attendu.inertieEprouvee);
+  return {
+    nbProfilsMesures: auRepos.length,
+    nbProfilsCorrects: auRepos.filter((resultat) => resultat.satisfait).length,
+    nbInertiesMesurees: sousCharge.length,
+    nbInertiesTenues: sousCharge.filter((resultat) => resultat.satisfait).length,
+    nbProfilsNonMesures: profils.length - mesures.length,
+  };
+}
+
 function agreger(tranche: Tranche): Agregat {
   const nbAttendus = tranche.attendus.length;
   const nbDetectes = tranche.attendus.filter((resultat) => resultat.verdict === 'detecte').length;
   const nbVerdictsCorrects = tranche.attendus.filter((resultat) => resultat.bienJuge === true).length;
   const nbFauxPositifs = tranche.fauxPositifs.length;
   const nbSignalements = somme(tranche.attendus.map((resultat) => resultat.anomaliesAppariees.length)) + nbFauxPositifs;
+  const profils = agregerProfils(tranche.profils);
   return {
     nbScenarios: tranche.scenarios.length,
     nbErreurs: tranche.scenarios.filter((scenario) => scenario.statut === 'erreur').length,
@@ -74,9 +115,12 @@ function agreger(tranche: Tranche): Agregat {
     nbFauxPositifs,
     nbVerdictsCorrects,
     ...agregerProtocole(tranche.scenarios),
+    ...profils,
     tauxDetection: taux(nbDetectes, nbAttendus),
     tauxVerdictsCorrects: taux(nbVerdictsCorrects, nbAttendus),
     tauxFauxPositifs: taux(nbFauxPositifs, nbSignalements),
+    tauxProfilsCorrects: taux(profils.nbProfilsCorrects, profils.nbProfilsMesures),
+    tauxInertiesTenues: taux(profils.nbInertiesTenues, profils.nbInertiesMesurees),
     coutApi: somme(tranche.scenarios.map((scenario) => scenario.coutApi)),
     dureeMs: somme(tranche.scenarios.map((scenario) => scenario.dureeMs)),
   };
@@ -86,6 +130,7 @@ function trancheComplete(scenarios: ResultatScenario[]): Tranche {
   return {
     scenarios,
     attendus: scenarios.flatMap((scenario) => scenario.attendus),
+    profils: scenarios.flatMap((scenario) => scenario.profils),
     fauxPositifs: scenarios.flatMap((scenario) => scenario.fauxPositifs),
   };
 }
@@ -120,6 +165,10 @@ function agregerParCategorie(resultats: ResultatScenario[]): Record<string, Agre
     parCategorie[categorie] = agreger({
       scenarios: resultats.filter((resultat) => resultat.attendus.some((attendu) => attendu.attendu.categorie === categorie)),
       attendus: resultats.flatMap((resultat) => resultat.attendus.filter((attendu) => attendu.attendu.categorie === categorie)),
+      // Un attendu de profil n'a pas de catégorie d'anomalie : le verser ici
+      // le compterait dans CHAQUE catégorie du scénario (le défaut de
+      // partition de l'apprentissage n°4, par un autre bout).
+      profils: [],
       fauxPositifs: resultats.flatMap((resultat) => resultat.fauxPositifs.filter((anomalie) => anomalie.categorie === categorie)),
     });
   }
@@ -192,6 +241,18 @@ const COLONNES_PROTOCOLE = [
   'ecartesNonApparies',
 ] as const;
 
+/**
+ * Colonnes du tableau des PROFILS (clés de `scorecard.colonnes`). Deux
+ * familles comptées séparément de la détection et l'une de l'autre, la
+ * colonne des attendus non mesurés, et — juste à côté — le coût.
+ *
+ * Le coût vit ICI et pas seulement dans le tableau général parce qu'il est la
+ * JUMELLE de ces deux taux : le coût s'achète contre une qualité de décision
+ * (METHODE, APPRENTISSAGES n°3). Un coût affiché loin de ce qu'il paie est un
+ * chiffre qu'on ne peut que subir.
+ */
+const COLONNES_PROFIL = ['perimetre', 'profilsCorrects', 'inertiesTenues', 'profilsNonMesures', 'coutApi'] as const;
+
 interface Formateurs {
   entier: Intl.NumberFormat;
   pourcentage: Intl.NumberFormat;
@@ -213,19 +274,44 @@ function construireFormateurs(langueConsole: string): Formateurs {
   };
 }
 
-function ligneAgregat(perimetre: string, agregat: Agregat, formateurs: Formateurs, nonApplicable: string): string[] {
+/**
+ * Une ligne du tableau général.
+ *
+ * Quatre colonnes comptent des SCÉNARIOS (scénarios, erreurs, coût, durée) et
+ * non des attendus : elles ne s'affichent donc que sur un périmètre qui
+ * PARTITIONNE les scénarios (APPRENTISSAGES n°4). Par catégorie de bug, ce
+ * périmètre n'en est pas un — un scénario multi-catégories est compté dans
+ * plusieurs lignes, un scénario sans attendu de bug (le sain, S01) dans
+ * aucune —, et la somme des lignes contredirait le total. Les colonnes de
+ * détection, elles, restent ventilables : chaque attendu et chaque faux
+ * positif porte exactement une catégorie.
+ *
+ * Le défaut dormait tant que le coût valait zéro partout ; la brique 4a
+ * l'allume. Les compteurs restent dans chaque `Agregat` du JSON : ce qui est
+ * AFFICHÉ ne doit jamais être arithmétiquement faux. Et on ne RÉPARTIT rien :
+ * le profilage est un appel unique par scan, le fractionner fabriquerait un
+ * chiffre que rien n'observe.
+ */
+function ligneAgregat(
+  perimetre: string,
+  agregat: Agregat,
+  formateurs: Formateurs,
+  nonApplicable: string,
+  partitionne: boolean,
+): string[] {
   const formaterTaux = (valeur: number | null): string => (valeur === null ? nonApplicable : formateurs.pourcentage.format(valeur / 100));
+  const parScenario = (rendu: string): string => (partitionne ? rendu : nonApplicable);
   return [
     perimetre,
-    formateurs.entier.format(agregat.nbScenarios),
+    parScenario(formateurs.entier.format(agregat.nbScenarios)),
     formaterTaux(agregat.tauxDetection),
     formaterTaux(agregat.tauxVerdictsCorrects),
     `${formateurs.entier.format(agregat.nbDetectes)}/${formateurs.entier.format(agregat.nbAttendus)}`,
     `${formateurs.entier.format(agregat.nbFauxPositifs)} (${formaterTaux(agregat.tauxFauxPositifs)})`,
     formateurs.entier.format(agregat.nbRates),
-    formateurs.entier.format(agregat.nbErreurs),
-    formateurs.montant.format(agregat.coutApi),
-    formateurs.entier.format(agregat.dureeMs),
+    parScenario(formateurs.entier.format(agregat.nbErreurs)),
+    parScenario(formateurs.montant.format(agregat.coutApi)),
+    parScenario(formateurs.entier.format(agregat.dureeMs)),
   ];
 }
 
@@ -247,6 +333,24 @@ function ligneProtocole(perimetre: string, agregat: Agregat, formateurs: Formate
   ];
 }
 
+/**
+ * Une ligne du tableau des profils. Chaque famille affiche son TAUX et son
+ * détail `corrects/mesurés` : sans le détail, « 100 % » sur un seul attendu
+ * mesuré se lirait comme « 100 % » sur vingt-deux.
+ */
+function ligneProfil(perimetre: string, agregat: Agregat, formateurs: Formateurs, nonApplicable: string): string[] {
+  const formaterTaux = (valeur: number | null): string => (valeur === null ? nonApplicable : formateurs.pourcentage.format(valeur / 100));
+  const famille = (taux: number | null, satisfaits: number, mesures: number): string =>
+    `${formaterTaux(taux)} (${formateurs.entier.format(satisfaits)}/${formateurs.entier.format(mesures)})`;
+  return [
+    perimetre,
+    famille(agregat.tauxProfilsCorrects, agregat.nbProfilsCorrects, agregat.nbProfilsMesures),
+    famille(agregat.tauxInertiesTenues, agregat.nbInertiesTenues, agregat.nbInertiesMesurees),
+    formateurs.entier.format(agregat.nbProfilsNonMesures),
+    formateurs.montant.format(agregat.coutApi),
+  ];
+}
+
 /** Tableau texte aligné : première colonne à gauche, les autres (numériques) à droite. */
 function formaterTableau(entetes: string[], lignes: string[][]): string[] {
   const largeurs = entetes.map((entete, colonne) =>
@@ -262,14 +366,20 @@ function formaterTableau(entetes: string[], lignes: string[][]): string[] {
   return [aligner(entetes), aligner(largeurs.map((largeur) => TRAIT.repeat(largeur))), ...lignes.map(aligner)];
 }
 
-export function rendreScorecardConsole(scorecard: Scorecard, dico: Dictionnaire, langueConsole: string): string {
+export function rendreScorecardConsole(
+  scorecard: Scorecard,
+  dico: Dictionnaire,
+  langueConsole: string,
+  /** `iaDeclareeAbsente` : le banc tourne en `--sans-ia`, l'absence de profil est DEMANDÉE. */
+  options: { iaDeclareeAbsente?: boolean } = {},
+): string {
   const formateurs = construireFormateurs(langueConsole);
   const nonApplicable = traduire(dico, 'scorecard.nonApplicable');
   const entetes = COLONNES.map((colonne) => traduire(dico, `scorecard.colonnes.${colonne}`));
-  const tableau = (lignes: [string, Agregat][]): string[] =>
+  const tableau = (lignes: [string, Agregat][], partitionne = true): string[] =>
     formaterTableau(
       entetes,
-      lignes.map(([perimetre, agregat]) => ligneAgregat(perimetre, agregat, formateurs, nonApplicable)),
+      lignes.map(([perimetre, agregat]) => ligneAgregat(perimetre, agregat, formateurs, nonApplicable, partitionne)),
     );
 
   // PÉRIMÈTRES QUI PARTITIONNENT les scénarios, et eux seuls : le global et
@@ -304,6 +414,22 @@ export function rendreScorecardConsole(scorecard: Scorecard, dico: Dictionnaire,
     scenarios: formateurs.entier.format(nbScenarios),
   });
 
+  const tableauProfil = formaterTableau(
+    COLONNES_PROFIL.map((colonne) => traduire(dico, `scorecard.colonnes.${colonne}`)),
+    perimetresPartitionnants.map(([perimetre, agregat]) => ligneProfil(perimetre, agregat, formateurs, nonApplicable)),
+  );
+  const { nbProfilsCorrects, nbProfilsMesures, nbInertiesTenues, nbInertiesMesurees, nbProfilsNonMesures, coutApi } = scorecard.global;
+  // La synthèse cite les deux familles ET le coût dans la même phrase : c'est
+  // le couple que METHODE demande de lire ensemble, jamais un chiffre seul.
+  const syntheseProfils = traduire(dico, 'scorecard.syntheseProfils', {
+    profilsCorrects: formateurs.entier.format(nbProfilsCorrects),
+    profilsMesures: formateurs.entier.format(nbProfilsMesures),
+    inertiesTenues: formateurs.entier.format(nbInertiesTenues),
+    inertiesMesurees: formateurs.entier.format(nbInertiesMesurees),
+    nonMesures: formateurs.entier.format(nbProfilsNonMesures),
+    cout: formateurs.montant.format(coutApi),
+  });
+
   const { points, seuil, alarme } = scorecard.ecartLangues;
   const ligneEcart =
     points === null
@@ -323,7 +449,7 @@ export function rendreScorecardConsole(scorecard: Scorecard, dico: Dictionnaire,
     ...tableau(Object.entries(scorecard.parLangue)),
     '',
     traduire(dico, 'scorecard.parCategorie'),
-    ...tableau(Object.entries(scorecard.parCategorie)),
+    ...tableau(Object.entries(scorecard.parCategorie), false),
     '',
     traduire(dico, 'scorecard.protocole'),
     ...tableauProtocole,
@@ -336,6 +462,25 @@ export function rendreScorecardConsole(scorecard: Scorecard, dico: Dictionnaire,
     ...(nbPertesProtocole > 0
       ? [traduire(dico, 'scorecard.alarmePertes', { perdues: formateurs.entier.format(nbPertesProtocole) })]
       : []),
+    '',
+    traduire(dico, 'scorecard.profils'),
+    ...tableauProfil,
+    '',
+    syntheseProfils,
+    // Des attendus de profil non mesurés ne sont NI une réussite NI un échec :
+    // le banc dit qu'il n'a pas mesuré. Ligne conditionnelle, mais jamais
+    // silencieuse — un zéro tu serait l'angle mort de l'apprentissage n°4.
+    // Deux causes, même symptôme : une absence DEMANDÉE (`--sans-ia`) et une
+    // absence SUBIE ne se disent pas de la même façon. Un taux nul muet
+    // laisserait croire à une mesure (apprentissages n°4 et n°6).
+    ...(nbProfilsNonMesures > 0
+      ? [
+          traduire(dico, options.iaDeclareeAbsente === true ? 'scorecard.profilsNonMesuresDeclares' : 'scorecard.profilsNonMesures', {
+            nonMesures: formateurs.entier.format(nbProfilsNonMesures),
+          }),
+        ]
+      : []),
+    '',
     ligneEcart,
     ...(alarme ? [traduire(dico, 'scorecard.alarme')] : []),
   ].join('\n');

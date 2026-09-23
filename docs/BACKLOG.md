@@ -78,3 +78,14 @@ entrée indique la brique ou la phase où elle a vocation à être traitée.
   protocole**. Le pont sera une traduction explicite, jamais une fausse
   symétrie de types. Origine : préparation de la brique 4 (2026-09-22).
   Cible : brique 4c (auto-diagnostic).
+- **Troisième dimension de clé d'appariement au banc** : la garde
+  anti-manifeste-ambigu (brique 3) interdit tout scénario mêlant, sur la
+  MÊME catégorie et la MÊME page, un vrai bug et un faux positif simulé —
+  F01+T01, R01+L01. Or c'est le cas le plus réaliste du monde réel : un vrai
+  bug ET un aléa transitoire sur le même endpoint. La garde conservatrice
+  est le bon défaut aujourd'hui (un manifeste ambigu ne peut pas être noté
+  honnêtement) ; la troisième dimension de clé se construira quand un
+  gabarit en aura besoin, probablement à l'extension du banc qui
+  accompagnera le rapport business. Un changement de contrat sans
+  consommateur serait de la spéculation. Origine : clôture de la brique 3
+  (2026-09-23).

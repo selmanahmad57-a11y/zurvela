@@ -7,7 +7,7 @@
  * jamais de clé (règle maîtresse §2).
  */
 import { VERDICTS_RETENUS, type Anomalie, type CandidateEcartee, type Rapport } from '../../core/types.js';
-import type { ComptesProtocole, Manifeste, ResultatAttendu } from '../types.js';
+import { attendusBug, attendusProfil, type AttenduBug, type ComptesProtocole, type Manifeste, type ResultatAttendu, type ResultatProfil } from '../types.js';
 
 /** Motif structurel d'une URL absolue : schéma suivi de `//` (RFC 3986). */
 const MOTIF_URL_ABSOLUE = /^[a-z][a-z0-9+.-]*:\/\//i;
@@ -57,11 +57,11 @@ export function normaliserLocalisation(urlOuEtape: string): string {
  * règle dupliquée ferait diverger le taux de détection et la mesure des
  * fausses alertes évitées, qui doivent se lire ensemble.
  */
-function construireApparieur(manifeste: Manifeste): (anomalie: Anomalie) => number {
-  const pagesNormalisees = manifeste.attendus.map((attendu) => new Set(attendu.pages.map(normaliserLocalisation)));
+function construireApparieur(attendus: readonly AttenduBug[]): (anomalie: Anomalie) => number {
+  const pagesNormalisees = attendus.map((attendu) => new Set(attendu.pages.map(normaliserLocalisation)));
   return function indiceAttendu(anomalie: Anomalie): number {
     const localisation = normaliserLocalisation(anomalie.urlOuEtape);
-    return manifeste.attendus.findIndex(
+    return attendus.findIndex(
       (attendu, i) => attendu.categorie === anomalie.categorie && pagesNormalisees[i]?.has(localisation),
     );
   };
@@ -87,9 +87,14 @@ function construireApparieur(manifeste: Manifeste): (anomalie: Anomalie) => numb
  * verdict attendu du manifeste.
  */
 export function apparier(rapport: Rapport, manifeste: Manifeste): { attendus: ResultatAttendu[]; fauxPositifs: Anomalie[] } {
-  const indiceAttendu = construireApparieur(manifeste);
+  // ROUTAGE PAR DISCRIMINANT : l'appariement ne connaît que les attendus de
+  // nature `bug`. Un attendu de PROFIL ne s'apparie à aucune anomalie — il
+  // n'a ni catégorie ni page —, et l'inclure ici ferait de son échec un
+  // « raté » de détection, donc un chiffre faux dans les deux familles.
+  const attendusDeBug = attendusBug(manifeste);
+  const indiceAttendu = construireApparieur(attendusDeBug);
 
-  const retenues: Anomalie[][] = manifeste.attendus.map(() => []);
+  const retenues: Anomalie[][] = attendusDeBug.map(() => []);
   const fauxPositifs: Anomalie[] = [];
   for (const anomalie of rapport.anomalies) {
     const indice = indiceAttendu(anomalie);
@@ -102,7 +107,7 @@ export function apparier(rapport: Rapport, manifeste: Manifeste): { attendus: Re
 
   // Une seule écartée par attendu suffit : elle porte le verdict du groupe
   // auquel la candidate appartenait, les suivantes le répéteraient.
-  const ecartees: (CandidateEcartee | undefined)[] = manifeste.attendus.map(() => undefined);
+  const ecartees: (CandidateEcartee | undefined)[] = attendusDeBug.map(() => undefined);
   for (const ecartee of rapport.ecartees ?? []) {
     const indice = indiceAttendu(ecartee.candidate);
     if (indice !== -1 && ecartees[indice] === undefined) {
@@ -110,7 +115,7 @@ export function apparier(rapport: Rapport, manifeste: Manifeste): { attendus: Re
     }
   }
 
-  const attendus = manifeste.attendus.map((attendu, i): ResultatAttendu => {
+  const attendus = attendusDeBug.map((attendu, i): ResultatAttendu => {
     const anomaliesAppariees = retenues[i] ?? [];
     const ecartee = ecartees[i];
     const verdictRendu =
@@ -220,7 +225,10 @@ export function calculerComptesProtocole(
   attendus: readonly ResultatAttendu[],
 ): ComptesProtocole {
   verifierRapportExploitable(rapport);
-  const indiceAttendu = construireApparieur(manifeste);
+  // Même routage que `apparier`, et sur la MÊME liste : les indices de
+  // `attendus` sont ceux des attendus de bug, pas ceux du manifeste entier.
+  const attendusDeBug = attendusBug(manifeste);
+  const indiceAttendu = construireApparieur(attendusDeBug);
   const comptes = comptesProtocoleZero();
   comptes.nbCandidates = rapport.candidates?.length ?? 0;
   const groupes = rapport.groupes ?? [];
@@ -228,7 +236,7 @@ export function calculerComptesProtocole(
 
   /** L'attendu doit être retenu ET aucune anomalie retenue ne le couvre déjà. */
   const estPerdu = (indice: number): boolean => {
-    const attendu = manifeste.attendus[indice];
+    const attendu = attendusDeBug[indice];
     return (
       attendu !== undefined &&
       VERDICTS_RETENUS.includes(attendu.verdictAttendu) &&
@@ -236,7 +244,7 @@ export function calculerComptesProtocole(
     );
   };
   const estAEcarter = (indice: number): boolean => {
-    const attendu = manifeste.attendus[indice];
+    const attendu = attendusDeBug[indice];
     return attendu !== undefined && !VERDICTS_RETENUS.includes(attendu.verdictAttendu);
   };
 
@@ -268,4 +276,118 @@ export function calculerComptesProtocole(
   comptes.nbFaussesAlertesEvitees = attendusEvites.size;
   comptes.nbPertesProtocole = attendusPerdus.size;
   return comptes;
+}
+
+
+// ---------------------------------------------------------------------------
+// INVARIANT : une anomalie réelle perdue interdit le statut `ok`
+// ---------------------------------------------------------------------------
+
+/**
+ * Raison technique stable (jamais de prose) d'un scénario que le banc refuse
+ * de déclarer `ok` : le protocole y a détruit au moins une anomalie réelle.
+ */
+export const RAISON_PERTES_PROTOCOLE = 'scenario-non-ok:pertes-protocole';
+
+/**
+ * Raison technique stable d'un scénario refusé en `ok` parce que des attendus
+ * de profil n'ont pas été mesurés alors que l'IA était CENSÉE répondre.
+ */
+export const RAISON_PROFILS_NON_MESURES = 'scenario-non-ok:profils-non-mesures';
+
+/**
+ * INVARIANT JUMEAU de celui des pertes, et il porte sur une DISTINCTION, pas
+ * sur un compteur.
+ *
+ * Une absence de profil a deux causes qui produisent le même symptôme :
+ * elle est DEMANDÉE (`--sans-ia` : on a dit au banc de ne pas appeler l'IA) ou
+ * SUBIE (cassette manquante, mode dégradé inattendu, appel en échec). Le
+ * compteur `nbProfilsNonMesures` ne les distingue pas ; le statut doit le
+ * faire — c'est l'apprentissage n°6 appliqué au statut : deux causes, même
+ * symptôme, la garde nomme la bonne.
+ *
+ * En régime IA actif, une absence subie interdit donc `ok`. En régime déclaré
+ * sans IA, elle est attendue et n'entache rien — mais la scorecard l'affiche
+ * comme DÉCLARÉE, jamais comme un taux nul silencieux.
+ */
+export function profilsNonMesuresSubis(profils: readonly ResultatProfil[], iaDeclareeAbsente: boolean): number {
+  return iaDeclareeAbsente ? 0 : profils.filter((resultat) => resultat.nonMesure).length;
+}
+
+/**
+ * INVARIANT, posé ICI et non par ricochet : `nbPertesProtocole > 0` ⟹ le
+ * scénario ne peut pas être `ok`.
+ *
+ * Arbitrage de clôture de la brique 3, qui voyage dans la 4a. Sans lui, un
+ * scénario où le protocole a écarté à tort un vrai bug s'affiche `ok` avec sa
+ * ligne verte, et la seule trace de la destruction est une colonne que
+ * personne n'est obligé de lire. Le statut est la lecture de premier niveau
+ * du banc : c'est LUI qui doit refuser de dire « tout va bien ».
+ *
+ * Écrit comme une fonction totale d'un seul argument pour qu'un test puisse
+ * l'éprouver DIRECTEMENT, sans fabriquer un scan complet — et pour que le
+ * jour où un second appelant en a besoin, il ne réinvente pas la règle.
+ */
+export function statutSelonPertes(protocole: ComptesProtocole): 'ok' | 'erreur' {
+  return protocole.nbPertesProtocole > 0 ? 'erreur' : 'ok';
+}
+
+// ---------------------------------------------------------------------------
+// Notation des attendus de PROFIL (famille distincte de la détection)
+// ---------------------------------------------------------------------------
+
+/**
+ * Note les attendus de nature `profil` d'un manifeste contre le profil porté
+ * par le rapport.
+ *
+ * Trois règles, et elles sont toutes des refus de flatter :
+ *
+ * 1. **Familles distinctes.** Un attendu de profil non satisfait n'est ni un
+ *    « raté » de détection, ni un faux positif : il ne touche à aucun des deux
+ *    chiffres. L'inverse serait tout aussi faux — un profil correct
+ *    n'améliore pas un taux de détection.
+ * 2. **Rien n'est déduit d'une absence.** Sans profil (mode dégradé, cassette
+ *    absente, `--sans-ia`), l'attendu est NON MESURÉ : ni crédité, ni imputé,
+ *    et il sort des dénominateurs. Un « 0 % » dirait que le moteur a eu tort
+ *    alors qu'il n'a rien dit ; un « 100 % » serait un mensonge pur.
+ * 3. **Seuls les champs OBJECTIFS sont notés.** `typeSite` et la langue. La
+ *    description libre et la confiance déclarée restent journalisées dans
+ *    `profil` et ne participent jamais au verdict : noter une prose produite
+ *    par un modèle sous injection reviendrait à laisser la page se noter
+ *    elle-même (constitution §3).
+ *
+ * La comparaison de langue est une égalité stricte de codes : le banc
+ * n'invente aucune équivalence linguistique, et un `fr-FR` là où `fr` est
+ * attendu doit se voir, pas se faire absorber par une règle indulgente.
+ */
+export function noterProfils(rapport: Rapport, manifeste: Manifeste): ResultatProfil[] {
+  const profil = rapport.profil;
+  if (profil === undefined) {
+    return profilsNonMesures(manifeste);
+  }
+  return attendusProfil(manifeste).map((attendu): ResultatProfil => {
+    const langueAttendue = attendu.langue ?? manifeste.langue;
+    return {
+      attendu,
+      langueAttendue,
+      profil,
+      nonMesure: false,
+      satisfait: profil.typeSite === attendu.typeSite && profil.langue === langueAttendue,
+    };
+  });
+}
+
+/**
+ * Les attendus de profil d'un scénario dont AUCUN rapport exploitable n'est
+ * sorti (scanner en échec, timeout, rapport inexploitable) : tous non mesurés.
+ * Un scan qui n'a pas abouti n'apprend rien sur le discernement du modèle, et
+ * le compter en échec de profil imputerait au modèle la panne du navigateur.
+ */
+export function profilsNonMesures(manifeste: Manifeste): ResultatProfil[] {
+  return attendusProfil(manifeste).map((attendu): ResultatProfil => ({
+    attendu,
+    langueAttendue: attendu.langue ?? manifeste.langue,
+    nonMesure: true,
+    satisfait: false,
+  }));
 }

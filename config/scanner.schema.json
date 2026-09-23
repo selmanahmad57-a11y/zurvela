@@ -475,22 +475,33 @@
       "additionalProperties": false,
       "required": [
         "variableCle",
-        "modeles"
+        "variableWorkspace",
+        "modeles",
+        "tarifs"
       ],
       "properties": {
         "variableCle": {
           "type": "string",
           "description": "Nom de la variable d'environnement portant la clé API ; absente → mode dégradé."
         },
+        "variableWorkspace": {
+          "type": "string",
+          "description": "Nom de la variable d'environnement portant l'identifiant de workspace ; renseignée → l'en-tête anthropic-workspace-id accompagne chaque requête, absente → aucun en-tête et comportement inchangé (une clé déjà rattachée à un workspace ne doit pas être gênée)."
+        },
         "modeles": {
           "type": "object",
           "additionalProperties": false,
           "required": [
+            "profilage",
             "navigation",
             "diagnostic",
             "redaction"
           ],
           "properties": {
+            "profilage": {
+              "type": "string",
+              "description": "Modèle rapide et économique du profilage (identifiant complet, jamais suffixé d'une date)."
+            },
             "navigation": {
               "type": "string",
               "description": "Modèle rapide/économique pour les décisions de navigation."
@@ -502,6 +513,30 @@
             "redaction": {
               "type": "string",
               "description": "Modèle puissant pour les rapports."
+            }
+          }
+        },
+        "tarifs": {
+          "type": "object",
+          "description": "Tarifs par identifiant de modèle, dans l'unité monétaire du rapport et par million de jetons. Un modèle sans tarif n'est pas appelé : le client passe en mode dégradé bruyant plutôt que de dépenser un montant qu'il ne saurait pas rapporter.",
+          "additionalProperties": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "entreeParMillion",
+              "sortieParMillion"
+            ],
+            "properties": {
+              "entreeParMillion": {
+                "type": "number",
+                "minimum": 0,
+                "description": "Prix d'un million de jetons d'entrée pour ce modèle."
+              },
+              "sortieParMillion": {
+                "type": "number",
+                "minimum": 0,
+                "description": "Prix d'un million de jetons de sortie pour ce modèle."
+              }
             }
           }
         }

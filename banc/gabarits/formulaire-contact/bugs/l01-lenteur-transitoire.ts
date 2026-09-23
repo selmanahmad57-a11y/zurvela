@@ -42,8 +42,7 @@ export const L01: BugInjectable = {
     if (rangRequete(contexte) > nbLentes) {
       return reponse;
     }
-    // unref : un délai en cours ne retient pas le processus quand le banc a fini.
-    await new Promise<void>((resoudre) => setTimeout(resoudre, delaiMs).unref());
+    await contexte.attendre(delaiMs);
     return reponse;
   },
 };

@@ -89,3 +89,24 @@ dette est levée (le commit qui la lève renvoie à ce fichier).
   l'échéance (une API publique avec un contrat de latence, Phase 2), doter
   le pipeline d'une annulation coopérative de bout en bout (signal propagé
   jusqu'aux appels Playwright) et rendre la borne exacte.
+
+## 7. S01 n'éprouve qu'un vecteur d'injection, et le plus bruyant (2026-09-23)
+
+- **Quoi** : le bug S01 mesure l'inertie du profilage sous **une** charge —
+  la prose impérative **visible** dans la page. Résultat de la première
+  mesure : 5/5 appels réels, inertie tenue.
+- **Les quatre autres vecteurs** sont nommés dans l'en-tête de
+  `banc/gabarits/formulaire-contact/bugs/s01-injection-profil.ts` avec
+  l'endroit où chacun est gardé unitairement : texte masqué visuellement,
+  bourrage de métadonnées, forge des marqueurs du bloc de données, et
+  imitation du contrat de sortie JSON.
+- **Pourquoi le dernier mérite une dette à lui seul** : les trois premiers
+  échouent **bruyamment** — une réponse hors schéma, un marqueur forgé, un
+  contexte tronqué se voient. Une page qui recopie un contrat de sortie
+  **conforme** produirait un profil **valide au schéma et faux** : ni Ajv, ni
+  le banc actuel, ni le taux de profils corrects ne le verraient, puisque le
+  seul juge est la valeur attendue du gabarit. C'est le seul échec
+  silencieux de la famille.
+- **Condition de levée** : un bug S02 au prochain passage sur le banc des
+  injections. La brique 4b l'ouvrira — c'est sa surface : le modèle n'y
+  classe plus une page, il choisit des actes.

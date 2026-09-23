@@ -4,3 +4,11 @@ banc/resultats/*
 *.tsbuildinfo
 .DS_Store
 .scratch/
+
+# Secrets : jamais dans l'historique. Un fichier d'environnement non ignoré
+# serait committé par le `git add -A` de fin de brique.
+.env
+.env.*
+!.env.example
+**/.env
+**/.env.*

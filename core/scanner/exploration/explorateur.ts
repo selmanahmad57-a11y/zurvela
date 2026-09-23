@@ -18,7 +18,6 @@ import type {
   Action,
   ActionExecutee,
   ContexteExploration,
-  Explorateur,
   LocalisationElement,
   Observateur,
   PageVisitee,
@@ -29,11 +28,13 @@ import type {
 } from '../../types.js';
 import type { ConfigScanner } from '../config.js';
 import { creerContexte, NOM_TAMPON } from '../navigateur.js';
+import { composerContexteProfilage, type CollecteProfilage, type ExplorateurProfilant } from '../profilage.js';
 import { brancherPage, type OptionsFenetre, type PageBranchee } from '../observation/observateur.js';
 import {
   derniereMutation,
   etatsImages,
   extrairePage,
+  extraireTexte,
   lireMutations,
   recouvrements,
   sousDelai,
@@ -144,14 +145,18 @@ function oublierRemplissages(etat: EtatViewport, url: string): void {
   }
 }
 
-export function creerExplorateur(dependances: DependancesExplorateur): Explorateur {
+/** Raisons techniques de ne pas avoir extrait le texte de profilage. */
+export const PROFILAGE_PAGE_NON_CHARGEE = 'page-non-chargee';
+export const PROFILAGE_PAGE_EXTERNE = 'page-externe';
+
+export function creerExplorateur(dependances: DependancesExplorateur): ExplorateurProfilant {
   const { config, politique, filtre, navigateur } = dependances;
   const { exploration } = config;
 
   return {
     nom: 'explorateur-deterministe',
 
-    async explorer(contexte: ContexteExploration, observateur: Observateur): Promise<Parcours> {
+    async explorer(contexte: ContexteExploration, observateur: Observateur, collecte?: CollecteProfilage): Promise<Parcours> {
       const parcours: Parcours = { urlDepart: contexte.urlDepart, pages: [], actions: [], arret: 'complet' };
       const origine = new URL(contexte.urlDepart).origin;
       // L'URL de départ obéit à la même règle que les liens suivis (http(s)) :
@@ -183,6 +188,8 @@ export function creerExplorateur(dependances: DependancesExplorateur): Explorate
       });
 
       let actionCourante: string | undefined;
+      /** Le profilage n'est TENTÉ qu'une fois par scan : au premier viewport. */
+      let profilageTente = false;
 
       function enregistrer(etat: EtatViewport, id: string, action: Action, pageAvant: string, debut: string, resultat: ResultatAction, details?: unknown): void {
         const executee: ActionExecutee = {
@@ -541,6 +548,55 @@ export function creerExplorateur(dependances: DependancesExplorateur): Explorate
           actionCourante = undefined;
         }
         await abandonnerNavigation(etat, etat.pageCourante.url);
+        await capturerProfilage(etat);
+      }
+
+      /**
+       * Texte de la page de départ pour le profilage IA : UNE FOIS par scan,
+       * au PREMIER viewport, sur la page DÉJÀ CHARGÉE et stabilisée — jamais
+       * un second chargement, qui coûterait une navigation et pourrait ne pas
+       * rendre la même page.
+       *
+       * Ce qui en sort est une DONNÉE NON FIABLE (constitution §3) : du texte,
+       * pas de balisage, et rien n'en est interprété ici. Un échec d'extraction
+       * n'est jamais fatal : le scan continue sans profil, le journal dit
+       * pourquoi.
+       */
+      async function capturerProfilage(etat: EtatViewport): Promise<void> {
+        if (collecte === undefined || profilageTente) {
+          return;
+        }
+        profilageTente = true;
+        const viewport = etat.viewport.nom;
+        if (etat.pageCourante.statutHttp === null) {
+          contexte.journaliser('profilage.extraction.ignoree', { viewport, url: depart, raison: PROFILAGE_PAGE_NON_CHARGEE });
+          return;
+        }
+        const url = normaliserUrl(etat.page.url(), origine);
+        if (url === null) {
+          contexte.journaliser('profilage.extraction.ignoree', { viewport, url: etat.page.url(), raison: PROFILAGE_PAGE_EXTERNE });
+          return;
+        }
+        try {
+          const extraction = await extraireTexte(etat.page, collecte.bornes.maxChars, delai());
+          const contexteProfilage = composerContexteProfilage(url, extraction, collecte.bornes);
+          collecte.proposer(contexteProfilage);
+          contexte.journaliser('profilage.extraction', {
+            viewport,
+            url,
+            nbChars: contexteProfilage.texte.length,
+            tronque: extraction.tronque || contexteProfilage.texte.length >= collecte.bornes.maxChars,
+            // Distinct du drapeau ci-dessus : « le corps a été RACCOURCI »
+            // n'est pas « le contexte est plein ». Sans ce second signal, un
+            // corps rogné par des en-têtes volumineux serait indiscernable
+            // d'une page simplement bavarde (APPRENTISSAGES n°6).
+            corpsRaccourci: !contexteProfilage.texte.endsWith(extraction.texteVisible),
+            langueDeclaree: contexteProfilage.langueDeclaree,
+            metadonnees: Object.keys(extraction.metadonnees),
+          });
+        } catch (erreur: unknown) {
+          contexte.journaliser('profilage.extraction.echec', { viewport, url, erreur: messageErreur(erreur) });
+        }
       }
 
       async function explorerViewport(viewport: Viewport): Promise<Arret> {

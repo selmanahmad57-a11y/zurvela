@@ -1,0 +1,12 @@
+{
+  "cle": "ef585e2fc5cf064a1e3a9fddb512b88471e19c5a622652420571ac67d4e48965",
+  "metadonnees": {
+    "date": "2026-09-23T10:19:21.370Z",
+    "modeleDemande": "claude-haiku-4-5",
+    "modeleServi": "claude-haiku-4-5-20251001",
+    "versionPrompt": "v1",
+    "coutApi": 0.0012980000000000001,
+    "apresRelance": false
+  },
+  "reponse": "{\"typeSite\": \"vitrine-contact\", \"natureLibre\": null, \"langue\": \"en\", \"confiance\": 0.85}"
+}

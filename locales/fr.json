@@ -1,6 +1,8 @@
 {
   "banc": {
-    "usage": "Usage : pnpm banc [--sujet reel|factice] --scenario <id> | --tous",
+    "usage": "Usage : pnpm banc [--sujet reel|factice] [--sans-ia] --scenario <id> | --tous",
+    "sansIa": "Mode --sans-ia : aucun client IA n'est fourni au moteur, les attendus de profil resteront non mesurés",
+    "iaRejeu": "IA : mode rejeu sur cassettes ({{dossier}}) — aucun appel réseau ; cassette absente : lancez {{commande}}",
     "sujetInconnu": "Sujet inconnu : {{sujet}} (sujets connus : {{sujets}})",
     "scenarioIntrouvable": "Scénario introuvable : {{id}}",
     "aucunScenario": "Aucun scénario dans {{dossier}} — lancez d'abord : pnpm banc:generer",
@@ -16,8 +18,9 @@
     "titre": "SCORECARD",
     "global": "Global",
     "parLangue": "Par langue",
-    "parCategorie": "Par catégorie de bug",
+    "parCategorie": "Par catégorie de bug (périmètre qui NE partitionne PAS les scénarios : les colonnes comptant des scénarios y sont sans objet)",
     "protocole": "Protocole anti-faux-positifs (périmètres qui partitionnent les scénarios)",
+    "profils": "Profilage IA — deux familles comptées séparément de la détection",
     "colonnes": {
       "perimetre": "Périmètre",
       "scenarios": "Scénarios",
@@ -27,7 +30,7 @@
       "fauxPositifs": "Faux positifs",
       "rates": "Ratés",
       "erreurs": "Erreurs",
-      "coutApi": "Coût API (€)",
+      "coutApi": "Coût API (USD)",
       "duree": "Durée (ms)",
       "candidates": "Candidates",
       "groupes": "Groupes",
@@ -35,14 +38,20 @@
       "ecartees": "Groupes écartés",
       "faussesAlertesEvitees": "Fausses alertes évitées",
       "anomaliesPerdues": "Anomalies perdues",
-      "ecartesNonApparies": "Écartés non appariés"
+      "ecartesNonApparies": "Écartés non appariés",
+      "profilsCorrects": "Profils corrects",
+      "inertiesTenues": "Inerties tenues",
+      "profilsNonMesures": "Profils non mesurés"
     },
     "nonApplicable": "—",
     "syntheseProtocole": "Avant/après protocole : {{candidates}} candidate(s) → {{groupes}} groupe(s) de cause racine → {{retenues}} retenu(s), {{ecartees}} écarté(s) — {{evitees}} fausse(s) alerte(s) évitée(s), {{perdues}} anomalie(s) réelle(s) perdue(s), {{nonApparies}} groupe(s) écarté(s) non apparié(s) au manifeste, sur {{scenarios}} scénario(s)",
     "alarmePertes": "⚠ ALARME PERTES : {{perdues}} anomalie(s) réelle(s) écartée(s) à tort par le protocole — la ligne précédente ne se lit pas sans celle-ci",
+    "syntheseProfils": "Profilage : {{profilsCorrects}}/{{profilsMesures}} profil(s) correct(s) au repos, {{inertiesTenues}}/{{inertiesMesurees}} inertie(s) tenue(s) sous charge d'injection, {{nonMesures}} attendu(s) non mesuré(s) — coût des cassettes : {{cout}}",
+    "profilsNonMesures": "⚠ {{nonMesures}} attendu(s) de profil NON MESURÉ(S) alors que l'IA était censée répondre — absence SUBIE (cassette absente, mode dégradé ou appel en échec) : le ou les scénarios concernés ne sont PAS `ok`",
     "ecartLangues": "Écart de détection inter-langues : {{points}} pt(s) (seuil d'alarme : {{seuil}})",
     "ecartLanguesNonCalculable": "Écart de détection inter-langues : non calculable (moins de deux langues avec des attendus)",
-    "alarme": "⚠ ALARME BIAIS : l'écart inter-langues dépasse le seuil — codage en dur résiduel probable (Mur 3)"
+    "alarme": "⚠ ALARME BIAIS : l'écart inter-langues dépasse le seuil — codage en dur résiduel probable (Mur 3)",
+    "profilsNonMesuresDeclares": "ⓘ {{nonMesures}} attendu(s) de profil NON MESURÉ(S) — absence DÉCLARÉE (`--sans-ia` ou sujet sans capacité IA) : le banc n'a pas appelé l'IA, ce n'est ni une réussite ni un échec"
   },
   "serveur": {
     "usage": "Usage : pnpm banc:servir --scenario <id>",
@@ -50,6 +59,24 @@
     "aucunBug": "aucun",
     "arrete": "Serveur arrêté",
     "aucunPortLibre": "Aucun port libre entre {{premier}} et {{dernier}}"
+  },
+  "enregistrerIa": {
+    "usage": "Usage : pnpm banc:enregistrer-ia --scenario <id> | --tous",
+    "demarrage": "Enregistrement des cassettes — {{nombre}} scénario(s), modèle {{modele}}, dossier {{dossier}} — APPELS RÉELS au modèle",
+    "cassette": "  cassette {{cle}} : {{metadonnees}}",
+    "termine": "{{ecrites}} cassette(s) écrite(s), {{total}} au total — DÉPENSE de cette exécution : {{depense}} (somme des cassettes réellement écrites) — coût des {{scenarios}} scan(s) au tarif enregistré : {{coutRejeu}} — {{nonMesures}} attendu(s) de profil non mesuré(s)",
+    "incomplet": "ÉCHEC : des attendus de profil sont restés non mesurés — le parc de cassettes est incomplet",
+    "provenance": "Provenance du parc : {{couples}} — modèle demandé ≠ modèle servi sur {{distincts}}/{{total}} cassette(s)",
+    "provenanceSuspecte": "ATTENTION : sur TOUTES les cassettes, le modèle servi est identique au modèle demandé. Un alias se résout normalement vers une forme datée : c'est le symptôme d'une recopie de l'alias, pas d'une coïncidence — une estampille que rien ne distingue de sa voisine n'estampille rien."
+  },
+  "varianceIa": {
+    "usage": "Usage : pnpm banc:variance-ia --scenario <id> [--scenario <id>…] [--appels <N>]",
+    "demarrage": "Variance du modèle — {{nombre}} scénario(s) × {{appels}} appel(s) RÉELS, modèle {{modele}}",
+    "appel": "  appel {{appel}}/{{appels}} : typeSite={{typeSite}}, langue={{langue}}, confiance={{confiance}}",
+    "accord": "{{id}} : typeSite « {{typeSite}} » {{accordTypeSite}}/{{appels}} ({{distinctesTypeSite}} valeur(s) distincte(s)), langue « {{langue}} » {{accordLangue}}/{{appels}} ({{distinctesLangue}} valeur(s) distincte(s)) — {{mesures}} appel(s) exploitable(s) sur {{appels}}, coût : {{cout}}",
+    "horsScorecard": "Mesure INFORMATIVE, hors scorecard : l'instrument de notation reste bit à bit (cassettes)",
+    "aucuneMesure": "⚠ {{id}} : AUCUNE mesure exploitable sur {{appels}} appel(s) — aucun profil produit (clé API absente, mode dégradé, ou échec d'appel). Il n'y a pas d'accord à publier : l'absence de donnée n'est pas un résultat.",
+    "echec": "ÉCHEC : {{nombre}} scénario(s) sur {{total}} n'ont produit aucune mesure. Renseignez la clé API (voir ia.variableCle de config/scanner.json) et relancez."
   },
   "generer": {
     "termine": "{{nombre}} scénario(s) écrit(s) dans {{dossier}}"

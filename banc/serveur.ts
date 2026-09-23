@@ -18,6 +18,7 @@ import { chargerDictionnaire, rendreGabarit, traduire, type Dictionnaire } from 
 import { chargerConfig } from './config.js';
 import { obtenirGabarit } from './gabarits/index.js';
 import { depuisRacine } from './outils/racine.js';
+import { attendreReellement } from './types.js';
 import type { BugInjectable, ConfigBanc, ContexteBug, Gabarit, ReponseHttp, RequeteApi, Scenario, ServeurScenario } from './types.js';
 
 const HOTE = '127.0.0.1';
@@ -60,7 +61,12 @@ interface BugActif {
  * effectifs validés. Lève si un bug est inconnu du gabarit ou si ses
  * paramètres sont invalides : une faute de fixture échoue au démarrage.
  */
-function resoudreBugsActifs(scenario: Scenario, gabarit: Gabarit, config: ConfigBanc): BugActif[] {
+function resoudreBugsActifs(
+  scenario: Scenario,
+  gabarit: Gabarit,
+  config: ConfigBanc,
+  attendre: (delaiMs: number) => Promise<void>,
+): BugActif[] {
   return scenario.bugsActifs.map((id) => {
     const bug = gabarit.bugs.find((candidat) => candidat.id === id);
     if (bug === undefined) {
@@ -68,7 +74,7 @@ function resoudreBugsActifs(scenario: Scenario, gabarit: Gabarit, config: Config
     }
     const parametres = { ...config.bugs[id], ...scenario.parametres?.[id] };
     bug.validerParametres?.(parametres);
-    return { bug, contexte: { parametres, langue: scenario.langue, etat: {} } };
+    return { bug, contexte: { parametres, langue: scenario.langue, etat: {}, attendre } };
   });
 }
 
@@ -311,8 +317,14 @@ function ecouter(serveur: Server, port: number): Promise<boolean> {
  * incohérent (bug inconnu, paramètre invalide) ou si une transformation ne
  * s'applique pas au site : le banc ne doit jamais noter un site mal servi.
  */
-export async function demarrerServeur(scenario: Scenario, gabarit: Gabarit, config: ConfigBanc): Promise<ServeurScenario> {
-  const bugsActifs = resoudreBugsActifs(scenario, gabarit, config);
+export async function demarrerServeur(
+  scenario: Scenario,
+  gabarit: Gabarit,
+  config: ConfigBanc,
+  /** Temporisation des bugs de lenteur ; les tests l'injectent pour observer l'attente au lieu de la chronométrer. */
+  options: { attendre?: (delaiMs: number) => Promise<void> } = {},
+): Promise<ServeurScenario> {
+  const bugsActifs = resoudreBugsActifs(scenario, gabarit, config, options.attendre ?? attendreReellement);
   const dicoSite = await chargerDictionnaire(path.join(gabarit.dossierSite, gabarit.dossierLocales), scenario.langue);
   const pipelines = construirePipelines(scenario, gabarit, config, dicoSite, bugsActifs);
   await pipelines.verifier();

@@ -92,6 +92,11 @@ Aucune fonctionnalité ne se construit sans sa journalisation.
 - Tout changement de prompt, de modèle ou de détecteur doit pouvoir être
   évalué par le banc d'essai (`banc/correcteur`). Tu ne modifies jamais
   un prompt sans incrémenter sa version.
+- Ce que le versionnement d'un prompt protège, ce sont les MESURES, pas le
+  texte : un prompt s'incrémente dès qu'une cassette ou une mesure existe
+  sous sa version. Avant sa première cassette, il est en rédaction et se
+  corrige sur place — ouvrir une version que rien n'a mesurée créerait une
+  lignée vide.
 - Les cinq métriques de référence : taux de détection, taux de faux
   positifs, taux de blocage, coût par scan, délai de détection.
   Ton code expose ce qu'il faut pour les calculer.

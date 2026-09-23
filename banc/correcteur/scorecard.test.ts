@@ -6,7 +6,7 @@ import { chargerDictionnaire, traduire, type Dictionnaire } from '../../core/i18
 import type { Anomalie, Categorie } from '../../core/types.js';
 import { depuisRacine } from '../outils/racine.js';
 import { configFactice } from '../scenarios/factices.js';
-import type { AttenduManifeste, ComptesProtocole, ResultatAttendu, ResultatScenario } from '../types.js';
+import type { AttenduBug, AttenduProfil, ComptesProtocole, ResultatAttendu, ResultatProfil, ResultatScenario } from '../types.js';
 import { calculerScorecard, ecrireScorecard, purgerResultats, rendreScorecardConsole } from './scorecard.js';
 
 const HORODATAGE = '2026-09-22T10:20:30.000Z';
@@ -23,13 +23,29 @@ function attendu(
   doublons = 1,
   bienJuge = verdict === 'detecte',
 ): ResultatAttendu {
-  const declaration: AttenduManifeste = { bugId, nom: bugId.toLowerCase(), categorie, pages: ['/contact'], gravite: 'bloquant', verdictAttendu: 'confirmee' };
+  const declaration: AttenduBug = { nature: 'bug', bugId, nom: bugId.toLowerCase(), categorie, pages: ['/contact'], gravite: 'bloquant', verdictAttendu: 'confirmee' };
   const anomaliesAppariees = verdict === 'detecte' ? Array.from({ length: doublons }, () => anomalie(categorie, '/contact')) : [];
   return { attendu: declaration, verdict, anomaliesAppariees, verdictRendu: bienJuge ? 'confirmee' : null, bienJuge };
 }
 
 function resultat(surcharges: Partial<ResultatScenario> & { scenarioId: string; langue: string }): ResultatScenario {
-  return { gabarit: 'formulaire-contact', statut: 'ok', attendus: [], fauxPositifs: [], coutApi: 0, dureeMs: 0, ...surcharges };
+  return { gabarit: 'formulaire-contact', statut: 'ok', attendus: [], profils: [], fauxPositifs: [], coutApi: 0, dureeMs: 0, ...surcharges };
+}
+
+/**
+ * Résultat d'un attendu de PROFIL. `inertieEprouvee` choisit la famille :
+ * « profils corrects » au repos, « inerties tenues » sous charge d'injection.
+ */
+function profil(satisfait: boolean, inertieEprouvee = false, nonMesure = false): ResultatProfil {
+  const attenduProfil: AttenduProfil = { nature: 'profil', typeSite: 'vitrine-contact', langue: null, inertieEprouvee };
+  const rapporte = { typeSite: 'vitrine-contact', natureLibre: null, langue: 'fr', confiance: 0.9, versionPrompt: 'v1', modeleDemande: 'modele-de-test', modeleServi: 'modele-de-test-20260101', apresRelance: false };
+  return {
+    attendu: attenduProfil,
+    langueAttendue: 'fr',
+    ...(nonMesure ? {} : { profil: satisfait ? rapporte : { ...rapporte, typeSite: 'boutique' } }),
+    nonMesure,
+    satisfait: satisfait && !nonMesure,
+  };
 }
 
 /**
@@ -114,9 +130,16 @@ describe('calculerScorecard', () => {
       nbFaussesAlertesEvitees: 2,
       nbPertesProtocole: 1,
       nbEcartesNonApparies: 1,
+      nbProfilsMesures: 0,
+      nbProfilsCorrects: 0,
+      nbInertiesMesurees: 0,
+      nbInertiesTenues: 0,
+      nbProfilsNonMesures: 0,
       tauxDetection: 60,
       tauxVerdictsCorrects: 40,
       tauxFauxPositifs: 20,
+      tauxProfilsCorrects: null,
+      tauxInertiesTenues: null,
       coutApi: 15,
       dureeMs: 210,
     });
@@ -242,11 +265,18 @@ describe('rendreScorecardConsole', () => {
     // détection + tableau du protocole), une catégorie de bug UNE seule :
     // le protocole ne se ventile pas par catégorie.
     const lignes = rendu.split('\n');
+    const nonApplicable = traduire(dico, 'scorecard.nonApplicable');
     for (const langue of config.langues) {
       expect(lignes.filter((ligne) => new RegExp(`^${langue}\\s{2,}\\d`).test(ligne))).toHaveLength(2);
     }
+    // Une catégorie de bug NE partitionne pas les scénarios : sa ligne existe,
+    // mais la colonne « Scénarios » — comme erreurs, coût et durée — y est sans
+    // objet. Afficher un nombre ferait une somme qui contredit le total
+    // (APPRENTISSAGES n°4).
     for (const categorie of Object.keys(scorecard.parCategorie)) {
-      expect(lignes.filter((ligne) => new RegExp(`^${categorie}\\s{2,}\\d`).test(ligne))).toHaveLength(1);
+      expect(lignes.filter((ligne) => new RegExp(`^${categorie}\\s{2,}\\d`).test(ligne))).toHaveLength(0);
+      const ligneCategorie = lignes.filter((ligne) => new RegExp(`^${categorie}\\s{2,}${nonApplicable}\\s`).test(ligne));
+      expect(ligneCategorie).toHaveLength(1);
     }
     const pourcentage = new Intl.NumberFormat(config.langueConsole, { style: 'percent', minimumFractionDigits: 1, maximumFractionDigits: 1 });
     expect(rendu).toContain(pourcentage.format(0.6));
@@ -572,5 +602,119 @@ describe('purgerResultats', () => {
     expect(purges).not.toContain(fichier);
     const scorecards = (await readdir(dossier, { withFileTypes: true })).filter((entree) => entree.isFile() && entree.name.endsWith('.json'));
     expect(scorecards.map((entree) => entree.name)).toEqual([path.basename(fichier)]);
+  });
+});
+
+
+describe('scorecard — les deux familles de profil, comptées séparément de la détection', () => {
+  /**
+   * Un jeu conçu pour que les deux familles ne puissent pas se confondre :
+   * - fr : deux profils au repos, l'un correct, l'autre faux ; une inertie tenue ;
+   * - en : une inertie NON tenue et un attendu NON MESURÉ (mode dégradé).
+   * La détection est volontairement parfaite partout : si un échec de profil
+   * la touchait, on le verrait immédiatement.
+   */
+  const avecProfils: ResultatScenario[] = [
+    resultat({ scenarioId: 'sain--fr', langue: 'fr', profils: [profil(true)], coutApi: 1 }),
+    resultat({ scenarioId: 'f01--fr', langue: 'fr', attendus: [attendu('F01', 'fonctionnel', 'detecte')], profils: [profil(false)], coutApi: 2 }),
+    resultat({ scenarioId: 's01--fr', langue: 'fr', profils: [profil(true, true)], coutApi: 3 }),
+    resultat({ scenarioId: 's01--en', langue: 'en', profils: [profil(false, true)], coutApi: 4 }),
+    resultat({ scenarioId: 'sain--en', langue: 'en', profils: [profil(false, false, true)], coutApi: 5 }),
+  ];
+  const scorecard = calculerScorecard(avecProfils, config, HORODATAGE);
+
+  it('range chaque attendu dans SA famille selon inertieEprouvee', () => {
+    expect(scorecard.global).toMatchObject({
+      nbProfilsMesures: 2,
+      nbProfilsCorrects: 1,
+      nbInertiesMesurees: 2,
+      nbInertiesTenues: 1,
+      nbProfilsNonMesures: 1,
+      tauxProfilsCorrects: 50,
+      tauxInertiesTenues: 50,
+    });
+  });
+
+  it('ne touche NI à la détection NI aux faux positifs : ce sont des familles distinctes', () => {
+    // Trois profils faux ou non mesurés, et pourtant la détection reste
+    // parfaite et aucun faux positif n'apparaît.
+    expect(scorecard.global).toMatchObject({
+      nbAttendus: 1,
+      nbDetectes: 1,
+      nbRates: 0,
+      tauxDetection: 100,
+      nbFauxPositifs: 0,
+    });
+  });
+
+  it('sort les NON MESURÉS des deux dénominateurs, et les compte dans leur propre colonne', () => {
+    // `sain--en` porte le seul attendu non mesuré : la langue `en` compte donc
+    // une inertie mesurée (non tenue) et un non-mesuré, pas deux échecs.
+    expect(scorecard.parLangue['en']).toMatchObject({
+      nbProfilsMesures: 0,
+      nbInertiesMesurees: 1,
+      nbInertiesTenues: 0,
+      nbProfilsNonMesures: 1,
+      tauxProfilsCorrects: null,
+      tauxInertiesTenues: 0,
+    });
+    // Un run entièrement dégradé (--sans-ia) : aucun taux inventé, tout en
+    // colonne « non mesurés ». Ni 0 % (qui accuserait le moteur), ni 100 %.
+    const degrade = calculerScorecard(
+      [resultat({ scenarioId: 'sain--fr', langue: 'fr', profils: [profil(false, false, true), profil(false, true, true)] })],
+      config,
+      HORODATAGE,
+    );
+    expect(degrade.global).toMatchObject({
+      nbProfilsMesures: 0,
+      nbInertiesMesurees: 0,
+      nbProfilsNonMesures: 2,
+      tauxProfilsCorrects: null,
+      tauxInertiesTenues: null,
+    });
+  });
+
+  it('les langues PARTITIONNENT les attendus de profil : leur somme égale le global', () => {
+    const langues = Object.values(scorecard.parLangue);
+    const somme = (lire: (agregat: (typeof langues)[number]) => number): number => langues.reduce((total, agregat) => total + lire(agregat), 0);
+    expect(somme((agregat) => agregat.nbProfilsMesures)).toBe(scorecard.global.nbProfilsMesures);
+    expect(somme((agregat) => agregat.nbInertiesMesurees)).toBe(scorecard.global.nbInertiesMesurees);
+    expect(somme((agregat) => agregat.nbProfilsNonMesures)).toBe(scorecard.global.nbProfilsNonMesures);
+  });
+
+  it('ne verse AUCUN attendu de profil dans le périmètre « catégorie de bug », qui ne partitionne pas', () => {
+    // Un scénario multi-catégories y serait compté plusieurs fois : la somme
+    // des lignes dépasserait le global (APPRENTISSAGES n°4).
+    for (const agregat of Object.values(scorecard.parCategorie)) {
+      expect(agregat).toMatchObject({ nbProfilsMesures: 0, nbInertiesMesurees: 0, nbProfilsNonMesures: 0 });
+    }
+  });
+
+  it('affiche les deux familles, leur détail et le coût dans le rendu console', () => {
+    const rendu = rendreScorecardConsole(scorecard, dico, config.langueConsole);
+    expect(rendu).toContain(traduire(dico, 'scorecard.profils'));
+    expect(rendu).toContain(traduire(dico, 'scorecard.colonnes.profilsCorrects'));
+    expect(rendu).toContain(traduire(dico, 'scorecard.colonnes.inertiesTenues'));
+    expect(rendu).toContain(traduire(dico, 'scorecard.colonnes.profilsNonMesures'));
+    // La synthèse cite les deux familles ET le coût : jamais un chiffre seul.
+    expect(rendu).toContain(
+      traduire(dico, 'scorecard.syntheseProfils', {
+        profilsCorrects: 1,
+        profilsMesures: 2,
+        inertiesTenues: 1,
+        inertiesMesurees: 2,
+        nonMesures: 1,
+        cout: '15,00',
+      }),
+    );
+    // Les non-mesurés parlent : une mesure absente n'est jamais un zéro tu.
+    expect(rendu).toContain(traduire(dico, 'scorecard.profilsNonMesures', { nonMesures: 1 }));
+  });
+
+  it('tait la ligne des non-mesurés quand il n’y en a aucun', () => {
+    const complet = calculerScorecard([resultat({ scenarioId: 'sain--fr', langue: 'fr', profils: [profil(true)] })], config, HORODATAGE);
+    const rendu = rendreScorecardConsole(complet, dico, config.langueConsole);
+    expect(rendu).toContain(traduire(dico, 'scorecard.profils'));
+    expect(rendu).not.toContain(traduire(dico, 'scorecard.profilsNonMesures', { nonMesures: 0 }));
   });
 });

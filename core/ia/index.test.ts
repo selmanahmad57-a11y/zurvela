@@ -15,9 +15,12 @@ describe('creerClientIa', () => {
     });
   });
 
-  it('AVEC clé : toujours dégradé tant qu’aucune fonction n’est implémentée, raison « non implémenté »', () => {
-    // Le mode reflète la disponibilité effective, pas la présence de la clé :
-    // le journal `ia.mode` ne doit pas annoncer un moteur actif qui ne l'est pas.
+  it('AVEC clé : dégradé quand même, raison « non implémenté »', () => {
+    // `creerClientIa` est la fabrique du « sans IA » : elle n'implémente
+    // aucune fonction, même avec une clé. Le client concret se construit
+    // avec `creerClientAnthropic`. Le mode reflète la disponibilité
+    // effective, pas la présence de la clé : le journal `ia.mode` ne doit
+    // pas annoncer un moteur actif qui ne l'est pas.
     const client = creerClientIa(config.ia, { [config.ia.variableCle]: 'cle-factice' });
     expect(client.mode).toBe('degrade');
     expect(client.raisonDegrade).toBe(RAISON_NON_IMPLEMENTE);

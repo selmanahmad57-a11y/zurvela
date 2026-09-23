@@ -86,6 +86,33 @@ export interface Rapport {
   groupes?: ResultatGroupe[];
   /** Anomalies constatées pendant les re-exécutions seulement (troisième état : constatée une fois). */
   decouvertes?: Anomalie[];
+  /**
+   * Profil du site produit par l'IA (brique 4a). Absent en mode dégradé — la
+   * raison est alors au journal. RIEN ne le consomme encore : la brique 4b
+   * sera son premier lecteur.
+   */
+  profil?: ProfilSiteRapporte;
+}
+
+/** Le profil tel qu'il voyage dans un rapport : la valeur, plus d'où elle vient. */
+export interface ProfilSiteRapporte {
+  typeSite: string;
+  /** Description libre de la valeur d'échappement : journalisée, jamais lue par une logique. */
+  natureLibre: string | null;
+  langue: string;
+  confiance: number;
+  /** Version du prompt qui l'a produit : sans elle, on ne sait pas ce qu'on mesure. */
+  versionPrompt: string;
+  /** ALIAS de modèle demandé (celui de la configuration). */
+  modeleDemande: string;
+  /**
+   * Forme RÉSOLUE servie par le fournisseur, extraite de sa réponse. Un alias
+   * est un pointeur : sans ce second champ, le jour où il désigne un autre
+   * instantané, le rapport attribuerait la réponse au mauvais modèle.
+   */
+  modeleServi: string;
+  /** true si le profil a demandé une relance (sa confiance est alors plafonnée). */
+  apresRelance: boolean;
 }
 
 /** Options d'un scan. */

@@ -104,3 +104,50 @@ contournable, et deux étaient atteignables sans rien saboter.
 - **Corollaire d'unité** : toutes les colonnes d'une même ligne doivent être
   dans la même unité (ici des groupes de cause racine, pas des anomalies).
   Le mélange d'unités est ce qui rendait l'incohérence invisible.
+
+## 5. Une configuration que rien n'exécute n'est pas vérifiée (2026-09-23, ouverture de la brique 4a)
+
+- **Symptôme** : `config/scanner.json` portait l'identifiant de modèle
+  `claude-haiku-4-5-20251001` — une forme suffixée d'une date qui n'existe
+  pas. Il a survécu **deux briques entières**. Le banc était vert, le
+  typecheck aussi, le schéma validait (c'est bien une chaîne) : la config
+  mentait et rien ne le disait.
+- **Cause** : le mode dégradé permanent de la brique 2 protégeait le scan
+  de l'absence d'IA — et, ce faisant, **aveuglait la config** : aucun chemin
+  n'exécutait jamais cette valeur.
+- **Règle** : le mode dégradé protège l'exécution, il ne vérifie rien. Toute
+  valeur de configuration qui ne s'active que dans un mode futur doit porter
+  un **test de forme dès sa naissance** — ici, un test validant les
+  identifiants de modèle contre le format attendu aurait suffi, sans le
+  moindre appel réseau. Un schéma JSON qui dit « c'est une chaîne » ne dit
+  rien de la validité de la chaîne.
+- **Portée** : la brique 4a ferme le trou pour les modèles en les exécutant
+  enfin. Le principe vaut pour toute config dormante à venir — identifiants,
+  URL, noms de modèles, clés d'API, chemins : si rien ne les exécute
+  aujourd'hui, écrire le test de forme aujourd'hui.
+
+## 6. Un diagnostic faux coûte plus cher qu'une absence de diagnostic (2026-09-23, brique 4a)
+
+- **Cas fondateur** : la garde anti-écrasement des cassettes refuse d'écrire
+  deux réponses différentes sous la même clé, au motif « prompt modifié sans
+  incrément de version ». Mais une seconde cause produit exactement le même
+  symptôme : l'alias de modèle a glissé vers un instantané plus récent
+  (`claude-haiku-4-5` → `…-20251001` → un autre demain). Le jour du
+  glissement, la garde aurait accusé le versionnement — envoyant corriger ce
+  qui fonctionnait, et laissant la vraie cause intacte.
+- **Règle** : **une garde qui accuse le mauvais coupable est pire qu'une
+  garde absente, parce qu'elle envoie corriger ce qui fonctionne.** Chaque
+  message d'erreur du moteur est un diagnostic, et un diagnostic est cru.
+  Quand deux causes produisent le même symptôme, la garde doit les
+  distinguer avant de nommer l'une d'elles — ici en comparant les modèles
+  servis — ou dire honnêtement qu'elle ne sait pas.
+- **Portée** : bien au-delà des cassettes. Le rapport business vit sous la
+  même loi : dire au commerçant « votre prestataire a cassé X » quand c'est
+  Y envoie sa confiance et son argent au mauvais endroit. C'est le pendant,
+  côté message, de l'apprentissage n°4 côté mesure.
+- **Corollaire de provenance (apprentissage n°5 appliqué aux estampilles)** :
+  `modeleServi` doit être **extrait de la réponse réelle**, jamais déduit ni
+  recopié de l'alias demandé. Un parc de cassettes où `modeleServi` et
+  `modeleDemande` sont partout identiques est le symptôme de la recopie, pas
+  de la coïncidence — *une estampille que rien ne distingue de sa voisine
+  n'estampille rien*.

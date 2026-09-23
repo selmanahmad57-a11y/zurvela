@@ -185,10 +185,22 @@
   },
   "ia": {
     "variableCle": "ANTHROPIC_API_KEY",
+    "variableWorkspace": "ANTHROPIC_WORKSPACE_ID",
     "modeles": {
-      "navigation": "claude-haiku-4-5-20251001",
+      "profilage": "claude-haiku-4-5",
+      "navigation": "claude-haiku-4-5",
       "diagnostic": "claude-opus-5",
       "redaction": "claude-opus-5"
+    },
+    "tarifs": {
+      "claude-haiku-4-5": {
+        "entreeParMillion": 1.0,
+        "sortieParMillion": 5.0
+      },
+      "claude-opus-5": {
+        "entreeParMillion": 5.0,
+        "sortieParMillion": 25.0
+      }
     }
   },
   "confirmation": {

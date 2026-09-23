@@ -63,7 +63,26 @@ export interface ConfigScanner {
     recouvrement: { confianceGeometrie: number; confianceGeometrieEtClic: number; gravite: Gravite };
   };
   confirmation: ConfigConfirmation;
-  ia: { variableCle: string; modeles: { navigation: string; diagnostic: string; redaction: string } };
+  ia: ConfigIa;
+}
+
+/**
+ * Réglages de la couche IA. Les NOMS des variables d'environnement sont des
+ * réglages (constitution §2) ; ce qu'on en fait — envoyer un en-tête, refuser
+ * d'appeler un modèle sans tarif — est du code.
+ */
+export interface ConfigIa {
+  variableCle: string;
+  /**
+   * Nom de la variable d'environnement portant l'identifiant de workspace.
+   * Renseignée, l'en-tête de workspace accompagne chaque requête ; absente,
+   * rien n'est envoyé — une clé déjà rattachée à un workspace ne doit pas
+   * être gênée.
+   */
+  variableWorkspace: string;
+  modeles: { profilage: string; navigation: string; diagnostic: string; redaction: string };
+  /** Tarifs par identifiant de modèle. Un modèle sans tarif n'est pas appelé. */
+  tarifs: Record<string, { entreeParMillion: number; sortieParMillion: number }>;
 }
 
 /** Politique du protocole anti-faux-positifs (brique 3). */
@@ -108,7 +127,21 @@ export interface ActionsInterdites {
   texteVisibleExamine: boolean;
 }
 
+/** Vocabulaire fermé du profil et réglages de l'appel (config/profilage.json). */
+export interface ConfigProfilage {
+  typesSite: string[];
+  valeurEchappement: string;
+  contexteMaxChars: number;
+  /** Plafond de CHAQUE en-tête du bloc de données (titre, chaque métadonnée). */
+  enTeteMaxChars: number;
+  maxTokensReponse: number;
+  relancesMax: number;
+  facteurConfianceApresRelance: number;
+  varianceAppels: number;
+}
+
 export const FICHIER_CONFIG_SCANNER = depuisRacine('config', 'scanner.json');
+export const FICHIER_CONFIG_PROFILAGE = depuisRacine('config', 'profilage.json');
 export const FICHIER_ACTIONS_INTERDITES = depuisRacine('config', 'actions-interdites.json');
 
 async function chargerValide<T>(fichier: string, schema: string, nom: string): Promise<T> {
@@ -118,6 +151,10 @@ async function chargerValide<T>(fichier: string, schema: string, nom: string): P
 
 export async function chargerConfigScanner(fichier: string = FICHIER_CONFIG_SCANNER): Promise<ConfigScanner> {
   return chargerValide<ConfigScanner>(fichier, depuisRacine('config', 'scanner.schema.json'), 'config/scanner.json');
+}
+
+export async function chargerConfigProfilage(fichier: string = FICHIER_CONFIG_PROFILAGE): Promise<ConfigProfilage> {
+  return chargerValide<ConfigProfilage>(fichier, depuisRacine('config', 'profilage.schema.json'), 'config/profilage.json');
 }
 
 export async function chargerActionsInterdites(

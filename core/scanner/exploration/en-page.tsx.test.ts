@@ -16,6 +16,7 @@ const SONDE = depuisRacine('core', 'scanner', 'exploration', 'en-page.sonde.ts')
 
 interface ResultatSonde {
   page: { liens: string[]; formulaires: { champs: { type: string }[]; declencheur: { balise: string; selecteur: string; attributs: Record<string, string> } | null }[] };
+  texte: { titre: string; langueDeclaree: string | null; metadonnees: Record<string, string>; texteVisible: string; tronque: boolean };
   images: { complete: boolean; largeurNaturelle: number }[];
   recouvrements: unknown[];
   mutations: { enZone: boolean }[];
@@ -43,5 +44,14 @@ describe('script en page sous tsx', () => {
     expect(resultat.declencheur?.attributs['name']).toBe('b');
     expect(resultat.validite.validationActive).toBe(true);
     expect(resultat.validite.champsInvalides).toEqual([]);
+    // Commande de profilage : du texte, jamais de balisage ni de style ni d'élément masqué.
+    expect(resultat.texte.titre).toBe('Sonde');
+    expect(resultat.texte.langueDeclaree).toBe('fr');
+    expect(resultat.texte.metadonnees['description']).toBe('Metadonnee de sonde');
+    expect(resultat.texte.texteVisible).toContain('Paragraphe visible.');
+    expect(resultat.texte.texteVisible).not.toContain('Masque');
+    expect(resultat.texte.texteVisible).not.toContain('<');
+    expect(resultat.texte.texteVisible).not.toContain('color: red');
+    expect(resultat.texte.tronque).toBe(false);
   }, 30_000);
 });

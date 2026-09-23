@@ -1,0 +1,56 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "zurvela/config/profilage",
+  "title": "Configuration du profilage IA",
+  "description": "Vocabulaire fermé du profil et réglages de l'appel. Le code ne connaît aucun type de site : ils vivent tous ici (constitution §2).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["typesSite", "valeurEchappement", "contexteMaxChars", "enTeteMaxChars", "maxTokensReponse", "relancesMax", "facteurConfianceApresRelance", "varianceAppels"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "$commentaire": { "type": "string" },
+    "typesSite": {
+      "type": "array",
+      "minItems": 2,
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 1 },
+      "description": "Énumération fermée des types de site. Le schéma de validation de la réponse du modèle en est dérivé ; étendre le vocabulaire se fait ICI, jamais dans le code."
+    },
+    "valeurEchappement": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Valeur de `typesSite` qui signifie « aucune des autres ». Doit appartenir à `typesSite`. Elle autorise le modèle à ne pas choisir plutôt qu'à mal choisir, et déclenche le champ libre `natureLibre`."
+    },
+    "contexteMaxChars": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Troncature du bloc de contenu de page injecté dans le prompt : surface d'injection minimale, coût minimal."
+    },
+    "enTeteMaxChars": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Plafond de longueur de CHAQUE en-tête du bloc de données (le titre, et chaque métadonnée prise séparément). Un attribut `content` de balise `meta` est de longueur libre et invisible pour un visiteur : sans ce plafond, une seule métadonnée remplirait `contexteMaxChars` et évincerait le texte visible du site. Le plafond borne la FORME, il ne filtre aucun contenu."
+    },
+    "maxTokensReponse": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Plafond de génération de l'appel de profilage (une classification, pas une rédaction)."
+    },
+    "relancesMax": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Relances autorisées quand la réponse ne valide pas le schéma ; au-delà, mode dégradé journalisé."
+    },
+    "facteurConfianceApresRelance": {
+      "type": "number",
+      "exclusiveMinimum": 0,
+      "exclusiveMaximum": 1,
+      "description": "Facteur appliqué à la confiance d'un profil obtenu après relance. Strictement inférieur à 1 : le doute ne monte jamais la confiance (principe A5)."
+    },
+    "varianceAppels": {
+      "type": "integer",
+      "minimum": 2,
+      "description": "Nombre d'appels réels de `pnpm banc:variance-ia` pour mesurer l'accord inter-appels du modèle, hors scorecard."
+    }
+  }
+}
