@@ -10,6 +10,11 @@
  */
 import Anthropic from '@anthropic-ai/sdk';
 import type { ConfigProfilage, ConfigScanner } from '../scanner/config.js';
+import type { EtatDecisionEnumere } from '../types.js';
+import type { ConfigNavigation } from './config-navigation.js';
+import { deciderBrutAvec, decisionDepuisReponse, type AppelDecision } from './decision.js';
+import { identifiantsEnumeres, normaliserEtatDecision, type EtatNormalise } from './etat-decision.js';
+import { creerValidateurDecision } from './schema-decision.js';
 import {
   RAISON_APPEL_API,
   RAISON_APPEL_INATTENDU,
@@ -24,11 +29,12 @@ import {
   creerClientSansCapacite,
   type ClientIaEnregistrable,
   type ContexteProfilage,
+  type DecisionEstampillee,
   type ProfilPage,
   type ReponseBrute,
   type ResultatIa,
 } from './index.js';
-import { profilDepuisReponse, profilerBrutAvec, type ResultatAppel } from './profilage.js';
+import { profilDepuisReponse, profilerBrutAvec, type AppelModele, type ResultatAppel } from './profilage.js';
 import { creerValidateurProfil } from './schema-profil.js';
 
 /**
@@ -87,6 +93,13 @@ export interface PorteeSdk {
 export interface OptionsClientAnthropic {
   config: ConfigScanner['ia'];
   profilage: ConfigProfilage;
+  /**
+   * Réglages de la décision de navigation. REQUIS, et pas par confort : le
+   * contrat de la brique 4b est additif, donc rien n'aurait signalé un client
+   * concret incapable de décider. Le rendre obligatoire crée le trou que le
+   * typecheck suit (APPRENTISSAGES n°7).
+   */
+  navigation: ConfigNavigation;
   tarifs: TarifsIa;
   env?: NodeJS.ProcessEnv;
   /** Doublure de SDK (tests). En production, le SDK est construit depuis la clé. */
@@ -118,60 +131,66 @@ export function creerClientAnthropic(options: OptionsClientAnthropic): ClientIaE
   const sdk: PorteeSdk = options.sdk ?? new Anthropic({ apiKey: cle, ...enTetesWorkspace(config, env) });
   const validateur = creerValidateurProfil(profilage);
 
-  const appeler = async (prompt: { systeme: string; utilisateur: string }): Promise<ResultatAppel> => {
-    try {
-      const reponse = await sdk.messages.create({
-        model: modele,
-        max_tokens: profilage.maxTokensReponse,
-        system: prompt.systeme,
-        messages: [{ role: 'user', content: prompt.utilisateur }],
-        // Sortie structurée : `output_config.format`, jamais le paramètre
-        // `output_format` déprécié, et jamais de préremplissage de message
-        // assistant (rejeté par les modèles courants).
-        // Le schéma envoyé est le CONTRAT RESTREINT, pas le schéma de
-        // validation : `pattern`, `minimum` et `maximum` ne font pas partie du
-        // sous-ensemble accepté par les sorties structurées, et les envoyer
-        // vaut soit un refus, soit un contrat qui ne ferme rien.
-        output_config: { format: { type: 'json_schema', schema: validateur.schemaContratModele } },
-      });
-      const coutApi = coutAppel(reponse.usage, tarif);
-      if (reponse.stop_reason === 'refusal') {
-        return { ok: false, raison: RAISON_REFUS_MODELE, coutApi };
-      }
-      // Une réponse COUPÉE par un plafond n'est pas une réponse mal formée.
-      // Sans ces deux branches, son JSON incomplet ressortait en
-      // « reponseNonJson », une relance brûlait un appel payant sous le MÊME
-      // plafond, et le message accusait la forme de la réponse du modèle alors
-      // que la cause est un réglage de config — le mauvais coupable, au pire
-      // moment (APPRENTISSAGES n°6). Comme un échec d'appel, elles arrêtent
-      // sans brûler la relance : `profilerBrutAvec` traite déjà `ok: false` ainsi.
-      if (reponse.stop_reason === 'max_tokens') {
-        return {
-          ok: false,
-          raison: RAISON_REPONSE_TRONQUEE,
-          coutApi,
-          message: `génération coupée à profilage.maxTokensReponse (${profilage.maxTokensReponse})`,
-        };
-      }
-      if (reponse.stop_reason === 'model_context_window_exceeded') {
-        return {
-          ok: false,
-          raison: RAISON_CONTEXTE_DEPASSE,
-          coutApi,
-          message: `entrée au-delà de la fenêtre du modèle ${modele} (profilage.contexteMaxChars ${profilage.contexteMaxChars})`,
-        };
-      }
-      // `modeleServi` est EXTRAIT de la réponse, jamais recopié depuis l'alias
-      // demandé : c'est toute la différence entre une estampille et une
-      // décoration (APPRENTISSAGES n°6).
-      return { ok: true, texte: texteDe(reponse), coutApi, modeleServi: reponse.model };
-    } catch (erreur) {
-      return echecAppel(erreur);
-    }
+  const appelerProfilage: AppelModele = (prompt) =>
+    appeler(
+      {
+        sdk,
+        modele,
+        tarif,
+        maxTokens: profilage.maxTokensReponse,
+        nomPlafond: 'profilage.maxTokensReponse',
+        detailEntree: `profilage.contexteMaxChars ${profilage.contexteMaxChars}`,
+      },
+      prompt,
+      validateur.schemaContratModele,
+    );
+
+  // ---------------------------------------------------------------------
+  // Décision de navigation (brique 4b)
+  // ---------------------------------------------------------------------
+  const { navigation } = options;
+  const modeleNavigation = config.modeles.navigation;
+  const tarifNavigation = tarifs[modeleNavigation];
+
+  /**
+   * Le tarif manquant est traité PAR CAPACITÉ, pas pour le client entier : un
+   * modèle de navigation sans tarif ne doit pas éteindre le profilage, qui a
+   * le sien. La raison reste la même et reste bruyante — on n'appelle pas un
+   * modèle dont on ne sait pas facturer l'appel (APPRENTISSAGES n°3).
+   */
+  const tarifNavigationAbsent = async <T>(): Promise<ResultatIa<T>> => ({
+    disponible: false,
+    raison: RAISON_TARIF_ABSENT,
+    message: `aucun tarif configuré pour le modèle ${modeleNavigation}`,
+  });
+
+  const deciderBrut = (etat: EtatNormalise): Promise<ResultatIa<ReponseBrute>> => {
+    if (tarifNavigation === undefined) return tarifNavigationAbsent<ReponseBrute>();
+    const appelerNavigation: AppelDecision = (prompt, schemaContratModele) =>
+      appeler(
+        {
+          sdk,
+          modele: modeleNavigation,
+          tarif: tarifNavigation,
+          maxTokens: navigation.maxTokensReponse,
+          nomPlafond: 'navigation.maxTokensReponse',
+          detailEntree: `exploration.libelleMaxChars ${navigation.libelleMaxChars}`,
+        },
+        prompt,
+        schemaContratModele,
+      );
+    return deciderBrutAvec({
+      etat,
+      config: navigation,
+      // Le contrat de sortie est DÉRIVÉ de l'énumération reçue : le modèle
+      // n'a littéralement aucune valeur admissible en dehors du menu.
+      validateur: creerValidateurDecision(identifiantsEnumeres(etat)),
+      appeler: appelerNavigation,
+    });
   };
 
   const profilerBrut = (contexte: ContexteProfilage): Promise<ResultatIa<ReponseBrute>> =>
-    profilerBrutAvec({ contexte, config: profilage, validateur, appeler });
+    profilerBrutAvec({ contexte, config: profilage, validateur, appeler: appelerProfilage });
 
   const nonImplemente = async <T>(): Promise<ResultatIa<T>> => ({
     disponible: false,
@@ -182,6 +201,7 @@ export function creerClientAnthropic(options: OptionsClientAnthropic): ClientIaE
     mode: 'actif',
     raisonDegrade: null,
     profilerBrut,
+    deciderBrut,
     async profiler(contexte): Promise<ResultatIa<ProfilPage>> {
       const brut = await profilerBrut(contexte);
       if (!brut.disponible) return brut;
@@ -195,13 +215,111 @@ export function creerClientAnthropic(options: OptionsClientAnthropic): ClientIaE
         coutApi: brut.valeur.coutApi,
       });
     },
-    // 4b et 4c implémenteront ces trois fonctions ; en 4a elles ne touchent
-    // rien — aucun chemin de cette brique ne peut donc appeler le réseau en
-    // dehors du profilage.
-    decider: nonImplemente,
+    /**
+     * Le modèle ÉLIT : il reçoit une énumération d'identifiants opaques et
+     * rend l'un d'eux. La normalisation de l'état a lieu ICI, une fois, et
+     * sert à la fois au prompt et au validateur — l'ordre dans lequel
+     * l'énumérateur a produit ses actions ne doit pas pouvoir changer ce que
+     * le modèle voit.
+     */
+    async decider(etat: EtatDecisionEnumere): Promise<ResultatIa<DecisionEstampillee>> {
+      const etatNormalise = normaliserEtatDecision(etat, navigation);
+      const brut = await deciderBrut(etatNormalise);
+      if (!brut.disponible) return brut;
+      return decisionDepuisReponse({
+        texte: brut.valeur.texte,
+        validateur: creerValidateurDecision(identifiantsEnumeres(etatNormalise)),
+        modeleDemande: modeleNavigation,
+        modeleServi: brut.valeur.modeleServi,
+        apresRelance: brut.valeur.apresRelance,
+        coutApi: brut.valeur.coutApi,
+      });
+    },
+    // 4c implémentera ces deux fonctions ; elles ne touchent rien aujourd'hui.
     diagnostiquer: nonImplemente,
     rediger: nonImplemente,
   };
+}
+
+/** Ce qui distingue un appel de modèle d'un autre : tout le reste est commun. */
+interface ParametresAppel {
+  sdk: PorteeSdk;
+  modele: string;
+  tarif: TarifModele;
+  maxTokens: number;
+  /** Réglage de config qui porte le plafond de génération : sert à nommer la VRAIE cause. */
+  nomPlafond: string;
+  /** Réglage de config qui borne l'entrée, même raison. */
+  detailEntree: string;
+}
+
+/**
+ * Un appel de modèle, quel que soit l'usage. Factorisé parce que les gardes
+ * qu'il porte — refus, génération coupée, fenêtre dépassée, chaîne
+ * d'exceptions typées — ne doivent exister qu'en UN exemplaire : une seconde
+ * copie dériverait, et c'est celle qui porterait la garde manquante le jour
+ * où elle compte.
+ *
+ * Les deux détails de config (`nomPlafond`, `detailEntree`) sont passés plutôt
+ * que devinés : un message qui accuse « la forme de la réponse » quand la
+ * cause est un plafond envoie corriger ce qui fonctionne (APPRENTISSAGES n°6).
+ */
+async function appeler(
+  parametres: ParametresAppel,
+  prompt: { systeme: string; utilisateur: string },
+  schemaContratModele: Record<string, unknown>,
+): Promise<ResultatAppel> {
+  const { sdk, modele, tarif, maxTokens, nomPlafond, detailEntree } = parametres;
+  try {
+    const reponse = await sdk.messages.create({
+      model: modele,
+      max_tokens: maxTokens,
+      system: prompt.systeme,
+      messages: [{ role: 'user', content: prompt.utilisateur }],
+      // Sortie structurée : `output_config.format`, jamais le paramètre
+      // `output_format` déprécié, et jamais de préremplissage de message
+      // assistant (rejeté par les modèles courants).
+      // Le schéma envoyé est le CONTRAT RESTREINT, pas le schéma de
+      // validation : pour le profilage, `pattern`, `minimum` et `maximum` ne
+      // font pas partie du sous-ensemble accepté par les sorties structurées,
+      // et les envoyer vaut soit un refus, soit un contrat qui ne ferme rien.
+      output_config: { format: { type: 'json_schema', schema: schemaContratModele } },
+    });
+    const coutApi = coutAppel(reponse.usage, tarif);
+    if (reponse.stop_reason === 'refusal') {
+      return { ok: false, raison: RAISON_REFUS_MODELE, coutApi };
+    }
+    // Une réponse COUPÉE par un plafond n'est pas une réponse mal formée.
+    // Sans ces deux branches, son JSON incomplet ressortait en
+    // « reponseNonJson », une relance brûlait un appel payant sous le MÊME
+    // plafond, et le message accusait la forme de la réponse du modèle alors
+    // que la cause est un réglage de config — le mauvais coupable, au pire
+    // moment (APPRENTISSAGES n°6). Comme un échec d'appel, elles arrêtent
+    // sans brûler la relance : les boucles de relance traitent déjà
+    // `ok: false` ainsi.
+    if (reponse.stop_reason === 'max_tokens') {
+      return {
+        ok: false,
+        raison: RAISON_REPONSE_TRONQUEE,
+        coutApi,
+        message: `génération coupée à ${nomPlafond} (${maxTokens})`,
+      };
+    }
+    if (reponse.stop_reason === 'model_context_window_exceeded') {
+      return {
+        ok: false,
+        raison: RAISON_CONTEXTE_DEPASSE,
+        coutApi,
+        message: `entrée au-delà de la fenêtre du modèle ${modele} (${detailEntree})`,
+      };
+    }
+    // `modeleServi` est EXTRAIT de la réponse, jamais recopié depuis l'alias
+    // demandé : c'est toute la différence entre une estampille et une
+    // décoration (APPRENTISSAGES n°6).
+    return { ok: true, texte: texteDe(reponse), coutApi, modeleServi: reponse.model };
+  } catch (erreur) {
+    return echecAppel(erreur);
+  }
 }
 
 /**

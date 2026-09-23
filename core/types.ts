@@ -63,6 +63,19 @@ export interface EntreeJournal {
   details?: unknown;
 }
 
+/**
+ * Le coût des appels aux modèles, par famille d'appel. Les trois familles
+ * partitionnent : leur somme est le coût total du scan.
+ */
+export interface CoutParFamille {
+  /** Décisions de navigation, engagées pendant l'exploration. */
+  exploration: number;
+  /** Profilage du site : un appel par scan. */
+  profilage: number;
+  /** Protocole de confirmation. */
+  confirmation: number;
+}
+
 /** Le résultat complet d'un scan. */
 export interface Rapport {
   /** URL de départ du scan. */
@@ -70,6 +83,24 @@ export interface Rapport {
   anomalies: Anomalie[];
   /** Coût total des appels aux API de modèles, en euros. */
   coutApi: number;
+  /**
+   * Le même total, VENTILÉ par famille d'appel. Absent pour un scanner qui
+   * n'appelle aucun modèle.
+   *
+   * Pourquoi il existe : tant que l'exploration ne coûtait rien, `coutApi`
+   * valait le seul profilage, et l'afficher à côté des taux de profil était
+   * juste. Depuis que la navigation appelle un modèle à chaque point de
+   * décision, le même total est majoritairement du coût de PARCOURS — publié
+   * sous l'étiquette du profilage, il faisait lire un facteur treize comme une
+   * dérive du profilage, alors que les cassettes de profil, elles, n'avaient
+   * pas bougé. Un coût ne dit quelque chose que placé à côté de ce qu'il
+   * achète (APPRENTISSAGES n°3) ; un coût placé à côté de ce qu'il n'achète
+   * pas est un diagnostic faux (n°6).
+   *
+   * Rien n'est RÉPARTI ici : les trois montants sont mesurés séparément à la
+   * source, et leur somme est exactement `coutApi`.
+   */
+  coutApiParFamille?: CoutParFamille;
   dureeMs: number;
   journal: EntreeJournal[];
   /** Parcours d'exploration (absent pour un scanner qui n'explore pas). */
@@ -97,7 +128,12 @@ export interface Rapport {
 /** Le profil tel qu'il voyage dans un rapport : la valeur, plus d'où elle vient. */
 export interface ProfilSiteRapporte {
   typeSite: string;
-  /** Description libre de la valeur d'échappement : journalisée, jamais lue par une logique. */
+  /**
+   * Description libre de la valeur d'échappement : journalisée, jamais lue par
+   * une logique. Elle est en revanche MONTRÉE au modèle de navigation depuis
+   * la brique 4b (le profil entre dans son bloc non fiable), et y est bornée
+   * comme toute autre chaîne venue de la page — voir `ProfilPage.natureLibre`.
+   */
   natureLibre: string | null;
   langue: string;
   confiance: number;
@@ -211,6 +247,8 @@ export interface ActionExecutee {
   fin: string;
   resultat: ResultatAction;
   details?: unknown;
+  /** Politique qui a tranché, et sa provenance si c'est l'IA : la traçabilité descend jusqu'à l'acte. */
+  decision?: { politique: string; provenance?: ProvenanceDecision; raisonRepli?: string };
 }
 
 export interface Parcours {
@@ -219,6 +257,28 @@ export interface Parcours {
   actions: ActionExecutee[];
   /** Pourquoi l'exploration s'est arrêtée. */
   arret: 'complet' | 'limite-pages' | 'echeance' | 'erreur';
+  /**
+   * URLs internes découvertes et JAMAIS visitées au moment où l'exploration
+   * s'est arrêtée, tous viewports confondus.
+   *
+   * Pourquoi ce compteur existe, et pourquoi il est un champ plutôt qu'une
+   * valeur d'`arret` : depuis que la politique de décision peut être l'IA,
+   * `arret: 'complet'` a cessé d'être un FAIT du moteur pour devenir une
+   * AFFIRMATION qu'un contenu de page peut rendre fausse. `terminer` est
+   * toujours énuméré (une politique doit toujours pouvoir s'arrêter) et
+   * l'élire est parfaitement légitime au regard des trois couches — aucune ne
+   * s'allume. Une page qui obtient du modèle un arrêt immédiat obtiendrait
+   * donc, sans ce chiffre, un rapport « exploration complète » après une page.
+   *
+   * Interdire `terminer` détruirait l'économie que la navigation guidée
+   * achète : on rend donc l'arrêt VISIBLE plutôt qu'impossible. Un champ
+   * additif, et non une quatrième valeur d'`arret`, parce qu'il ne périme
+   * aucun consommateur existant et qu'il vaut toujours 0 en politique
+   * déterministe, qui ne rend `terminer` que la file vide.
+   */
+  enAttenteALArret: number;
+  /** Pages que le budget permettait encore à l'arrêt (somme sur les viewports). */
+  pagesRestantesALArret: number;
 }
 
 /** Ce que la politique de décision voit avant de choisir la prochaine action. */
@@ -232,10 +292,90 @@ export interface ContexteDecision {
   nbPagesVisitees: number;
 }
 
-/** La structure de décision que l'IA pilotera plus tard ; ici, une politique déterministe. */
-export interface Politique {
+/**
+ * Une action POSSIBLE, énumérée par le moteur et offerte au choix.
+ *
+ * RÈGLE CENTRALE de la navigation IA : le modèle CHOISIT, il ne désigne
+ * jamais. C'est le moteur qui énumère, qui attribue l'identifiant opaque, et
+ * qui a déjà jugé chaque action légitime. Le modèle répond un identifiant de
+ * cette liste — il n'a physiquement pas les moyens d'inventer un acte, ni de
+ * produire un sélecteur, une URL ou un texte d'action. L'énumération est la
+ * PREMIÈRE couche de sécurité, avant le filtre d'actions destructives.
+ */
+export interface ActionProposee {
+  /** Identifiant OPAQUE attribué par le moteur (`c1`, `c2`…) : le modèle ne peut en inventer aucun. */
+  id: string;
+  type: TypeAction;
+  /** L'action réelle, jamais transmise au modèle telle quelle : lui ne voit que l'identifiant et les repères ci-dessous. */
+  action: Action;
+  /** Repères techniques montrés au modèle (balise, type, chemin d'URL…) : jamais de sélecteur exécutable. */
+  reperes: Record<string, string>;
+  /** Libellé visible de l'élément, tronqué et balisé comme CONTENU : c'est par lui que la page parle au modèle. */
+  libelle: string | null;
+}
+
+/** Ce que le modèle voit d'un point de décision. Tout y est donnée non fiable, sauf les identifiants. */
+export interface EtatDecisionEnumere {
+  /** Chemin d'URL de la page courante. */
+  page: string;
+  viewport: string;
+  /**
+   * Profil du site, s'il a été produit. C'est une sortie de NOTRE IA, et elle
+   * entre ici comme DONNÉE NON FIABLE : une sortie de modèle reste du contenu
+   * dérivé de la page — la chaîne de méfiance ne se rompt pas parce qu'on
+   * s'est parlé à soi-même.
+   */
+  profil: ProfilSiteRapporte | null;
+  /** Les actions parmi lesquelles élire. Jamais vide quand une décision est demandée. */
+  actions: ActionProposee[];
+  /** Historique court des actions déjà exécutées (type + chemin), pour situer la décision. */
+  historique: { type: TypeAction; page: string }[];
+  nbPagesVisitees: number;
+  /** Budget de pages restant : ce qui rend une décision autre chose qu'un parcours exhaustif. */
+  pagesRestantes: number;
+}
+
+/** La réponse du modèle à un point de décision : une élection, rien d'autre. */
+export interface DecisionIa {
+  /** Doit appartenir aux identifiants énumérés ; sinon la réponse est hors schéma. */
+  actionId: string;
+  /** Justification en prose, PUREMENT JOURNALISÉE : terminale, lue par rien (même statut que `natureLibre`). */
+  raison: string | null;
+}
+
+/**
+ * Politique capable de décider à partir d'une énumération, éventuellement de
+ * façon asynchrone (appel de modèle). La politique déterministe l'implémente
+ * aussi : elle ignore l'énumération et tranche sur le contexte.
+ */
+export interface PolitiqueDecision {
   nom: string;
-  decider(contexte: ContexteDecision): Action;
+  decider(contexte: ContexteDecision, etat: EtatDecisionEnumere): Promise<DecisionPrise>;
+}
+
+/** Ce qu'une politique rend : l'action retenue, et d'où elle vient. */
+export interface DecisionPrise {
+  action: Action;
+  /** Politique qui a RÉELLEMENT tranché — peut différer de celle demandée (dégradé par décision). */
+  politique: string;
+  /** Provenance, quand une IA a décidé. Absente pour la politique déterministe. */
+  provenance?: ProvenanceDecision;
+  /** Identifiant technique stable de la raison d'un repli sur la politique déterministe. */
+  raisonRepli?: string;
+}
+
+/**
+ * Provenance d'une décision IA. Trois champs, comme toute sortie de modèle :
+ * version de prompt, modèle demandé, modèle servi — plus la prose journalisée.
+ */
+export interface ProvenanceDecision {
+  versionPrompt: string;
+  modeleDemande: string;
+  modeleServi: string;
+  /** Prose du modèle, terminale : journalisée, jamais lue par une logique. */
+  raison: string | null;
+  apresRelance: boolean;
+  actionId: string;
 }
 
 export interface ContexteExploration {

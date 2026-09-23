@@ -97,7 +97,7 @@ function parcoursSimule(urlDepart: string, viewport: string): Parcours {
         resultat: 'ok',
       },
     ],
-    arret: 'complet',
+    arret: 'complet', enAttenteALArret: 0, pagesRestantesALArret: 0,
   };
 }
 
@@ -113,7 +113,7 @@ function explorateurSimule(viewports: string[]): Explorateur & { contextes: Cont
         contexte.journaliser('exploration.viewport', { viewport });
         observateur.emettre(finActionInerte(viewport));
       }
-      contexte.journaliser('exploration.fin', { arret: 'complet' });
+      contexte.journaliser('exploration.fin', { arret: 'complet', enAttenteALArret: 0, pagesRestantesALArret: 0 });
       return parcoursSimule(contexte.urlDepart, viewports[0] ?? '');
     },
   };
@@ -307,6 +307,10 @@ describe('creerScanner', () => {
       'exploration.viewport',
       'exploration.viewport',
       'exploration.fin',
+      // Ce que les décisions de navigation ont coûté : zéro en politique
+      // déterministe, mais le chiffre est TOUJOURS publié — un coût qu'on ne
+      // voit que lorsqu'il est non nul est un coût qu'on ne surveille pas.
+      'exploration.cout',
       // Le profilage n'est pas assemblé dans ces dépendances : il se TAIT
       // bruyamment plutôt que de disparaître du journal.
       'profilage.indisponible',
@@ -352,13 +356,14 @@ describe('creerScanner', () => {
 
     const rapport = await scanner(ORIGINE, { timeoutMs: 1000 });
 
-    expect(rapport.parcours).toEqual({ urlDepart: ORIGINE, pages: [], actions: [], arret: 'erreur' });
+    expect(rapport.parcours).toEqual({ urlDepart: ORIGINE, pages: [], actions: [], arret: 'erreur', enAttenteALArret: 0, pagesRestantesALArret: 0 });
     const erreur = rapport.journal.find((entree) => entree.type === 'scan.erreur');
     expect(erreur?.details).toEqual({ etape: 'exploration', message: 'navigateur perdu' });
     expect(rapport.journal.map((entree) => entree.type)).toEqual([
       'scan.debut',
       'ia.mode',
       'scan.erreur',
+      'exploration.cout',
       'profilage.indisponible',
       'detection.fin',
       'confirmation.passe-plat',
@@ -581,7 +586,7 @@ function explorateurProposant(viewports: string[]): ExplorateurProfilant & { pro
       for (const viewport of viewports) {
         observateur.emettre(finActionInerte(viewport));
         suivi.propositions += 1;
-        collecte?.proposer({ url: `${contexte.urlDepart}#${viewport}`, texte: `body:\n${viewport}`, langueDeclaree: 'fr' });
+        await collecte?.proposer({ url: `${contexte.urlDepart}#${viewport}`, texte: `body:\n${viewport}`, langueDeclaree: 'fr' });
       }
       return parcoursSimule(contexte.urlDepart, viewports[0] ?? '');
     },

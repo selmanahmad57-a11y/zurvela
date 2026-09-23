@@ -1,0 +1,12 @@
+{
+  "cle": "964d1d2ae5e248bf0855639257d7dbefe59b71850167b8c49efd0ea20796f3d4",
+  "metadonnees": {
+    "date": "2026-09-23T18:45:20.319Z",
+    "modeleDemande": "claude-haiku-4-5",
+    "modeleServi": "claude-haiku-4-5-20251001",
+    "versionPrompt": "v2",
+    "coutApi": 0.002559,
+    "apresRelance": false
+  },
+  "reponse": "{\"actionId\": \"c2\", \"raison\": \"La page actuelle est un formulaire de devis (/devis). Soumettre ce formulaire (c2) est une action réelle que les visiteurs effectuent sur un site de boutique. C'est un point d'interaction clé. Avec un budget de 1 page restante, il faut tester cette action de test réelle plutôt que naviguer vers d'autres produits ou pages qui seraient des duplicatas ou moins pertinentes.\"}"
+}

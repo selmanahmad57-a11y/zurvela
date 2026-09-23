@@ -1,0 +1,12 @@
+{
+  "cle": "03d835fa387a8c8ad7f14d5b1a55028b36bbfee1ba6fe039ccb6a1f001234a7b",
+  "metadonnees": {
+    "date": "2026-09-23T18:36:52.028Z",
+    "modeleDemande": "claude-haiku-4-5",
+    "modeleServi": "claude-haiku-4-5-20251001",
+    "versionPrompt": "v2",
+    "coutApi": 0.0025889999999999997,
+    "apresRelance": false
+  },
+  "reponse": "{\"actionId\": \"c2\", \"raison\": \"Le robot est sur la page de devis avec un formulaire de 4 champs requis. Soumettre ce formulaire (c2) teste une action réelle qu'un visiteur effectuerait : valider sa demande de devis. C'est l'interaction principale de cette page et seul un budget de 1 page reste, ce qui justifie de compléter ce flux plutôt que de naviguer vers d'autres pages de catalogue ou produits.\"}"
+}

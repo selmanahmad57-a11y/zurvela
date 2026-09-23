@@ -21,16 +21,23 @@
   "scenarios": {
     "dossier": "banc/scenarios",
     "jetonSain": "sain",
-    "combinaisons": [
-      [
-        "F01",
-        "M01"
-      ],
-      [
-        "I01",
-        "V01"
+    "combinaisons": {
+      "formulaire-contact": [
+        [
+          "F01",
+          "M01"
+        ],
+        [
+          "I01",
+          "V01"
+        ]
       ]
-    ]
+    },
+    "contraintes": {
+      "mini-boutique": {
+        "pagesMax": 5
+      }
+    }
   },
   "site": {
     "delaiReponseApiMs": 0

@@ -14,6 +14,17 @@ entrée indique la brique ou la phase où elle a vocation à être traitée.
   sur certaines catégories (`exceptionsSandbox` dans
   `config/actions-interdites.json`). Cible : Phase 1 §6 sécurité du moteur,
   après la brique 3.
+- **Les TROIS faces du filtre d'actions au banc** (l'entrée ci-dessous, fusionnée
+  avec le besoin révélé par la brique 4b) : un futur gabarit TRANSACTIONNEL
+  portera aussi la troisième face, côté navigation — page de commande
+  **visitée** (attendu « bien jugé ») et bouton « Valider la commande »
+  **jamais soumis** (attendu « resté inerte »). La doctrine des catégories
+  `paiement` — explorer le chemin, s'arrêter à l'acte — n'est aujourd'hui
+  éprouvée par RIEN : c'est elle que ce gabarit mesurera. Origine : la brique
+  4b a dû déplacer son formulaire critique sur `/devis` (non transactionnel)
+  parce qu'un banc qui ne peut mesurer la navigation qu'en violant le filtre
+  mesurerait un produit interdit. Ratifié au chat de conception le 2026-09-23.
+
 - **Les deux faces du filtre d'actions au banc** (complète l'entrée ci-dessus) :
   le gabarit destructif contiendra *aussi* un lien GET `/compte/supprimer`
   (manifeste : jamais visité — canal URL) **et** un article `/blog/post/42`

@@ -1,0 +1,12 @@
+{
+  "cle": "7f0c0e14a2ecee4c1ca6dcb6a3216a357b7268c225d677f2725a9aa357cf08bd",
+  "metadonnees": {
+    "date": "2026-09-23T18:45:14.343Z",
+    "modeleDemande": "claude-haiku-4-5",
+    "modeleServi": "claude-haiku-4-5-20251001",
+    "versionPrompt": "v2",
+    "coutApi": 0.002242,
+    "apresRelance": false
+  },
+  "reponse": "{\"actionId\":\"c6\",\"raison\":\"Visiteur sur catalogue mobile cherchant un produit spécifique : sélection d'un article réel (établi d'atelier) plutôt que pagination ou pages informatives, pour tester le parcours achat pertinent. Budget limité à 3 pages restantes.\"}"
+}

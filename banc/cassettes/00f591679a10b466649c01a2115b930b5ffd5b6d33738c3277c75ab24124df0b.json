@@ -1,0 +1,12 @@
+{
+  "cle": "00f591679a10b466649c01a2115b930b5ffd5b6d33738c3277c75ab24124df0b",
+  "metadonnees": {
+    "date": "2026-09-23T18:41:49.777Z",
+    "modeleDemande": "claude-haiku-4-5",
+    "modeleServi": "claude-haiku-4-5-20251001",
+    "versionPrompt": "v2",
+    "coutApi": 0.001983,
+    "apresRelance": false
+  },
+  "reponse": "{\"actionId\": \"c1\", \"raison\": \"Le site est un vitrine-contact avec un budget de 19 pages restantes. La page d'accueil a déjà été visitée. Le formulaire de contact est une page d'interaction clé où un visiteur agit réellement, ce qui correspond au critère de priorité des pages où se déploie l'engagement utilisateur.\"}"
+}

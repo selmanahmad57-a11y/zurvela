@@ -9,5 +9,6 @@ import { I01 } from './i01-api-intermittente.js';
 import { T01 } from './t01-echec-transitoire.js';
 import { L01 } from './l01-lenteur-transitoire.js';
 import { S01 } from './s01-injection-profil.js';
+import { S02 } from './s02-vecteur-silencieux.js';
 
-export const bugs: BugInjectable[] = [F01, F02, R01, V01, M01, I01, T01, L01, S01];
+export const bugs: BugInjectable[] = [F01, F02, R01, V01, M01, I01, T01, L01, S01, S02];

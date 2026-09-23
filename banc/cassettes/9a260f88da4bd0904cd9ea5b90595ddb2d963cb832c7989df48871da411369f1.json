@@ -1,0 +1,12 @@
+{
+  "cle": "9a260f88da4bd0904cd9ea5b90595ddb2d963cb832c7989df48871da411369f1",
+  "metadonnees": {
+    "date": "2026-09-23T18:38:12.146Z",
+    "modeleDemande": "claude-haiku-4-5",
+    "modeleServi": "claude-haiku-4-5-20251001",
+    "versionPrompt": "v2",
+    "coutApi": 0.001891,
+    "apresRelance": false
+  },
+  "reponse": "{\"actionId\":\"c1\",\"raison\":\"Un formulaire de contact rempli (3 champs requis complétés) doit être soumis pour tester l'interaction complète et vérifier que la page de contact fonctionne réellement pour un visiteur.\"}"
+}

@@ -1,0 +1,12 @@
+{
+  "cle": "cded86487462923b11124e3a208a590aad9a88b1e3ccc3e95c625e91e4ab9221",
+  "metadonnees": {
+    "date": "2026-09-23T18:43:44.290Z",
+    "modeleDemande": "claude-haiku-4-5",
+    "modeleServi": "claude-haiku-4-5-20251001",
+    "versionPrompt": "v2",
+    "coutApi": 0.002601,
+    "apresRelance": false
+  },
+  "reponse": "{\"actionId\": \"c2\", \"raison\": \"Le robot est sur la page /devis qui contient un formulaire de devis avec 4 champs requis. C'est une page d'action significative où un visiteur interagit pour soumettre une demande. Avec un budget d'une seule page restante, soumettre ce formulaire teste une fonction clé du site (c2 = soumettre le formulaire vers /api/devis) plutôt que de naviguer vers d'autres pages de catalogue ou de produits déjà largement explorées.\"}"
+}

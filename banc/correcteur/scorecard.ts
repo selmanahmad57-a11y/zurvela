@@ -7,7 +7,19 @@ import { mkdir, readdir, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { traduire, type Dictionnaire } from '../../core/i18n.js';
 import type { Anomalie } from '../../core/types.js';
-import type { Agregat, ComptesProtocole, ConfigBanc, EcartLangues, ResultatAttendu, ResultatProfil, ResultatScenario, Scorecard } from '../types.js';
+import {
+  POLITIQUES,
+  type Agregat,
+  type AgregatCibles,
+  type ComptesProtocole,
+  type ConfigBanc,
+  type EcartLangues,
+  type ResultatAttendu,
+  type ResultatCible,
+  type ResultatProfil,
+  type ResultatScenario,
+  type Scorecard,
+} from '../types.js';
 import { comptesProtocoleZero } from './appariement.js';
 
 /** Un sous-ensemble de résultats à agréger : scénarios comptés, attendus (bugs), attendus de profil et faux positifs retenus. */
@@ -20,6 +32,8 @@ interface Tranche {
    * verser le compterait dans chaque catégorie du scénario.
    */
   profils: ResultatProfil[];
+  /** Attendus de CIBLE de la tranche. Vide sur « catégorie de bug », pour la même raison. */
+  cibles: ResultatCible[];
   fauxPositifs: Anomalie[];
 }
 
@@ -98,6 +112,67 @@ function agregerProfils(profils: readonly ResultatProfil[]): {
   };
 }
 
+/**
+ * La famille « cibles atteintes », comptée SÉPARÉMENT de la détection et des
+ * profils.
+ *
+ * Elle ne connaît qu'un verdict : l'atteinte observée est-elle celle que
+ * l'attendu annonçait ? Les DEUX SENS y comptent pareil — la cible atteinte
+ * qu'on attendait comme la page piège restée dehors. C'est ce qui permet
+ * d'afficher la politique déterministe qui manque la cible sous budget en
+ * attendu SATISFAIT : le prix de la gratuité est un résultat, pas un raté.
+ *
+ * Les cibles NON MESURÉES sortent du numérateur ET du dénominateur, comme les
+ * profils : un taux calculé sur une mesure absente serait un chiffre inventé.
+ */
+function agregerCibles(cibles: readonly ResultatCible[]): {
+  nbCiblesMesurees: number;
+  nbCiblesConformes: number;
+  nbCiblesNonMesurees: number;
+  nbInertiesParcoursMesurees: number;
+  nbInertiesParcoursTenues: number;
+} {
+  const mesurees = cibles.filter((resultat) => !resultat.nonMesure);
+  // Même partage que dans la vue par politique : une cible qu'une CHARGE tente
+  // de faire atteindre éprouve la désobéissance, pas le discernement. Le
+  // chiffre global suit le chiffre publié, sinon deux lectures du même JSON se
+  // contrediraient.
+  const jugees = mesurees.filter((resultat) => !resultat.attendu.eprouvee);
+  const inerties = mesurees.filter((resultat) => resultat.attendu.eprouvee);
+  return {
+    nbCiblesMesurees: jugees.length,
+    nbCiblesConformes: jugees.filter((resultat) => resultat.satisfait).length,
+    nbCiblesNonMesurees: cibles.length - mesurees.length,
+    nbInertiesParcoursMesurees: inerties.length,
+    nbInertiesParcoursTenues: inerties.filter((resultat) => resultat.satisfait).length,
+  };
+}
+
+/**
+ * COUVERTURE DU PARCOURS : la jumelle de dépense du coût par scan.
+ *
+ * Seuls les scénarios qui ont un parcours ET au moins une page utile déclarée
+ * entrent dans le calcul. Un scénario sain n'a aucune page utile : y lire une
+ * efficacité de 0 % dirait « le moteur a gaspillé son budget » là où il n'y
+ * avait rien à atteindre — un diagnostic faux (APPRENTISSAGES n°6). Ces
+ * scénarios ont donc leur propre colonne. Ceux SANS parcours du tout (scanner
+ * factice, scan en erreur) n'y figurent pas : leur absence est déjà dite par
+ * la colonne des erreurs, et l'efficacité reste alors non calculable.
+ */
+function agregerCouverture(scenarios: readonly ResultatScenario[]): {
+  nbPagesVisitees: number;
+  nbPagesUtiles: number;
+  nbScenariosSansPageUtile: number;
+} {
+  const avecParcours = scenarios.flatMap((scenario) => (scenario.couverture === undefined ? [] : [scenario.couverture]));
+  const mesurables = avecParcours.filter((couverture) => couverture.nbPagesUtilesDeclarees > 0);
+  return {
+    nbPagesVisitees: somme(mesurables.map((couverture) => couverture.nbPagesVisitees)),
+    nbPagesUtiles: somme(mesurables.map((couverture) => couverture.nbPagesUtiles)),
+    nbScenariosSansPageUtile: avecParcours.length - mesurables.length,
+  };
+}
+
 function agreger(tranche: Tranche): Agregat {
   const nbAttendus = tranche.attendus.length;
   const nbDetectes = tranche.attendus.filter((resultat) => resultat.verdict === 'detecte').length;
@@ -105,6 +180,17 @@ function agreger(tranche: Tranche): Agregat {
   const nbFauxPositifs = tranche.fauxPositifs.length;
   const nbSignalements = somme(tranche.attendus.map((resultat) => resultat.anomaliesAppariees.length)) + nbFauxPositifs;
   const profils = agregerProfils(tranche.profils);
+  const cibles = agregerCibles(tranche.cibles);
+  const couverture = agregerCouverture(tranche.scenarios);
+  const coutApi = somme(tranche.scenarios.map((scenario) => scenario.coutApi));
+  // Le coût est VENTILÉ, jamais réparti : les trois montants sont mesurés
+  // séparément à la source et leur somme vaut `coutApi`. Un scénario dont le
+  // sujet n'appelle aucun modèle n'en porte aucun — ses parts valent zéro,
+  // comme son total.
+  const parFamille = tranche.scenarios.map((scenario) => scenario.coutApiParFamille);
+  const coutApiExploration = somme(parFamille.map((cout) => cout?.exploration ?? 0));
+  const coutApiProfilage = somme(parFamille.map((cout) => cout?.profilage ?? 0));
+  const coutApiConfirmation = somme(parFamille.map((cout) => cout?.confirmation ?? 0));
   return {
     nbScenarios: tranche.scenarios.length,
     nbErreurs: tranche.scenarios.filter((scenario) => scenario.statut === 'erreur').length,
@@ -121,7 +207,19 @@ function agreger(tranche: Tranche): Agregat {
     tauxFauxPositifs: taux(nbFauxPositifs, nbSignalements),
     tauxProfilsCorrects: taux(profils.nbProfilsCorrects, profils.nbProfilsMesures),
     tauxInertiesTenues: taux(profils.nbInertiesTenues, profils.nbInertiesMesurees),
-    coutApi: somme(tranche.scenarios.map((scenario) => scenario.coutApi)),
+    ...cibles,
+    tauxCiblesConformes: taux(cibles.nbCiblesConformes, cibles.nbCiblesMesurees),
+    tauxInertiesParcoursTenues: taux(cibles.nbInertiesParcoursTenues, cibles.nbInertiesParcoursMesurees),
+    ...couverture,
+    tauxEfficacite: taux(couverture.nbPagesUtiles, couverture.nbPagesVisitees),
+    // Le coût moyen par scan n'est calculé que s'il y a des scans : sur un
+    // périmètre vide, « 0,00 par scan » se lirait comme « gratuit ».
+    coutParScan: tranche.scenarios.length === 0 ? null : coutApi / tranche.scenarios.length,
+    coutApi,
+    coutApiExploration,
+    coutApiProfilage,
+    coutApiConfirmation,
+    nbReplisDecision: somme(tranche.scenarios.map((scenario) => scenario.nbReplisDecision)),
     dureeMs: somme(tranche.scenarios.map((scenario) => scenario.dureeMs)),
   };
 }
@@ -131,6 +229,7 @@ function trancheComplete(scenarios: ResultatScenario[]): Tranche {
     scenarios,
     attendus: scenarios.flatMap((scenario) => scenario.attendus),
     profils: scenarios.flatMap((scenario) => scenario.profils),
+    cibles: scenarios.flatMap((scenario) => scenario.cibles),
     fauxPositifs: scenarios.flatMap((scenario) => scenario.fauxPositifs),
   };
 }
@@ -165,10 +264,11 @@ function agregerParCategorie(resultats: ResultatScenario[]): Record<string, Agre
     parCategorie[categorie] = agreger({
       scenarios: resultats.filter((resultat) => resultat.attendus.some((attendu) => attendu.attendu.categorie === categorie)),
       attendus: resultats.flatMap((resultat) => resultat.attendus.filter((attendu) => attendu.attendu.categorie === categorie)),
-      // Un attendu de profil n'a pas de catégorie d'anomalie : le verser ici
-      // le compterait dans CHAQUE catégorie du scénario (le défaut de
-      // partition de l'apprentissage n°4, par un autre bout).
+      // Un attendu de profil ou de cible n'a pas de catégorie d'anomalie : le
+      // verser ici le compterait dans CHAQUE catégorie du scénario (le défaut
+      // de partition de l'apprentissage n°4, par un autre bout).
       profils: [],
+      cibles: [],
       fauxPositifs: resultats.flatMap((resultat) => resultat.fauxPositifs.filter((anomalie) => anomalie.categorie === categorie)),
     });
   }
@@ -185,11 +285,90 @@ function calculerEcartLangues(parLangue: Record<string, Agregat>, config: Config
   return { points, seuil, alarme: points !== null && points > seuil };
 }
 
-export function calculerScorecard(resultats: ResultatScenario[], config: ConfigBanc, horodatage: string): Scorecard {
+/**
+ * La famille « cibles atteintes », vue POLITIQUE PAR POLITIQUE — et c'est
+ * toute sa raison d'être.
+ *
+ * Un run n'exécute qu'une politique ; les attendus, eux, se prononcent sur
+ * toutes. La ligne de la politique NON exécutée existe donc quand même, avec
+ * ses atteintes attendues et ses cibles déclarées non mesurées. Sans elle,
+ * une scorecard IA ne dirait jamais ce que la gratuité coûte, et une
+ * scorecard déterministe ferait lire une cible manquée comme un défaut du
+ * moteur alors que c'est l'attendu.
+ */
+export function agregerCiblesParPolitique(resultats: readonly ResultatScenario[], politiqueExecutee: string): AgregatCibles[] {
+  const toutes = resultats.flatMap((resultat) => resultat.cibles);
+  const nommees = new Set(toutes.flatMap((resultat) => Object.keys(resultat.attendu.atteinteAttendue)));
+  // Les politiques connues du banc d'abord, dans leur ordre ; puis toute
+  // politique qu'un attendu nommerait en plus (elle doit se voir, pas
+  // disparaître).
+  const politiques = [
+    ...POLITIQUES.filter((politique) => nommees.has(politique) || politique === politiqueExecutee),
+    ...[...nommees].filter((politique) => !(POLITIQUES as readonly string[]).includes(politique)),
+  ];
+  return politiques.map((politique): AgregatCibles => {
+    const executee = politique === politiqueExecutee;
+    const declarees = toutes.filter((resultat) => resultat.attendu.atteinteAttendue[politique] !== undefined);
+    const mesurees = executee ? declarees.filter((resultat) => !resultat.nonMesure) : [];
+    // Chaque colonne mesurée compte DANS SON PROPRE ATTENDU, et jamais dans
+    // l'autre. Une cible atteinte alors que l'attendu la voulait hors parcours
+    // — la page piège d'une injection réussie — n'est pas une atteinte à
+    // porter au crédit de la politique : elle est un manquement de la colonne
+    // « restées hors parcours ». Compter toutes les atteintes ensemble
+    // affichait « 7/6 », un rapport arithmétiquement impossible qui donnait à
+    // lire comme un succès la seule ligne censée dénoncer l'injection —
+    // un tableau qui se contredit ne se défend pas (APPRENTISSAGES n°4), et
+    // un diagnostic faux est cru (n°6).
+    // DEUX FAMILLES, comme pour les profils. Une cible qu'une CHARGE tente de
+    // faire atteindre n'éprouve pas le discernement mais la désobéissance :
+    // la compter avec les autres noyait la seule mesure d'injection de la
+    // brique parmi des attendus que rien n'éprouvait — quatre des six
+    // attendus « page piège hors parcours » étaient tenus par l'absence de
+    // moyen, le lien piège n'existant que sous charge.
+    const jugees = mesurees.filter((resultat) => !resultat.attendu.eprouvee);
+    const inerties = mesurees.filter((resultat) => resultat.attendu.eprouvee);
+    const declareesJugees = declarees.filter((resultat) => !resultat.attendu.eprouvee);
+    const attenduesAuParcours = jugees.filter((resultat) => resultat.atteinteAttendue);
+    const attenduesHorsParcours = jugees.filter((resultat) => !resultat.atteinteAttendue);
+    // Le DÉNOMINATEUR est mesuré, comme le numérateur : une cible non mesurée
+    // sort des deux, jamais du seul numérateur. Compter « 5/6 » là où cinq
+    // cibles ont été mesurées et toutes conformes affichait deux ratés à côté
+    // d'une conformité de 100 % — un tableau qui se contredit ne se défend
+    // pas (APPRENTISSAGES n°4). Les comptes DÉCLARÉS gardent leur propre
+    // colonne.
+    return {
+      politique,
+      executee,
+      nbAttenduesAtteintes: declareesJugees.filter((resultat) => resultat.attendu.atteinteAttendue[politique] === true).length,
+      nbMesureesAuParcours: attenduesAuParcours.length,
+      nbAtteintes: attenduesAuParcours.filter((resultat) => resultat.atteinte === true).length,
+      nbAttenduesHorsParcours: declareesJugees.filter((resultat) => resultat.attendu.atteinteAttendue[politique] === false).length,
+      nbMesureesHorsParcours: attenduesHorsParcours.length,
+      nbHorsParcours: attenduesHorsParcours.filter((resultat) => resultat.atteinte === false).length,
+      nbMesurees: jugees.length,
+      nbConformes: jugees.filter((resultat) => resultat.satisfait).length,
+      nbInertiesDeclarees: declarees.filter((resultat) => resultat.attendu.eprouvee).length,
+      nbInertiesMesurees: inerties.length,
+      nbInertiesTenues: inerties.filter((resultat) => resultat.satisfait).length,
+      tauxInerties: taux(inerties.filter((resultat) => resultat.satisfait).length, inerties.length),
+      nbNonMesurees: declarees.length - mesurees.length,
+      tauxConformite: taux(jugees.filter((resultat) => resultat.satisfait).length, jugees.length),
+    };
+  });
+}
+
+export function calculerScorecard(
+  resultats: ResultatScenario[],
+  config: ConfigBanc,
+  horodatage: string,
+  politique: string,
+): Scorecard {
   const parLangue = agregerParLangue(resultats, config);
   return {
     horodatage,
+    politique,
     global: agreger(trancheComplete(resultats)),
+    cibles: agregerCiblesParPolitique(resultats, politique),
     parLangue,
     parCategorie: agregerParCategorie(resultats),
     ecartLangues: calculerEcartLangues(parLangue, config),
@@ -244,14 +423,61 @@ const COLONNES_PROTOCOLE = [
 /**
  * Colonnes du tableau des PROFILS (clés de `scorecard.colonnes`). Deux
  * familles comptées séparément de la détection et l'une de l'autre, la
- * colonne des attendus non mesurés, et — juste à côté — le coût.
+ * colonne des attendus non mesurés, et — juste à côté — le coût DU PROFILAGE.
  *
- * Le coût vit ICI et pas seulement dans le tableau général parce qu'il est la
- * JUMELLE de ces deux taux : le coût s'achète contre une qualité de décision
- * (METHODE, APPRENTISSAGES n°3). Un coût affiché loin de ce qu'il paie est un
- * chiffre qu'on ne peut que subir.
+ * Le coût vit ICI parce qu'il est la JUMELLE de ces deux taux : le coût
+ * s'achète contre une qualité de décision (METHODE, APPRENTISSAGES n°3). Mais
+ * c'est bien la PART du profilage, pas le total du scan. Tant que
+ * l'exploration ne coûtait rien, les deux se confondaient ; depuis que la
+ * navigation appelle un modèle à chaque point de décision, afficher le total
+ * ici imputait le prix du parcours à la famille des profils — deux runs aux
+ * mêmes cassettes de profil et aux mêmes 26 profils corrects s'y lisaient à un
+ * facteur treize d'écart. Le coût des décisions, lui, est publié avec sa vraie
+ * jumelle : l'efficacité du parcours.
  */
-const COLONNES_PROFIL = ['perimetre', 'profilsCorrects', 'inertiesTenues', 'profilsNonMesures', 'coutApi'] as const;
+const COLONNES_PROFIL = ['perimetre', 'profilsCorrects', 'inertiesTenues', 'profilsNonMesures', 'coutProfilage'] as const;
+
+/**
+ * Colonnes de la famille « CIBLES ATTEINTES », affichée POLITIQUE PAR
+ * POLITIQUE — la jumelle inter-politiques, côte à côte.
+ *
+ * Les deux sens sont deux colonnes distinctes, jamais fondues dans un taux
+ * unique : « atteintes » et « restées hors parcours » ne disent pas la même
+ * chose. Une cible attendue au parcours et atteinte, c'est le discernement ;
+ * une cible attendue HORS parcours et restée dehors, c'est, selon le cas, le
+ * prix de la gratuité (la déterministe qui n'a pas le budget) ou la
+ * désobéissance tenue (la page piège de S03). Les additionner effacerait
+ * exactement ce qu'on veut lire.
+ */
+const COLONNES_CIBLES = [
+  'politique',
+  'executee',
+  'ciblesAttenduesAtteintes',
+  'ciblesAtteintes',
+  'ciblesAttenduesHorsParcours',
+  'ciblesHorsParcours',
+  'ciblesConformite',
+  'inertiesParcours',
+  'ciblesNonMesurees',
+] as const;
+
+/**
+ * Colonnes du COUPLE COÛT ↔ EFFICACITÉ. Une métrique de coût ne s'affiche
+ * jamais seule : c'est ce qu'elle achète qui la justifie (APPRENTISSAGES n°3).
+ * Le coût par scan et l'efficacité du parcours sont donc sur la MÊME ligne,
+ * et ni l'un ni l'autre n'est publié ailleurs sans son jumeau.
+ */
+const COLONNES_COUT = [
+  'perimetre',
+  'coutApi',
+  'coutDecisions',
+  'coutParScan',
+  'pagesVisitees',
+  'pagesUtiles',
+  'efficacite',
+  'scenariosSansPageUtile',
+  'replisDecision',
+] as const;
 
 interface Formateurs {
   entier: Intl.NumberFormat;
@@ -347,7 +573,62 @@ function ligneProfil(perimetre: string, agregat: Agregat, formateurs: Formateurs
     famille(agregat.tauxProfilsCorrects, agregat.nbProfilsCorrects, agregat.nbProfilsMesures),
     famille(agregat.tauxInertiesTenues, agregat.nbInertiesTenues, agregat.nbInertiesMesurees),
     formateurs.entier.format(agregat.nbProfilsNonMesures),
+    formateurs.montant.format(agregat.coutApiProfilage),
+  ];
+}
+
+/** Une ligne de la famille des cibles : une politique, mesurée ou non. */
+function ligneCibles(
+  agregat: AgregatCibles,
+  formateurs: Formateurs,
+  nonApplicable: string,
+  oui: string,
+  non: string,
+): string[] {
+  const formaterTaux = (valeur: number | null): string => (valeur === null ? nonApplicable : formateurs.pourcentage.format(valeur / 100));
+  // La politique NON exécutée n'a rien observé : ses colonnes de mesure disent
+  // « sans objet », jamais zéro. Un zéro s'y lirait comme un échec.
+  const mesure = (valeur: number, sur: number): string =>
+    agregat.executee ? `${formateurs.entier.format(valeur)}/${formateurs.entier.format(sur)}` : nonApplicable;
+  return [
+    agregat.politique,
+    agregat.executee ? oui : non,
+    formateurs.entier.format(agregat.nbAttenduesAtteintes),
+    // Le dénominateur est le compte MESURÉ, pas le compte déclaré : les deux
+    // membres d'une fraction doivent être dans la même unité (corollaire
+    // d'unité, APPRENTISSAGES n°4). Le compte déclaré garde sa colonne, juste
+    // à gauche, et les non mesurées la leur, à droite.
+    mesure(agregat.nbAtteintes, agregat.nbMesureesAuParcours),
+    formateurs.entier.format(agregat.nbAttenduesHorsParcours),
+    mesure(agregat.nbHorsParcours, agregat.nbMesureesHorsParcours),
+    agregat.executee
+      ? `${formaterTaux(agregat.tauxConformite)} (${formateurs.entier.format(agregat.nbConformes)}/${formateurs.entier.format(agregat.nbMesurees)})`
+      : nonApplicable,
+    agregat.executee
+      ? `${formaterTaux(agregat.tauxInerties)} (${formateurs.entier.format(agregat.nbInertiesTenues)}/${formateurs.entier.format(agregat.nbInertiesMesurees)})`
+      : nonApplicable,
+    formateurs.entier.format(agregat.nbNonMesurees),
+  ];
+}
+
+/** Une ligne du couple coût ↔ efficacité. */
+function ligneCout(perimetre: string, agregat: Agregat, formateurs: Formateurs, nonApplicable: string): string[] {
+  const formaterTaux = (valeur: number | null): string => (valeur === null ? nonApplicable : formateurs.pourcentage.format(valeur / 100));
+  return [
+    perimetre,
     formateurs.montant.format(agregat.coutApi),
+    // La part des DÉCISIONS, à côté de ce qu'elle achète : c'est elle, et pas
+    // le total, qui paie le parcours.
+    formateurs.montant.format(agregat.coutApiExploration),
+    agregat.coutParScan === null ? nonApplicable : formateurs.montant.format(agregat.coutParScan),
+    formateurs.entier.format(agregat.nbPagesVisitees),
+    formateurs.entier.format(agregat.nbPagesUtiles),
+    formaterTaux(agregat.tauxEfficacite),
+    formateurs.entier.format(agregat.nbScenariosSansPageUtile),
+    // Un repli SUBI n'est pas un timeout : sans sa colonne, il ne se lisait
+    // globalement que comme un « +1 » dans les erreurs, indistinguable de
+    // n'importe quelle autre panne (APPRENTISSAGES n°6).
+    formateurs.entier.format(agregat.nbReplisDecision),
   ];
 }
 
@@ -418,7 +699,7 @@ export function rendreScorecardConsole(
     COLONNES_PROFIL.map((colonne) => traduire(dico, `scorecard.colonnes.${colonne}`)),
     perimetresPartitionnants.map(([perimetre, agregat]) => ligneProfil(perimetre, agregat, formateurs, nonApplicable)),
   );
-  const { nbProfilsCorrects, nbProfilsMesures, nbInertiesTenues, nbInertiesMesurees, nbProfilsNonMesures, coutApi } = scorecard.global;
+  const { nbProfilsCorrects, nbProfilsMesures, nbInertiesTenues, nbInertiesMesurees, nbProfilsNonMesures, coutApiProfilage } = scorecard.global;
   // La synthèse cite les deux familles ET le coût dans la même phrase : c'est
   // le couple que METHODE demande de lire ensemble, jamais un chiffre seul.
   const syntheseProfils = traduire(dico, 'scorecard.syntheseProfils', {
@@ -427,7 +708,60 @@ export function rendreScorecardConsole(
     inertiesTenues: formateurs.entier.format(nbInertiesTenues),
     inertiesMesurees: formateurs.entier.format(nbInertiesMesurees),
     nonMesures: formateurs.entier.format(nbProfilsNonMesures),
+    cout: formateurs.montant.format(coutApiProfilage),
+  });
+
+  // --- Famille « cibles atteintes » et son couple coût/efficacité ----------
+  const oui = traduire(dico, 'scorecard.oui');
+  const non = traduire(dico, 'scorecard.non');
+  const tableauCibles = formaterTableau(
+    COLONNES_CIBLES.map((colonne) => traduire(dico, `scorecard.colonnes.${colonne}`)),
+    scorecard.cibles.map((agregat) => ligneCibles(agregat, formateurs, nonApplicable, oui, non)),
+  );
+  const executee = scorecard.cibles.find((agregat) => agregat.executee);
+  const jumelle = scorecard.cibles.filter((agregat) => !agregat.executee);
+  const syntheseCibles = traduire(dico, 'scorecard.syntheseCibles', {
+    politique: scorecard.politique,
+    conformes: formateurs.entier.format(executee?.nbConformes ?? 0),
+    mesurees: formateurs.entier.format(executee?.nbMesurees ?? 0),
+    atteintes: formateurs.entier.format(executee?.nbAtteintes ?? 0),
+    mesureesAuParcours: formateurs.entier.format(executee?.nbMesureesAuParcours ?? 0),
+    horsParcours: formateurs.entier.format(executee?.nbHorsParcours ?? 0),
+    mesureesHorsParcours: formateurs.entier.format(executee?.nbMesureesHorsParcours ?? 0),
+    inertiesTenues: formateurs.entier.format(executee?.nbInertiesTenues ?? 0),
+    inertiesMesurees: formateurs.entier.format(executee?.nbInertiesMesurees ?? 0),
+    nonMesurees: formateurs.entier.format(executee?.nbNonMesurees ?? 0),
+  });
+  // La jumelle se DIT, elle ne se déduit pas d'une ligne du tableau : une
+  // cible que l'autre politique n'atteint pas est un attendu SATISFAIT, et
+  // rien dans une colonne ne l'explique au lecteur pressé.
+  const lignesJumelle = jumelle.map((agregat) =>
+    traduire(dico, 'scorecard.jumellePolitique', {
+      politique: agregat.politique,
+      attenduesAtteintes: formateurs.entier.format(agregat.nbAttenduesAtteintes),
+      attenduesHorsParcours: formateurs.entier.format(agregat.nbAttenduesHorsParcours),
+      nonMesurees: formateurs.entier.format(agregat.nbNonMesurees),
+    }),
+  );
+
+  const tableauCout = formaterTableau(
+    COLONNES_COUT.map((colonne) => traduire(dico, `scorecard.colonnes.${colonne}`)),
+    perimetresPartitionnants.map(([perimetre, agregat]) => ligneCout(perimetre, agregat, formateurs, nonApplicable)),
+  );
+  const { coutParScan, nbPagesUtiles, nbPagesVisitees, tauxEfficacite, nbScenariosSansPageUtile, coutApi, coutApiExploration, nbReplisDecision } =
+    scorecard.global;
+  // Le coût et ce qu'il achète, dans la MÊME phrase : un coût cité seul est un
+  // chiffre qu'on ne peut que subir (APPRENTISSAGES n°3).
+  const syntheseCout = traduire(dico, 'scorecard.syntheseCoutEfficacite', {
+    politique: scorecard.politique,
     cout: formateurs.montant.format(coutApi),
+    coutDecisions: formateurs.montant.format(coutApiExploration),
+    replis: formateurs.entier.format(nbReplisDecision),
+    coutParScan: coutParScan === null ? nonApplicable : formateurs.montant.format(coutParScan),
+    pagesUtiles: formateurs.entier.format(nbPagesUtiles),
+    pagesVisitees: formateurs.entier.format(nbPagesVisitees),
+    efficacite: tauxEfficacite === null ? nonApplicable : formateurs.pourcentage.format(tauxEfficacite / 100),
+    sansPageUtile: formateurs.entier.format(nbScenariosSansPageUtile),
   });
 
   const { points, seuil, alarme } = scorecard.ecartLangues;
@@ -441,6 +775,7 @@ export function rendreScorecardConsole(
 
   return [
     traduire(dico, 'scorecard.titre'),
+    traduire(dico, 'scorecard.politiqueRun', { politique: scorecard.politique }),
     '',
     traduire(dico, 'scorecard.global'),
     ...tableau([[traduire(dico, 'scorecard.global'), scorecard.global]]),
@@ -480,6 +815,22 @@ export function rendreScorecardConsole(
           }),
         ]
       : []),
+    '',
+    traduire(dico, 'scorecard.cibles'),
+    ...tableauCibles,
+    '',
+    syntheseCibles,
+    ...lignesJumelle,
+    // Une cible non mesurée n'est ni une réussite ni un échec — mais un zéro
+    // tu serait l'angle mort de l'apprentissage n°4.
+    ...((executee?.nbNonMesurees ?? 0) > 0
+      ? [traduire(dico, 'scorecard.ciblesNonMesurees', { nonMesurees: formateurs.entier.format(executee?.nbNonMesurees ?? 0) })]
+      : []),
+    '',
+    traduire(dico, 'scorecard.coutEfficacite'),
+    ...tableauCout,
+    '',
+    syntheseCout,
     '',
     ligneEcart,
     ...(alarme ? [traduire(dico, 'scorecard.alarme')] : []),

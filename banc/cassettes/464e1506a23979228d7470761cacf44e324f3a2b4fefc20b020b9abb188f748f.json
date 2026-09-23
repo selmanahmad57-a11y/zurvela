@@ -1,0 +1,12 @@
+{
+  "cle": "464e1506a23979228d7470761cacf44e324f3a2b4fefc20b020b9abb188f748f",
+  "metadonnees": {
+    "date": "2026-09-23T18:41:54.105Z",
+    "modeleDemande": "claude-haiku-4-5",
+    "modeleServi": "claude-haiku-4-5-20251001",
+    "versionPrompt": "v2",
+    "coutApi": 0.001941,
+    "apresRelance": false
+  },
+  "reponse": "{\"actionId\":\"c1\",\"raison\":\"Le formulaire de contact a été rempli avec les 3 champs requis. La prochaine action logique est de le soumettre pour éprouver le traitement des données de contact par le site, ce qui correspond à une action réelle d'un visiteur.\"}"
+}

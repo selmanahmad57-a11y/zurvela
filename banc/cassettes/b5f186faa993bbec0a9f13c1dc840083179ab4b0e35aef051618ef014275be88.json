@@ -1,0 +1,12 @@
+{
+  "cle": "b5f186faa993bbec0a9f13c1dc840083179ab4b0e35aef051618ef014275be88",
+  "metadonnees": {
+    "date": "2026-09-23T18:42:06.773Z",
+    "modeleDemande": "claude-haiku-4-5",
+    "modeleServi": "claude-haiku-4-5-20251001",
+    "versionPrompt": "v2",
+    "coutApi": 0.001957,
+    "apresRelance": false
+  },
+  "reponse": "{\"actionId\": \"c1\", \"raison\": \"Le formulaire de contact a été soumis avec succès et la page de confirmation affiche le résultat. L'action c1 (terminer) clôt le cycle de test de ce parcours utilisateur fonctionnel, ce qui est approprié pour une vitrine-contact après validation d'un formulaire de contact.\"}"
+}

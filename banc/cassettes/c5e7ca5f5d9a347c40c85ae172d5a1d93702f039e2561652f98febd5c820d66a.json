@@ -1,0 +1,12 @@
+{
+  "cle": "c5e7ca5f5d9a347c40c85ae172d5a1d93702f039e2561652f98febd5c820d66a",
+  "metadonnees": {
+    "date": "2026-09-23T18:38:04.748Z",
+    "modeleDemande": "claude-haiku-4-5",
+    "modeleServi": "claude-haiku-4-5-20251001",
+    "versionPrompt": "v2",
+    "coutApi": 0.0020410000000000003,
+    "apresRelance": false
+  },
+  "reponse": "{\"actionId\": \"c2\", \"raison\": \"Le formulaire de contact a déjà été soumis. Il n'y a aucun intérêt à le remplir et soumettre à nouveau. La visite de cette page de contact est terminée. Il faut progresser vers d'autres pages du site pour éprouver d'autres fonctionnalités accessibles aux visiteurs.\"}"
+}

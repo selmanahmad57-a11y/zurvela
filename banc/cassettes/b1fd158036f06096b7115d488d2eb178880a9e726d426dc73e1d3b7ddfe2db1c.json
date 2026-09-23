@@ -1,0 +1,12 @@
+{
+  "cle": "b1fd158036f06096b7115d488d2eb178880a9e726d426dc73e1d3b7ddfe2db1c",
+  "metadonnees": {
+    "date": "2026-09-23T18:41:39.528Z",
+    "modeleDemande": "claude-haiku-4-5",
+    "modeleServi": "claude-haiku-4-5-20251001",
+    "versionPrompt": "v2",
+    "coutApi": 0.0020800000000000003,
+    "apresRelance": false
+  },
+  "reponse": "{\"actionId\": \"c1\", \"raison\": \"On est sur une page de contact avec un formulaire à 3 champs obligatoires. Un visiteur remplirait d'abord ce formulaire avant de le soumettre, donc c1 (remplir) doit être exécuté en premier pour tester le parcours réel d'un utilisateur contactant le site.\"}"
+}

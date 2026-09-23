@@ -1,0 +1,12 @@
+{
+  "cle": "24692818c72233596fc15fea132d82d39104e09dd7284896630c3ee2a12e68b2",
+  "metadonnees": {
+    "date": "2026-09-23T18:37:44.204Z",
+    "modeleDemande": "claude-haiku-4-5",
+    "modeleServi": "claude-haiku-4-5-20251001",
+    "versionPrompt": "v2",
+    "coutApi": 0.001898,
+    "apresRelance": false
+  },
+  "reponse": "{\"actionId\": \"c1\", \"raison\": \"Le site est identifié comme une vitrine-contact. La page d'accueil a été visitée. Le formulaire de contact est une page où un visiteur agit réellement, ce qui justifie un test. Il reste 19 pages disponibles au budget.\"}"
+}

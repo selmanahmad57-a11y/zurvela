@@ -34,6 +34,11 @@ export interface ConfigScanner {
     saisieMs: number;
     sondageMs: number;
     margeEcheanceMs: number;
+    /** Politique de décision : `deterministe` (BFS gratuit) ou `ia` (élection parmi les actions énumérées). */
+    politique: 'deterministe' | 'ia';
+    /** Troncature des libellés montrés au modèle : surface d'injection première. */
+    libelleMaxChars: number;
+    historiqueMaxActions: number;
     evaluationMs: number;
     mutationsMax: number;
     bruitFondRepetitions: number;

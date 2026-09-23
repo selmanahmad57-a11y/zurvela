@@ -1,0 +1,12 @@
+{
+  "cle": "d28d0c9d25c0e90c6b2c40dbaeeceb551e194ae4869474d099fe604e3dc92a41",
+  "metadonnees": {
+    "date": "2026-09-23T18:44:43.439Z",
+    "modeleDemande": "claude-haiku-4-5",
+    "modeleServi": "claude-haiku-4-5-20251001",
+    "versionPrompt": "v2",
+    "coutApi": 0.002503,
+    "apresRelance": false
+  },
+  "reponse": "{\"actionId\": \"c2\", \"raison\": \"Le robot est sur une page de devis avec un formulaire à 4 champs requis. Soumettre ce formulaire (c2) teste une action commerciale réelle - la génération de devis - qui représente un objectif visiteur clé. Le budget ne permet qu'une page supplémentaire, et valider un formulaire de devis prime sur la visite de pages de catalogue ou de produits supplémentaires.\"}"
+}

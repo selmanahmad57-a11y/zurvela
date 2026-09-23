@@ -8,9 +8,9 @@
  * Seul module du moteur qui relie le pipeline aux modules concrets
  * (navigateur, exploration, observation, détection, re-exécution).
  */
-import { creerClientIa, type ClientIa } from '../ia/index.js';
+import { creerClientIa, RAISON_REPLI_DETERMINISTE, type ClientIa } from '../ia/index.js';
 import type { Browser } from 'playwright';
-import type { Scanner } from '../types.js';
+import type { ContexteExploration, PolitiqueDecision, Scanner } from '../types.js';
 import {
   chargerActionsInterdites,
   chargerConfigProfilage,
@@ -24,13 +24,55 @@ import { creerDetecteurs } from './detection/index.js';
 import { creerExplorateur } from './exploration/explorateur.js';
 import { creerFiltre } from './exploration/filtre-actions.js';
 import { politiqueDeterministe } from './exploration/politique.js';
+import { politiqueIa } from './exploration/politique-ia.js';
 import { creerScanner, type SessionRejeu } from './index.js';
 import { lancerNavigateur } from './navigateur.js';
 import { creerObservateur } from './observation/observateur.js';
-import type { ExplorateurProfilant } from './profilage.js';
+import type { CompteurCoutIa, ExplorateurProfilant } from './profilage.js';
 import { creerReexecuteur } from './reexecuteur.js';
 
 export const NOM_EXPLORATEUR_NAVIGATEUR = 'explorateur-navigateur';
+
+/**
+ * Choisit la politique de décision du scan (cahier 4b §1) : `config.exploration.politique`.
+ *
+ * Le scan ENTIER ne bascule en déterministe que dans deux cas — la config le
+ * demande, ou l'IA est indisponible d'emblée (cohérent avec la brique 4a).
+ * Toute autre panne est un repli PAR DÉCISION, à l'intérieur de la politique
+ * IA : un appel qui échoue ne fait pas basculer le reste du scan.
+ */
+function choisirPolitique(
+  config: ConfigScanner,
+  ia: ClientIa,
+  contexte: ContexteExploration,
+  deterministe: PolitiqueDecision,
+  cout?: CompteurCoutIa,
+): PolitiqueDecision {
+  const demandee = config.exploration.politique;
+  if (demandee !== 'ia') {
+    contexte.journaliser('exploration.politique', { demandee, appliquee: deterministe.nom });
+    return deterministe;
+  }
+  if (ia.mode === 'degrade') {
+    // Indisponible D'EMBLÉE : le scan entier est déterministe, et il le dit.
+    // Ce n'est pas un repli par décision — il n'y a aucune décision à replier.
+    contexte.journaliser('exploration.politique', {
+      demandee,
+      appliquee: deterministe.nom,
+      repli: RAISON_REPLI_DETERMINISTE,
+      raison: ia.raisonDegrade,
+    });
+    return deterministe;
+  }
+  const politique = politiqueIa({
+    ia,
+    deterministe,
+    journaliser: contexte.journaliser,
+    ...(cout === undefined ? {} : { cout: (montant: number) => cout.ajouter(montant) }),
+  });
+  contexte.journaliser('exploration.politique', { demandee, appliquee: politique.nom, modele: config.ia.modeles.navigation });
+  return politique;
+}
 
 /**
  * Un navigateur PAR SCAN, fermé dans tous les cas : l'explorateur réel est
@@ -42,12 +84,13 @@ export const NOM_EXPLORATEUR_NAVIGATEUR = 'explorateur-navigateur';
  * l'exploration n'a pas rendu la main (page qui ne répond plus) ; les
  * attentes en cours échouent alors et le rapport partiel est rendu.
  */
-function explorateurAvecNavigateur(config: ConfigScanner, actionsInterdites: ActionsInterdites): ExplorateurProfilant {
+function explorateurAvecNavigateur(config: ConfigScanner, actionsInterdites: ActionsInterdites, ia: ClientIa): ExplorateurProfilant {
   const filtre = creerFiltre(actionsInterdites);
-  const politique = politiqueDeterministe(config.remplissage);
+  const deterministe = politiqueDeterministe(config.remplissage);
   return {
     nom: NOM_EXPLORATEUR_NAVIGATEUR,
-    async explorer(contexte, observateur, collecte) {
+    async explorer(contexte, observateur, collecte, cout) {
+      const politique = choisirPolitique(config, ia, contexte, deterministe, cout);
       const navigateur = await lancerNavigateur(config);
       const garde = setTimeout(() => {
         contexte.journaliser('exploration.echeance.fermeture', { echeance: new Date(contexte.echeance).toISOString() });
@@ -55,7 +98,10 @@ function explorateurAvecNavigateur(config: ConfigScanner, actionsInterdites: Act
       }, Math.max(0, contexte.echeance - Date.now()));
       garde.unref();
       try {
-        const explorateur = creerExplorateur({ config, politique, filtre, navigateur });
+        // `secours` est TOUJOURS la déterministe, même quand c'est elle qui
+        // décide : la couche 1 doit pouvoir reprendre la main sans dépendre de
+        // la politique qu'elle vient d'écarter.
+        const explorateur = creerExplorateur({ config, politique, secours: deterministe, filtre, navigateur });
         return await explorateur.explorer(contexte, observateur, collecte);
       } finally {
         clearTimeout(garde);
@@ -114,22 +160,54 @@ export interface OptionsAssemblage {
    * REJOUABLE : l'instrument de mesure ne doit dépendre d'aucun réseau.
    */
   ia?: ClientIa;
+  /**
+   * Surcharges PARTIELLES de `config/scanner.json` → `exploration`, pour un
+   * appelant qui pilote le scan plutôt que de le subir : le banc mesure UNE
+   * politique par run, et c'est le scénario — lui seul — qui sait sous quel
+   * budget de pages il doit être noté.
+   *
+   * Ce ne sont pas de nouveaux réglages : les valeurs par défaut restent
+   * celles de la config, et ce qui n'est pas nommé n'est pas touché. Aucun
+   * seuil ne naît ici (constitution §2).
+   */
+  exploration?: { politique?: ConfigScanner['exploration']['politique']; pagesMax?: number };
+}
+
+/**
+ * Applique les surcharges d'exploration à la config chargée.
+ *
+ * Écrit à part, et non par étalement à l'appel, parce qu'un étalement d'objet
+ * portant des clés `undefined` ÉCRASERAIT la valeur de config par `undefined` :
+ * une surcharge absente doit laisser la config intacte, pas la trouer.
+ */
+function appliquerSurcharges(config: ConfigScanner, surcharges: OptionsAssemblage['exploration']): ConfigScanner {
+  if (surcharges === undefined) return config;
+  return {
+    ...config,
+    exploration: {
+      ...config.exploration,
+      ...(surcharges.politique === undefined ? {} : { politique: surcharges.politique }),
+      ...(surcharges.pagesMax === undefined ? {} : { pagesMax: surcharges.pagesMax }),
+    },
+  };
 }
 
 export async function creerScannerParDefaut(options: OptionsAssemblage = {}): Promise<Scanner> {
-  const [config, actionsInterdites, configProfilage] = await Promise.all([
+  const [configChargee, actionsInterdites, configProfilage] = await Promise.all([
     chargerConfigScanner(),
     chargerActionsInterdites(),
     chargerConfigProfilage(),
   ]);
+  const config = appliquerSurcharges(configChargee, options.exploration);
+  const ia = options.ia ?? creerClientIa(config.ia);
   return creerScanner({
     config,
-    explorateur: explorateurAvecNavigateur(config, actionsInterdites),
+    explorateur: explorateurAvecNavigateur(config, actionsInterdites, ia),
     observateur: creerObservateur,
     detecteurs: creerDetecteurs(config.detecteurs),
     protocole: creerProtocole({ config: config.confirmation, autoDiagnostic: autoDiagnosticMecanique }),
     ouvrirRejeu: (journaliser, echeance) => sessionRejeu(config, journaliser, echeance),
-    ia: options.ia ?? creerClientIa(config.ia),
+    ia,
     // Le profilage est TOUJOURS assemblé : c'est le client IA, et lui seul,
     // qui décide s'il peut répondre. Un scan sans clé n'a donc pas de profil,
     // mais il a une raison au journal (constitution §4, cahier §1).

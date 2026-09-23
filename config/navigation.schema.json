@@ -1,0 +1,23 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "zurvela/config/navigation",
+  "title": "Configuration de la décision de navigation IA",
+  "description": "Réglages de l'APPEL de décision (brique 4b). Les bornes de ce que le modèle VOIT — troncature des libellés, longueur de l'historique — vivent dans `config/scanner.json` (`exploration.libelleMaxChars`, `exploration.historiqueMaxActions`) parce qu'elles bornent l'énumération produite par le moteur, pas l'appel. Ne vivent ici que le budget de génération et les relances.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["maxTokensReponse", "relancesMax"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "$commentaire": { "type": "string" },
+    "maxTokensReponse": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Plafond de génération d'une décision. Une élection parmi des identifiants énumérés, accompagnée d'une phrase de justification : ni une classification, ni une rédaction."
+    },
+    "relancesMax": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Relances autorisées quand la réponse ne valide pas le contrat dérivé de l'énumération (identifiant hors liste compris) ; au-delà, la décision est indisponible et le repli par décision joue."
+    }
+  }
+}

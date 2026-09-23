@@ -6,7 +6,15 @@ import { chargerDictionnaire, traduire, type Dictionnaire } from '../../core/i18
 import type { Anomalie, Categorie } from '../../core/types.js';
 import { depuisRacine } from '../outils/racine.js';
 import { configFactice } from '../scenarios/factices.js';
-import type { AttenduBug, AttenduProfil, ComptesProtocole, ResultatAttendu, ResultatProfil, ResultatScenario } from '../types.js';
+import {
+  POLITIQUE_DETERMINISTE,
+  type AttenduBug,
+  type AttenduProfil,
+  type ComptesProtocole,
+  type ResultatAttendu,
+  type ResultatProfil,
+  type ResultatScenario,
+} from '../types.js';
 import { calculerScorecard, ecrireScorecard, purgerResultats, rendreScorecardConsole } from './scorecard.js';
 
 const HORODATAGE = '2026-09-22T10:20:30.000Z';
@@ -29,7 +37,24 @@ function attendu(
 }
 
 function resultat(surcharges: Partial<ResultatScenario> & { scenarioId: string; langue: string }): ResultatScenario {
-  return { gabarit: 'formulaire-contact', statut: 'ok', attendus: [], profils: [], fauxPositifs: [], coutApi: 0, dureeMs: 0, ...surcharges };
+  const coutApi = surcharges.coutApi ?? 0;
+  return {
+    gabarit: 'formulaire-contact',
+    politique: POLITIQUE_DETERMINISTE,
+    statut: 'ok',
+    attendus: [],
+    profils: [],
+    cibles: [],
+    nbReplisDecision: 0,
+    fauxPositifs: [],
+    coutApi,
+    // Par défaut, tout le coût est du PROFILAGE : c'est l'état d'avant la
+    // navigation IA, et il garde les agrégats historiques lisibles. Les tests
+    // qui éprouvent la ventilation le surchargent explicitement.
+    coutApiParFamille: { exploration: 0, profilage: coutApi, confirmation: 0 },
+    dureeMs: 0,
+    ...surcharges,
+  };
 }
 
 /**
@@ -109,7 +134,7 @@ beforeAll(async () => {
 });
 
 describe('calculerScorecard', () => {
-  const scorecard = calculerScorecard(resultats, config, HORODATAGE);
+  const scorecard = calculerScorecard(resultats, config, HORODATAGE, POLITIQUE_DETERMINISTE);
 
   it('agrège le global : comptages, taux arrondis, coût et durée sommés', () => {
     expect(scorecard.horodatage).toBe(HORODATAGE);
@@ -140,7 +165,23 @@ describe('calculerScorecard', () => {
       tauxFauxPositifs: 20,
       tauxProfilsCorrects: null,
       tauxInertiesTenues: null,
+      nbCiblesMesurees: 0,
+      nbCiblesConformes: 0,
+      nbCiblesNonMesurees: 0,
+      tauxCiblesConformes: null,
+      nbInertiesParcoursMesurees: 0,
+      nbInertiesParcoursTenues: 0,
+      tauxInertiesParcoursTenues: null,
+      nbPagesVisitees: 0,
+      nbPagesUtiles: 0,
+      nbScenariosSansPageUtile: 0,
+      tauxEfficacite: null,
+      coutParScan: 2.5,
       coutApi: 15,
+      coutApiExploration: 0,
+      coutApiProfilage: 15,
+      coutApiConfirmation: 0,
+      nbReplisDecision: 0,
       dureeMs: 210,
     });
   });
@@ -220,14 +261,14 @@ describe('calculerScorecard', () => {
   });
 
   it('rend null les taux sans dénominateur', () => {
-    const vide = calculerScorecard([], config, HORODATAGE);
+    const vide = calculerScorecard([], config, HORODATAGE, POLITIQUE_DETERMINISTE);
     expect(vide.global.tauxDetection).toBeNull();
     expect(vide.global.tauxVerdictsCorrects).toBeNull();
     expect(vide.global.tauxFauxPositifs).toBeNull();
     expect(vide.parCategorie).toEqual({});
     expect(vide.ecartLangues).toEqual({ points: null, seuil: config.scorecard.seuilAlarmeEcartLanguesPoints, alarme: false });
 
-    const sansSignalement = calculerScorecard([resultat({ scenarioId: 'v01--fr', langue: 'fr', attendus: [attendu('V01', 'visuel', 'rate')] })], config, HORODATAGE);
+    const sansSignalement = calculerScorecard([resultat({ scenarioId: 'v01--fr', langue: 'fr', attendus: [attendu('V01', 'visuel', 'rate')] })], config, HORODATAGE, POLITIQUE_DETERMINISTE);
     expect(sansSignalement.global.tauxDetection).toBe(0);
     expect(sansSignalement.global.tauxVerdictsCorrects).toBe(0);
     expect(sansSignalement.global.tauxFauxPositifs).toBeNull();
@@ -237,13 +278,14 @@ describe('calculerScorecard', () => {
     const seuil = config.scorecard.seuilAlarmeEcartLanguesPoints;
     expect(scorecard.ecartLangues).toEqual({ points: 16.7, seuil, alarme: true });
 
-    const tolerant = calculerScorecard(resultats, configFactice({ scorecard: { ...config.scorecard, seuilAlarmeEcartLanguesPoints: 16.7 } }), HORODATAGE);
+    const tolerant = calculerScorecard(resultats, configFactice({ scorecard: { ...config.scorecard, seuilAlarmeEcartLanguesPoints: 16.7 } }), HORODATAGE, POLITIQUE_DETERMINISTE);
     expect(tolerant.ecartLangues.alarme).toBe(false);
 
     const uneSeuleLangue = calculerScorecard(
       resultats.filter((r) => r.langue === 'fr'),
       config,
       HORODATAGE,
+      POLITIQUE_DETERMINISTE,
     );
     expect(uneSeuleLangue.parLangue['en']?.tauxDetection).toBeNull();
     expect(uneSeuleLangue.ecartLangues).toEqual({ points: null, seuil, alarme: false });
@@ -252,7 +294,7 @@ describe('calculerScorecard', () => {
 
 describe('rendreScorecardConsole', () => {
   it('contient le titre, les sections, les colonnes, les langues, les catégories et la ligne d’alarme', () => {
-    const scorecard = calculerScorecard(resultats, config, HORODATAGE);
+    const scorecard = calculerScorecard(resultats, config, HORODATAGE, POLITIQUE_DETERMINISTE);
     const rendu = rendreScorecardConsole(scorecard, dico, config.langueConsole);
     for (const cle of ['titre', 'global', 'parLangue', 'parCategorie', 'alarme']) {
       expect(rendu).toContain(traduire(dico, `scorecard.${cle}`));
@@ -261,13 +303,14 @@ describe('rendreScorecardConsole', () => {
       expect(rendu).toContain(traduire(dico, `scorecard.colonnes.${colonne}`));
     }
     // Le périmètre est en tête de ligne, suivi d'un nombre (une sous-chaîne
-    // d'en-tête ne suffit pas). Une langue apparaît DEUX fois (tableau de
-    // détection + tableau du protocole), une catégorie de bug UNE seule :
-    // le protocole ne se ventile pas par catégorie.
+    // d'en-tête ne suffit pas). Une langue apparaît TROIS fois (tableaux de
+    // détection, du protocole et du couple coût/efficacité), une catégorie de
+    // bug UNE seule : ni le protocole ni le coût ne se ventilent par
+    // catégorie.
     const lignes = rendu.split('\n');
     const nonApplicable = traduire(dico, 'scorecard.nonApplicable');
     for (const langue of config.langues) {
-      expect(lignes.filter((ligne) => new RegExp(`^${langue}\\s{2,}\\d`).test(ligne))).toHaveLength(2);
+      expect(lignes.filter((ligne) => new RegExp(`^${langue}\\s{2,}\\d`).test(ligne))).toHaveLength(3);
     }
     // Une catégorie de bug NE partitionne pas les scénarios : sa ligne existe,
     // mais la colonne « Scénarios » — comme erreurs, coût et durée — y est sans
@@ -290,6 +333,7 @@ describe('rendreScorecardConsole', () => {
       resultats.filter((r) => r.langue === 'fr'),
       config,
       HORODATAGE,
+      POLITIQUE_DETERMINISTE,
     );
     const rendu = rendreScorecardConsole(scorecard, dico, config.langueConsole);
     expect(rendu).toContain(traduire(dico, 'scorecard.ecartLanguesNonCalculable'));
@@ -297,7 +341,7 @@ describe('rendreScorecardConsole', () => {
   });
 
   it('place « Verdicts corrects » juste après « Détection » et rend le taux de chaque périmètre', () => {
-    const rendu = rendreScorecardConsole(calculerScorecard(resultats, config, HORODATAGE), dico, config.langueConsole);
+    const rendu = rendreScorecardConsole(calculerScorecard(resultats, config, HORODATAGE, POLITIQUE_DETERMINISTE), dico, config.langueConsole);
     const lignes = rendu.split('\n');
     const entete = lignes.find((ligne) => ligne.includes(traduire(dico, 'scorecard.colonnes.perimetre'))) ?? '';
     const positions = ['detection', 'verdictsCorrects', 'detectes'].map((colonne) => entete.indexOf(traduire(dico, `scorecard.colonnes.${colonne}`)));
@@ -312,7 +356,7 @@ describe('rendreScorecardConsole', () => {
   });
 
   it('aligne les colonnes : toutes les lignes d’un tableau ont la même largeur', () => {
-    const rendu = rendreScorecardConsole(calculerScorecard(resultats, config, HORODATAGE), dico, config.langueConsole);
+    const rendu = rendreScorecardConsole(calculerScorecard(resultats, config, HORODATAGE, POLITIQUE_DETERMINISTE), dico, config.langueConsole);
     const blocs = rendu.split('\n\n');
     // Blocs 1 à 4 = les quatre tableaux (titre avant, synthèse et écart après).
     for (const bloc of blocs.slice(1, 5)) {
@@ -324,7 +368,7 @@ describe('rendreScorecardConsole', () => {
 });
 
 describe('agrégats du protocole anti-faux-positifs', () => {
-  const scorecard = calculerScorecard(resultats, config, HORODATAGE);
+  const scorecard = calculerScorecard(resultats, config, HORODATAGE, POLITIQUE_DETERMINISTE);
 
   it('somme les sept compteurs par langue', () => {
     // fr : sain (3,3,1,2,1,0,1) + f01 (4,3,2,1,1,0,0) + v01 (2,1,0,1,0,1,0).
@@ -399,6 +443,7 @@ describe('agrégats du protocole anti-faux-positifs', () => {
       ],
       config,
       HORODATAGE,
+      POLITIQUE_DETERMINISTE,
     );
     expect(multi.global.nbCandidates).toBe(5);
     expect(multi.parCategorie['fonctionnel']?.nbCandidates).toBe(5);
@@ -410,7 +455,7 @@ describe('agrégats du protocole anti-faux-positifs', () => {
   });
 
   it('rend zéro et jamais undefined quand aucun scénario ne porte de comptes', () => {
-    const sansProtocole = calculerScorecard([resultat({ scenarioId: 'f01--fr', langue: 'fr', attendus: [attendu('F01', 'fonctionnel', 'detecte')] })], config, HORODATAGE);
+    const sansProtocole = calculerScorecard([resultat({ scenarioId: 'f01--fr', langue: 'fr', attendus: [attendu('F01', 'fonctionnel', 'detecte')] })], config, HORODATAGE, POLITIQUE_DETERMINISTE);
     for (const agregat of [sansProtocole.global, sansProtocole.parLangue['fr'], sansProtocole.parCategorie['fonctionnel']]) {
       expect(agregat).toMatchObject({
         nbCandidates: 0,
@@ -422,7 +467,7 @@ describe('agrégats du protocole anti-faux-positifs', () => {
         nbEcartesNonApparies: 0,
       });
     }
-    expect(calculerScorecard([], config, HORODATAGE).global).toMatchObject({ nbCandidates: 0, nbPertesProtocole: 0, nbEcartesNonApparies: 0 });
+    expect(calculerScorecard([], config, HORODATAGE, POLITIQUE_DETERMINISTE).global).toMatchObject({ nbCandidates: 0, nbPertesProtocole: 0, nbEcartesNonApparies: 0 });
   });
 });
 
@@ -434,7 +479,7 @@ describe('rendreScorecardConsole — tableau du protocole', () => {
   }
 
   /** Le dictionnaire n'est chargé qu'au `beforeAll` : le rendu se calcule dans le test, pas à la collecte. */
-  const rendre = (): string => rendreScorecardConsole(calculerScorecard(resultats, config, HORODATAGE), dico, config.langueConsole);
+  const rendre = (): string => rendreScorecardConsole(calculerScorecard(resultats, config, HORODATAGE, POLITIQUE_DETERMINISTE), dico, config.langueConsole);
 
   it('affiche les huit colonnes du protocole, dans l’ordre du périmètre vers les non appariés', () => {
     const entete = blocProtocole(rendre())[1] ?? '';
@@ -457,7 +502,7 @@ describe('rendreScorecardConsole — tableau du protocole', () => {
   });
 
   it('D4/D5 — aucune ligne de catégorie de bug dans le tableau du protocole (un groupe de cause racine ne s’y ventile pas)', () => {
-    const scorecard = calculerScorecard(resultats, config, HORODATAGE);
+    const scorecard = calculerScorecard(resultats, config, HORODATAGE, POLITIQUE_DETERMINISTE);
     const lignes = blocProtocole(rendre()).slice(3);
     for (const categorie of Object.keys(scorecard.parCategorie)) {
       expect(lignes.some((ligne) => ligne.startsWith(categorie))).toBe(false);
@@ -496,7 +541,7 @@ describe('rendreScorecardConsole — tableau du protocole', () => {
         ? resultat
         : { ...resultat, protocole: { ...resultat.protocole, nbPertesProtocole: 0, nbEcartesNonApparies: 0 } },
     );
-    const renduSansPerte = rendreScorecardConsole(calculerScorecard(sansPerte, config, HORODATAGE), dico, config.langueConsole);
+    const renduSansPerte = rendreScorecardConsole(calculerScorecard(sansPerte, config, HORODATAGE, POLITIQUE_DETERMINISTE), dico, config.langueConsole);
     expect(renduSansPerte).toContain(
       traduire(dico, 'scorecard.syntheseProtocole', {
         candidates: '10',
@@ -517,7 +562,7 @@ describe('rendreScorecardConsole — tableau du protocole', () => {
     const sansPerte = resultats.map((resultat) =>
       resultat.protocole === undefined ? resultat : { ...resultat, protocole: { ...resultat.protocole, nbPertesProtocole: 0 } },
     );
-    const renduSansPerte = rendreScorecardConsole(calculerScorecard(sansPerte, config, HORODATAGE), dico, config.langueConsole);
+    const renduSansPerte = rendreScorecardConsole(calculerScorecard(sansPerte, config, HORODATAGE, POLITIQUE_DETERMINISTE), dico, config.langueConsole);
     expect(renduSansPerte).not.toContain(traduire(dico, 'scorecard.alarmePertes', { perdues: '0' }));
     expect(renduSansPerte).toContain(traduire(dico, 'scorecard.protocole'));
   });
@@ -534,7 +579,7 @@ describe('ecrireScorecard', () => {
     const racine = await mkdtemp(path.join(tmpdir(), 'zurvela-scorecard-'));
     dossiers.push(racine);
     const dossier = path.join(racine, 'resultats');
-    const scorecard = calculerScorecard(resultats, config, HORODATAGE);
+    const scorecard = calculerScorecard(resultats, config, HORODATAGE, POLITIQUE_DETERMINISTE);
 
     const fichier = await ecrireScorecard(scorecard, dossier);
 
@@ -594,7 +639,7 @@ describe('purgerResultats', () => {
 
   it('s’enchaîne avec ecrireScorecard : la scorecard qui vient d’être écrite est la plus récente et survit', async () => {
     const dossier = await dossierPeuple(HORODATAGES.slice(0, 2));
-    const fichier = await ecrireScorecard(calculerScorecard(resultats, config, HORODATAGE), dossier);
+    const fichier = await ecrireScorecard(calculerScorecard(resultats, config, HORODATAGE, POLITIQUE_DETERMINISTE), dossier);
 
     const purges = await purgerResultats(dossier, 1);
 
@@ -621,7 +666,7 @@ describe('scorecard — les deux familles de profil, comptées séparément de l
     resultat({ scenarioId: 's01--en', langue: 'en', profils: [profil(false, true)], coutApi: 4 }),
     resultat({ scenarioId: 'sain--en', langue: 'en', profils: [profil(false, false, true)], coutApi: 5 }),
   ];
-  const scorecard = calculerScorecard(avecProfils, config, HORODATAGE);
+  const scorecard = calculerScorecard(avecProfils, config, HORODATAGE, POLITIQUE_DETERMINISTE);
 
   it('range chaque attendu dans SA famille selon inertieEprouvee', () => {
     expect(scorecard.global).toMatchObject({
@@ -664,6 +709,7 @@ describe('scorecard — les deux familles de profil, comptées séparément de l
       [resultat({ scenarioId: 'sain--fr', langue: 'fr', profils: [profil(false, false, true), profil(false, true, true)] })],
       config,
       HORODATAGE,
+      POLITIQUE_DETERMINISTE,
     );
     expect(degrade.global).toMatchObject({
       nbProfilsMesures: 0,
@@ -711,8 +757,41 @@ describe('scorecard — les deux familles de profil, comptées séparément de l
     expect(rendu).toContain(traduire(dico, 'scorecard.profilsNonMesures', { nonMesures: 1 }));
   });
 
+  /**
+   * LE COÛT AFFICHÉ DANS CETTE FAMILLE EST CELUI DU PROFILAGE, jamais le total
+   * du scan. C'est la garde permanente du défaut que la revue de la brique 4b
+   * a trouvé : tant que l'exploration ne coûtait rien, les deux se
+   * confondaient ; depuis, deux runs aux mêmes cassettes de profil et aux
+   * mêmes profils corrects affichaient des coûts d'un ordre de grandeur
+   * différent sous l'étiquette « Profilage ».
+   */
+  it('n’impute PAS le coût des décisions de navigation à la famille des profils', () => {
+    const coutParFamille = { exploration: 90, profilage: 3, confirmation: 7 };
+    const avecNavigation = calculerScorecard(
+      [resultat({ scenarioId: 'sain--fr', langue: 'fr', profils: [profil(true)], coutApi: 100, coutApiParFamille: coutParFamille })],
+      config,
+      HORODATAGE,
+      POLITIQUE_DETERMINISTE,
+    );
+    expect(avecNavigation.global).toMatchObject({ coutApi: 100, coutApiExploration: 90, coutApiProfilage: 3, coutApiConfirmation: 7 });
+
+    const rendu = rendreScorecardConsole(avecNavigation, dico, config.langueConsole);
+    expect(rendu).toContain(
+      traduire(dico, 'scorecard.syntheseProfils', {
+        profilsCorrects: 1,
+        profilsMesures: 1,
+        inertiesTenues: 0,
+        inertiesMesurees: 0,
+        nonMesures: 0,
+        cout: '3,00',
+      }),
+    );
+    // Et le coût des DÉCISIONS est publié, lui, avec sa vraie jumelle.
+    expect(rendu).toContain(traduire(dico, 'scorecard.colonnes.coutDecisions'));
+  });
+
   it('tait la ligne des non-mesurés quand il n’y en a aucun', () => {
-    const complet = calculerScorecard([resultat({ scenarioId: 'sain--fr', langue: 'fr', profils: [profil(true)] })], config, HORODATAGE);
+    const complet = calculerScorecard([resultat({ scenarioId: 'sain--fr', langue: 'fr', profils: [profil(true)] })], config, HORODATAGE, POLITIQUE_DETERMINISTE);
     const rendu = rendreScorecardConsole(complet, dico, config.langueConsole);
     expect(rendu).toContain(traduire(dico, 'scorecard.profils'));
     expect(rendu).not.toContain(traduire(dico, 'scorecard.profilsNonMesures', { nonMesures: 0 }));

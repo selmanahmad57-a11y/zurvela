@@ -23,7 +23,7 @@ import {
   RAISON_PROFILAGE_EN_ERREUR,
   RAISON_PROFILAGE_NON_CONFIGURE,
   composerContexteProfilage,
-  ouvrirCollecte,
+  ouvrirProfilage,
   profilerSite,
 } from './profilage.js';
 
@@ -94,14 +94,41 @@ function details(journal: EntreeJournal[], type: string): Record<string, unknown
 
 const DANS_UNE_MINUTE = (): number => Date.now() + 60_000;
 
-describe('ouvrirCollecte', () => {
-  it('ne retient que la PREMIÈRE proposition : un appel par scan, quel que soit le nombre de viewports', () => {
-    const { collecte, capture } = ouvrirCollecte(BORNES);
-    expect(capture()).toBeNull();
-    collecte.proposer(CONTEXTE);
-    collecte.proposer({ ...CONTEXTE, url: 'http://site.invalid/autre' });
-    expect(capture()).toBe(CONTEXTE);
-    expect(collecte.bornes.maxChars).toBe(6000);
+describe('ouvrirProfilage', () => {
+  it('n’appelle QU’UNE FOIS, sur la première proposition, et rend le profil à chaque proposant', async () => {
+    const ia = clientFactice({ disponible: true, valeur: profil(), coutApi: 0.004 });
+    const { journaliser } = journalDe();
+    const ouvert = ouvrirProfilage({ bornes: BORNES, ia, options: OPTIONS, journaliser, echeance: DANS_UNE_MINUTE() });
+
+    expect(ouvert.collecte.bornes.maxChars).toBe(6000);
+    const premier = await ouvert.collecte.proposer(CONTEXTE);
+    const second = await ouvert.collecte.proposer({ ...CONTEXTE, url: 'http://site.invalid/autre' });
+
+    expect(ia.appels).toHaveLength(1);
+    expect(ia.appels[0]).toBe(CONTEXTE);
+    expect(premier?.typeSite).toBe('vitrine-contact');
+    // Le second proposant reçoit le MÊME profil : un seul appel, un seul profil.
+    expect(second).toBe(premier);
+    expect(await ouvert.resultat()).toEqual({ profil: premier, coutApi: 0.004 });
+  });
+
+  it('sans proposition, le résultat journalise l’absence de contexte et ne coûte rien', async () => {
+    const ia = clientFactice({ disponible: true, valeur: profil(), coutApi: 0.004 });
+    const { journal, journaliser } = journalDe();
+    const ouvert = ouvrirProfilage({ bornes: BORNES, ia, options: OPTIONS, journaliser, echeance: DANS_UNE_MINUTE() });
+
+    expect(await ouvert.resultat()).toEqual({ coutApi: 0 });
+    expect(ia.appels).toHaveLength(0);
+    expect(details(journal, 'profilage.indisponible')).toMatchObject({ raison: RAISON_CONTEXTE_ABSENT });
+  });
+
+  it('en mode dégradé, la proposition rend `null` : la navigation décide sans profil plutôt que pas du tout', async () => {
+    const ia = clientFactice({ disponible: false, raison: RAISON_CLE_ABSENTE });
+    const { journal, journaliser } = journalDe();
+    const ouvert = ouvrirProfilage({ bornes: BORNES, ia, options: OPTIONS, journaliser, echeance: DANS_UNE_MINUTE() });
+
+    expect(await ouvert.collecte.proposer(CONTEXTE)).toBeNull();
+    expect(details(journal, 'profilage.indisponible')).toMatchObject({ raison: RAISON_CLE_ABSENTE });
   });
 });
 

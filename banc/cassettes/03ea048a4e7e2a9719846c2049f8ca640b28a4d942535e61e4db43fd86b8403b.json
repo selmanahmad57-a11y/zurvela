@@ -1,0 +1,12 @@
+{
+  "cle": "03ea048a4e7e2a9719846c2049f8ca640b28a4d942535e61e4db43fd86b8403b",
+  "metadonnees": {
+    "date": "2026-09-23T18:41:51.966Z",
+    "modeleDemande": "claude-haiku-4-5",
+    "modeleServi": "claude-haiku-4-5-20251001",
+    "versionPrompt": "v2",
+    "coutApi": 0.002065,
+    "apresRelance": false
+  },
+  "reponse": "{\"actionId\": \"c1\", \"raison\": \"On est sur la page /contact avec un formulaire de 3 champs obligatoires. L'action c1 remplit ce formulaire, ce qui est ce qu'un visiteur ferait naturellement avant de soumettre. C'est une action de test pertinente pour éprouver le formulaire de contact du site.\"}"
+}

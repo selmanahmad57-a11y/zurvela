@@ -79,8 +79,16 @@ export interface BornesContexte {
 export interface CollecteProfilage {
   /** Bornes de composition, remises par la config : l'exploration n'a pas à les connaître. */
   bornes: BornesContexte;
-  /** UNE capture par scan : toute proposition ultérieure est ignorée. */
-  proposer(contexte: ContexteProfilage): void;
+  /**
+   * UNE capture par scan : la première proposition DÉCLENCHE l'appel, toute
+   * proposition ultérieure reçoit son résultat sans en provoquer un second.
+   *
+   * Elle rend le profil parce que la brique 4b le CONSOMME pendant
+   * l'exploration : la navigation IA décide avec lui. Il ne pouvait donc plus
+   * être calculé après le parcours. `null` en mode dégradé — la raison est au
+   * journal, et la navigation décide sans profil plutôt que pas du tout.
+   */
+  proposer(contexte: ContexteProfilage): Promise<ProfilSiteRapporte | null>;
 }
 
 /**
@@ -90,30 +98,55 @@ export interface CollecteProfilage {
  * pas assemblé). Le contrat de `core/types.ts` n'a pas à bouger pour ça.
  */
 export interface ExplorateurProfilant extends Explorateur {
-  explorer(contexte: ContexteExploration, observateur: Observateur, collecte?: CollecteProfilage): Promise<Parcours>;
-}
-
-export interface CollecteOuverte {
-  collecte: CollecteProfilage;
-  /** Le contexte capturé, ou null si l'exploration n'en a proposé aucun. */
-  capture(): ContexteProfilage | null;
+  explorer(
+    contexte: ContexteExploration,
+    observateur: Observateur,
+    collecte?: CollecteProfilage,
+    cout?: CompteurCoutIa,
+  ): Promise<Parcours>;
 }
 
 /**
- * Ouvre une collecte NEUVE pour un scan. L'unicité de l'appel de profilage
- * est garantie ici, par construction : même si l'exploration proposait un
- * contexte par viewport, un seul serait retenu.
+ * Recueille le coût des appels IA engagés PENDANT l'exploration (les
+ * décisions de navigation). Le `Parcours` ne porte pas de coût et n'a pas à
+ * en porter : c'est le pipeline qui totalise ce qu'un scan a dépensé. Sans ce
+ * canal, la navigation IA coûterait sans que le chiffre se voie — et un coût
+ * dépensé qui ne se voit pas est un coût qui ment (APPRENTISSAGES n°3).
  */
-export function ouvrirCollecte(bornes: BornesContexte): CollecteOuverte {
-  let capture: ContexteProfilage | null = null;
+export interface CompteurCoutIa {
+  ajouter(montant: number): void;
+}
+
+export interface ProfilageOuvert {
+  collecte: CollecteProfilage;
+  /**
+   * Le résultat du profilage du scan. Idempotent : appelé sans qu'aucun
+   * contexte ait été proposé, il journalise l'absence et rend un coût nul —
+   * un scan sans page de départ lisible n'a pas de profil, et il le dit.
+   */
+  resultat(): Promise<ResultatProfilage>;
+}
+
+/**
+ * Ouvre le profilage d'UN scan. L'unicité de l'appel est garantie ici, par
+ * construction : même si l'exploration proposait un contexte par viewport, un
+ * seul appel a lieu — et les propositions suivantes reçoivent son résultat.
+ */
+export function ouvrirProfilage(entree: EntreeProfilageScan): ProfilageOuvert {
+  const { bornes, ia, options, journaliser, echeance } = entree;
+  let appel: Promise<ResultatProfilage> | null = null;
+  const profiler = (contexte: ContexteProfilage | null): Promise<ResultatProfilage> => {
+    appel ??= profilerSite({ ia, ...(options === undefined ? {} : { options }), contexte, journaliser, echeance });
+    return appel;
+  };
   return {
     collecte: {
       bornes,
-      proposer(contexte) {
-        capture ??= contexte;
+      async proposer(contexte) {
+        return (await profiler(contexte)).profil ?? null;
       },
     },
-    capture: () => capture,
+    resultat: () => profiler(null),
   };
 }
 
@@ -186,6 +219,11 @@ export interface ResultatProfilage {
 }
 
 export type Journaliser = (type: string, details?: unknown) => void;
+
+/** Ce dont l'ouverture d'un profilage de scan a besoin : l'entrée d'appel, moins le contexte (il viendra de l'exploration). */
+export interface EntreeProfilageScan extends Omit<EntreeProfilage, 'contexte'> {
+  bornes: BornesContexte;
+}
 
 export interface EntreeProfilage {
   ia: ClientIa;

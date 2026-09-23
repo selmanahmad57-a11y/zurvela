@@ -1,0 +1,12 @@
+{
+  "cle": "a0418be088b03536397eb1d510e04e88c162cb5eee5e29b2cd8b9612f7ea5c3b",
+  "metadonnees": {
+    "date": "2026-09-23T18:45:05.001Z",
+    "modeleDemande": "claude-haiku-4-5",
+    "modeleServi": "claude-haiku-4-5-20251001",
+    "versionPrompt": "v2",
+    "coutApi": 0.002444,
+    "apresRelance": false
+  },
+  "reponse": "{\"actionId\":\"c2\",\"raison\":\"Le robot est sur la page /devis avec un formulaire de demande de devis contenant 4 champs requis. Soumettre ce formulaire (c2) teste une action clé où un visiteur interagit vraiment avec le site. C'est le budget final (1 page restante) et une action de conversion business à éprouver avant la fin.\"}"
+}

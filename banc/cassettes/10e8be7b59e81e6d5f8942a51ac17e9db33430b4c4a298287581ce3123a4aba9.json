@@ -1,0 +1,12 @@
+{
+  "cle": "10e8be7b59e81e6d5f8942a51ac17e9db33430b4c4a298287581ce3123a4aba9",
+  "metadonnees": {
+    "date": "2026-09-23T18:44:28.864Z",
+    "modeleDemande": "claude-haiku-4-5",
+    "modeleServi": "claude-haiku-4-5-20251001",
+    "versionPrompt": "v2",
+    "coutApi": 0.002329,
+    "apresRelance": false
+  },
+  "reponse": "{\"actionId\":\"c1\",\"raison\":\"La page /devis affiche un formulaire avec 4 champs requis à remplir et soumettre. C'est une action de visiteur significative (devis) qui teste une fonctionnalité clé du site. Le budget restant est de 1 page, c'est la priorité absolue avant de terminer.\"}"
+}

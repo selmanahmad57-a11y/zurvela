@@ -1,0 +1,12 @@
+{
+  "cle": "ed07d5e6e5cc856bf903dd8cc2a1a1a1bc91dc08e3a2cf34b5fc59cb6b63a5a1",
+  "metadonnees": {
+    "date": "2026-09-23T18:44:09.138Z",
+    "modeleDemande": "claude-haiku-4-5",
+    "modeleServi": "claude-haiku-4-5-20251001",
+    "versionPrompt": "v2",
+    "coutApi": 0.0018449999999999999,
+    "apresRelance": false
+  },
+  "reponse": "{\"actionId\":\"c1\",\"raison\":\"Le budget de pages restantes est épuisé (0 pages permises). L'action c1 de type terminer est la seule action disponible et elle met fin à l'exploration de manière appropriée.\"}"
+}

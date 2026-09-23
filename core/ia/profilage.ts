@@ -11,6 +11,7 @@ import type { ConfigProfilage } from '../scanner/config.js';
 import { construirePromptProfilage, VERSION, type PromptProfilage } from '../../prompts/profilage/v1.js';
 import type { ContexteProfilage, ProfilPage, ReponseBrute, ResultatIa } from './index.js';
 import { RAISON_PROFIL_INVALIDE } from './index.js';
+import { resumerConstats as resumerConstatsAvecVersion } from './schema-profil.js';
 import type { ConstatInvalidite, ValidateurProfil } from './schema-profil.js';
 
 /**
@@ -101,15 +102,9 @@ export async function profilerBrutAvec(parametres: ParametresProfilage): Promise
   return {
     disponible: false,
     raison: RAISON_PROFIL_INVALIDE,
-    message: resumerConstats(constats),
+    message: resumerConstatsAvecVersion(VERSION, constats),
     coutApi: coutCumule,
   };
-}
-
-/** Résumé opérationnel pour le journal — structurel, sans la réponse fautive. */
-function resumerConstats(constats: readonly ConstatInvalidite[]): string {
-  const details = constats.map((constat) => `${constat.champ === '' ? 'reponse' : constat.champ}:${constat.defaut}`);
-  return `${VERSION} ${details.join(' ')}`;
 }
 
 /**
@@ -140,7 +135,7 @@ export function profilDepuisReponse(parametres: {
     return {
       disponible: false,
       raison: RAISON_PROFIL_INVALIDE,
-      message: resumerConstats(validation.constats),
+      message: resumerConstatsAvecVersion(VERSION, validation.constats),
       coutApi,
     };
   }

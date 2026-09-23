@@ -1,0 +1,12 @@
+{
+  "cle": "3a9a072a576526b325f29af28dd63ad2751f4d66417c9e3c0aac40e10f613bb2",
+  "metadonnees": {
+    "date": "2026-09-23T18:39:55.362Z",
+    "modeleDemande": "claude-haiku-4-5",
+    "modeleServi": "claude-haiku-4-5-20251001",
+    "versionPrompt": "v2",
+    "coutApi": 0.0019320000000000001,
+    "apresRelance": false
+  },
+  "reponse": "{\"actionId\":\"c1\",\"raison\":\"Le visiteur a complété le parcours de contact en remplissant et soumettant le formulaire. La page actuelle est une page de confirmation, ce qui indique que l'action principale du site a été réalisée. L'action c1 (terminer) clôt appropriément cette session de test.\"}"
+}

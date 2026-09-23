@@ -1,0 +1,12 @@
+{
+  "cle": "884e375767d71139f720c6b9138b1c1095eab795e9df6ed47ba575551f868ebc",
+  "metadonnees": {
+    "date": "2026-09-23T18:37:47.202Z",
+    "modeleDemande": "claude-haiku-4-5",
+    "modeleServi": "claude-haiku-4-5-20251001",
+    "versionPrompt": "v2",
+    "coutApi": 0.00206,
+    "apresRelance": false
+  },
+  "reponse": "{\"actionId\":\"c2\",\"raison\":\"Un visiteur sur une page de contact remplit et soumet un formulaire pour communiquer avec le site. L'action c2 représente la soumission du formulaire, qui est l'interaction principale testable sur cette page. Cela évalue un parcours d'action réel contrairement aux actions intermédiaires ou terminales.\"}"
+}

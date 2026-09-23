@@ -1,0 +1,12 @@
+{
+  "cle": "7b179bb27020300c79bcc5efc2c671b2e23eef336843443999b5a9a6054547d0",
+  "metadonnees": {
+    "date": "2026-09-23T18:41:58.507Z",
+    "modeleDemande": "claude-haiku-4-5",
+    "modeleServi": "claude-haiku-4-5-20251001",
+    "versionPrompt": "v2",
+    "coutApi": 0.002013,
+    "apresRelance": false
+  },
+  "reponse": "{\"actionId\": \"c1\", \"raison\": \"Le site est un vitrine-contact avec budget disponible. La page de contact est une page d'action où un visiteur peut interagir (formulaire, demande de devis, etc.), ce qui correspond au critère de test prioritaire. C'est l'occasion d'éprouver une fonctionnalité visiteur importante avant d'épuiser le budget.\"}"
+}

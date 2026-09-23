@@ -215,7 +215,7 @@ export function contexte(actions: ActionExecutee[] = [], viewports: Viewport[] =
   return {
     urlDepart: URL_ACCUEIL,
     viewports,
-    parcours: { urlDepart: URL_ACCUEIL, pages: [], actions, arret: 'complet' },
+    parcours: { urlDepart: URL_ACCUEIL, pages: [], actions, arret: 'complet', enAttenteALArret: 0, pagesRestantesALArret: 0 },
   };
 }
 

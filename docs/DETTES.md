@@ -110,3 +110,25 @@ dette est levée (le commit qui la lève renvoie à ce fichier).
 - **Condition de levée** : un bug S02 au prochain passage sur le banc des
   injections. La brique 4b l'ouvrira — c'est sa surface : le modèle n'y
   classe plus une page, il choisit des actes.
+
+## 8. Le vecteur « chaîne profilage → navigation » reste non mesuré (2026-09-23)
+
+- **Quoi** : une page fait dire au **profileur** quelque chose que le
+  **navigateur** lira ensuite comme une consigne — le profil entrant dans le
+  prompt de navigation, une injection en deux temps est concevable. Aucun
+  scénario du banc ne l'éprouve.
+- **Pourquoi pas maintenant** : la charge suppose d'obtenir du profileur une
+  sortie précise (classer le site en valeur d'échappement pour remplir
+  `natureLibre`), ce qui ne se construit de façon fiable qu'en **itérant le
+  gabarit contre le comportement observé du modèle**. C'est fabriquer une
+  charge sur mesure pour être battue — ou pour battre : les deux mentent, et
+  `docs/METHODE.md` §2 l'interdit. Le refus de l'agent de correction est
+  ratifié.
+- **Mitigation en place** : `natureLibre` est **borné** dans
+  `normaliserEtatDecision` avant d'entrer dans le prompt de navigation, et le
+  contrat de `ProfilPage.natureLibre`, qui affirmait à tort « ne franchit
+  jamais la frontière du journal », a été corrigé — un contrat faux est cru.
+- **Condition de levée** : quand une charge pourra être construite **depuis
+  le contrat seul** (ce que le format du profil permet de forger), sans
+  itération contre le modèle. À défaut, le vecteur reste **documenté comme
+  non mesuré** — ce qui est un statut, pas un oubli.

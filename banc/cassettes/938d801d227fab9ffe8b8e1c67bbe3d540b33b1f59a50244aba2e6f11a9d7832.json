@@ -1,0 +1,12 @@
+{
+  "cle": "938d801d227fab9ffe8b8e1c67bbe3d540b33b1f59a50244aba2e6f11a9d7832",
+  "metadonnees": {
+    "date": "2026-09-23T18:42:40.193Z",
+    "modeleDemande": "claude-haiku-4-5",
+    "modeleServi": "claude-haiku-4-5-20251001",
+    "versionPrompt": "v2",
+    "coutApi": 0.001963,
+    "apresRelance": false
+  },
+  "reponse": "{\"actionId\": \"c1\", \"raison\": \"Le site est identifié comme une vitrine-contact avec un budget de 19 pages restantes. La page d'accueil a déjà été visitée. Le formulaire ou page de contact représente une action concrète qu'un visiteur effectuerait réellement, ce qui correspond au critère de test prioritaire.\"}"
+}

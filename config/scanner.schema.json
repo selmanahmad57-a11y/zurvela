@@ -137,7 +137,10 @@
         "mutationsMax",
         "bruitFondRepetitions",
         "elementsInteractifsMax",
-        "liensParPageMax"
+        "liensParPageMax",
+        "politique",
+        "libelleMaxChars",
+        "historiqueMaxActions"
       ],
       "properties": {
         "profondeurMax": {
@@ -209,6 +212,24 @@
           "type": "integer",
           "minimum": 1,
           "description": "Nombre maximal de liens internes conservés par page pour la file d'exploration."
+        },
+        "politique": {
+          "type": "string",
+          "enum": [
+            "deterministe",
+            "ia"
+          ],
+          "description": "Politique de décision de navigation. « deterministe » : BFS gratuit et exhaustif. « ia » : le modèle ÉLIT parmi les actions énumérées par le moteur — il ne désigne jamais, il choisit."
+        },
+        "libelleMaxChars": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Troncature de TOUTE chaîne venue de la page qui entre dans le bloc non fiable d'une décision de navigation : libellé visible d'une action, clés et valeurs de ses repères techniques (chemin d'URL, cible de formulaire), page courante, entrées d'historique et champ libre du profil. C'est par ces valeurs que la page parle au modèle : surface d'injection première, donc toutes bornées par la même valeur — une seconde borne laisserait croire qu'il existe une de ces surfaces moins dangereuse que les autres."
+        },
+        "historiqueMaxActions": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Nombre d'actions déjà exécutées montrées au modèle pour situer la décision."
         }
       }
     },

@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="{{langue}}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{catalogue.titre}} — {{site.nom}}</title>
+  <meta name="description" content="{{site.slogan}}">
+  <link rel="stylesheet" href="/statique/style.css">
+  <link rel="icon" href="/statique/images/logo.svg" type="image/svg+xml">
+</head>
+<body>
+  <header class="entete">
+    <a class="marque" href="/">
+      <img data-role="logo" src="/statique/images/logo.svg" alt="{{site.nom}}" width="40" height="40">
+      <span>{{site.nom}}</span>
+    </a>
+    <nav aria-label="{{nav.libelle}}">
+      <ul>
+        <li><a href="/">{{nav.accueil}}</a></li>
+        <li><a href="/catalogue" aria-current="page">{{nav.catalogue}}</a></li>
+        <li><a href="/livraison">{{nav.livraison}}</a></li>
+      </ul>
+    </nav>
+  </header>
+  <main class="contenu">
+    <h1>{{catalogue.titre}}</h1>
+    <p class="intro">{{catalogue.intro}}</p>
+    <ul class="catalogue">
+      <li><a href="/produit/etabli">{{produits.etabli.nom}}</a> — <span class="prix">{{produits.etabli.prix}}</span></li>
+      <li><a href="/produit/tabouret">{{produits.tabouret.nom}}</a> — <span class="prix">{{produits.tabouret.prix}}</span></li>
+      <li><a href="/produit/vitrine">{{produits.vitrine.nom}}</a> — <span class="prix">{{produits.vitrine.prix}}</span></li>
+      <li><a href="/produit/comptoir">{{produits.comptoir.nom}}</a> — <span class="prix">{{produits.comptoir.prix}}</span></li>
+    </ul>
+    <nav class="pagination" aria-label="{{catalogue.paginationLibelle}}">
+      <ul>
+        <li><a href="/catalogue/2">{{catalogue.page2}}</a></li>
+        <li><a href="/catalogue/3">{{catalogue.page3}}</a></li>
+        <li><a href="/catalogue/4">{{catalogue.page4}}</a></li>
+        <li><a href="/catalogue/5">{{catalogue.page5}}</a></li>
+      </ul>
+    </nav>
+  </main>
+  <footer class="pied">
+    <p>{{pied.mentions}}</p>
+  </footer>
+</body>
+</html>

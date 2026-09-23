@@ -7,11 +7,12 @@
  * est une indisponibilité claire nommant la commande à lancer, jamais un
  * appel silencieux.
  */
-import { createHash } from 'node:crypto';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import type { ConfigProfilage } from '../scanner/config.js';
 import { VERSION } from '../../prompts/profilage/v1.js';
+import { VERSION as VERSION_NAVIGATION } from '../../prompts/navigation/v2.js';
+import { hacherEntree, normaliserUrlPourCle } from './cle.js';
 import {
   DIVERGENCE_GLISSEMENT_ALIAS,
   DIVERGENCE_PROMPT_SANS_INCREMENT,
@@ -21,40 +22,34 @@ import {
   type ClientIa,
   type ClientIaEnregistrable,
   type ContexteProfilage,
+  type DecisionEstampillee,
   type DepotCassettes,
+  type ModeIa,
   type ProfilPage,
+  type ReponseBrute,
   type ResultatIa,
 } from './index.js';
+import type { EtatDecisionEnumere } from '../types.js';
+import type { ConfigNavigation } from './config-navigation.js';
+import { decisionDepuisReponse } from './decision.js';
+import {
+  empreinteContratNavigation,
+  entreeCleDepuisEtat,
+  identifiantsEnumeres,
+  normaliserEtatDecision,
+  type EtatNormalise,
+} from './etat-decision.js';
 import { empreinteContratProfilage, profilDepuisReponse } from './profilage.js';
+import { creerValidateurDecision } from './schema-decision.js';
 import { creerValidateurProfil } from './schema-profil.js';
+
+export { normaliserUrlPourCle };
 
 /**
  * SEUL chemin d'enregistrement, explicite. Le nom vit ici parce que c'est ici
  * qu'on doit le dire à l'utilisateur au moment précis où une cassette manque.
  */
 export const COMMANDE_ENREGISTREMENT_IA = 'pnpm banc:enregistrer-ia';
-
-/**
- * Un port n'identifie pas un site : c'est une propriété de l'hôte qui le sert.
- * Le banc démarre son serveur de scénario sur le premier port libre à partir
- * d'une base ; si le port entrait dans la clé, un poste où ce port est occupé
- * ne retrouverait AUCUNE cassette du parc committé — et le message d'erreur
- * dirait « lance la commande d'enregistrement », c'est-à-dire accuserait le
- * mauvais coupable (APPRENTISSAGES n°6).
- *
- * Le reste de l'URL est conservé : protocole, hôte, chemin et paramètres
- * distinguent bel et bien deux sites. Une URL que Node ne sait pas analyser
- * est laissée telle quelle — on ne normalise que ce qu'on comprend.
- */
-export function normaliserUrlPourCle(url: string): string {
-  try {
-    const analysee = new URL(url);
-    analysee.port = '';
-    return analysee.toString();
-  } catch {
-    return url;
-  }
-}
 
 /**
  * Clé de cassette : hash(version du prompt + ALIAS de modèle + entrée
@@ -80,7 +75,7 @@ export function cleCassette(parametres: {
   contexte: ContexteProfilage;
 }): string {
   const { versionPrompt, empreinteContrat, modele, contexte } = parametres;
-  const entree = JSON.stringify([
+  return hacherEntree([
     versionPrompt,
     empreinteContrat,
     modele,
@@ -88,7 +83,32 @@ export function cleCassette(parametres: {
     contexte.texte,
     contexte.langueDeclaree,
   ]);
-  return createHash('sha256').update(entree, 'utf8').digest('hex');
+}
+
+/**
+ * Clé d'une cassette de DÉCISION : hash(version du prompt de navigation +
+ * empreinte de contrat + ALIAS de modèle + état énuméré NORMALISÉ).
+ *
+ * Une cassette PAR DÉCISION, et non par scan : c'est le prix du déterminisme
+ * d'un instrument qui mesure désormais un chemin, pas un classement.
+ *
+ * Tout repose sur la normalisation (`normaliserEtatDecision`) : les pages du
+ * banc sont déterministes, donc les états le sont, donc les clés doivent
+ * l'être. Un état équivalent construit dans un autre ordre — actions
+ * énumérées dans un ordre différent, repères écrits dans un autre ordre de
+ * clés — donne la MÊME clé, parce que le prompt qu'il produit est le même
+ * caractère pour caractère. Une énumération réellement différente en donne une
+ * autre, et la cassette manquante est alors un échec BRUYANT, jamais un appel
+ * réseau glissé dans une notation.
+ */
+export function cleCassetteDecision(parametres: {
+  versionPrompt: string;
+  empreinteContrat: string;
+  modele: string;
+  etat: EtatNormalise;
+}): string {
+  const { versionPrompt, empreinteContrat, modele, etat } = parametres;
+  return hacherEntree([versionPrompt, empreinteContrat, modele, ...entreeCleDepuisEtat(etat)]);
 }
 
 /** Dépôt sur disque : une cassette par fichier, JSON lisible, committé. */
@@ -167,12 +187,30 @@ function estAbsent(erreur: unknown): boolean {
   return typeof erreur === 'object' && erreur !== null && (erreur as { code?: unknown }).code === 'ENOENT';
 }
 
+/**
+ * Ce que le rejeu d'une DÉCISION a besoin de savoir. Champ REQUIS de
+ * `OptionsRejeu` — délibérément, pas par commodité.
+ *
+ * Le contrat de la brique est ADDITIF : rien n'obligeait le compilateur à
+ * signaler qu'un client rejouable laissé tel quel ne rejouerait aucune
+ * décision. Le rendre requis crée le trou que le typecheck suivra
+ * (APPRENTISSAGES n°7) : impossible de câbler la politique IA en oubliant le
+ * parc de cassettes qui la rend mesurable.
+ */
+export interface OptionsDecisionRejeu {
+  /** ALIAS du modèle de navigation (`ia.modeles.navigation`) : il entre dans la clé. */
+  modele: string;
+  config: ConfigNavigation;
+}
+
 export interface OptionsRejeu {
   /** true UNIQUEMENT depuis la commande d'enregistrement : c'est le seul mode qui appelle le modèle. */
   enregistrement: boolean;
   /** Modèle attendu : il entre dans la clé, donc changer de modèle change de cassette. */
   modele: string;
   profilage: ConfigProfilage;
+  /** Réglages du rejeu des décisions de navigation (brique 4b). */
+  decision: OptionsDecisionRejeu;
   journaliser?: (type: string, details?: unknown) => void;
   /** Horloge injectable : la date d'enregistrement est une métadonnée, pas un comportement. */
   maintenant?: () => Date;
@@ -195,11 +233,12 @@ export function clientRejouable(
   depot: DepotCassettes,
   options: OptionsRejeu,
 ): ClientIa {
-  const { enregistrement, modele, profilage } = options;
+  const { enregistrement, modele, profilage, decision } = options;
   const journaliser = options.journaliser ?? (() => undefined);
   const maintenant = options.maintenant ?? (() => new Date());
   const validateur = creerValidateurProfil(profilage);
   const empreinteContrat = empreinteContratProfilage(profilage);
+  const empreinteNavigation = empreinteContratNavigation(decision.config);
 
   const enProfil = (cassette: Cassette): ResultatIa<ProfilPage> =>
     profilDepuisReponse({
@@ -215,69 +254,154 @@ export function clientRejouable(
       coutApi: cassette.metadonnees.coutApi,
     });
 
+  /**
+   * Rejeu générique d'une sortie IA : lecture de cassette, rejeu, absence,
+   * enregistrement. Le profilage (4a) et la décision (4b) le partagent — même
+   * garde réseau, même garde d'écriture, mêmes événements de journal. Les
+   * mécaniques de 4a sont RÉUTILISÉES, pas réécrites : une seconde copie
+   * dériverait, et c'est la première qui porte la garde réseau.
+   */
+  async function rejouer<T>(parametres: {
+    cle: string;
+    modele: string;
+    versionPrompt: string;
+    /** Transforme une cassette (rejouée ou fraîche) en valeur métier estampillée. */
+    enValeur: (cassette: Cassette) => ResultatIa<T>;
+    /** N'est appelé QUE par le mode enregistrement : c'est le seul chemin réseau. */
+    appelerBrut: () => Promise<ResultatIa<ReponseBrute>>;
+  }): Promise<ResultatIa<T>> {
+    const { cle, modele: alias, versionPrompt, enValeur, appelerBrut } = parametres;
+    let cassette: Cassette | null;
+    try {
+      cassette = await depot.lire(cle);
+    } catch (erreur) {
+      // Une cassette corrompue doit être BRUYANTE au journal, mais ne tue
+      // jamais un scan : le moteur continue sans IA.
+      journaliser('ia.cassette.illisible', { cle, erreur: String(erreur) });
+      return { disponible: false, raison: RAISON_CASSETTE_ILLISIBLE, message: `cassette ${cle} illisible` };
+    }
+
+    if (cassette !== null) {
+      journaliser('ia.cassette.rejouee', {
+        cle,
+        modeleDemande: cassette.metadonnees.modeleDemande,
+        modeleServi: cassette.metadonnees.modeleServi,
+        versionPrompt,
+      });
+      return enValeur(cassette);
+    }
+
+    if (!enregistrement) {
+      journaliser('ia.cassette.absente', { cle, commande: COMMANDE_ENREGISTREMENT_IA });
+      return {
+        disponible: false,
+        raison: RAISON_CASSETTE_ABSENTE,
+        message: `aucune cassette ${cle} (prompt ${versionPrompt}, modèle ${alias}) ; lance ${COMMANDE_ENREGISTREMENT_IA}`,
+      };
+    }
+
+    const brut = await appelerBrut();
+    if (!brut.disponible) {
+      journaliser('ia.enregistrement.echec', { cle, raison: brut.raison, message: brut.message });
+      return brut;
+    }
+    const enregistree: Cassette = {
+      cle,
+      metadonnees: {
+        date: maintenant().toISOString(),
+        modeleDemande: alias,
+        modeleServi: brut.valeur.modeleServi,
+        versionPrompt,
+        coutApi: brut.valeur.coutApi,
+        apresRelance: brut.valeur.apresRelance,
+      },
+      reponse: brut.valeur.texte,
+    };
+    await depot.ecrire(enregistree);
+    journaliser('ia.cassette.enregistree', {
+      cle,
+      coutApi: brut.valeur.coutApi,
+      modeleDemande: alias,
+      modeleServi: brut.valeur.modeleServi,
+    });
+    return enValeur(enregistree);
+  }
+
+  // Le MODE d'un client rejouable est celui de ce qu'il peut RÉELLEMENT
+  // servir, et non celui du client qu'il décore.
+  //
+  // En REJEU pur (`enregistrement: false`), la capacité, c'est le DÉPÔT : le
+  // client décoré n'est jamais appelé pour `profiler` ni `decider`, et une
+  // cassette manquante devient une indisponibilité PAR APPEL — bruyante,
+  // nommée, et rattrapée par le repli. Recopier ici le mode du client décoré
+  // ferait dire au moteur « l'IA est indisponible d'emblée » alors que tout le
+  // parc est là. Sans conséquence tant que personne ne lisait `mode` ; depuis
+  // la brique 4b, c'est lui qui décide de la politique de navigation, et un
+  // scan entier basculerait en déterministe sans qu'aucune cassette n'ait
+  // manqué : une mesure verte du comportement par défaut publiée sous
+  // l'étiquette de l'autre politique — le diagnostic faux de
+  // l'apprentissage n°6, exactement.
+  //
+  // En ENREGISTREMENT, le réseau est le chemin nominal : le mode reste celui
+  // du client concret (pas de clé, pas d'enregistrement possible).
+  const mode: ModeIa = enregistrement ? client.mode : 'actif';
+  const raisonDegrade = enregistrement ? client.raisonDegrade : null;
+
   return {
-    mode: client.mode,
-    raisonDegrade: client.raisonDegrade,
-    decider: client.decider.bind(client),
+    mode,
+    raisonDegrade,
     diagnostiquer: client.diagnostiquer.bind(client),
     rediger: client.rediger.bind(client),
 
-    async profiler(contexte): Promise<ResultatIa<ProfilPage>> {
-      const cle = cleCassette({ versionPrompt: VERSION, empreinteContrat, modele, contexte });
-      let cassette: Cassette | null;
-      try {
-        cassette = await depot.lire(cle);
-      } catch (erreur) {
-        // Une cassette corrompue doit être BRUYANTE au journal, mais ne tue
-        // jamais un scan : le moteur continue sans IA.
-        journaliser('ia.cassette.illisible', { cle, erreur: String(erreur) });
-        return { disponible: false, raison: RAISON_CASSETTE_ILLISIBLE, message: `cassette ${cle} illisible` };
-      }
+    profiler: (contexte) =>
+      rejouer({
+        cle: cleCassette({ versionPrompt: VERSION, empreinteContrat, modele, contexte }),
+        modele,
+        versionPrompt: VERSION,
+        enValeur: enProfil,
+        appelerBrut: () => client.profilerBrut(contexte),
+      }),
 
-      if (cassette !== null) {
-        journaliser('ia.cassette.rejouee', {
-          cle,
-          modeleDemande: cassette.metadonnees.modeleDemande,
-          modeleServi: cassette.metadonnees.modeleServi,
-          versionPrompt: VERSION,
-        });
-        return enProfil(cassette);
-      }
-
-      if (!enregistrement) {
-        journaliser('ia.cassette.absente', { cle, commande: COMMANDE_ENREGISTREMENT_IA });
-        return {
-          disponible: false,
-          raison: RAISON_CASSETTE_ABSENTE,
-          message: `aucune cassette ${cle} (prompt ${VERSION}, modèle ${modele}) ; lance ${COMMANDE_ENREGISTREMENT_IA}`,
-        };
-      }
-
-      const brut = await client.profilerBrut(contexte);
-      if (!brut.disponible) {
-        journaliser('ia.enregistrement.echec', { cle, raison: brut.raison, message: brut.message });
-        return brut;
-      }
-      const enregistree: Cassette = {
-        cle,
-        metadonnees: {
-          date: maintenant().toISOString(),
-          modeleDemande: modele,
-          modeleServi: brut.valeur.modeleServi,
-          versionPrompt: VERSION,
-          coutApi: brut.valeur.coutApi,
-          apresRelance: brut.valeur.apresRelance,
-        },
-        reponse: brut.valeur.texte,
-      };
-      await depot.ecrire(enregistree);
-      journaliser('ia.cassette.enregistree', {
-        cle,
-        coutApi: brut.valeur.coutApi,
-        modeleDemande: modele,
-        modeleServi: brut.valeur.modeleServi,
+    /**
+     * Une cassette PAR DÉCISION.
+     *
+     * Deux choses se jouent ici. D'abord la clé : elle est calculée sur l'état
+     * NORMALISÉ, celui-là même qui sera affiché au modèle — une cassette ne
+     * peut donc pas être rejouée sur un prompt voisin.
+     *
+     * Ensuite le validateur, construit sur l'énumération DU MOMENT et non sur
+     * celle qui régnait à l'enregistrement : une réponse figée dont
+     * l'identifiant n'appartient plus au menu est rejetée au rejeu comme elle
+     * l'aurait été à chaud. Le rejeu ne s'accorde aucune tolérance que la
+     * production n'a pas — sans quoi l'instrument mesurerait un moteur plus
+     * permissif que le vrai.
+     */
+    decider: (etat: EtatDecisionEnumere) => {
+      const etatNormalise = normaliserEtatDecision(etat, decision.config);
+      const validateurDecision = creerValidateurDecision(identifiantsEnumeres(etatNormalise));
+      return rejouer<DecisionEstampillee>({
+        cle: cleCassetteDecision({
+          versionPrompt: VERSION_NAVIGATION,
+          empreinteContrat: empreinteNavigation,
+          modele: decision.modele,
+          etat: etatNormalise,
+        }),
+        modele: decision.modele,
+        versionPrompt: VERSION_NAVIGATION,
+        enValeur: (cassette) =>
+          decisionDepuisReponse({
+            texte: cassette.reponse,
+            validateur: validateurDecision,
+            // Les DEUX modèles sont rejoués depuis la cassette : une décision
+            // rejouée doit dire quel modèle a réellement produit la réponse,
+            // pas celui que la config demande aujourd'hui.
+            modeleDemande: cassette.metadonnees.modeleDemande,
+            modeleServi: cassette.metadonnees.modeleServi,
+            apresRelance: cassette.metadonnees.apresRelance,
+            coutApi: cassette.metadonnees.coutApi,
+          }),
+        appelerBrut: () => client.deciderBrut(etatNormalise),
       });
-      return enProfil(enregistree);
     },
   };
 }

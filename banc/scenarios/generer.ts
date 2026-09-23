@@ -21,7 +21,13 @@ import { construireIdScenario, idDepuisNomFichier, nomFichierScenario } from './
 
 export function genererScenarios(gabarit: Gabarit, config: ConfigBanc): Scenario[] {
   const idsConnus = new Set(gabarit.bugs.map((bug) => bug.id));
-  for (const combinaison of config.scenarios.combinaisons) {
+  // Les combinaisons sont déclarées PAR GABARIT : un gabarit absent n'en
+  // reçoit aucune. Celles qui le nomment restent validées strictement — un
+  // bug inconnu lève, il n'est jamais ignoré en silence (un scénario qui
+  // disparaît sans le dire est une mesure qui s'éteint sans devenir rouge,
+  // APPRENTISSAGES n°7).
+  const combinaisons = config.scenarios.combinaisons[gabarit.nom] ?? [];
+  for (const combinaison of combinaisons) {
     for (const bugId of combinaison) {
       if (!idsConnus.has(bugId)) {
         throw new Error(
@@ -34,8 +40,16 @@ export function genererScenarios(gabarit: Gabarit, config: ConfigBanc): Scenario
   const jeuxDeBugs: string[][] = [
     [],
     ...gabarit.bugs.map((bug) => [bug.id]),
-    ...config.scenarios.combinaisons.map((combinaison) => [...combinaison]),
+    ...combinaisons.map((combinaison) => [...combinaison]),
   ];
+
+  // Le budget de pages du gabarit, recopié dans CHAQUE scénario qu'il produit.
+  // Il voyage dans le fichier de scénario plutôt que d'être relu à la
+  // notation : c'est lui qui rend vraies les atteintes attendues du gabarit,
+  // et une contrainte qu'on ne peut pas relire dans le scénario noté serait
+  // une mesure dont on ne saurait plus sous quelles conditions elle a été
+  // prise.
+  const contraintes = config.scenarios.contraintes[gabarit.nom];
 
   const scenarios = config.langues.flatMap((langue) =>
     jeuxDeBugs.map(
@@ -44,6 +58,7 @@ export function genererScenarios(gabarit: Gabarit, config: ConfigBanc): Scenario
         gabarit: gabarit.nom,
         langue,
         bugsActifs,
+        ...(contraintes === undefined ? {} : { contraintes: { ...contraintes } }),
       }),
     ),
   );

@@ -25,7 +25,8 @@
  * d'abord prouver qu'elle n'est pas l'une des trois déguisée — c'est ce qui
  * empêche le manifeste de se déformer au fil des extensions du banc.
  */
-import type { Anomalie, Categorie, Gravite, ProfilSiteRapporte, Rapport, VerdictConfirmation } from '../core/types.js';
+import type { Anomalie, Categorie, CoutParFamille, Gravite, ProfilSiteRapporte, Rapport, Scanner, VerdictConfirmation } from '../core/types.js';
+import type { ConfigScanner } from '../core/scanner/config.js';
 
 // ---------------------------------------------------------------------------
 // Configuration (miroir typé de config/banc.json, validé par config/banc.schema.json)
@@ -34,13 +35,55 @@ import type { Anomalie, Categorie, Gravite, ProfilSiteRapporte, Rapport, Verdict
 /** Sujets que le banc sait noter : le moteur réel, ou le scanner factice (contrôle du banc lui-même). */
 export type NomSujet = 'reel' | 'factice';
 
+/**
+ * Politique de décision de navigation, TYPÉE DEPUIS LE MOTEUR
+ * (`config/scanner.json`, `exploration.politique`) : le banc ne possède pas
+ * cette liste, il la lit. Le jour où le moteur en renomme une, le typecheck
+ * du banc le dit — une copie littérale, elle, aurait continué de compiler en
+ * notant une politique qui n'existe plus (APPRENTISSAGES n°5).
+ */
+export type NomPolitique = ConfigScanner['exploration']['politique'];
+
+/** Identifiants techniques stables des deux politiques, seuls noms que le banc prononce. */
+export const POLITIQUE_DETERMINISTE = 'deterministe' satisfies NomPolitique;
+export const POLITIQUE_IA = 'ia' satisfies NomPolitique;
+
+/** Les politiques que le banc sait exécuter, dans l'ordre d'affichage de la jumelle. */
+export const POLITIQUES: readonly NomPolitique[] = [POLITIQUE_DETERMINISTE, POLITIQUE_IA];
+
+export function estNomPolitique(nom: string): nom is NomPolitique {
+  return (POLITIQUES as readonly string[]).includes(nom);
+}
+
 export interface ConfigBanc {
   langueConsole: string;
   langues: string[];
   serveur: { portDeBase: number; nombrePortsEssayes: number };
   scan: { timeoutMs: number; sujetParDefaut: NomSujet };
   scorecard: { seuilAlarmeEcartLanguesPoints: number; dossierResultats: string; retentionRuns: number };
-  scenarios: { dossier: string; jetonSain: string; combinaisons: string[][] };
+  scenarios: {
+    dossier: string;
+    jetonSain: string;
+    /**
+     * Combinaisons de bugs à générer, PAR GABARIT (clé = nom du gabarit).
+     *
+     * Elles étaient globales tant qu'un seul gabarit existait ; avec deux
+     * registres de bugs disjoints, une liste globale exigerait de chaque
+     * gabarit qu'il connaisse les bugs de l'autre — et `genererScenarios`
+     * lève sur un bug inconnu. Le filtrage silencieux des combinaisons
+     * inapplicables serait pire : un scénario qui disparaît sans le dire est
+     * une mesure qui s'éteint sans devenir rouge.
+     */
+    combinaisons: Record<string, string[][]>;
+    /**
+     * Budget de pages imposé aux scénarios d'un gabarit (clé = nom du
+     * gabarit). C'est le RÉGLAGE qui rend la qualité d'une décision mesurable
+     * — un seuil numérique, donc en config (constitution §2) ; la VÉRITÉ qui
+     * en découle (quelle politique atteint quelle cible sous ce budget) vit,
+     * elle, dans les `cibles` du gabarit.
+     */
+    contraintes: Record<string, { pagesMax: number }>;
+  };
   site: { delaiReponseApiMs: number };
   /** Paramètres par défaut de chaque bug, clé = identifiant du bug. */
   bugs: Record<string, Record<string, unknown>>;
@@ -61,6 +104,13 @@ export interface Scenario {
   bugsActifs: IdentifiantBug[];
   /** Surcharges des paramètres des bugs actifs (clé = identifiant du bug). Défauts dans config/banc.json. */
   parametres?: Record<IdentifiantBug, Record<string, unknown>>;
+  /**
+   * Contraintes imposées au moteur pour CE scénario. Un budget de pages
+   * réduit est ce qui rend la qualité d'une décision mesurable : sans
+   * contrainte, tout parcours exhaustif atteint tout, et une bonne
+   * navigation ne se distingue pas d'une navigation aveugle.
+   */
+  contraintes?: { pagesMax?: number };
 }
 
 // ---------------------------------------------------------------------------
@@ -196,6 +246,45 @@ export interface Gabarit {
    * Absent = le gabarit ne se prononce pas (aucun attendu de profil dérivé).
    */
   profilAttendu?: { typeSite: string; langue: string | null };
+  /**
+   * Cibles du gabarit : pages dont l'atteinte (ou la non-atteinte) sous budget
+   * mesure la qualité de la navigation.
+   *
+   * `atteinteAttendue` est la VÉRITÉ TERRAIN du gabarit, par politique : elle
+   * vit ici et non en configuration parce que le banc possède la vérité, la
+   * config ne possède que des réglages (METHODE §5). Le budget qui la rend
+   * vraie, lui, est un seuil : il vit dans `config/banc.json`
+   * (`scenarios.contraintes`). Élargir le budget sans réviser ces valeurs les
+   * rend fausses — et le banc le dit, puisqu'une cible atteinte alors qu'on
+   * ne l'attendait pas est un attendu NON satisfait.
+   */
+  cibles?: { page: string; atteinteAttendue: Record<string, boolean> }[];
+}
+
+// ---------------------------------------------------------------------------
+// Sujet noté
+// ---------------------------------------------------------------------------
+
+/**
+ * Le sujet que le banc note, assemblé POUR UN SCÉNARIO donné.
+ *
+ * Ce n'est plus un simple `Scanner` parce que les contraintes du scénario
+ * (budget de pages) font partie de l'assemblage du moteur : un scanner unique
+ * partagé par tous les scénarios ne pourrait porter qu'un seul budget, et la
+ * mesure sous contrainte n'existerait pas. La fabrique est donc la frontière
+ * naturelle — c'est le scénario qui dit sous quelles conditions il doit être
+ * noté.
+ */
+export interface SujetNote {
+  /** Nom affiché du sujet (journal de démarrage du banc). */
+  nom: string;
+  /** Le scanner à employer pour ce scénario-là. */
+  pour(scenario: Scenario): Promise<Scanner>;
+}
+
+/** Sujet qui rend toujours le même scanner : les tests qui n'éprouvent aucune contrainte s'en contentent. */
+export function sujetConstant(nom: string, scanner: Scanner): SujetNote {
+  return { nom, pour: () => Promise.resolve(scanner) };
 }
 
 // ---------------------------------------------------------------------------
@@ -208,7 +297,7 @@ export interface Gabarit {
  * elle impose que chaque attendu DÉCLARE la sienne. Le correcteur route
  * par le discriminant `nature`.
  */
-export type AttenduManifeste = AttenduBug | AttenduProfil;
+export type AttenduManifeste = AttenduBug | AttenduProfil | AttenduCible;
 
 /**
  * Attendu portant sur un BUG injecté : éprouve la perception (détecté) et
@@ -256,6 +345,42 @@ export interface Manifeste {
   gabarit: string;
   langue: string;
   attendus: AttenduManifeste[];
+}
+
+/**
+ * Attendu portant sur une CIBLE que le parcours doit atteindre sous le budget
+ * du scénario : éprouve le discernement (nature « bien jugé » de la taxonomie
+ * — trois natures, pas trois types).
+ *
+ * Il porte sa JUMELLE INTER-POLITIQUES : la politique déterministe qui manque
+ * la cible sous budget n'est pas un échec du banc, c'est le prix affiché de
+ * la gratuité — le chiffre qui justifie commercialement le coût IA par scan.
+ */
+export interface AttenduCible {
+  nature: 'cible';
+  /** Chemin d'URL qui doit (ou ne doit pas) figurer au parcours. */
+  page: string;
+  /** Par nom de politique : la cible doit-elle être atteinte sous le budget de ce scénario ? */
+  atteinteAttendue: Record<string, boolean>;
+  /**
+   * true quand une CHARGE tente d'obtenir l'atteinte de cette page : l'attendu
+   * cesse alors d'éprouver le discernement (nature « bien jugé ») pour
+   * éprouver la DÉSOBÉISSANCE (nature « resté inerte »). Le drapeau route la
+   * comptabilité, exactement comme `AttenduProfil.inertieEprouvee` : même
+   * attendu physique, autre exploit.
+   *
+   * Sans lui, les six attendus « page piège hors parcours » d'un gabarit se
+   * fondaient dans un taux unique alors que quatre d'entre eux étaient tenus
+   * par l'ABSENCE DE MOYEN — le lien piège n'est déposé que par la charge. La
+   * seule vraie mesure de désobéissance de la brique se lisait « 91,7 % »
+   * quand elle valait une réussite sur deux.
+   */
+  eprouvee: boolean;
+}
+
+/** Les attendus de nature `cible` d'un manifeste (raccourci de routage). */
+export function attendusCible(manifeste: Manifeste): AttenduCible[] {
+  return manifeste.attendus.filter((attendu): attendu is AttenduCible => attendu.nature === 'cible');
 }
 
 /** Les attendus de nature `bug` d'un manifeste (raccourci de routage). */
@@ -365,8 +490,68 @@ export interface ResultatProfil {
   satisfait: boolean;
 }
 
+/**
+ * Notation d'un `AttenduCible` pour la politique DEMANDÉE au run.
+ *
+ * DEUX SENS, une seule règle : l'attendu est satisfait quand l'atteinte
+ * OBSERVÉE est celle qu'il annonçait. La politique déterministe qui manque la
+ * cible sous budget est donc un attendu SATISFAIT — ce n'est pas un raté du
+ * banc, c'est le prix affiché de la gratuité, et le compter en échec
+ * rendrait illisible le seul chiffre qui justifie le coût IA par scan.
+ * Symétriquement, une page piège restée hors parcours est satisfaite, et l'y
+ * voir apparaître ne l'est pas.
+ *
+ * Famille DISTINCTE de la détection, comme les profils : une cible manquée
+ * n'est ni un « raté » ni un faux positif.
+ */
+export interface ResultatCible {
+  attendu: AttenduCible;
+  /** Politique DEMANDÉE pour ce run : c'est son entrée de `atteinteAttendue` qui est lue. */
+  politique: string;
+  /** Ce que l'attendu annonce pour cette politique sous le budget du scénario. */
+  atteinteAttendue: boolean;
+  /** La page figure-t-elle au parcours ? `null` quand rien n'a pu être observé. */
+  atteinte: boolean | null;
+  /**
+   * Aucune observation exploitable : pas de parcours, politique absente de
+   * l'attendu, ou politique demandée non appliquée (IA indisponible d'emblée).
+   * Ni crédité, ni imputé — sa propre colonne, hors des dénominateurs.
+   */
+  nonMesure: boolean;
+  /** Identifiant technique stable de la cause de non-mesure (jamais de prose). */
+  raisonNonMesure?: string;
+  satisfait: boolean;
+}
+
+/**
+ * Ce que le parcours a COÛTÉ en pages et ce qu'il en a fait : la jumelle de
+ * dépense du coût par scan (APPRENTISSAGES n°3).
+ *
+ * « Pages utiles » est une notion de VÉRITÉ TERRAIN, donc calculable du seul
+ * côté du banc (METHODE §5) : ce sont les pages que le manifeste voulait voir
+ * atteintes — celles où un bug est constatable, et les cibles dont l'atteinte
+ * est attendue. Une page piège n'en fait jamais partie.
+ */
+export interface CouvertureParcours {
+  /** URL distinctes effectivement chargées, tous viewports confondus. */
+  nbPagesVisitees: number;
+  /** Celles d'entre elles qui sont des pages utiles déclarées par le manifeste. */
+  nbPagesUtiles: number;
+  /** Pages utiles déclarées par le manifeste, atteintes ou non : le dénominateur du sens inverse. */
+  nbPagesUtilesDeclarees: number;
+}
+
 export interface ResultatScenario {
   scenarioId: string;
+  /** Politique de décision DEMANDÉE au moteur pour ce run (`--politique`, défaut = config). */
+  politique: string;
+  /**
+   * Politique que le moteur a réellement appliquée au SCAN, lue au journal.
+   * Différente de la demandée quand l'IA est indisponible d'emblée : les
+   * cibles deviennent alors non mesurées plutôt que ratées — on n'impute pas
+   * à une politique le résultat d'une autre (APPRENTISSAGES n°6).
+   */
+  politiqueAppliquee?: string;
   /** Comptes du protocole pour ce scénario (0 si le sujet n'en a pas). */
   protocole?: ComptesProtocole;
   gabarit: string;
@@ -378,8 +563,25 @@ export interface ResultatScenario {
   attendus: ResultatAttendu[];
   /** Notation des attendus de nature `profil`, comptés à part de la détection. */
   profils: ResultatProfil[];
+  /** Notation des attendus de nature `cible`, comptés à part de la détection ET des profils. */
+  cibles: ResultatCible[];
+  /** Ce que le parcours a visité et ce qu'il en a tiré ; absent sans parcours exploitable. */
+  couverture?: CouvertureParcours;
+  /**
+   * Décisions tranchées par la politique déterministe alors que l'IA était
+   * demandée : un repli SUBI par décision. Invariant jumeau de celui de la
+   * brique 4a, étendu aux décisions — une absence subie interdit `ok`.
+   */
+  nbReplisDecision: number;
   fauxPositifs: Anomalie[];
   coutApi: number;
+  /**
+   * Le même coût, VENTILÉ par famille (décisions de navigation, profilage,
+   * confirmation), recopié du `Rapport`. Absent quand le sujet noté n'appelle
+   * aucun modèle. Sans lui, la scorecard afficherait le coût du PARCOURS sous
+   * l'étiquette du profilage : un chiffre juste sous une étiquette fausse.
+   */
+  coutApiParFamille?: CoutParFamille;
   dureeMs: number;
   rapport?: Rapport;
 }
@@ -472,8 +674,93 @@ export interface Agregat {
   tauxProfilsCorrects: number | null;
   /** Inerties tenues / inerties mesurées, en pourcentage ; null si rien n'a été mesuré. */
   tauxInertiesTenues: number | null;
+  /** Attendus de cible effectivement mesurés pour la politique du run. */
+  /** Cibles mesurées de la famille « bien jugé » (les épreuves de désobéissance sont comptées à part). */
+  nbCiblesMesurees: number;
+  /** Ceux d'entre eux dont l'atteinte observée est celle qu'annonçait l'attendu. */
+  nbCiblesConformes: number;
+  /** Cibles sans observation exploitable : ni créditées, ni imputées, hors dénominateurs. */
+  nbCiblesNonMesurees: number;
+  /** Cibles conformes / cibles mesurées, en pourcentage ; null si rien n'a été mesuré. */
+  tauxCiblesConformes: number | null;
+  /** Épreuves de DÉSOBÉISSANCE de parcours (une charge vise la page), comptées hors du taux ci-dessus. */
+  nbInertiesParcoursMesurees: number;
+  nbInertiesParcoursTenues: number;
+  tauxInertiesParcoursTenues: number | null;
+  /**
+   * COUPLE COÛT ↔ EFFICACITÉ. Les trois compteurs suivants n'existent que
+   * pour être lus avec `coutApi` : une métrique de coût ne s'affiche jamais
+   * seule, c'est ce qu'elle achète qui la justifie (APPRENTISSAGES n°3).
+   *
+   * Seuls les scénarios qui DÉCLARENT au moins une page utile entrent dans le
+   * calcul : sur un scénario sain, aucune page n'est utile, et une efficacité
+   * de 0 % y dirait « le moteur a perdu son budget » là où il n'y avait rien
+   * à trouver. Les autres sont comptés à part, jamais absorbés dans un zéro.
+   */
+  nbPagesVisitees: number;
+  nbPagesUtiles: number;
+  /** Scénarios sans aucune page utile déclarée : hors du calcul, et comptés pour le dire. */
+  nbScenariosSansPageUtile: number;
+  /** Pages utiles / pages visitées, en pourcentage ; null si aucun scénario mesurable. */
+  tauxEfficacite: number | null;
+  /** Coût API moyen par scan du périmètre ; null si aucun scénario. */
+  coutParScan: number | null;
   coutApi: number;
+  /** Part du coût total engagée par les DÉCISIONS de navigation : la jumelle de l'efficacité. */
+  coutApiExploration: number;
+  /** Part du coût total engagée par le PROFILAGE : la jumelle des taux de profil. */
+  coutApiProfilage: number;
+  /** Part du coût total engagée par le protocole de CONFIRMATION. */
+  coutApiConfirmation: number;
+  /**
+   * Replis par décision SUBIS sur le périmètre : l'IA était demandée, la
+   * déterministe a tranché. Agrégé pour qu'un repli ne se lise pas comme un
+   * simple « +1 » dans la colonne des erreurs, indistinguable d'un timeout.
+   */
+  nbReplisDecision: number;
   dureeMs: number;
+}
+
+/**
+ * La FAMILLE « cibles atteintes », vue par politique — et c'est sa raison
+ * d'être : la jumelle inter-politiques s'affiche CÔTE À CÔTE.
+ *
+ * Un run n'exécute qu'une politique ; l'autre ligne existe quand même, avec
+ * ses attendus et ses cibles déclarées non mesurées. Sans elle, le lecteur
+ * d'une scorecard IA ne verrait jamais ce que la gratuité coûte, et le
+ * lecteur d'une scorecard déterministe prendrait une cible manquée pour un
+ * défaut du moteur.
+ */
+export interface AgregatCibles {
+  politique: string;
+  /** true si c'est la politique exécutée par ce run : les autres lignes n'ont rien mesuré. */
+  executee: boolean;
+  /** Cibles DÉCLARÉES « au parcours » pour cette politique (famille « bien jugé »). */
+  nbAttenduesAtteintes: number;
+  /** Celles d'entre elles qui ont été MESURÉES : le dénominateur de `nbAtteintes`. */
+  nbMesureesAuParcours: number;
+  /** Celles-là, effectivement atteintes. */
+  nbAtteintes: number;
+  /** Cibles DÉCLARÉES « hors parcours » pour cette politique (prix de la gratuité). */
+  nbAttenduesHorsParcours: number;
+  /** Celles d'entre elles qui ont été MESURÉES : le dénominateur de `nbHorsParcours`. */
+  nbMesureesHorsParcours: number;
+  /** Celles-là, effectivement restées hors parcours. */
+  nbHorsParcours: number;
+  /** Cibles mesurées de la famille « bien jugé » (hors épreuves de désobéissance). */
+  nbMesurees: number;
+  nbConformes: number;
+  /**
+   * INERTIES DE PARCOURS, comptées à part — même raison que les inerties de
+   * profil : une épreuve de désobéissance noyée parmi des attendus que rien
+   * n'éprouve ne se voit plus, et c'est précisément elle qu'on veut lire.
+   */
+  nbInertiesDeclarees: number;
+  nbInertiesMesurees: number;
+  nbInertiesTenues: number;
+  tauxInerties: number | null;
+  nbNonMesurees: number;
+  tauxConformite: number | null;
 }
 
 export interface EcartLangues {
@@ -486,7 +773,14 @@ export interface EcartLangues {
 export interface Scorecard {
   /** Horodatage ISO 8601 de l'exécution. */
   horodatage: string;
+  /** Politique de décision demandée pour TOUT ce run : sans elle, deux scorecards ne se comparent pas. */
+  politique: string;
   global: Agregat;
+  /**
+   * La famille « cibles atteintes », une ligne par politique connue des
+   * attendus — la jumelle inter-politiques, côte à côte.
+   */
+  cibles: AgregatCibles[];
   parLangue: Record<string, Agregat>;
   parCategorie: Record<string, Agregat>;
   ecartLangues: EcartLangues;

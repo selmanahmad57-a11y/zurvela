@@ -10,9 +10,13 @@
 import { describe, expect, it } from 'vitest';
 import { COMMANDE_ENREGISTREMENT_IA, RAISON_CASSETTE_ABSENTE, type DepotCassettes } from '../core/ia/index.js';
 import { chargerConfigScanner } from '../core/scanner/config.js';
+import type { Rapport } from '../core/types.js';
 import { RAISON_BANC_REJEU_SEUL, RAISON_BANC_SANS_IA, creerClientIaBanc, tarifsConfigures } from './ia.js';
 
 const CONTEXTE = { url: 'http://127.0.0.1:4800/', texte: 'contenu de page', langueDeclaree: 'fr' };
+
+/** Rapport minimal : sert uniquement à interroger une fonction que le décorateur ne rejoue pas. */
+const RAPPORT_VIDE: Rapport = { url: CONTEXTE.url, anomalies: [], coutApi: 0, dureeMs: 0, journal: [] };
 
 /** Dépôt VIDE qui refuse d'écrire : toute tentative d'enregistrement échoue bruyamment dans un test. */
 const depotVide: DepotCassettes = {
@@ -25,8 +29,20 @@ const depotVide: DepotCassettes = {
 describe('creerClientIaBanc — régime rejeu (le défaut de `pnpm banc`)', () => {
   it('décore un client SANS CAPACITÉ : la garde réseau est une absence de moyen, pas une promesse', async () => {
     const { client } = await creerClientIaBanc({ regime: 'rejeu', depot: depotVide });
-    expect(client.mode).toBe('degrade');
-    expect(client.raisonDegrade).toBe(RAISON_BANC_REJEU_SEUL);
+    // Le mode annonce ce que le client PEUT SERVIR — ici le dépôt de
+    // cassettes, pas le réseau —, et c'est lui que le moteur lit pour choisir
+    // sa politique de navigation (brique 4b) : un run de rejeu doit pouvoir
+    // mesurer la politique IA, sinon il mesurerait la déterministe sous
+    // l'étiquette de l'autre. L'absence de moyen d'appeler, elle, se prouve
+    // par les deux tests suivants : cassette manquante = indisponibilité
+    // nommée, et jamais la moindre écriture.
+    expect(client.mode).toBe('actif');
+    expect(client.raisonDegrade).toBeNull();
+    // Le client DÉCORÉ, lui, n'a bien aucune capacité propre. Les fonctions
+    // que le décorateur ne rejoue PAS tombent directement sur lui, et elles
+    // répondent « rejeu seul » : la capacité vient du dépôt, d'aucun moyen
+    // d'appeler.
+    await expect(client.rediger(RAPPORT_VIDE, 'fr')).resolves.toMatchObject({ disponible: false, raison: RAISON_BANC_REJEU_SEUL });
   });
 
   it('rend une indisponibilité CLAIRE quand la cassette manque, en nommant la commande à lancer', async () => {

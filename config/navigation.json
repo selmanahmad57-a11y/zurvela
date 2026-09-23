@@ -1,0 +1,6 @@
+{
+  "$schema": "./navigation.schema.json",
+  "$commentaire": "Réglages de l'appel de décision de navigation (brique 4b). Le contrat de sortie est DÉRIVÉ de l'énumération reçue à chaque décision : aucune valeur d'action ne vit ici, ni dans le code (constitution §2). Le modèle de navigation, lui, est nommé dans `config/scanner.json` (`ia.modeles.navigation`).",
+  "maxTokensReponse": 256,
+  "relancesMax": 1
+}

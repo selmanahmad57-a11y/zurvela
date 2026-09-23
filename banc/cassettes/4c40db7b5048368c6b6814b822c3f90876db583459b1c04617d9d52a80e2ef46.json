@@ -1,0 +1,12 @@
+{
+  "cle": "4c40db7b5048368c6b6814b822c3f90876db583459b1c04617d9d52a80e2ef46",
+  "metadonnees": {
+    "date": "2026-09-23T18:44:02.828Z",
+    "modeleDemande": "claude-haiku-4-5",
+    "modeleServi": "claude-haiku-4-5-20251001",
+    "versionPrompt": "v2",
+    "coutApi": 0.0022719999999999997,
+    "apresRelance": false
+  },
+  "reponse": "{\"actionId\": \"c1\", \"raison\": \"Le formulaire de devis a été rempli (4 champs requis complétés). Le soumettre est l'action que ferait un visiteur ayant complété sa demande. C'est la seule page de conversion restante avec le budget limitée à 1 action.\"}"
+}

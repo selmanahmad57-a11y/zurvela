@@ -1,0 +1,12 @@
+{
+  "cle": "d00d37bbe3bcf0c3b7b491fecb8693912d23f7c6ed9fd01de08837f91b750974",
+  "metadonnees": {
+    "date": "2026-09-23T18:42:19.297Z",
+    "modeleDemande": "claude-haiku-4-5",
+    "modeleServi": "claude-haiku-4-5-20251001",
+    "versionPrompt": "v2",
+    "coutApi": 0.001872,
+    "apresRelance": false
+  },
+  "reponse": "{\"actionId\": \"c1\", \"raison\": \"Le formulaire de contact a été rempli et soumis avec succès. La page de confirmation valide la fin du parcours utilisateur principal. L'action terminer est appropriée car le scénario de test clé (contact) est complété.\"}"
+}

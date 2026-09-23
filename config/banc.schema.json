@@ -107,7 +107,8 @@
       "required": [
         "dossier",
         "jetonSain",
-        "combinaisons"
+        "combinaisons",
+        "contraintes"
       ],
       "properties": {
         "dossier": {
@@ -120,16 +121,37 @@
           "description": "Jeton utilisé dans l'identifiant des scénarios sans aucun bug actif."
         },
         "combinaisons": {
-          "type": "array",
-          "items": {
+          "type": "object",
+          "additionalProperties": {
             "type": "array",
-            "minItems": 2,
-            "uniqueItems": true,
             "items": {
-              "type": "string"
+              "type": "array",
+              "minItems": 2,
+              "uniqueItems": true,
+              "items": {
+                "type": "string"
+              }
             }
           },
-          "description": "Combinaisons de bugs générées en plus des scénarios sains et des bugs isolés."
+          "description": "Combinaisons de bugs générées en plus des scénarios sains et des bugs isolés, PAR GABARIT (clé = nom du gabarit). Un gabarit absent n'en reçoit aucune. Chaque bug nommé doit appartenir au registre du gabarit, sans quoi la génération lève : une combinaison silencieusement ignorée serait un scénario fantôme en moins."
+        },
+        "contraintes": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "pagesMax"
+            ],
+            "properties": {
+              "pagesMax": {
+                "type": "integer",
+                "minimum": 1,
+                "description": "Budget de pages imposé au moteur pour chaque scénario de ce gabarit. C'est ce qui rend la qualité d'une décision mesurable : sans budget contraint, tout parcours exhaustif atteint tout et une bonne navigation ne se distingue pas d'une navigation aveugle. Les atteintes attendues par politique (cibles du gabarit) sont vraies SOUS CE BUDGET."
+              }
+            }
+          },
+          "description": "Contraintes imposées au moteur pour les scénarios d'un gabarit (clé = nom du gabarit). Un gabarit absent n'en reçoit aucune et garde les réglages de config/scanner.json."
         }
       }
     },

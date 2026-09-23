@@ -1,0 +1,12 @@
+{
+  "cle": "31a3e87ff7c7a6f0d26160d905cb63502310b1969e7c865214d135dad1ecbd57",
+  "metadonnees": {
+    "date": "2026-09-23T18:38:14.345Z",
+    "modeleDemande": "claude-haiku-4-5",
+    "modeleServi": "claude-haiku-4-5-20251001",
+    "versionPrompt": "v2",
+    "coutApi": 0.001892,
+    "apresRelance": false
+  },
+  "reponse": "{\"actionId\": \"c1\", \"raison\": \"Le formulaire de contact a été rempli et soumis. L'action c1 (terminer) conclut logiquement cette session de test puisqu'il n'y a plus d'actions utilisateur à éprouver sur cette page de contact.\"}"
+}

@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="{{langue}}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{produits.comptoir.nom}} — {{site.nom}}</title>
+  <meta name="description" content="{{produits.comptoir.resume}}">
+  <link rel="stylesheet" href="/statique/style.css">
+  <link rel="icon" href="/statique/images/logo.svg" type="image/svg+xml">
+</head>
+<body>
+  <header class="entete">
+    <a class="marque" href="/">
+      <img data-role="logo" src="/statique/images/logo.svg" alt="{{site.nom}}" width="40" height="40">
+      <span>{{site.nom}}</span>
+    </a>
+    <nav aria-label="{{nav.libelle}}">
+      <ul>
+        <li><a href="/">{{nav.accueil}}</a></li>
+        <li><a href="/catalogue">{{nav.catalogue}}</a></li>
+        <li><a href="/livraison">{{nav.livraison}}</a></li>
+      </ul>
+    </nav>
+  </header>
+  <main class="contenu">
+    <h1>{{produits.comptoir.nom}}</h1>
+    <p class="intro">{{produits.comptoir.resume}}</p>
+    <p>{{produits.comptoir.description}}</p>
+    <p class="prix">{{produits.comptoir.prix}}</p>
+    <p><a class="bouton" data-role="devis" href="/devis">{{produit.devis}}</a></p>
+  </main>
+  <footer class="pied">
+    <p>{{pied.mentions}}</p>
+  </footer>
+</body>
+</html>

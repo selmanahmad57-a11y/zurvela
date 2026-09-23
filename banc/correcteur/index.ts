@@ -3,7 +3,7 @@
  * mini-site, lance le sujet à noter (`scanner`, contrat de core/), compare
  * son rapport au manifeste de vérité terrain, puis produit la scorecard.
  *
- * Mode CLI : `pnpm banc [--sujet reel|factice] --scenario <id> | --tous`.
+ * Mode CLI : `pnpm banc [--sujet reel|factice] [--sans-ia] [--politique deterministe|ia] --scenario <id> | --tous`.
  */
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -14,7 +14,19 @@ import { chargerConfig } from '../config.js';
 import { depuisRacine } from '../outils/racine.js';
 import { deriverManifeste } from '../scenarios/manifeste.js';
 import { demarrerServeur } from '../serveur.js';
-import { attendusBug, type ConfigBanc, type Gabarit, type ResultatAttendu, type ResultatScenario, type Scenario, type Scorecard } from '../types.js';
+import {
+  attendusBug,
+  estNomPolitique,
+  POLITIQUE_IA,
+  POLITIQUES,
+  type ConfigBanc,
+  type Gabarit,
+  type ResultatAttendu,
+  type ResultatScenario,
+  type Scenario,
+  type Scorecard,
+  type SujetNote,
+} from '../types.js';
 import {
   RAISON_PERTES_PROTOCOLE,
   RAISON_PROFILS_NON_MESURES,
@@ -26,10 +38,28 @@ import {
   profilsNonMesures,
   statutSelonPertes,
 } from './appariement.js';
+import {
+  RAISON_REPLIS_DECISION,
+  calculerCouverture,
+  ciblesNonMesurees,
+  compterReplisDecision,
+  noterCibles,
+  politiqueAppliquee,
+  replisDecisionSubis,
+  verifierContraintes,
+} from './navigation.js';
 import { calculerScorecard, ecrireScorecard, purgerResultats, rendreScorecardConsole } from './scorecard.js';
 
 export interface ParametresNotation {
-  scanner: Scanner;
+  /** Le sujet noté, assemblé POUR CHAQUE scénario : le budget de pages en dépend. */
+  sujet: SujetNote;
+  /**
+   * Politique de décision DEMANDÉE au moteur pour ce run (`--politique`,
+   * défaut = `exploration.politique` de `config/scanner.json`). Le banc la
+   * vérifie dans le rapport : une option muette ferait noter le comportement
+   * par défaut sous l'étiquette de l'autre politique.
+   */
+  politique: string;
   config: ConfigBanc;
   dico: Dictionnaire;
   obtenirGabarit: (nom: string) => Gabarit;
@@ -76,10 +106,13 @@ function messageErreur(erreur: unknown): string {
  * rend un rapport inexploitable) donne un résultat en statut 'erreur'.
  */
 export async function noterScenario(scenario: Scenario, params: ParametresNotation): Promise<ResultatScenario> {
-  const { scanner, config, dico, obtenirGabarit } = params;
+  const { sujet, politique, config, dico, obtenirGabarit } = params;
   const gabarit = obtenirGabarit(scenario.gabarit);
   const timeoutMs = config.scan.timeoutMs;
 
+  // Le scanner est assemblé POUR CE SCÉNARIO : c'est là que le budget de
+  // pages et la politique demandée entrent dans le moteur.
+  const scanner = await sujet.pour(scenario);
   const serveur = await demarrerServeur(scenario, gabarit, config);
   let rapport: Rapport | undefined;
   let erreur: string | undefined;
@@ -95,7 +128,7 @@ export async function noterScenario(scenario: Scenario, params: ParametresNotati
   const dureeMs = Date.now() - debut;
 
   const manifeste = deriverManifeste(scenario, gabarit);
-  const base = { scenarioId: scenario.id, gabarit: gabarit.nom, langue: scenario.langue, dureeMs };
+  const base = { scenarioId: scenario.id, gabarit: gabarit.nom, langue: scenario.langue, politique, dureeMs };
 
   // Rien n'est détecté, donc aucun verdict de confirmation n'a été rendu :
   // l'attendu est raté ET mal jugé. Seuls les attendus de nature `bug` sont
@@ -108,9 +141,27 @@ export async function noterScenario(scenario: Scenario, params: ParametresNotati
   // mesure des fausses alertes évitées dans un sens ou dans l'autre.
   if (rapport === undefined) {
     // Scanner en échec : rien n'est détecté, rien n'est signalé.
-    return { ...base, protocole: comptesProtocoleZero(), statut: 'erreur', erreur, attendus: toutRate(), profils: profilsNonMesures(manifeste), fauxPositifs: [], coutApi: 0 };
+    return {
+      ...base,
+      protocole: comptesProtocoleZero(),
+      statut: 'erreur',
+      erreur,
+      attendus: toutRate(),
+      profils: profilsNonMesures(manifeste),
+      cibles: ciblesNonMesurees(manifeste, politique),
+      nbReplisDecision: 0,
+      fauxPositifs: [],
+      coutApi: 0,
+    };
   }
   try {
+    // AVANT toute notation : ce que le banc a DEMANDÉ est-il arrivé ? Un
+    // budget ou une politique qui ne seraient pas parvenus au moteur
+    // produiraient une mesure verte du comportement par défaut, étiquetée du
+    // nom de l'autre — un diagnostic faux (APPRENTISSAGES n°6). La garde lève,
+    // et le scénario passe en erreur par le même chemin qu'un rapport
+    // inexploitable.
+    verifierContraintes(rapport, scenario, politique);
     // Les deux mesures se calculent ENSEMBLE : les comptes du protocole lisent
     // l'appariement (un attendu déjà couvert par une anomalie retenue n'est pas
     // une anomalie perdue), et l'invariant de `calculerComptesProtocole` protège
@@ -131,15 +182,36 @@ export async function noterScenario(scenario: Scenario, params: ParametresNotati
       statut = 'erreur';
       raison = RAISON_PROFILS_NON_MESURES;
     }
+    const appliquee = politiqueAppliquee(rapport);
+    const contextePolitique = { demandee: politique, ...(appliquee === undefined ? {} : { appliquee }) };
+    const cibles = noterCibles(rapport, manifeste, contextePolitique);
+    const couverture = calculerCouverture(rapport, manifeste, contextePolitique);
+    const nbReplisDecision = compterReplisDecision(rapport);
+    // INVARIANT ÉTENDU (4a → 4b) : un repli par décision est une absence
+    // SUBIE. Le scan continue — c'est le bon comportement — mais le scénario
+    // ne peut pas se lire « tout va bien » : ce qu'il mesure n'est plus ce
+    // qu'on croit mesurer.
+    if (statut === 'ok' && replisDecisionSubis(nbReplisDecision, politique, POLITIQUE_IA) > 0) {
+      statut = 'erreur';
+      raison = RAISON_REPLIS_DECISION;
+    }
     return {
       ...base,
       protocole,
       statut,
       ...(raison === undefined ? {} : { erreur: raison }),
+      ...(appliquee === undefined ? {} : { politiqueAppliquee: appliquee }),
       attendus,
       profils,
+      cibles,
+      ...(couverture === undefined ? {} : { couverture }),
+      nbReplisDecision,
       fauxPositifs,
       coutApi: rapport.coutApi,
+      // Le coût VENTILÉ voyage jusqu'à la scorecard : sans lui, le tableau des
+      // profils afficherait le total du scan — donc, depuis la navigation IA,
+      // surtout le prix du PARCOURS — sous l'étiquette du profilage.
+      ...(rapport.coutApiParFamille === undefined ? {} : { coutApiParFamille: rapport.coutApiParFamille }),
       rapport,
     };
   } catch (cause: unknown) {
@@ -152,20 +224,41 @@ export async function noterScenario(scenario: Scenario, params: ParametresNotati
     // justement un rapport structurellement suspect, et un `NaN` propagé dans
     // tous les agrégats serait pire que le zéro d'avant.
     const coutApi = Number.isFinite(rapport.coutApi) ? rapport.coutApi : 0;
-    return { ...base, protocole: comptesProtocoleZero(), statut: 'erreur', erreur: messageErreur(cause), attendus: toutRate(), profils: profilsNonMesures(manifeste), fauxPositifs: [], coutApi, rapport };
+    // Même garde-fou sur la ventilation que sur le total : trois `NaN`
+    // propagés dans les agrégats seraient pires que le zéro d'avant.
+    const parFamille = rapport.coutApiParFamille;
+    const ventilationSaine =
+      parFamille !== undefined &&
+      Number.isFinite(parFamille.exploration) &&
+      Number.isFinite(parFamille.profilage) &&
+      Number.isFinite(parFamille.confirmation);
+    return {
+      ...base,
+      protocole: comptesProtocoleZero(),
+      statut: 'erreur',
+      erreur: messageErreur(cause),
+      attendus: toutRate(),
+      profils: profilsNonMesures(manifeste),
+      cibles: ciblesNonMesurees(manifeste, politique),
+      nbReplisDecision: 0,
+      fauxPositifs: [],
+      coutApi,
+      ...(ventilationSaine && parFamille !== undefined ? { coutApiParFamille: parFamille } : {}),
+      rapport,
+    };
   }
 }
 
 export async function executerBanc(params: ParametresBanc): Promise<Scorecard> {
-  const { scenarios, scanner, config, dico, obtenirGabarit, iaDeclareeAbsente } = params;
+  const { scenarios, sujet, politique, config, dico, obtenirGabarit, iaDeclareeAbsente } = params;
   const journal = params.journal ?? ((): void => undefined);
   const horodatage = new Date().toISOString();
 
-  journal(traduire(dico, 'banc.demarrage', { nombre: scenarios.length, scanner: scanner.name }));
+  journal(traduire(dico, 'banc.demarrage', { nombre: scenarios.length, scanner: sujet.nom, politique }));
   const resultats: ResultatScenario[] = [];
   for (const scenario of scenarios) {
     journal(traduire(dico, 'banc.scenarioEnCours', { id: scenario.id }));
-    const resultat = await noterScenario(scenario, { scanner, config, dico, obtenirGabarit, iaDeclareeAbsente });
+    const resultat = await noterScenario(scenario, { sujet, politique, config, dico, obtenirGabarit, iaDeclareeAbsente });
     resultats.push(resultat);
     if (resultat.statut === 'erreur') {
       journal(traduire(dico, 'banc.scenarioErreur', { id: resultat.scenarioId, erreur: resultat.erreur ?? '' }));
@@ -181,11 +274,11 @@ export async function executerBanc(params: ParametresBanc): Promise<Scorecard> {
       );
     }
   }
-  return calculerScorecard(resultats, config, horodatage);
+  return calculerScorecard(resultats, config, horodatage, politique);
 }
 
 // ---------------------------------------------------------------------------
-// Mode CLI : pnpm banc [--sujet reel|factice] --scenario <id> | --tous
+// Mode CLI : pnpm banc [--sujet reel|factice] [--sans-ia] [--politique deterministe|ia] --scenario <id> | --tous
 // ---------------------------------------------------------------------------
 
 export interface OptionsCli {
@@ -200,6 +293,14 @@ export interface OptionsCli {
    * c'est l'épreuve du mode dégradé permanent (constitution §4).
    */
   sansIa: boolean;
+  /**
+   * `--politique deterministe|ia` : la politique de décision de navigation
+   * imposée au moteur pour tout le run. Absente = celle de
+   * `config/scanner.json`. Deux runs de politiques différentes produisent deux
+   * scorecards comparables : c'est ainsi que la jumelle inter-politiques se
+   * mesure, une politique à la fois, mais toujours affichée à deux.
+   */
+  politique?: string;
 }
 
 /** Analyse les arguments (ceux du processus par défaut) ; null si la ligne de commande est mal formée. */
@@ -212,10 +313,17 @@ export function lireOptions(args?: string[]): OptionsCli | null {
         tous: { type: 'boolean' },
         sujet: { type: 'string' },
         'sans-ia': { type: 'boolean' },
+        politique: { type: 'string' },
       },
       strict: true,
     });
-    return { scenario: values.scenario, tous: values.tous === true, sujet: values.sujet, sansIa: values['sans-ia'] === true };
+    return {
+      scenario: values.scenario,
+      tous: values.tous === true,
+      sujet: values.sujet,
+      sansIa: values['sans-ia'] === true,
+      politique: values.politique,
+    };
   } catch {
     return null;
   }
@@ -245,6 +353,19 @@ async function principal(): Promise<void> {
     return;
   }
 
+  // La politique par défaut est celle du MOTEUR (`config/scanner.json`), pas
+  // une valeur du banc : le banc demande ce que le produit ferait de
+  // lui-même tant qu'on ne lui demande rien d'autre.
+  const { chargerConfigScanner } = await import('../../core/scanner/config.js');
+  const configScanner = await chargerConfigScanner();
+  const politique = options.politique ?? configScanner.exploration.politique;
+  if (!estNomPolitique(politique)) {
+    console.error(traduire(dico, 'banc.politiqueInconnue', { politique, politiques: POLITIQUES.join(', ') }));
+    console.error(traduire(dico, 'banc.usage'));
+    process.exitCode = 2;
+    return;
+  }
+
   // Le banc IMPOSE son client IA au moteur : rejeu sur cassettes par défaut,
   // aucune capacité avec `--sans-ia`. Dans les deux cas, aucun appel réseau —
   // un poste qui porte une clé d'API ne doit pas noter autre chose qu'un poste
@@ -262,7 +383,7 @@ async function principal(): Promise<void> {
       ? traduire(dico, 'banc.sansIa')
       : traduire(dico, 'banc.iaRejeu', { dossier: DOSSIER_CASSETTES, commande: COMMANDE_ENREGISTREMENT_IA }),
   );
-  const scanner = await creerSujet(nomSujet, client);
+  const sujet = await creerSujet(nomSujet, client, { politique });
 
   const dossierScenarios = depuisRacine(config.scenarios.dossier);
   let scenarios: Scenario[];
@@ -291,7 +412,8 @@ async function principal(): Promise<void> {
   const iaDeclareeAbsente = options.sansIa || nomSujet !== 'reel';
   const scorecard = await executerBanc({
     scenarios,
-    scanner,
+    sujet,
+    politique,
     config,
     dico,
     obtenirGabarit,

@@ -1,0 +1,12 @@
+{
+  "cle": "04d4e404149e2c063370306fecf82639e4afaa192b13326b873e9026e7480d98",
+  "metadonnees": {
+    "date": "2026-09-23T18:42:45.190Z",
+    "modeleDemande": "claude-haiku-4-5",
+    "modeleServi": "claude-haiku-4-5-20251001",
+    "versionPrompt": "v2",
+    "coutApi": 0.0019160000000000002,
+    "apresRelance": false
+  },
+  "reponse": "{\"actionId\": \"c1\", \"raison\": \"Un visiteur sur la page de contact a rempli un formulaire avec tous les champs requis ; l'action suivante naturelle est de le soumettre pour éprouver le traitement du formulaire et la réaction du serveur.\"}"
+}

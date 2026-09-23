@@ -1,0 +1,12 @@
+{
+  "cle": "0a2ea21e23a1c10dcda92bcd5ae4b2228b958a2296831eec7a81c5dac78f7319",
+  "metadonnees": {
+    "date": "2026-09-23T18:38:07.269Z",
+    "modeleDemande": "claude-haiku-4-5",
+    "modeleServi": "claude-haiku-4-5-20251001",
+    "versionPrompt": "v2",
+    "coutApi": 0.001958,
+    "apresRelance": false
+  },
+  "reponse": "{\"actionId\": \"c1\", \"raison\": \"Le site est une vitrine-contact avec une page de contact disponible. Un visiteur typique d'un tel site interagit avec le formulaire de contact, qui est une action porteuse de valeur de test. Le budget permet d'explorer (19 pages restantes), donc explorer cette page de contact avant de terminer.\"}"
+}

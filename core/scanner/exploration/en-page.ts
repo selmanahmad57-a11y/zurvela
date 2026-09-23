@@ -29,6 +29,14 @@ export const SELECTEURS_INTERACTIFS = 'a[href], button, input:not([type=hidden])
 export const ATTRIBUTS_CONSERVES = ['id', 'name', 'type', 'role', 'href', 'action', 'method', 'autocomplete', 'for'];
 
 /**
+ * Attributs de NOMMAGE au sens du standard (HTML `alt`/`title`, ARIA
+ * `aria-label`) : ce qui donne son nom perçu à un lien dont le contenu rendu
+ * est une icône. Du WEB, pas du MONDE (constitution §2) — le code ne connaît
+ * aucun mot, seulement les attributs où un nom se trouve.
+ */
+export const ATTRIBUTS_NOMMAGE = ['alt', 'aria-label', 'title'];
+
+/**
  * Noms de métadonnées standard (HTML et Open Graph) retenus pour le
  * profilage. Même nature que `ATTRIBUTS_CONSERVES` : des jetons du WEB, pas
  * du MONDE (constitution §2) — aucun mot de langue naturelle, aucune
@@ -83,6 +91,14 @@ export interface ExtractionTexte {
 export interface ExtractionPage {
   /** `href` résolus de tous les liens, bruts (le filtrage d'origine se fait côté Node). */
   liens: string[];
+  /**
+   * Libellé visible de chaque lien, au MÊME index que `liens`. C'est du
+   * CONTENU DE PAGE (constitution §3) : une donnée non fiable, transportée et
+   * bornée, jamais interprétée. L'énumération des actions la montre au modèle
+   * tronquée — c'est par elle que la page lui parle, donc la surface
+   * d'injection première de la navigation IA.
+   */
+  libellesLiens: string[];
   formulaires: DescriptionFormulaire[];
   /** Champs non actionnables (masqués, désactivés, en lecture seule) laissés hors des formulaires. */
   champsIgnores: number;
@@ -140,7 +156,7 @@ export interface ValiditeFormulaire {
 }
 
 type Commande =
-  | { commande: 'page'; attributsConserves: string[] }
+  | { commande: 'page'; attributsConserves: string[]; attributsNommage: string[] }
   | { commande: 'texte'; maxChars: number; metadonnees: string[] }
   | { commande: 'images'; attributsConserves: string[] }
   | {
@@ -397,7 +413,24 @@ function enPage(arg: Commande): unknown {
 
   switch (arg.commande) {
     case 'page': {
-      const liens = Array.from(document.querySelectorAll('a[href]')).map((a) => aide.resoudre(a.getAttribute('href')));
+      const ancres = Array.from(document.querySelectorAll('a[href]'));
+      const liens = ancres.map((a) => aide.resoudre(a.getAttribute('href')));
+      // Le libellé est du CONTENU : il est lu, jamais interprété. Le nom perçu
+      // d'abord (texte rendu, icône nommée), les attributs de nommage portés
+      // par le lien lui-même en secours.
+      const libellesLiens = ancres.map((a) => {
+        const percu = aide.nomPercu(a, arg.attributsNommage).trim();
+        if (percu !== '') {
+          return percu;
+        }
+        for (const nom of arg.attributsNommage) {
+          const valeur = (a.getAttribute(nom) ?? '').trim();
+          if (valeur !== '') {
+            return valeur;
+          }
+        }
+        return '';
+      });
       const formulaires: DescriptionFormulaire[] = [];
       let champsIgnores = 0;
       for (const form of Array.from(document.forms)) {
@@ -405,7 +438,7 @@ function enPage(arg: Commande): unknown {
         formulaires.push(formulaire);
         champsIgnores += ignores;
       }
-      const resultat: ExtractionPage = { liens, formulaires, champsIgnores };
+      const resultat: ExtractionPage = { liens, libellesLiens, formulaires, champsIgnores };
       return resultat;
     }
     case 'texte': {
@@ -616,7 +649,7 @@ function evaluer(page: Page, commande: Commande, delaiMs?: number): Promise<unkn
 }
 
 export async function extrairePage(page: Page, delaiMs?: number): Promise<ExtractionPage> {
-  return (await evaluer(page, { commande: 'page', attributsConserves: ATTRIBUTS_CONSERVES }, delaiMs)) as ExtractionPage;
+  return (await evaluer(page, { commande: 'page', attributsConserves: ATTRIBUTS_CONSERVES, attributsNommage: ATTRIBUTS_NOMMAGE }, delaiMs)) as ExtractionPage;
 }
 
 /**

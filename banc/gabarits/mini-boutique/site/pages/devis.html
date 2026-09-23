@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="{{langue}}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{devis.titre}} — {{site.nom}}</title>
+  <meta name="description" content="{{devis.intro}}">
+  <link rel="stylesheet" href="/statique/style.css">
+  <link rel="icon" href="/statique/images/logo.svg" type="image/svg+xml">
+  <script src="/statique/devis.js" defer></script>
+</head>
+<body>
+  <header class="entete">
+    <a class="marque" href="/">
+      <img data-role="logo" src="/statique/images/logo.svg" alt="{{site.nom}}" width="40" height="40">
+      <span>{{site.nom}}</span>
+    </a>
+    <nav aria-label="{{nav.libelle}}">
+      <ul>
+        <li><a href="/">{{nav.accueil}}</a></li>
+        <li><a href="/catalogue">{{nav.catalogue}}</a></li>
+        <li><a href="/livraison">{{nav.livraison}}</a></li>
+      </ul>
+    </nav>
+  </header>
+  <main class="contenu">
+    <h1>{{devis.titre}}</h1>
+    <p class="intro">{{devis.intro}}</p>
+    <form data-role="formulaire-devis" method="post" action="/api/devis">
+      <div class="champ">
+        <label for="nom">{{devis.champs.nom}}</label>
+        <input id="nom" name="nom" type="text" autocomplete="name" required>
+      </div>
+      <div class="champ">
+        <label for="email">{{devis.champs.email}}</label>
+        <input id="email" name="email" type="email" autocomplete="email" required>
+      </div>
+      <div class="champ">
+        <label for="adresse">{{devis.champs.adresse}}</label>
+        <input id="adresse" name="adresse" type="text" autocomplete="street-address" required>
+      </div>
+      <div class="champ">
+        <label for="article">{{devis.champs.article}}</label>
+        <textarea id="article" name="article" rows="4" required></textarea>
+      </div>
+      <p data-role="message-erreur" class="erreur" hidden role="alert">{{devis.erreur}}</p>
+      <p data-role="message-confirmation" class="confirmation" hidden role="status">{{devis.confirmation}}</p>
+      <div class="actions" data-role="zone-envoi">
+        <button type="submit" data-role="devis-envoyer">{{devis.envoyer}}</button>
+      </div>
+    </form>
+  </main>
+  <footer class="pied">
+    <p>{{pied.mentions}}</p>
+  </footer>
+</body>
+</html>

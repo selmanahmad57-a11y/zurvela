@@ -262,7 +262,7 @@ describe('creerProtocole — détecteur gradué et contre-épreuve', () => {
         const signaux: Signal[] = viewport.mobile ? [interception({ viewport: viewport.nom, page: reproduction.url })] : [];
         return Promise.resolve({
           signaux,
-          parcours: { urlDepart: reproduction.url, pages: [], actions: [], arret: 'complet' as const },
+          parcours: { urlDepart: reproduction.url, pages: [], actions: [], arret: 'complet', enAttenteALArret: 0, pagesRestantesALArret: 0 as const },
           echecOutillage: false,
           dureeMs: 5,
         });

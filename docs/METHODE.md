@@ -46,6 +46,19 @@ faire mentir.** C'est la version opérationnelle du principe des métriques
 jumelles (`docs/APPRENTISSAGES.md` n°3) : la vérification d'une garde se
 fait en construisant le cas qui la déclenche, pas en relisant son code.
 
+**Le budget annoncé décrit le périmètre réel, pas le périmètre espéré** :
+une brique plus large s'annonce plus chère, et l'annoncer étroite serait la
+mentir. Une révision à la hausse AVANT le lancement est la fonction même de
+l'annonce ; une révision après coup n'en est que le constat.
+
+**Priorité d'exécution quand le plafond de ressource approche** : les flux
+d'implémentation et l'intégration d'abord — c'est le travail que seuls les
+agents font. La revue graduée ensuite. Si le budget restant ne couvre pas la
+revue complète, on s'arrête **après une intégration verte** et la revue
+attend la fenêtre suivante, plutôt que d'être amputée en silence. Un commit
+ne part jamais sans sa revue ; mais une revue peut attendre, un travail à
+moitié vérifié ne le peut pas.
+
 Coût observé (machine à 4 cœurs, 2 agents en parallèle) : environ **74 k
 tokens et 3 minutes par agent**. Un régime complet sur une brique entière
 coûte de 2 à 10 M tokens et de 2 à 5 heures. Ce chiffre se surveille :

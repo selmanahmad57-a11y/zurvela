@@ -50,9 +50,11 @@ beforeAll(async () => {
 
   const observateur = creerObservateur();
   const journal: EntreeJournal[] = [];
+  const deterministe = politiqueDeterministe(config.remplissage);
   const explorateur = creerExplorateur({
     config,
-    politique: politiqueDeterministe(config.remplissage),
+    politique: deterministe,
+    secours: deterministe,
     filtre: creerFiltre(await chargerActionsInterdites()),
     navigateur,
   });

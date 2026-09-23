@@ -13,13 +13,20 @@
  * sous la même clé : la commande s'arrête alors bruyamment. C'est voulu — un
  * enregistrement n'est pas un scan, il n'a pas à continuer vaille que vaille.
  *
- * Usage : pnpm banc:enregistrer-ia --scenario <id> | --tous
+ * Usage : pnpm banc:enregistrer-ia [--politique deterministe|ia] --scenario <id> | --tous
+ *
+ * La POLITIQUE compte ici autant que le scénario : les cassettes de décision
+ * n'existent que sous la politique IA, puisque la politique déterministe
+ * n'appelle aucun modèle. Un parc enregistré en déterministe serait donc
+ * complet pour le profilage et vide pour la navigation — et le rejeu en
+ * politique IA échouerait, cassette absente, sur la première décision.
  */
 import { readdir, readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { parseArgs } from 'node:util';
 import { chargerDictionnaire, traduire, type Dictionnaire } from '../core/i18n.js';
 import type { Cassette } from '../core/ia/index.js';
+import { chargerConfigScanner } from '../core/scanner/config.js';
 import { chargerConfig } from './config.js';
 import { executerBanc } from './correcteur/index.js';
 import { creerSujet } from './correcteur/sujets.js';
@@ -27,17 +34,22 @@ import { obtenirGabarit } from './gabarits/index.js';
 import { creerClientIaBanc, DOSSIER_CASSETTES } from './ia.js';
 import { depuisRacine } from './outils/racine.js';
 import { chargerScenario, chargerScenarios } from './scenarios/charger.js';
-import type { Scenario } from './types.js';
+import { estNomPolitique, POLITIQUES, type Scenario } from './types.js';
 
 interface Options {
   scenario?: string;
   tous: boolean;
+  politique?: string;
 }
 
 function lireOptions(args?: string[]): Options | null {
   try {
-    const { values } = parseArgs({ args, options: { scenario: { type: 'string' }, tous: { type: 'boolean' } }, strict: true });
-    return { scenario: values.scenario, tous: values.tous === true };
+    const { values } = parseArgs({
+      args,
+      options: { scenario: { type: 'string' }, tous: { type: 'boolean' }, politique: { type: 'string' } },
+      strict: true,
+    });
+    return { scenario: values.scenario, tous: values.tous === true, politique: values.politique };
   } catch {
     return null;
   }
@@ -104,17 +116,38 @@ async function principal(): Promise<void> {
     ? await chargerScenarios(dossierScenarios)
     : [await chargerScenario(dossierScenarios, options.scenario ?? '')];
 
+  const configScanner = await chargerConfigScanner();
+  const politique = options.politique ?? configScanner.exploration.politique;
+  if (!estNomPolitique(politique)) {
+    console.error(traduire(dico, 'banc.politiqueInconnue', { politique, politiques: POLITIQUES.join(', ') }));
+    process.exitCode = 2;
+    return;
+  }
+
   const { client, modele } = await creerClientIaBanc({
     regime: 'enregistrement',
     journaliser: (type, details) => {
       console.log(`  ${type} ${JSON.stringify(details ?? {})}`);
     },
   });
+  // UN ENREGISTREMENT SANS CAPACITÉ N'ENREGISTRE RIEN, et le dire APRÈS coup
+  // serait le dire trop tard : sans clé ou sans tarif, le scan bascule en
+  // déterministe d'emblée, aucune décision n'est prise, aucune cassette n'est
+  // écrite — et les cassettes de profil déjà présentes, elles, se rejouent.
+  // La commande annonçait donc « APPELS RÉELS au modèle » et sortait en 0 sur
+  // un parc vide de décisions. La cause est NOMMÉE (clé absente, tarif absent,
+  // fonction non implémentée) plutôt que devinée : une garde qui accuse le
+  // mauvais coupable est pire qu'une garde absente (APPRENTISSAGES n°6).
+  if (client.mode === 'degrade') {
+    console.error(traduire(dico, 'enregistrerIa.sansCapacite', { raison: client.raisonDegrade ?? '' }));
+    process.exitCode = 1;
+    return;
+  }
   console.log(traduire(dico, 'enregistrerIa.demarrage', { nombre: scenarios.length, modele, dossier: DOSSIER_CASSETTES }));
 
   const avant = new Set((await lireCassettes(DOSSIER_CASSETTES)).map((c) => c.cle));
-  const scanner = await creerSujet(config.scan.sujetParDefaut, client);
-  const scorecard = await executerBanc({ scenarios, scanner, config, dico, obtenirGabarit, journal: console.log });
+  const sujet = await creerSujet(config.scan.sujetParDefaut, client, { politique });
+  const scorecard = await executerBanc({ scenarios, sujet, politique, config, dico, obtenirGabarit, journal: console.log });
   const cassettes = await lireCassettes(DOSSIER_CASSETTES);
   // La DÉPENSE de cette exécution est la somme des cassettes réellement
   // ÉCRITES, pas l'agrégat de la scorecard : dès qu'une clé existe déjà, le
@@ -145,11 +178,47 @@ async function principal(): Promise<void> {
       nonMesures: scorecard.global.nbProfilsNonMesures,
     }),
   );
-  // Un attendu de profil resté NON MESURÉ après un enregistrement signale que
-  // l'appel n'a pas abouti (clé absente, tarif inconnu, refus) : la commande
-  // le dit et sort en échec, plutôt que de laisser croire à un parc complet.
+  // ---------------------------------------------------------------------
+  // GARDE DE COMPLÉTUDE — trois causes, trois diagnostics distincts
+  // ---------------------------------------------------------------------
+  // La garde de la brique 4a ne regardait que les attendus de PROFIL. Le parc
+  // a depuis triplé de nature : les décisions de navigation en forment
+  // l'essentiel, et rien ne les couvrait. Ce qui est vérifié ici l'est à
+  // travers la scorecard, c'est-à-dire par le même chemin que la notation —
+  // une garde qui lirait ailleurs garderait autre chose (APPRENTISSAGES n°4).
+  //
+  // Le COMPTE de cassettes attendu n'est volontairement PAS une des
+  // conditions : il n'a aucune source de vérité. Le nombre de points de
+  // décision d'un scan n'est connu qu'après l'avoir fait, et il vaut zéro
+  // quand le scan bascule en déterministe. Le prédire supposerait de simuler
+  // le parcours dans le banc — un oracle nouveau, et un oracle qu'on ne peut
+  // pas éprouver ment tôt ou tard.
+  const nonAppliquee = scorecard.scenarios.filter(
+    (scenario) => scenario.politiqueAppliquee !== undefined && scenario.politiqueAppliquee !== politique,
+  );
   if (scorecard.global.nbProfilsNonMesures > 0) {
     console.error(traduire(dico, 'enregistrerIa.incomplet'));
+    process.exitCode = 1;
+  }
+  if (nonAppliquee.length > 0) {
+    console.error(
+      traduire(dico, 'enregistrerIa.politiqueNonAppliquee', {
+        demandee: politique,
+        scenarios: nonAppliquee.map((scenario) => `${scenario.scenarioId} (${scenario.politiqueAppliquee ?? ''})`).join(', '),
+      }),
+    );
+    process.exitCode = 1;
+  }
+  if (scorecard.global.nbErreurs > 0) {
+    console.error(
+      traduire(dico, 'enregistrerIa.scenariosEnErreur', {
+        nombre: scorecard.global.nbErreurs,
+        scenarios: scorecard.scenarios
+          .filter((scenario) => scenario.statut === 'erreur')
+          .map((scenario) => `${scenario.scenarioId} (${scenario.erreur ?? ''})`)
+          .join(', '),
+      }),
+    );
     process.exitCode = 1;
   }
 }

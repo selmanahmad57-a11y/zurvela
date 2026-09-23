@@ -91,11 +91,13 @@ export function reexecuteurFactice(scripts: RejeuScripte[]): ReexecuteurFactice 
         pages: [],
         actions: [soumission('r1', { page: reproduction.url, viewport: viewport.nom })],
         arret: 'complet' as const,
+        enAttenteALArret: 0,
+        pagesRestantesALArret: 0,
       };
       if (script.echecOutillage === true) {
         return Promise.resolve({
           signaux: [],
-          parcours: { ...parcours, actions: [], arret: 'erreur' as const },
+          parcours: { ...parcours, actions: [], arret: 'erreur' as const, enAttenteALArret: 0, pagesRestantesALArret: 0 },
           echecOutillage: true,
           ...(script.erreur === undefined ? {} : { erreur: script.erreur }),
           dureeMs: 10,

@@ -5,11 +5,19 @@
  *
  * Ce fichier porte les CONTRATS et le client sans capacité (mode dégradé).
  * Le client concret vit dans `anthropic.ts` — seul fichier du dépôt qui
- * importe le SDK —, le prompt dans `prompts/profilage/v1.ts`, la validation
- * dans `schema-profil.ts`, le mode rejouable dans `cassettes.ts`.
+ * importe le SDK —, les prompts dans `prompts/profilage/v1.ts` et
+ * `prompts/navigation/v2.ts`, la validation dans `schema-profil.ts` et
+ * `schema-decision.ts`, le mode rejouable dans `cassettes.ts`.
  */
-import type { Action, AnomalieCandidate, ContexteDecision, Rapport } from '../types.js';
+import type {
+  AnomalieCandidate,
+  Rapport,
+  DecisionIa,
+  EtatDecisionEnumere,
+  ProvenanceDecision,
+} from '../types.js';
 import type { ConfigScanner } from '../scanner/config.js';
+import type { EtatNormalise } from './etat-decision.js';
 
 export type ModeIa = 'actif' | 'degrade';
 
@@ -54,8 +62,19 @@ export interface ProfilPage {
    * `null` dès que `typeSite` n'est pas la valeur d'échappement.
    *
    * C'est le SEUL champ du profil influençable mot à mot par le contenu de
-   * la page : il reste borné par `maxTokensReponse` et ne franchit jamais la
-   * frontière du journal.
+   * la page. Depuis la brique 4b, il FRANCHIT la frontière du journal : le
+   * profil entre dans le bloc non fiable du prompt de navigation, donc ce
+   * champ aussi — la phrase « ne franchit jamais la frontière du journal »
+   * qui figurait ici était devenue fausse, et un contrat faux est cru comme
+   * un diagnostic faux (APPRENTISSAGES n°6).
+   *
+   * Il reste PUREMENT JOURNALISÉ au sens strict : aucune logique ne le lit,
+   * aucune décision n'en dépend, il n'est jamais noté. Mais il est MONTRÉ à
+   * un modèle qui dirige des actes, et il est donc borné comme toute autre
+   * chaîne du bloc non fiable (`exploration.libelleMaxChars`, appliqué dans
+   * `normaliserEtatDecision` puis refait à l'affichage). Son ancien plafond,
+   * `profilage.maxTokensReponse`, était le réglage d'un AUTRE module : le
+   * relever aurait élargi en silence la surface d'injection de la navigation.
    */
   natureLibre: string | null;
   /** Langue détectée (code BCP 47). */
@@ -95,6 +114,23 @@ export interface ContexteProfilage {
   langueDeclaree: string | null;
 }
 
+/**
+ * Ce que le client rend RÉELLEMENT sur une décision : l'élection du modèle,
+ * plus son estampille de provenance.
+ *
+ * `DecisionEstampillee` ÉTEND `DecisionIa` (contrat posé) sans le modifier :
+ * tout appelant qui n'attend qu'une `DecisionIa` compile et fonctionne à
+ * l'identique. L'extension existe parce que la provenance trois champs est
+ * exigée sur CHAQUE décision, et que deux de ces informations — le modèle
+ * réellement servi et le fait qu'une relance ait eu lieu — ne sont connues
+ * que d'ici : aucun autre canal ne peut les faire sortir de `core/ia`. Une
+ * estampille reconstituée par l'appelant serait une décoration, pas une
+ * provenance (APPRENTISSAGES n°6).
+ */
+export interface DecisionEstampillee extends DecisionIa {
+  provenance: ProvenanceDecision;
+}
+
 export interface Diagnostic {
   /** « défaut du site » ou « limite de mon automatisation » (constitution §1). */
   verdict: 'defaut-du-site' | 'limite-automatisation' | 'indetermine';
@@ -106,7 +142,11 @@ export interface ClientIa {
   /** Pourquoi le client est en mode dégradé (clé absente, fonctions non implémentées) ; null en mode actif. */
   raisonDegrade: string | null;
   profiler(contexte: ContexteProfilage): Promise<ResultatIa<ProfilPage>>;
-  decider(contexte: ContexteDecision): Promise<ResultatIa<Action>>;
+  /**
+   * ÉLIT une action parmi celles que le moteur a énumérées. Le modèle ne
+   * produit jamais d'action : il rend l'identifiant opaque de son choix.
+   */
+  decider(etat: EtatDecisionEnumere): Promise<ResultatIa<DecisionEstampillee>>;
   diagnostiquer(candidate: AnomalieCandidate): Promise<ResultatIa<Diagnostic>>;
   rediger(rapport: Rapport, langue: string): Promise<ResultatIa<string>>;
 }
@@ -135,6 +175,12 @@ export interface ReponseBrute {
  */
 export interface ClientIaEnregistrable extends ClientIa {
   profilerBrut(contexte: ContexteProfilage): Promise<ResultatIa<ReponseBrute>>;
+  /**
+   * Même rôle que `profilerBrut`, pour une décision. L'état reçu est déjà
+   * NORMALISÉ par le décorateur rejouable : la cassette doit figer la réponse
+   * du prompt qui a servi à calculer sa clé, pas celle d'un prompt voisin.
+   */
+  deciderBrut(etat: EtatNormalise): Promise<ResultatIa<ReponseBrute>>;
 }
 
 export const RAISON_CLE_ABSENTE = 'cle-absente';
@@ -167,7 +213,8 @@ export function creerClientSansCapacite(raison: string, message?: string): Clien
     raisonDegrade: raison,
     profiler: () => indisponible<ProfilPage>(),
     profilerBrut: () => indisponible<ReponseBrute>(),
-    decider: () => indisponible<Action>(),
+    decider: () => indisponible<DecisionEstampillee>(),
+    deciderBrut: () => indisponible<ReponseBrute>(),
     diagnostiquer: () => indisponible<Diagnostic>(),
     rediger: () => indisponible<string>(),
   };
@@ -231,6 +278,21 @@ export interface DepotCassettes {
 export const RAISON_CASSETTE_ABSENTE = 'cassette-absente';
 /** Raison technique stable : la réponse du modèle ne valide pas son schéma, relances épuisées. */
 export const RAISON_PROFIL_INVALIDE = 'profil-invalide';
+/** Raison technique stable : le modèle a élu un identifiant qui n'était pas au menu. */
+export const RAISON_ACTION_INCONNUE = 'action-inconnue';
+/** Raison technique stable : une décision a basculé sur la politique déterministe. */
+export const RAISON_REPLI_DETERMINISTE = 'repli-deterministe';
+/**
+ * Raison technique stable : la réponse de décision ne valide pas son contrat
+ * pour une autre cause qu'un identifiant hors menu (JSON inanalysable, champ
+ * manquant, propriété inventée), relances épuisées.
+ *
+ * Distincte de `RAISON_ACTION_INCONNUE` parce que les deux causes n'appellent
+ * pas la même correction, et qu'une garde qui accuse le mauvais coupable est
+ * pire qu'une garde absente (APPRENTISSAGES n°6) : l'une dit « le modèle a
+ * voulu sortir du menu », l'autre « le modèle n'a pas su écrire le contrat ».
+ */
+export const RAISON_DECISION_INVALIDE = 'decision-invalide';
 /** Raison technique stable : la cassette existe mais n'est pas lisible (fichier corrompu). */
 export const RAISON_CASSETTE_ILLISIBLE = 'cassette-illisible';
 /**
@@ -267,12 +329,45 @@ export const RAISON_APPEL_API = 'appel-api';
 /** Raison technique stable : échec non typé par le SDK. */
 export const RAISON_APPEL_INATTENDU = 'appel-inattendu';
 
+export type { EtatNormalise, ActionNormalisee, ProfilMontre } from './etat-decision.js';
+export {
+  empreinteContratNavigation,
+  entreeCleDepuisEtat,
+  identifiantsEnumeres,
+  normaliserEtatDecision,
+} from './etat-decision.js';
+export {
+  type BornesEnumeration,
+  type ConfigAppelNavigation,
+  type ConfigNavigation,
+  FICHIER_CONFIG_NAVIGATION,
+  assemblerConfigNavigation,
+  chargerConfigAppelNavigation,
+  chargerConfigNavigation,
+} from './config-navigation.js';
+export {
+  type DecisionDemandee,
+  type ResultatValidationDecision,
+  type ValidateurDecision,
+  DEFAUT_ACTION_INCONNUE,
+  creerValidateurDecision,
+  raisonInvaliditeDecision,
+  schemaContratModeleDecision,
+  schemaValidationDecision,
+} from './schema-decision.js';
+export {
+  type AppelDecision,
+  type ParametresDecision,
+  deciderBrutAvec,
+  decisionDepuisReponse,
+} from './decision.js';
 export {
   type ConstatInvalidite,
   type ValidateurProfil,
   type ResultatValidation,
   MOTS_CLES_CONTRAT_MODELE,
   creerValidateurProfil,
+  resumerConstats,
   schemaContratModele,
   schemaValidationProfil,
 } from './schema-profil.js';
@@ -290,6 +385,7 @@ export {
   type OptionsRejeu,
   COMMANDE_ENREGISTREMENT_IA,
   cleCassette,
+  cleCassetteDecision,
   clientRejouable,
   depotCassettesFichiers,
   diagnostiquerDivergence,

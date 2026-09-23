@@ -17,13 +17,18 @@ import { errors, type Browser, type BrowserContext, type Page } from 'playwright
 import type {
   Action,
   ActionExecutee,
+  ActionProposee,
+  ContexteDecision,
   ContexteExploration,
+  DecisionPrise,
   LocalisationElement,
   Observateur,
   PageVisitee,
   Parcours,
-  Politique,
+  PolitiqueDecision,
+  ProfilSiteRapporte,
   ResultatAction,
+  TypeAction,
   Viewport,
 } from '../../types.js';
 import type { ConfigScanner } from '../config.js';
@@ -41,11 +46,28 @@ import {
   validiteFormulaire,
   viderMutations,
 } from './en-page.js';
+import {
+  actionEnumeree,
+  COUCHE_ENUMERATION,
+  COUCHE_FILTRE_DESTRUCTIF,
+  COUCHE_MENU_FERME,
+  EVENEMENT_COUCHE,
+  filtrerMenuFerme,
+} from './couches.js';
+import { cheminDe, composerEtat, enumererActions, libelleBorne } from './enumeration.js';
 import { RAISON_LECTURE_IMPOSSIBLE, type FiltreActions, type VerdictFiltre } from './filtre-actions.js';
 
 export interface DependancesExplorateur {
   config: ConfigScanner;
-  politique: Politique;
+  /** Politique DEMANDÉE (déterministe ou IA) : c'est elle qu'on interroge à chaque point de décision. */
+  politique: PolitiqueDecision;
+  /**
+   * Politique de SECOURS du moteur, toujours la déterministe. Elle n'est pas
+   * le repli par décision de la politique IA (celui-là vit dans `politique-ia.ts`) :
+   * c'est le filet de la COUCHE 1 — ce que le moteur fait quand une politique,
+   * quelle qu'elle soit, lui rend une action qui n'était pas énumérée.
+   */
+  secours: PolitiqueDecision;
   filtre: FiltreActions;
   navigateur: Browser;
 }
@@ -56,6 +78,17 @@ type Arret = Parcours['arret'];
 const PRIORITE_ARRET: Arret[] = ['echeance', 'erreur', 'limite-pages', 'complet'];
 
 const RAISON_ECHEANCE = 'echeance';
+
+/**
+ * Raison technique stable : une politique a rendu une action qui n'était PAS
+ * énumérée. La COUCHE 1 l'a arrêtée — l'action n'est pas exécutée, la
+ * décision est reprise par la politique de secours.
+ */
+export const RAISON_HORS_ENUMERATION = 'action-hors-enumeration';
+
+/** Types d'entrée de journal de la décision. */
+export const EVENEMENT_ENUMERATION = 'decision.enumeration';
+export const EVENEMENT_DECISION = 'decision';
 
 /** Raisons techniques d'une action `bloquee` (identifiants stables, journalisés). */
 export const RAISON_AUCUN_DECLENCHEUR = 'aucun-declencheur';
@@ -123,6 +156,16 @@ interface EtatViewport {
    */
   formulairesRemplis: Set<string>;
   formulairesSoumis: Set<string>;
+  /**
+   * Libellés visibles des liens, par URL normalisée. CONTENU DE PAGE, donc
+   * DONNÉE NON FIABLE (constitution §3) : transporté jusqu'à l'énumération,
+   * borné, jamais interprété. Il ne voyage PAS dans le `Parcours` — le
+   * rapport n'a que faire du texte des liens, et `core/types.ts` n'a pas à
+   * bouger pour un besoin interne à l'exploration.
+   */
+  libelles: Map<string, string>;
+  /** Historique court des actions exécutées dans ce viewport (type + chemin). */
+  historique: { type: TypeAction; page: string }[];
 }
 
 function cleFormulaire(url: string, selecteur: string): string {
@@ -150,14 +193,14 @@ export const PROFILAGE_PAGE_NON_CHARGEE = 'page-non-chargee';
 export const PROFILAGE_PAGE_EXTERNE = 'page-externe';
 
 export function creerExplorateur(dependances: DependancesExplorateur): ExplorateurProfilant {
-  const { config, politique, filtre, navigateur } = dependances;
+  const { config, politique, secours, filtre, navigateur } = dependances;
   const { exploration } = config;
 
   return {
     nom: 'explorateur-deterministe',
 
     async explorer(contexte: ContexteExploration, observateur: Observateur, collecte?: CollecteProfilage): Promise<Parcours> {
-      const parcours: Parcours = { urlDepart: contexte.urlDepart, pages: [], actions: [], arret: 'complet' };
+      const parcours: Parcours = { urlDepart: contexte.urlDepart, pages: [], actions: [], arret: 'complet', enAttenteALArret: 0, pagesRestantesALArret: 0 };
       const origine = new URL(contexte.urlDepart).origin;
       // L'URL de départ obéit à la même règle que les liens suivis (http(s)) :
       // le navigateur ne charge jamais un fichier local ni une URL de données.
@@ -190,8 +233,25 @@ export function creerExplorateur(dependances: DependancesExplorateur): Explorate
       let actionCourante: string | undefined;
       /** Le profilage n'est TENTÉ qu'une fois par scan : au premier viewport. */
       let profilageTente = false;
+      /**
+       * Profil du site, une fois produit. Il ENTRE dans les décisions de
+       * navigation comme DONNÉE NON FIABLE (cahier 4b, note 2) : c'est une
+       * sortie de notre propre IA, mais une sortie de modèle reste du contenu
+       * dérivé de la page. Absent tant que le profilage n'a pas répondu, et
+       * absent pour toujours en mode dégradé : la navigation décide alors sans.
+       */
+      let profilSite: ProfilSiteRapporte | null = null;
 
-      function enregistrer(etat: EtatViewport, id: string, action: Action, pageAvant: string, debut: string, resultat: ResultatAction, details?: unknown): void {
+      function enregistrer(
+        etat: EtatViewport,
+        id: string,
+        action: Action,
+        pageAvant: string,
+        debut: string,
+        resultat: ResultatAction,
+        details?: unknown,
+        decision?: ActionExecutee['decision'],
+      ): void {
         const executee: ActionExecutee = {
           id,
           action,
@@ -201,9 +261,13 @@ export function creerExplorateur(dependances: DependancesExplorateur): Explorate
           fin: new Date().toISOString(),
           resultat,
           ...(details === undefined ? {} : { details }),
+          // La traçabilité descend jusqu'à l'ACTE : qui a tranché, d'où vient
+          // la décision, et si c'est un repli, pourquoi.
+          ...(decision === undefined ? {} : { decision }),
         };
         parcours.actions.push(executee);
-        contexte.journaliser('action', { id, type: action.type, resultat, page: pageAvant, viewport: etat.viewport.nom, details });
+        etat.historique.push({ type: action.type, page: cheminDe(pageAvant, origine) });
+        contexte.journaliser('action', { id, type: action.type, resultat, page: pageAvant, viewport: etat.viewport.nom, details, ...(decision === undefined ? {} : { decision }) });
       }
 
       /**
@@ -318,9 +382,20 @@ export function creerExplorateur(dependances: DependancesExplorateur): Explorate
             contexte.journaliser('exploration.page.redirigee', { viewport: viewport.nom, de: url, vers: urlActuelle });
           }
           const extraction = await extrairePage(page, delai());
-          const liensInternes = [
-            ...new Set(extraction.liens.map((lien) => normaliserUrl(lien, origine)).filter((lien): lien is string => lien !== null)),
-          ];
+          const normalises = extraction.liens.map((lien) => normaliserUrl(lien, origine));
+          // Le libellé d'un lien est retenu à sa PREMIÈRE apparition et borné
+          // tout de suite : le texte de la page n'entre jamais non borné dans
+          // la mémoire du scan.
+          normalises.forEach((lien, rang) => {
+            if (lien === null || etat.libelles.has(lien)) {
+              return;
+            }
+            const libelle = libelleBorne(extraction.libellesLiens[rang], exploration.libelleMaxChars);
+            if (libelle !== null) {
+              etat.libelles.set(lien, libelle);
+            }
+          });
+          const liensInternes = [...new Set(normalises.filter((lien): lien is string => lien !== null))];
           if (liensInternes.length > exploration.liensParPageMax) {
             contexte.journaliser('exploration.liens.tronques', { viewport: viewport.nom, url: urlActuelle, liens: liensInternes.length, max: exploration.liensParPageMax });
             liensInternes.length = exploration.liensParPageMax;
@@ -580,7 +655,9 @@ export function creerExplorateur(dependances: DependancesExplorateur): Explorate
         try {
           const extraction = await extraireTexte(etat.page, collecte.bornes.maxChars, delai());
           const contexteProfilage = composerContexteProfilage(url, extraction, collecte.bornes);
-          collecte.proposer(contexteProfilage);
+          // L'appel a lieu ICI, pendant l'exploration : la brique 4b le
+          // consomme, il ne peut donc plus attendre la fin du parcours.
+          profilSite = await collecte.proposer(contexteProfilage);
           contexte.journaliser('profilage.extraction', {
             viewport,
             url,
@@ -628,6 +705,8 @@ export function creerExplorateur(dependances: DependancesExplorateur): Explorate
             revisites: new Map(),
             formulairesRemplis: new Set(),
             formulairesSoumis: new Set(),
+            libelles: new Map(),
+            historique: [],
             pageCourante: { url: depart, viewport: viewport.nom, statutHttp: null, liensInternes: [], formulaires: [], horodatage: new Date().toISOString() },
           };
           await visiterDepart(etat);
@@ -636,6 +715,112 @@ export function creerExplorateur(dependances: DependancesExplorateur): Explorate
           branchee?.debrancher();
           await contexteNavigateur?.close().catch(() => undefined);
         }
+      }
+
+      /**
+       * UN point de décision, de bout en bout, avec ses trois couches.
+       *
+       * Ordre non négociable : le moteur ÉNUMÈRE (couche 1), le menu fermé
+       * écarte ce qui n'est pas au vocabulaire (couche 2), la politique élit,
+       * et le filtre d'actions destructives passe APRÈS — dans la boucle
+       * appelante, jamais ici. Filtrer l'énumération plutôt que la décision
+       * ferait disparaître du journal le fait qu'une action destructive a été
+       * ÉLUE : on saurait que rien n'a été fait, jamais ce qui a été voulu.
+       *
+       * L'action exécutée est celle que le MOTEUR a énumérée, pas celle que la
+       * politique a rendue. C'est ce qui fait de l'énumération une couche de
+       * sécurité et non un contrat de bonne foi : une action forgée n'a
+       * aucun chemin jusqu'à l'exécution, même si le modèle la nomme.
+       */
+      async function deciderProchaineAction(
+        etat: EtatViewport,
+        limiteAtteinte: boolean,
+      ): Promise<{ action: Action; decision: DecisionPrise; proposee: ActionProposee | undefined }> {
+        const viewport = etat.viewport.nom;
+        const page = cheminDe(etat.pageCourante.url, origine);
+        const contexteDecision: ContexteDecision = {
+          pageCourante: etat.pageCourante,
+          formulairesRemplis: selecteursDe(etat.formulairesRemplis, etat.pageCourante.url),
+          formulairesSoumis: selecteursDe(etat.formulairesSoumis, etat.pageCourante.url),
+          urlsEnAttente: limiteAtteinte ? [] : [...etat.enAttente],
+          nbPagesVisitees: etat.pagesVisitees.size,
+        };
+        const { retenues, ecartees } = filtrerMenuFerme(
+          enumererActions(contexteDecision, {
+            remplissage: config.remplissage,
+            libelleMaxChars: exploration.libelleMaxChars,
+            origine,
+            libelles: etat.libelles,
+          }),
+        );
+        for (const ecartee of ecartees) {
+          contexte.journaliser(EVENEMENT_COUCHE, { couche: COUCHE_MENU_FERME, viewport, page, actionId: ecartee.proposition.id, type: ecartee.type });
+        }
+        const etatEnumere = composerEtat({
+          url: etat.pageCourante.url,
+          origine,
+          viewport,
+          profil: profilSite,
+          actions: retenues,
+          historique: etat.historique,
+          historiqueMaxActions: exploration.historiqueMaxActions,
+          nbPagesVisitees: etat.pagesVisitees.size,
+          pagesRestantes: exploration.pagesMax - etat.pagesVisitees.size,
+        });
+        contexte.journaliser(EVENEMENT_ENUMERATION, {
+          viewport,
+          page,
+          politique: politique.nom,
+          nbActions: retenues.length,
+          types: retenues.map((proposee) => proposee.type),
+          pagesRestantes: etatEnumere.pagesRestantes,
+          profil: profilSite === null ? null : profilSite.typeSite,
+        });
+
+        let decision: DecisionPrise;
+        try {
+          decision = await politique.decider(contexteDecision, etatEnumere);
+        } catch (erreur: unknown) {
+          contexte.journaliser('decision.erreur', { viewport, page, politique: politique.nom, erreur: messageErreur(erreur) });
+          decision = { ...(await secours.decider(contexteDecision, etatEnumere)), raisonRepli: RAISON_HORS_ENUMERATION };
+        }
+        let retenue = actionEnumeree(decision.action, retenues);
+        if (retenue === undefined) {
+          contexte.journaliser(EVENEMENT_COUCHE, { couche: COUCHE_ENUMERATION, viewport, page, politique: decision.politique, type: decision.action.type });
+          decision = { ...(await secours.decider(contexteDecision, etatEnumere)), raisonRepli: RAISON_HORS_ENUMERATION };
+          retenue = actionEnumeree(decision.action, retenues);
+        }
+        if (retenue === undefined) {
+          // Même le secours sort de l'énumération : rien n'est exécuté. On
+          // s'arrête plutôt que de laisser passer un acte non énuméré.
+          contexte.journaliser(EVENEMENT_COUCHE, { couche: COUCHE_ENUMERATION, viewport, page, politique: decision.politique, type: decision.action.type, secours: true });
+          // Une décision a bien été PRISE (s'arrêter), et elle a été tranchée
+          // par un repli : elle doit émettre l'entrée de décision comme toute
+          // autre. Sans elle, ce point de décision serait le seul que le banc
+          // ne verrait pas — et une jumelle doit lire la même source que ce
+          // qu'elle garde (APPRENTISSAGES n°4).
+          contexte.journaliser(EVENEMENT_DECISION, {
+            viewport,
+            page,
+            politiqueDemandee: politique.nom,
+            politique: decision.politique,
+            type: 'terminer',
+            raisonRepli: RAISON_HORS_ENUMERATION,
+            ...(decision.provenance === undefined ? {} : { provenance: decision.provenance }),
+          });
+          return { action: { type: 'terminer', raison: RAISON_HORS_ENUMERATION }, decision, proposee: undefined };
+        }
+        contexte.journaliser(EVENEMENT_DECISION, {
+          viewport,
+          page,
+          politiqueDemandee: politique.nom,
+          politique: decision.politique,
+          actionId: retenue.id,
+          type: retenue.type,
+          ...(decision.raisonRepli === undefined ? {} : { raisonRepli: decision.raisonRepli }),
+          ...(decision.provenance === undefined ? {} : { provenance: decision.provenance }),
+        });
+        return { action: retenue.action, decision, proposee: retenue };
       }
 
       async function boucleDecision(etat: EtatViewport): Promise<Arret> {
@@ -650,17 +835,31 @@ export function creerExplorateur(dependances: DependancesExplorateur): Explorate
             return 'erreur';
           }
           const limiteAtteinte = etat.pagesVisitees.size >= exploration.pagesMax;
-          const action = politique.decider({
-            pageCourante: etat.pageCourante,
-            formulairesRemplis: selecteursDe(etat.formulairesRemplis, etat.pageCourante.url),
-            formulairesSoumis: selecteursDe(etat.formulairesSoumis, etat.pageCourante.url),
-            urlsEnAttente: limiteAtteinte ? [] : [...etat.enAttente],
-            nbPagesVisitees: etat.pagesVisitees.size,
-          });
+          const { action, decision, proposee } = await deciderProchaineAction(etat, limiteAtteinte);
           if (action.type === 'terminer') {
-            contexte.journaliser('action', { type: 'terminer', raison: action.raison, viewport: etat.viewport.nom });
+            // L'arrêt dit l'ÉTAT RÉEL de la file au moment où il est décidé :
+            // la `raison` portée par l'action énumérée décrit ce qui restait à
+            // ÉNUMÉRER, pas ce qui restait à FAIRE (sous limite de pages, la
+            // file est masquée à l'énumération). Publier la seule raison
+            // laisserait donc lire « plus rien à faire » là où dix-neuf pages
+            // attendaient — un diagnostic faux est cru (APPRENTISSAGES n°6).
+            parcours.enAttenteALArret += etat.enAttente.length;
+            parcours.pagesRestantesALArret += Math.max(0, exploration.pagesMax - etat.pagesVisitees.size);
+            contexte.journaliser('action', {
+              type: 'terminer',
+              raison: action.raison,
+              viewport: etat.viewport.nom,
+              enAttente: etat.enAttente.length,
+              pagesRestantes: Math.max(0, exploration.pagesMax - etat.pagesVisitees.size),
+              decision: { politique: decision.politique, ...(decision.raisonRepli === undefined ? {} : { raisonRepli: decision.raisonRepli }) },
+            });
             return limiteAtteinte && etat.enAttente.length > 0 ? 'limite-pages' : 'complet';
           }
+          const tracee: ActionExecutee['decision'] = {
+            politique: decision.politique,
+            ...(decision.provenance === undefined ? {} : { provenance: decision.provenance }),
+            ...(decision.raisonRepli === undefined ? {} : { raisonRepli: decision.raisonRepli }),
+          };
 
           const id = prochainId();
           const debut = new Date().toISOString();
@@ -682,13 +881,30 @@ export function creerExplorateur(dependances: DependancesExplorateur): Explorate
             } else if (action.type === 'soumettre') {
               etat.formulairesSoumis.add(cleFormulaire(etat.pageCourante.url, action.formulaire.selecteur));
             }
+            // COUCHE 3 : le filtre d'actions destructives, TOUJOURS après la
+            // décision. Le journal le dit, pour qu'on puisse démontrer — et
+            // pas seulement affirmer — que c'est bien lui qui a arrêté l'acte,
+            // et qu'il l'a arrêté APRÈS que l'acte a été élu.
+            contexte.journaliser(EVENEMENT_COUCHE, {
+              couche: COUCHE_FILTRE_DESTRUCTIF,
+              viewport: etat.viewport.nom,
+              page: cheminDe(pageAvant.url, origine),
+              actionId: proposee?.id,
+              type: action.type,
+              politique: decision.politique,
+              ...(verdict.canal === undefined ? {} : { canal: verdict.canal }),
+              ...(verdict.categorie === undefined ? {} : { categorie: verdict.categorie }),
+              ...(verdict.motif === undefined ? {} : { motif: verdict.motif }),
+              ...(verdict.raison === undefined ? {} : { raison: verdict.raison }),
+            });
             enregistrer(etat, id, action, pageAvant.url, debut, 'interdite', {
+              couche: COUCHE_FILTRE_DESTRUCTIF,
               ...(verdict.canal === undefined ? {} : { canal: verdict.canal }),
               ...(verdict.categorie === undefined ? {} : { categorie: verdict.categorie }),
               ...(verdict.langue === undefined ? {} : { langue: verdict.langue }),
               ...(verdict.motif === undefined ? {} : { motif: verdict.motif }),
               ...(verdict.raison === undefined ? {} : { raison: verdict.raison }),
-            });
+            }, tracee);
             continue;
           }
 
@@ -705,7 +921,7 @@ export function creerExplorateur(dependances: DependancesExplorateur): Explorate
               derniereMutation: () => derniereMutation(etat.page, NOM_TAMPON, delai()),
               lireMutations: () => lireMutations(etat.page, NOM_TAMPON, selecteurZone, delai()),
             });
-            enregistrer(etat, id, action, pageAvant.url, debut, resultat, details);
+            enregistrer(etat, id, action, pageAvant.url, debut, resultat, details, tracee);
             aNavigue = action.type !== 'naviguer' && effets.navigation;
           } finally {
             actionCourante = undefined;

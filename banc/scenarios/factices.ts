@@ -36,7 +36,12 @@ export function configFactice(surcharges: Partial<ConfigBanc> = {}): ConfigBanc 
     serveur: { portDeBase: 4800, nombrePortsEssayes: 5 },
     scan: { timeoutMs: 1000, sujetParDefaut: 'reel' },
     scorecard: { seuilAlarmeEcartLanguesPoints: 5, dossierResultats: 'banc/resultats', retentionRuns: 100 },
-    scenarios: { dossier: 'banc/scenarios', jetonSain: 'sain', combinaisons: [['F01', 'M01']] },
+    scenarios: {
+      dossier: 'banc/scenarios',
+      jetonSain: 'sain',
+      combinaisons: { 'gabarit-factice': [['F01', 'M01']] },
+      contraintes: {},
+    },
     site: { delaiReponseApiMs: 0 },
     bugs: {},
     ...surcharges,

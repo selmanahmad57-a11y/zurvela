@@ -1,15 +1,35 @@
 import { describe, expect, it } from 'vitest';
 import { chargerConfigScanner } from '../scanner/config.js';
 import { creerClientIa, RAISON_CLE_ABSENTE, RAISON_NON_IMPLEMENTE } from './index.js';
+import type { EtatDecisionEnumere } from '../types.js';
 
 const config = await chargerConfigScanner();
+
+/** Un point de décision minimal : une seule action au menu, aucun profil établi. */
+const etat: EtatDecisionEnumere = {
+  page: '/',
+  viewport: 'bureau',
+  profil: null,
+  actions: [
+    {
+      id: 'c1',
+      type: 'naviguer',
+      action: { type: 'naviguer', url: 'https://exemple.invalid/contact' },
+      reperes: { balise: 'a', chemin: '/contact' },
+      libelle: 'Contact',
+    },
+  ],
+  historique: [],
+  nbPagesVisitees: 1,
+  pagesRestantes: 4,
+};
 
 describe('creerClientIa', () => {
   it('sans clé : mode dégradé, raison « clé absente »', async () => {
     const client = creerClientIa(config.ia, {});
     expect(client.mode).toBe('degrade');
     expect(client.raisonDegrade).toBe(RAISON_CLE_ABSENTE);
-    await expect(client.decider({ pageCourante: { url: '', viewport: '', statutHttp: null, liensInternes: [], formulaires: [], horodatage: '' }, formulairesRemplis: [], formulairesSoumis: [], urlsEnAttente: [], nbPagesVisitees: 0 })).resolves.toEqual({
+    await expect(client.decider(etat)).resolves.toEqual({
       disponible: false,
       raison: RAISON_CLE_ABSENTE,
     });

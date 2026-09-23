@@ -1,0 +1,12 @@
+{
+  "cle": "12d110e75cd9772a80bb6507b1e12b0c9034895d06f36e89e112b12d515301cf",
+  "metadonnees": {
+    "date": "2026-09-23T18:42:24.335Z",
+    "modeleDemande": "claude-haiku-4-5",
+    "modeleServi": "claude-haiku-4-5-20251001",
+    "versionPrompt": "v2",
+    "coutApi": 0.002085,
+    "apresRelance": false
+  },
+  "reponse": "{\"actionId\":\"c2\",\"raison\":\"Le robot est sur la page /contact avec un formulaire de 3 champs requis. L'action c2 soumet le formulaire, ce qu'un visiteur ferait après avoir rempli les champs. C'est une interaction réelle du visiteur sur une page fonctionnelle (formulaire de contact) qui mérite d'être testée.\"}"
+}

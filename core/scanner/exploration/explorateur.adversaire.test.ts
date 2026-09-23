@@ -15,6 +15,7 @@ import type { EntreeJournal, Parcours, Signal } from '../../types.js';
 import { chargerActionsInterdites, chargerConfigScanner, type ConfigScanner } from '../config.js';
 import { lancerNavigateur } from '../navigateur.js';
 import { creerObservateur } from '../observation/observateur.js';
+import { COUCHE_FILTRE_DESTRUCTIF } from './couches.js';
 import { creerExplorateur } from './explorateur.js';
 import { creerFiltre, type FiltreActions } from './filtre-actions.js';
 import { politiqueDeterministe } from './politique.js';
@@ -104,7 +105,8 @@ afterAll(async () => {
 async function explorer(url: string, config: ConfigScanner, dureeMs = 15_000): Promise<Resultat> {
   const journal: EntreeJournal[] = [];
   const observateur = creerObservateur();
-  const explorateur = creerExplorateur({ config, politique: politiqueDeterministe(config.remplissage), filtre, navigateur });
+  const deterministe = politiqueDeterministe(config.remplissage);
+  const explorateur = creerExplorateur({ config, politique: deterministe, secours: deterministe, filtre, navigateur });
   const parcours = await explorateur.explorer(
     {
       urlDepart: url,
@@ -144,7 +146,7 @@ describe('filtre d’actions face au DOM réel', () => {
       expect(soumission?.action.type === 'soumettre' && soumission.action.declencheur?.balise).toBe('input');
       expect(serveur.requetes.filter((requete) => requete.chemin === '/delete/9')).toEqual([]);
       // Le journal dit par quel canal l'action a été refusée (pas de catégorie hors canal texte).
-      expect(soumission?.details).toEqual({ canal: 'url', motif: 'delete' });
+      expect(soumission?.details).toEqual({ couche: COUCHE_FILTRE_DESTRUCTIF, canal: 'url', motif: 'delete' });
     } finally {
       await serveur.arreter();
     }
@@ -159,7 +161,7 @@ describe('filtre d’actions face au DOM réel', () => {
       const resultat = await explorer(serveur.url, resserrer(base));
       const soumission = resultat.parcours.actions.find((action) => action.action.type === 'soumettre');
       expect(soumission?.resultat).toBe('interdite');
-      expect(soumission?.details).toEqual({ canal: 'texte', categorie: 'destruction', langue: 'fr', motif: 'suppr' });
+      expect(soumission?.details).toEqual({ couche: COUCHE_FILTRE_DESTRUCTIF, canal: 'texte', categorie: 'destruction', langue: 'fr', motif: 'suppr' });
       expect(serveur.requetes.filter((requete) => requete.methode === 'POST')).toEqual([]);
     } finally {
       await serveur.arreter();

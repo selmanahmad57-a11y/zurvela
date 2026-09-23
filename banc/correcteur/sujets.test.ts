@@ -5,7 +5,7 @@ import { chargerConfig } from '../config.js';
 import { obtenirGabarit } from '../gabarits/index.js';
 import { formulaireContact } from '../gabarits/formulaire-contact/index.js';
 import { depuisRacine } from '../outils/racine.js';
-import type { ConfigBanc, Scenario } from '../types.js';
+import { POLITIQUE_DETERMINISTE, POLITIQUE_IA, sujetConstant, type ConfigBanc, type Scenario } from '../types.js';
 import { executerBanc, lireOptions } from './index.js';
 import { estNomSujet, NOMS_SUJETS, SUJETS } from './sujets.js';
 
@@ -34,16 +34,25 @@ describe('registre des sujets', () => {
 
 describe('lireOptions', () => {
   it('accepte --sujet avec --scenario ou --tous, et le laisse absent sinon', () => {
-    expect(lireOptions(['--sujet', 'factice', '--scenario', 'x'])).toEqual({ scenario: 'x', tous: false, sujet: 'factice', sansIa: false });
-    expect(lireOptions(['--tous', '--sujet', 'reel'])).toEqual({ scenario: undefined, tous: true, sujet: 'reel', sansIa: false });
-    expect(lireOptions(['--tous'])).toEqual({ scenario: undefined, tous: true, sujet: undefined, sansIa: false });
+    expect(lireOptions(['--sujet', 'factice', '--scenario', 'x'])).toEqual({ scenario: 'x', tous: false, sujet: 'factice', sansIa: false, politique: undefined });
+    expect(lireOptions(['--tous', '--sujet', 'reel'])).toEqual({ scenario: undefined, tous: true, sujet: 'reel', sansIa: false, politique: undefined });
+    expect(lireOptions(['--tous'])).toEqual({ scenario: undefined, tous: true, sujet: undefined, sansIa: false, politique: undefined });
   });
 
   it('accepte --sans-ia, qui est un drapeau et vaut faux par défaut', () => {
-    expect(lireOptions(['--tous', '--sans-ia'])).toEqual({ scenario: undefined, tous: true, sujet: undefined, sansIa: true });
+    expect(lireOptions(['--tous', '--sans-ia'])).toEqual({ scenario: undefined, tous: true, sujet: undefined, sansIa: true, politique: undefined });
     expect(lireOptions(['--scenario', 'x', '--sans-ia'])?.sansIa).toBe(true);
     // Le drapeau ne prend pas de valeur : `--sans-ia faux` est une ligne mal formée.
     expect(lireOptions(['--tous', '--sans-ia=faux'])).toBeNull();
+  });
+
+  it('accepte --politique et la laisse absente sinon : le défaut vient de la config du MOTEUR, pas du banc', () => {
+    expect(lireOptions(['--tous', '--politique', POLITIQUE_IA])?.politique).toBe(POLITIQUE_IA);
+    expect(lireOptions(['--tous', '--politique', POLITIQUE_DETERMINISTE])?.politique).toBe(POLITIQUE_DETERMINISTE);
+    expect(lireOptions(['--tous'])?.politique).toBeUndefined();
+    // La valeur est vérifiée plus tard (`estNomPolitique`) : `lireOptions` ne
+    // fait que lire la ligne de commande.
+    expect(lireOptions(['--politique'])).toBeNull();
   });
 
   it('rejette une ligne de commande mal formée', () => {
@@ -60,9 +69,9 @@ describe('sujet factice', () => {
     ];
     const lignes: string[] = [];
 
-    const scorecard = await executerBanc({ scenarios, scanner: SUJETS.factice, config, dico, obtenirGabarit, iaDeclareeAbsente: true, journal: (ligne) => lignes.push(ligne) });
+    const scorecard = await executerBanc({ scenarios, sujet: sujetConstant('factice', SUJETS.factice), politique: POLITIQUE_DETERMINISTE, config, dico, obtenirGabarit, iaDeclareeAbsente: true, journal: (ligne) => lignes.push(ligne) });
 
-    expect(lignes[0]).toBe(traduire(dico, 'banc.demarrage', { nombre: 2, scanner: 'scannerFactice' }));
+    expect(lignes[0]).toBe(traduire(dico, 'banc.demarrage', { nombre: 2, scanner: 'factice', politique: POLITIQUE_DETERMINISTE }));
     expect(scorecard.global).toMatchObject({
       nbScenarios: 2,
       nbErreurs: 0,

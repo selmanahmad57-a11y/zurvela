@@ -28,6 +28,7 @@ import {
   type DepotCassettes,
   type TarifsIa,
 } from '../core/ia/index.js';
+import { chargerConfigNavigation } from '../core/ia/config-navigation.js';
 import { chargerConfigProfilage, chargerConfigScanner, type ConfigScanner } from '../core/scanner/config.js';
 
 /** Dossier des cassettes, COMMITÉES : une réponse figée a un auteur, une date et un hash. */
@@ -74,6 +75,12 @@ export async function creerClientIaBanc(options: OptionsIaBanc): Promise<{ clien
   const { regime } = options;
   const [config, profilage] = await Promise.all([chargerConfigScanner(), chargerConfigProfilage()]);
   const modele = config.ia.modeles.profilage;
+  // Les réglages de DÉCISION : le budget de l'appel (`config/navigation.json`)
+  // assemblé avec les bornes de l'énumération (`exploration`). Le banc les
+  // charge pour la même raison qu'il charge ceux du profilage — ils entrent
+  // dans la clé de cassette, donc dans ce qui rend le rejeu déterministe.
+  const navigation = await chargerConfigNavigation(config.exploration);
+  const decision = { modele: config.ia.modeles.navigation, config: navigation };
 
   if (regime === 'sans-ia') {
     return { client: creerClientSansCapacite(RAISON_BANC_SANS_IA), modele };
@@ -83,6 +90,7 @@ export async function creerClientIaBanc(options: OptionsIaBanc): Promise<{ clien
     creerClientAnthropic({
       config: config.ia,
       profilage,
+      navigation,
       tarifs: tarifsConfigures(config.ia),
       ...(options.env === undefined ? {} : { env: options.env }),
     });
@@ -104,6 +112,7 @@ export async function creerClientIaBanc(options: OptionsIaBanc): Promise<{ clien
         enregistrement,
         modele,
         profilage,
+        decision,
         ...(options.journaliser === undefined ? {} : { journaliser: options.journaliser }),
       },
     ),

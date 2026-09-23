@@ -32,6 +32,18 @@
       "type": "object",
       "additionalProperties": { "type": "object" },
       "description": "Surcharges des paramètres des bugs actifs, clé = identifiant du bug ; les défauts vivent dans config/banc.json (bugs.<id>)."
+    },
+    "contraintes": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "pagesMax": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Budget de pages imposé au moteur pour ce scénario, recopié depuis config/banc.json (scenarios.contraintes.<gabarit>). Un budget réduit est ce qui rend la qualité d'une décision de navigation mesurable."
+        }
+      },
+      "description": "Contraintes imposées au moteur pour ce scénario. Absent = les réglages de config/scanner.json s'appliquent."
     }
   }
 }

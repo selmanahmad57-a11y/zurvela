@@ -45,6 +45,17 @@ const CHAMPS_DEMANDES = ['typeSite', 'natureLibre', 'langue', 'confiance'] as co
  */
 const MOTIF_BCP47 = '^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})*$';
 
+/**
+ * Résumé opérationnel d'une invalidité, pour le journal. STRUCTUREL : il ne
+ * contient que des noms de champs du contrat et des mots-clés de défaut,
+ * jamais la réponse fautive. Partagé par le profilage (4a) et la décision de
+ * navigation (4b) — même règle, mêmes raisons.
+ */
+export function resumerConstats(version: string, constats: readonly ConstatInvalidite[]): string {
+  const details = constats.map((constat) => `${constat.champ === '' ? 'reponse' : constat.champ}:${constat.defaut}`);
+  return `${version} ${details.join(' ')}`;
+}
+
 /** Un défaut STRUCTUREL de la réponse : issu du contrat, jamais de la donnée reçue. */
 export interface ConstatInvalidite {
   /** Champ du contrat concerné ; chaîne vide pour la réponse entière. */

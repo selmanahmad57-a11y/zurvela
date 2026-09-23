@@ -8,7 +8,7 @@
 import { VERDICTS_RETENUS, type VerdictConfirmation } from '../../core/types.js';
 import { normaliserLocalisation } from '../correcteur/appariement.js';
 import { depuisRacine } from '../outils/racine.js';
-import type { AttenduBug, AttenduManifeste, AttenduProfil, BugInjectable, Gabarit, Manifeste, Scenario } from '../types.js';
+import type { AttenduBug, AttenduCible, AttenduManifeste, AttenduProfil, BugInjectable, Gabarit, Manifeste, Scenario } from '../types.js';
 
 /** Schéma commun à tous les manifestes. */
 export const FICHIER_SCHEMA_MANIFESTE = depuisRacine('banc', 'schemas', 'manifeste.schema.json');
@@ -93,6 +93,54 @@ function deriverAttenduProfil(gabarit: Gabarit, bugsActifs: readonly BugInjectab
   };
 }
 
+/**
+ * Les attendus de CIBLE du scénario, ou une liste vide si le gabarit n'en
+ * déclare aucune.
+ *
+ * Une atteinte attendue n'a de sens que SOUS UN BUDGET : sans contrainte de
+ * pages, un parcours exhaustif atteint tout, et « la déterministe ne l'atteint
+ * pas » devient faux sans que rien ne le signale. Un gabarit qui déclare des
+ * cibles dans un scénario sans budget est donc une faute du BANC, et elle
+ * lève — plutôt que de produire un attendu qu'on ne saurait pas juger. C'est
+ * la même règle que pour un manifeste ambigu : un scénario qu'on ne peut pas
+ * noter honnêtement ne doit pas exister.
+ *
+ * `atteinteAttendue` est recopié TEL QUEL, politique par politique : sa
+ * jumelle inter-politiques est dans la déclaration du gabarit, et le
+ * correcteur n'a pas à la reconstruire.
+ */
+function deriverAttendusCible(
+  scenario: Scenario,
+  gabarit: Gabarit,
+  bugsActifs: readonly BugInjectable[],
+): AttenduCible[] {
+  const cibles = gabarit.cibles ?? [];
+  if (cibles.length === 0) {
+    return [];
+  }
+  if (scenario.contraintes?.pagesMax === undefined) {
+    throw new Error(
+      `Scénario ${scenario.id} : le gabarit ${gabarit.nom} déclare ${cibles.length} cible(s), mais le scénario n'impose aucun budget de pages (contraintes.pagesMax) — une atteinte attendue sans budget n'est pas jugeable : tout parcours exhaustif atteint tout`,
+    );
+  }
+  // ÉPROUVÉE ou non : la règle est la même que pour les profils — une charge
+  // de catégorie `securite` est active — MAIS resserrée sur la seule cible
+  // qu'une charge peut viser : celle dont AUCUNE politique n'attend
+  // l'atteinte. Une page qu'on veut voir atteinte n'est pas ce qu'une
+  // injection cherche à faire ouvrir, et la marquer « éprouvée » sous S03
+  // remplacerait une dilution par une autre.
+  const sousCharge = bugsActifs.some((bug) => bug.categorie === CATEGORIE_CHARGE_SECURITE);
+  return cibles.map((cible): AttenduCible => {
+    const jamaisAttendue = Object.values(cible.atteinteAttendue).every((attendue) => attendue === false);
+    return {
+      nature: 'cible',
+      page: cible.page,
+      atteinteAttendue: { ...cible.atteinteAttendue },
+      eprouvee: sousCharge && jamaisAttendue,
+    };
+  });
+}
+
 export function deriverManifeste(scenario: Scenario, gabarit: Gabarit): Manifeste {
   if (scenario.gabarit !== gabarit.nom) {
     throw new Error(
@@ -125,6 +173,10 @@ export function deriverManifeste(scenario: Scenario, gabarit: Gabarit): Manifest
   verifierManifesteNonAmbigu(scenario.id, attendusBug);
 
   const attenduProfil = deriverAttenduProfil(gabarit, bugsActifs);
-  const attendus: AttenduManifeste[] = attenduProfil === null ? attendusBug : [...attendusBug, attenduProfil];
+  const attendus: AttenduManifeste[] = [
+    ...attendusBug,
+    ...(attenduProfil === null ? [] : [attenduProfil]),
+    ...deriverAttendusCible(scenario, gabarit, bugsActifs),
+  ];
   return { scenarioId: scenario.id, gabarit: gabarit.nom, langue: scenario.langue, attendus };
 }

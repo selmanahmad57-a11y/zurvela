@@ -63,7 +63,7 @@ describe('genererScenarios (gabarit factice)', () => {
 
   it('suit l’ordre du registre du gabarit et l’ordre déclaré des combinaisons', () => {
     const inverse = gabaritFactice('g', [...BUGS_FACTICES].reverse());
-    const ids = genererScenarios(inverse, configFactice({ langues: ['fr'], scenarios: { dossier: 'x', jetonSain: 'ok', combinaisons: [['V01', 'F02'], ['M01', 'F01']] } })).map((scenario) => scenario.id);
+    const ids = genererScenarios(inverse, configFactice({ langues: ['fr'], scenarios: { dossier: 'x', jetonSain: 'ok', combinaisons: { g: [['V01', 'F02'], ['M01', 'F01']] }, contraintes: {} } })).map((scenario) => scenario.id);
     expect(ids).toEqual([
       'g--ok--fr',
       'g--l01--fr',
@@ -80,12 +80,12 @@ describe('genererScenarios (gabarit factice)', () => {
   });
 
   it('lève si une combinaison cite un bug inconnu du gabarit', () => {
-    const config = configFactice({ scenarios: { dossier: 'x', jetonSain: 'sain', combinaisons: [['F01', 'X99']] } });
+    const config = configFactice({ scenarios: { dossier: 'x', jetonSain: 'sain', combinaisons: { 'gabarit-factice': [['F01', 'X99']] }, contraintes: {} } });
     expect(() => genererScenarios(gabarit, config)).toThrow(/X99/);
   });
 
   it('lève si deux combinaisons donnent le même identifiant', () => {
-    const config = configFactice({ scenarios: { dossier: 'x', jetonSain: 'sain', combinaisons: [['F01', 'M01'], ['F01', 'M01']] } });
+    const config = configFactice({ scenarios: { dossier: 'x', jetonSain: 'sain', combinaisons: { 'gabarit-factice': [['F01', 'M01'], ['F01', 'M01']] }, contraintes: {} } });
     expect(() => genererScenarios(gabarit, config)).toThrow(/double/);
   });
 });
@@ -134,7 +134,7 @@ describe('genererScenarios (registre réel)', () => {
     const gabarit = obtenirGabarit('formulaire-contact');
     const scenarios = genererScenarios(gabarit, config);
     // Dérivé du registre et de la config (jamais un compte figé) : ajouter un bug ne doit pas casser ce test.
-    const attendusParLangue = 1 + gabarit.bugs.length + config.scenarios.combinaisons.length;
+    const attendusParLangue = 1 + gabarit.bugs.length + (config.scenarios.combinaisons[gabarit.nom]?.length ?? 0);
     expect(scenarios).toHaveLength(attendusParLangue * config.langues.length);
     expect(scenarios.map((scenario) => scenario.id)).toContain('formulaire-contact--f01-m01--fr');
     expect(scenarios.map((scenario) => scenario.id)).toContain('formulaire-contact--sain--en');

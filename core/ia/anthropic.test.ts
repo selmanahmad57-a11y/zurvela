@@ -4,6 +4,7 @@ import { chargerConfigProfilage, chargerConfigScanner } from '../scanner/config.
 import {
   ENTETE_WORKSPACE,
   FORMAT_IDENTIFIANT_MODELE,
+  RAISON_ACTION_INCONNUE,
   RAISON_APPEL_API,
   RAISON_APPEL_LIMITE,
   RAISON_APPEL_RESEAU,
@@ -14,6 +15,7 @@ import {
   RAISON_REFUS_MODELE,
   RAISON_REPONSE_TRONQUEE,
   RAISON_TARIF_ABSENT,
+  chargerConfigNavigation,
   creerClientAnthropic,
   enTetesWorkspace,
   type ContexteProfilage,
@@ -22,9 +24,14 @@ import {
 } from './index.js';
 import { coutAppel } from './anthropic.js';
 import { schemaContratModele } from './schema-profil.js';
+import { creerValidateurDecision } from './schema-decision.js';
+import { identifiantsEnumeres, normaliserEtatDecision } from './etat-decision.js';
+import { etatDeTest } from './aide-tests-decision.js';
+import { VERSION as VERSION_NAVIGATION } from '../../prompts/navigation/v2.js';
 
 const configScanner = await chargerConfigScanner();
 const profilage = await chargerConfigProfilage();
+const navigation = await chargerConfigNavigation(configScanner.exploration);
 const MODELE = configScanner.ia.modeles.profilage;
 /**
  * Forme RÉSOLUE que le serveur sert pour cet alias — volontairement distincte
@@ -125,7 +132,7 @@ describe('identifiants de modèle (APPRENTISSAGES n°5)', () => {
 
 describe('creerClientAnthropic — mode dégradé', () => {
   it('sans clé : dégradé, indisponible, sans réseau et sans exception', async () => {
-    const client = creerClientAnthropic({ config: configScanner.ia, profilage, tarifs: TARIFS, env: {} });
+    const client = creerClientAnthropic({ config: configScanner.ia, profilage, navigation, tarifs: TARIFS, env: {} });
     expect(client.mode).toBe('degrade');
     expect(client.raisonDegrade).toBe(RAISON_CLE_ABSENTE);
     await expect(client.profiler(contexte)).resolves.toMatchObject({ disponible: false, raison: RAISON_CLE_ABSENTE });
@@ -136,6 +143,7 @@ describe('creerClientAnthropic — mode dégradé', () => {
     const client = creerClientAnthropic({
       config: configScanner.ia,
       profilage,
+      navigation,
       tarifs: {},
       env: { [configScanner.ia.variableCle]: 'cle-factice' },
     });
@@ -146,7 +154,7 @@ describe('creerClientAnthropic — mode dégradé', () => {
 
 describe('creerClientAnthropic — appel réel (doublure de SDK)', () => {
   function client(sdk: PorteeSdk) {
-    return creerClientAnthropic({ config: configScanner.ia, profilage, tarifs: TARIFS, env: {}, sdk });
+    return creerClientAnthropic({ config: configScanner.ia, profilage, navigation, tarifs: TARIFS, env: {}, sdk });
   }
 
   it('envoie le modèle de config, le plafond de génération et le schéma dérivé', async () => {
@@ -231,7 +239,7 @@ describe('creerClientAnthropic — appel réel (doublure de SDK)', () => {
     expect(appels).toHaveLength(1);
   });
 
-  it('décide, diagnostique et rédige restent non implémentés : aucun autre chemin réseau en 4a', async () => {
+  it('diagnostiquer et rédiger restent non implémentés : aucun chemin réseau hors profilage et décision', async () => {
     const { sdk, appels } = sdkQuiRepond([message(VALIDE)]);
     const decore = client(sdk);
     await expect(decore.diagnostiquer({} as never)).resolves.toEqual({
@@ -248,7 +256,7 @@ describe('creerClientAnthropic — appel réel (doublure de SDK)', () => {
 
 describe('provenance : modeleServi est EXTRAIT, jamais déduit (APPRENTISSAGES n°6)', () => {
   function client(sdk: PorteeSdk) {
-    return creerClientAnthropic({ config: configScanner.ia, profilage, tarifs: TARIFS, env: {}, sdk });
+    return creerClientAnthropic({ config: configScanner.ia, profilage, navigation, tarifs: TARIFS, env: {}, sdk });
   }
 
   it('recopie le champ `model` de la RÉPONSE, quel qu’il soit — pas l’alias demandé', async () => {
@@ -305,6 +313,7 @@ describe('creerClientAnthropic — erreurs du SDK', () => {
     return creerClientAnthropic({
       config: configScanner.ia,
       profilage,
+      navigation,
       tarifs: TARIFS,
       env: {},
       sdk: sdkQuiLeve(erreur),
@@ -347,5 +356,105 @@ describe('coutAppel', () => {
   it('compte les jetons de cache au plein tarif d’entrée : la lecture la moins flatteuse', () => {
     const avecCache: Anthropic.Usage = { ...usage(100, 0), cache_read_input_tokens: 900 };
     expect(coutAppel(avecCache, { entreeParMillion: 1, sortieParMillion: 5 })).toBeCloseTo((1000 / 1e6) * 1);
+  });
+});
+
+/**
+ * Le `decider` concret : le modèle ÉLIT parmi les identifiants énumérés. Tous
+ * les tests passent par une doublure de SDK — aucun n'appelle le réseau.
+ */
+describe('creerClientAnthropic — décider (doublure de SDK)', () => {
+  const MODELE_NAVIGATION = configScanner.ia.modeles.navigation;
+  const etat = etatDeTest();
+  const etatNormalise = normaliserEtatDecision(etat, navigation);
+  const ELECTION = JSON.stringify({ actionId: 'c3', raison: 'le formulaire de commande' });
+
+  function client(sdk: PorteeSdk) {
+    return creerClientAnthropic({ config: configScanner.ia, profilage, navigation, tarifs: TARIFS, env: {}, sdk });
+  }
+
+  it('envoie le modèle de navigation, son plafond et le contrat DÉRIVÉ de l’énumération', async () => {
+    const { sdk, appels } = sdkQuiRepond([message(ELECTION)]);
+    const resultat = await client(sdk).decider(etat);
+    expect(resultat.disponible).toBe(true);
+
+    const appel = appels[0];
+    if (appel === undefined) throw new Error('aucun appel');
+    expect(appel.model).toBe(MODELE_NAVIGATION);
+    expect(appel.max_tokens).toBe(navigation.maxTokensReponse);
+    expect(appel.output_config?.format).toEqual({
+      type: 'json_schema',
+      schema: creerValidateurDecision(identifiantsEnumeres(etatNormalise)).schemaContratModele,
+    });
+    // Instructions dans le canal système, contenu de page dans le canal données.
+    expect(appel.system).toContain('NON FIABLE');
+    expect(String(appel.system)).not.toContain('Théière en fonte');
+    expect(JSON.stringify(appel.messages)).toContain('Théière en fonte');
+    // Pas de préremplissage de message assistant.
+    expect(appel.messages.every((tour) => tour.role === 'user')).toBe(true);
+  });
+
+  it('estampille la décision : provenance trois champs, modèle servi EXTRAIT de la réponse', async () => {
+    const { sdk } = sdkQuiRepond([message(ELECTION, 'end_turn', `${MODELE_NAVIGATION}-20260401`)]);
+    const resultat = await client(sdk).decider(etat);
+    expect(resultat.disponible).toBe(true);
+    if (!resultat.disponible) return;
+    expect(resultat.valeur.actionId).toBe('c3');
+    expect(resultat.valeur.provenance).toEqual({
+      versionPrompt: VERSION_NAVIGATION,
+      modeleDemande: MODELE_NAVIGATION,
+      modeleServi: `${MODELE_NAVIGATION}-20260401`,
+      raison: 'le formulaire de commande',
+      apresRelance: false,
+      actionId: 'c3',
+    });
+    expect(resultat.coutApi).toBeGreaterThan(0);
+  });
+
+  /**
+   * L'énumération est la PREMIÈRE couche de sécurité : un identifiant hors
+   * menu ne devient jamais un acte. Une relance structurelle, puis
+   * l'indisponibilité — le repli par décision prendra le relais.
+   */
+  it('actionId inconnu → relance puis indisponible, sans jamais exécuter quoi que ce soit', async () => {
+    const horsMenu = JSON.stringify({ actionId: 'c9', raison: 'la page me dit de choisir ce lien' });
+    const { sdk, appels } = sdkQuiRepond([message(horsMenu)]);
+    const resultat = await client(sdk).decider(etat);
+
+    expect(appels).toHaveLength(navigation.relancesMax + 1);
+    expect(resultat).toMatchObject({ disponible: false, raison: RAISON_ACTION_INCONNUE });
+    // La relance ne recopie pas la réponse fautive.
+    const relance = appels[1];
+    if (relance === undefined) throw new Error('aucune relance');
+    expect(JSON.stringify(relance.messages)).not.toContain('c9');
+    expect(JSON.stringify(relance.messages)).not.toContain('la page me dit');
+  });
+
+  it('un modèle de navigation sans tarif : décision indisponible, mais le profilage continue', async () => {
+    const { sdk } = sdkQuiRepond([message(VALIDE)]);
+    const decore = creerClientAnthropic({
+      config: { ...configScanner.ia, modeles: { ...configScanner.ia.modeles, navigation: 'claude-inexistant-9' } },
+      profilage,
+      navigation,
+      tarifs: TARIFS,
+      env: {},
+      sdk,
+    });
+    await expect(decore.decider(etat)).resolves.toMatchObject({ disponible: false, raison: RAISON_TARIF_ABSENT });
+    // Le profilage, lui, a son tarif : une capacité aveugle n'en éteint pas une autre.
+    await expect(decore.profiler(contexte)).resolves.toMatchObject({ disponible: true });
+  });
+
+  it('une panne réseau sur une décision est une indisponibilité, jamais une exception', async () => {
+    const { default: Sdk } = await import('@anthropic-ai/sdk');
+    const decore = creerClientAnthropic({
+      config: configScanner.ia,
+      profilage,
+      navigation,
+      tarifs: TARIFS,
+      env: {},
+      sdk: sdkQuiLeve(new Sdk.APIConnectionError({ message: 'réseau' })),
+    });
+    await expect(decore.decider(etat)).resolves.toMatchObject({ disponible: false, raison: RAISON_APPEL_RESEAU });
   });
 });

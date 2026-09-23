@@ -20,7 +20,7 @@ import type {
 } from '../types.js';
 import type { ConfigScanner } from './config.js';
 import { detecter } from './detection/index.js';
-import { ouvrirCollecte, profilerSite, type ExplorateurProfilant, type OptionsProfilage } from './profilage.js';
+import { ouvrirProfilage, type ExplorateurProfilant, type OptionsProfilage } from './profilage.js';
 
 /**
  * Ressource de rejeu d'un scan : le protocole de confirmation re-exécute
@@ -52,8 +52,12 @@ export interface DependancesScanner {
   profilage?: OptionsProfilage;
 }
 
-/** Coût des appels IA de l'exploration elle-même : aucun (la politique reste déterministe). */
-const COUT_API_EXPLORATION = 0;
+/**
+ * Coût des appels IA de l'exploration quand elle n'en fait aucun (politique
+ * déterministe, mode dégradé). La politique IA, elle, dépense par décision :
+ * le compteur ci-dessous recueille ce qu'elle engage.
+ */
+const COUT_API_EXPLORATION_NUL = 0;
 
 function messageErreur(erreur: unknown): string {
   return erreur instanceof Error ? erreur.message : String(erreur);
@@ -111,10 +115,10 @@ export function creerScanner(dependances: DependancesScanner): Scanner {
     const refus = refuserUrl(url);
     if (refus !== null) {
       journaliser('scan.erreur', { etape: 'url', message: refus });
-      const parcours: Parcours = { urlDepart: url, pages: [], actions: [], arret: 'erreur' };
+      const parcours: Parcours = { urlDepart: url, pages: [], actions: [], arret: 'erreur', enAttenteALArret: 0, pagesRestantesALArret: 0 };
       const dureeMs = Date.now() - debut;
-      journaliser('scan.fin', { dureeMs, coutApi: COUT_API_EXPLORATION, nbAnomalies: 0, arret: parcours.arret });
-      return { url, anomalies: [], coutApi: COUT_API_EXPLORATION, dureeMs, journal, parcours, candidates: [], ecartees: [] };
+      journaliser('scan.fin', { dureeMs, coutApi: COUT_API_EXPLORATION_NUL, nbAnomalies: 0, arret: parcours.arret });
+      return { url, anomalies: [], coutApi: COUT_API_EXPLORATION_NUL, dureeMs, journal, parcours, candidates: [], ecartees: [] };
     }
 
     // 1–2. Exploration, observée. Une exception ici (navigateur, réseau,
@@ -129,33 +133,44 @@ export function creerScanner(dependances: DependancesScanner): Scanner {
     // dégradé. C'est délibéré — le mode dégradé protège l'exécution, il ne
     // vérifie rien, et un chemin que rien n'exécute pourrit en silence
     // (APPRENTISSAGES n°5).
-    const collecteProfilage = ouvrirCollecte({
-      maxChars: dependances.profilage?.config.contexteMaxChars ?? 0,
-      enTeteMaxChars: dependances.profilage?.config.enTeteMaxChars ?? 0,
+    const profilageOuvert = ouvrirProfilage({
+      bornes: {
+        maxChars: dependances.profilage?.config.contexteMaxChars ?? 0,
+        enTeteMaxChars: dependances.profilage?.config.enTeteMaxChars ?? 0,
+      },
+      ia,
+      ...(dependances.profilage === undefined ? {} : { options: dependances.profilage }),
+      journaliser,
+      echeance,
     });
+    // Le coût des décisions de navigation se totalise ici : il est engagé
+    // PENDANT l'exploration, mais c'est le scan qui le paie.
+    let coutExploration = COUT_API_EXPLORATION_NUL;
+    const compteurCout = {
+      ajouter(montant: number): void {
+        coutExploration += montant;
+      },
+    };
     let parcours: Parcours;
     try {
       parcours = await explorateur.explorer(
         { urlDepart: url, echeance, journaliser },
         observateur,
-        dependances.profilage === undefined ? undefined : collecteProfilage.collecte,
+        dependances.profilage === undefined ? undefined : profilageOuvert.collecte,
+        compteurCout,
       );
     } catch (cause: unknown) {
       journaliser('scan.erreur', { etape: 'exploration', message: messageErreur(cause) });
-      parcours = { urlDepart: url, pages: [], actions: [], arret: 'erreur' };
+      parcours = { urlDepart: url, pages: [], actions: [], arret: 'erreur', enAttenteALArret: 0, pagesRestantesALArret: 0 };
     }
+    journaliser('exploration.cout', { coutApi: coutExploration });
 
     // 2 bis. Profilage IA : UN appel par scan, sur le texte de la page de
-    // départ déjà lue par l'exploration. Rien ne le consomme encore (4b sera
-    // son premier lecteur) ; cette brique le produit, l'estampille et le
-    // mesure. Aucune panne d'IA ne tue un scan.
-    const profilage = await profilerSite({
-      ia,
-      ...(dependances.profilage === undefined ? {} : { options: dependances.profilage }),
-      contexte: collecteProfilage.capture(),
-      journaliser,
-      echeance,
-    });
+    // départ déjà lue par l'exploration. Il a lieu PENDANT l'exploration
+    // depuis la brique 4b — la navigation IA le consomme —, et ce qu'on lit
+    // ici est le résultat déjà calculé (ou l'absence, journalisée).
+    // Aucune panne d'IA ne tue un scan.
+    const profilage = await profilageOuvert.resultat();
 
     // 3. Détection.
     const signaux = observateur.signaux();
@@ -190,7 +205,12 @@ export function creerScanner(dependances: DependancesScanner): Scanner {
       await session.fermer().catch(() => undefined);
     }
 
-    const coutApi = COUT_API_EXPLORATION + profilage.coutApi + confirmation.coutApi;
+    const coutApiParFamille = {
+      exploration: coutExploration,
+      profilage: profilage.coutApi,
+      confirmation: confirmation.coutApi,
+    };
+    const coutApi = coutApiParFamille.exploration + coutApiParFamille.profilage + coutApiParFamille.confirmation;
     const dureeMs = Date.now() - debut;
     journaliser('scan.fin', { dureeMs, coutApi, nbAnomalies: confirmation.retenues.length, arret: parcours.arret });
 
@@ -203,6 +223,7 @@ export function creerScanner(dependances: DependancesScanner): Scanner {
       url,
       anomalies: confirmation.retenues,
       coutApi,
+      coutApiParFamille,
       dureeMs,
       journal,
       parcours,

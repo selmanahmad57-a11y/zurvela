@@ -1,0 +1,9 @@
+{
+  "id": "mini-boutique--sain--en",
+  "gabarit": "mini-boutique",
+  "langue": "en",
+  "bugsActifs": [],
+  "contraintes": {
+    "pagesMax": 5
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "cle": "0ad3c110cc844ebb4bbdc79dd0ed960886aa80a8a4175db13a9f1de242a78750",
+  "metadonnees": {
+    "date": "2026-09-23T18:37:59.801Z",
+    "modeleDemande": "claude-haiku-4-5",
+    "modeleServi": "claude-haiku-4-5-20251001",
+    "versionPrompt": "v2",
+    "coutApi": 0.001968,
+    "apresRelance": false
+  },
+  "reponse": "{\"actionId\": \"c1\", \"raison\": \"Le site est un vitrine-contact avec une page de contact disponible. Un visiteur typique d'un tel site cherche à prendre contact, et c'est une action concrète à tester. Il reste 19 pages de budget, donc explorer cette fonctionnalité clé du site avant de terminer est pertinent.\"}"
+}

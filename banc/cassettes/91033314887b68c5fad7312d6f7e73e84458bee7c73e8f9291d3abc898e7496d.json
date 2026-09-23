@@ -1,0 +1,12 @@
+{
+  "cle": "91033314887b68c5fad7312d6f7e73e84458bee7c73e8f9291d3abc898e7496d",
+  "metadonnees": {
+    "date": "2026-09-23T18:42:21.917Z",
+    "modeleDemande": "claude-haiku-4-5",
+    "modeleServi": "claude-haiku-4-5-20251001",
+    "versionPrompt": "v2",
+    "coutApi": 0.001933,
+    "apresRelance": false
+  },
+  "reponse": "{\"actionId\": \"c1\", \"raison\": \"Le site est une vitrine-contact avec un formulaire de contact accessible. C'est une page où un visiteur peut réellement agir (soumettre un formulaire). Le budget permet encore 19 pages de visite, donc explorer cette action à valeur ajoutée est prioritaire avant de terminer.\"}"
+}

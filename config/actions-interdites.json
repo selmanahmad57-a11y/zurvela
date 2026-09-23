@@ -1,6 +1,6 @@
 {
   "$schema": "./actions-interdites.schema.json",
-  "$commentaire": "Deuxième ligne de défense du robot (la première : jugement IA, brique 4+). Trois classes d'attributs, deux listes. (1) motifsTexte (catégorie de risque → langue → motifs, marchés de lancement fr/en/es/de/it/pt) confronté au LANGAGE HUMAIN de l'élément déclencheur : texte visible et attributsTexte (aria-label, title, value). (2) motifsUrl (verbes destructifs sans ambiguïté d'identifiant, jamais paiement ni communication : un tunnel d'achat doit être exploré puis stoppé au bouton, pas interdit de visite) confronté au VOCABULAIRE TECHNIQUE : attributsUrl (href, action, formaction : segments de chemin et valeurs de paramètres de requête, jamais en sous-chaîne sur l'URL entière) et attributsIdentifiants (name, id, data-action : tokenisés sur -, _ et camelCase). Appariement texte : casse et accents ignorés ; motif multi-mots = sous-chaîne normalisée ; motif d'un seul mot = préfixe de token si sa longueur ≥ appariement.seuilPrefixe, sinon token exact (« supprim » attrape supprimer/suppression, « post » n'attrape pas postuler). Appariement URL/identifiants : token exact. Le filtre d'actions est le SEUL code qui lit ce fichier ; il l'applique après la décision et journalise canal (texte | url | identifiant), catégorie, langue et motif.",
+  "$commentaire": "Deuxième ligne de défense du robot (la première : jugement IA, brique 4+). Trois classes d'attributs, deux listes. (1) motifsTexte (catégorie de risque → langue → motifs, marchés de lancement fr/en/es/de/it/pt) confronté au LANGAGE HUMAIN de l'élément déclencheur : texte visible et attributsTexte (aria-label, title, value). (2) motifsUrl (verbes destructifs sans ambiguïté d'identifiant, jamais paiement ni communication : un tunnel d'achat doit être exploré puis stoppé au bouton, pas interdit de visite) confronté au VOCABULAIRE TECHNIQUE : attributsUrl (href, action, formaction : segments de chemin et valeurs de paramètres de requête, jamais en sous-chaîne sur l'URL entière) et attributsIdentifiants (name, id, data-action : tokenisés sur -, _ et camelCase). Appariement texte : casse et accents ignorés ; un motif d'un seul mot ne couvre QUE les tokens qui le prolongent (« commander » n'attrape pas « commande ») : les formes de validation les plus courantes d'un marché doivent donc figurer en multi-mots, et `filtre-actions.langues.test.ts` confronte les listes de toutes les langues au même jeu de libellés équivalents ; motif multi-mots = sous-chaîne normalisée ; motif d'un seul mot = préfixe de token si sa longueur ≥ appariement.seuilPrefixe, sinon token exact (« supprim » attrape supprimer/suppression, « post » n'attrape pas postuler). Appariement URL/identifiants : token exact. Le filtre d'actions est le SEUL code qui lit ce fichier ; il l'applique après la décision et journalise canal (texte | url | identifiant), catégorie, langue et motif.",
   "appariement": {
     "seuilPrefixe": 5
   },
@@ -80,7 +80,29 @@
         "valider le paiement",
         "finaliser l'achat",
         "faire un don",
-        "virement"
+        "virement",
+        "valider la commande",
+        "valider ma commande",
+        "valider le panier",
+        "valider mon panier",
+        "valider mon achat",
+        "passer commande",
+        "passer la commande",
+        "passer ma commande",
+        "finaliser la commande",
+        "finaliser ma commande",
+        "finaliser mon achat",
+        "finaliser le paiement",
+        "confirmer l'achat",
+        "confirmer mon achat",
+        "confirmer et payer",
+        "envoyer la commande",
+        "envoyer ma commande",
+        "regler la commande",
+        "régler la commande",
+        "régler ma commande",
+        "procéder au paiement",
+        "commander maintenant"
       ],
       "en": [
         "pay",
@@ -93,7 +115,20 @@
         "complete purchase",
         "donate",
         "send money",
-        "transfer"
+        "transfer",
+        "confirm purchase",
+        "confirm payment",
+        "confirm and pay",
+        "submit order",
+        "send order",
+        "place my order",
+        "complete order",
+        "complete checkout",
+        "proceed to payment",
+        "proceed to checkout",
+        "order now",
+        "confirm my order",
+        "validate order"
       ],
       "es": [
         "pagar",
@@ -102,7 +137,21 @@
         "confirmar pedido",
         "finalizar compra",
         "donar",
-        "transferencia"
+        "transferencia",
+        "confirmar la compra",
+        "confirmar el pedido",
+        "validar pedido",
+        "validar el pedido",
+        "enviar pedido",
+        "enviar el pedido",
+        "tramitar pedido",
+        "completar la compra",
+        "finalizar el pedido",
+        "concluir la compra",
+        "proceder al pago",
+        "confirmar el pago",
+        "comprar ahora",
+        "pedir ahora"
       ],
       "de": [
         "bezahlen",
@@ -112,7 +161,20 @@
         "zahlungspflichtig bestellen",
         "kauf abschließen",
         "spenden",
-        "überweisung"
+        "überweisung",
+        "bestellung bestaetigen",
+        "bestellung bestätigen",
+        "bestellung aufgeben",
+        "bestellung absenden",
+        "jetzt bestellen",
+        "kostenpflichtig bestellen",
+        "zahlung bestaetigen",
+        "zahlung bestätigen",
+        "kauf bestaetigen",
+        "kauf bestätigen",
+        "zur kasse",
+        "warenkorb bestaetigen",
+        "warenkorb bestätigen"
       ],
       "it": [
         "paga",
@@ -121,7 +183,18 @@
         "conferma ordine",
         "completa acquisto",
         "dona",
-        "bonifico"
+        "bonifico",
+        "conferma l'ordine",
+        "conferma il pagamento",
+        "invia ordine",
+        "invia l'ordine",
+        "completa l'ordine",
+        "completa l'acquisto",
+        "conferma l'acquisto",
+        "procedi al pagamento",
+        "procedi all'acquisto",
+        "ordina ora",
+        "vai alla cassa"
       ],
       "pt": [
         "pagar",
@@ -130,7 +203,19 @@
         "confirmar pedido",
         "finalizar compra",
         "doar",
-        "transferência"
+        "transferência",
+        "confirmar a compra",
+        "confirmar o pedido",
+        "confirmar pagamento",
+        "concluir pedido",
+        "concluir a compra",
+        "enviar pedido",
+        "enviar o pedido",
+        "validar pedido",
+        "finalizar o pedido",
+        "finalizar pagamento",
+        "comprar agora",
+        "ir para o pagamento"
       ]
     },
     "engagement": {

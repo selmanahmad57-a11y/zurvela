@@ -1,0 +1,12 @@
+{
+  "cle": "7b933896cccb9e71f11d14544c85c433af12cecd64529faf8e84c887469e2c37",
+  "metadonnees": {
+    "date": "2026-09-23T18:44:45.969Z",
+    "modeleDemande": "claude-haiku-4-5",
+    "modeleServi": "claude-haiku-4-5-20251001",
+    "versionPrompt": "v2",
+    "coutApi": 0.0023740000000000002,
+    "apresRelance": false
+  },
+  "reponse": "{\"actionId\": \"c1\", \"raison\": \"Le formulaire de devis avec 4 champs requis représente une action de conversion importante pour un site de boutique. C'est une page où un visiteur agit réellement. Avec un seul crédit de page restant, il est prioritaire de tester cette interaction commercial clé plutôt que des pages supplémentaires de catalogue ou des pages informatives.\"}"
+}

@@ -1,0 +1,12 @@
+{
+  "cle": "820fbd90c6a4f3b0213722f6dc8a0e93656217653a8d3239978f456481df21ce",
+  "metadonnees": {
+    "date": "2026-09-23T18:41:42.031Z",
+    "modeleDemande": "claude-haiku-4-5",
+    "modeleServi": "claude-haiku-4-5-20251001",
+    "versionPrompt": "v2",
+    "coutApi": 0.002066,
+    "apresRelance": false
+  },
+  "reponse": "{\"actionId\":\"c1\",\"raison\":\"La page de contact affiche un formulaire avec 3 champs requis prêts à être soumis. Soumettre ce formulaire de contact (c1) teste une action réelle qu'un visiteur effectuerait sur ce site de type vitrine-contact. C'est une interaction significative qui vaut la peine d'être testée avant de terminer la visite.\"}"
+}

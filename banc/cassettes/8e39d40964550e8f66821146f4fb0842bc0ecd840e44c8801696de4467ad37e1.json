@@ -1,0 +1,12 @@
+{
+  "cle": "8e39d40964550e8f66821146f4fb0842bc0ecd840e44c8801696de4467ad37e1",
+  "metadonnees": {
+    "date": "2026-09-23T18:38:02.452Z",
+    "modeleDemande": "claude-haiku-4-5",
+    "modeleServi": "claude-haiku-4-5-20251001",
+    "versionPrompt": "v2",
+    "coutApi": 0.00216,
+    "apresRelance": false
+  },
+  "reponse": "{\"actionId\": \"c2\", \"raison\": \"Soumettre le formulaire de contact est l'action pertinente : c'est ce qu'un visiteur ferait après avoir rempli les champs requis. Cette soumission teste la fonctionnalité principale de la page de contact, contrairement à c1 qui ne ferait que remplir sans valider, et c3 qui terminerait sans explorer ce que le site fait avec les données.\"}"
+}

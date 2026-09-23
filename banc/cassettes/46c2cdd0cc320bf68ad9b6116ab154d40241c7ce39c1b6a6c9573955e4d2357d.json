@@ -1,0 +1,12 @@
+{
+  "cle": "46c2cdd0cc320bf68ad9b6116ab154d40241c7ce39c1b6a6c9573955e4d2357d",
+  "metadonnees": {
+    "date": "2026-09-23T18:43:53.653Z",
+    "modeleDemande": "claude-haiku-4-5",
+    "modeleServi": "claude-haiku-4-5-20251001",
+    "versionPrompt": "v2",
+    "coutApi": 0.002419,
+    "apresRelance": false
+  },
+  "reponse": "{\"actionId\": \"c6\", \"raison\": \"Le site est une boutique avec 3 pages de budget restantes. Les actions c2-c5 sont des pages de pagination du catalogue qui se ressemblent. Les actions c6-c9 sont des fiches produit individuelles où un visiteur peut agir (consulter, ajouter au panier). Il est plus pertinent de tester une fiche produit que de continuer à paginer le catalogue. c6 est le premier produit disponible.\"}"
+}

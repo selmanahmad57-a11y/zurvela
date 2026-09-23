@@ -43,6 +43,15 @@ describe('identifiants de modèle de config/scanner.json', () => {
     expect(config.ia.modeles.profilage).toMatch(FORMAT_IDENTIFIANT_MODELE);
   });
 
+  it('le modèle de NAVIGATION — celui qu’estampillent les cassettes de décision — est nommé et bien formé', async () => {
+    const config = await chargerConfigScanner();
+    // Même raison que le profilage, pour la brique 4b : l'alias de navigation
+    // entre dans la clé d'une cassette PAR DÉCISION. Un identifiant faux ne
+    // casserait rien visiblement — il ferait enregistrer et rejouer sous une
+    // clé qui ne correspond à aucun modèle réel.
+    expect(config.ia.modeles.navigation).toMatch(FORMAT_IDENTIFIANT_MODELE);
+  });
+
   it('le format REFUSE une forme suffixée d’une date — le défaut réellement rencontré', () => {
     // La garde s'éprouve en construisant le cas qui la déclenche (METHODE §2) :
     // un motif qui accepterait tout serait vert sans rien garder.

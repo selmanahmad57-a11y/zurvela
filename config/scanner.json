@@ -37,7 +37,10 @@
     "mutationsMax": 5000,
     "bruitFondRepetitions": 2,
     "elementsInteractifsMax": 500,
-    "liensParPageMax": 500
+    "liensParPageMax": 500,
+    "politique": "deterministe",
+    "libelleMaxChars": 120,
+    "historiqueMaxActions": 10
   },
   "remplissage": {
     "regles": [

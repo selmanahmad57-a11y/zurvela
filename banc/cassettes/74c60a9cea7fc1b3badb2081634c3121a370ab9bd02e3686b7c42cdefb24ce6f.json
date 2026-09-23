@@ -1,0 +1,12 @@
+{
+  "cle": "74c60a9cea7fc1b3badb2081634c3121a370ab9bd02e3686b7c42cdefb24ce6f",
+  "metadonnees": {
+    "date": "2026-09-23T18:37:38.600Z",
+    "modeleDemande": "claude-haiku-4-5",
+    "modeleServi": "claude-haiku-4-5-20251001",
+    "versionPrompt": "v2",
+    "coutApi": 0.001991,
+    "apresRelance": false
+  },
+  "reponse": "{\"actionId\": \"c1\", \"raison\": \"Le formulaire de contact a été rempli avec les 3 champs requis. L'étape suivante naturelle pour un visiteur est de soumettre le formulaire en cliquant sur le bouton de soumission, ce qui teste l'interaction réelle et la réception côté serveur.\"}"
+}
