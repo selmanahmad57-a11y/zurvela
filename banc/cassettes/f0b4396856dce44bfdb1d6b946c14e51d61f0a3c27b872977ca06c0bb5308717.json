@@ -1,0 +1,12 @@
+{
+  "cle": "f0b4396856dce44bfdb1d6b946c14e51d61f0a3c27b872977ca06c0bb5308717",
+  "metadonnees": {
+    "date": "2026-09-24T17:42:03.197Z",
+    "modeleDemande": "claude-haiku-4-5",
+    "modeleServi": "claude-haiku-4-5-20251001",
+    "versionPrompt": "v2",
+    "coutApi": 0.002132,
+    "apresRelance": false
+  },
+  "reponse": "{\"actionId\": \"c1\", \"raison\": \"La page /contact contient un formulaire avec 3 champs requis. Avant de soumettre le formulaire (c2), il faut d'abord le remplir avec des données. L'action c1 (remplir) est l'étape préalable nécessaire pour un visiteur, avant la soumission.\"}"
+}

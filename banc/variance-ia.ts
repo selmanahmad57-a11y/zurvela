@@ -170,7 +170,10 @@ async function mesurerScenario(
   const observations: Observation[] = [];
 
   for (let appel = 1; appel <= appels; appel += 1) {
-    const resultat = await noterScenario(scenario, { sujet, politique, config, dico, obtenirGabarit });
+    // La variance mesure la STABILITÉ d'un profil ou d'une décision, jamais un
+    // rapport : le contrôle de langue de prose n'a rien à y faire, et on le
+    // DIT plutôt que de le laisser tomber en silence.
+    const resultat = await noterScenario(scenario, { sujet, politique, config, dico, obtenirGabarit, detectionLangue: null });
     const profil = resultat.rapport?.profil;
     const valeurs: Record<string, string> =
       mesure === 'decision'

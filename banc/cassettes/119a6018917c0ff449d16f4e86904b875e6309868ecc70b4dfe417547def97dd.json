@@ -1,0 +1,12 @@
+{
+  "cle": "119a6018917c0ff449d16f4e86904b875e6309868ecc70b4dfe417547def97dd",
+  "metadonnees": {
+    "date": "2026-09-24T17:41:58.035Z",
+    "modeleDemande": "claude-haiku-4-5",
+    "modeleServi": "claude-haiku-4-5-20251001",
+    "versionPrompt": "v2",
+    "coutApi": 0.002275,
+    "apresRelance": false
+  },
+  "reponse": "{\"actionId\": \"c2\", \"raison\": \"Soumettre le formulaire de demande de devis en cours est l'action la plus pertinente pour un visiteur : c'est une action transactionnelle concrète (envoi de données à /api/contact) qui teste une fonctionnalité clé du site. Le formulaire est déjà rempli (3 champs requis), il faut le soumettre pour éprouver le traitement complet de cette demande de devis.\"}"
+}

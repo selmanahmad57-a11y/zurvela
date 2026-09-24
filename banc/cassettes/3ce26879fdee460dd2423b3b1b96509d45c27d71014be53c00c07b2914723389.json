@@ -1,0 +1,12 @@
+{
+  "cle": "3ce26879fdee460dd2423b3b1b96509d45c27d71014be53c00c07b2914723389",
+  "metadonnees": {
+    "date": "2026-09-24T17:17:33.080Z",
+    "modeleDemande": "claude-opus-5",
+    "modeleServi": "claude-opus-5",
+    "versionPrompt": "v1",
+    "coutApi": 0.032880000000000006,
+    "apresRelance": false
+  },
+  "reponse": "{\"synthese\":\"Le site présente un défaut bloquant sur la page de contact consultée depuis un téléphone, qui empêche les visiteurs mobiles d'aller au bout de leur démarche.\",\"ligneMethode\":\"Notre méthode consiste à tenter de reproduire chaque anomalie signalée avant de la publier ; celles que nous ne parvenons pas à retrouver sont écartées du rapport plutôt que présentées comme établies.\",\"sections\":[{\"sectionId\":\"s1\",\"titre\":\"Sur mobile, les clics ne passent pas sur la page de contact\",\"constat\":\"Sur la page de contact affichée depuis un téléphone, un élément invisible ou superposé capte les appuis à la place du bouton ou du champ visé. Le visiteur voit bien l'élément, appuie dessus, et rien ne se produit.\",\"impact\":\"Tant que ce défaut persiste, une personne qui vous découvre depuis son téléphone ne peut pas vous envoyer sa demande : elle reste bloquée sur la page prévue pour la prise de contact, alors que c'est la fonction principale de votre site.\",\"actionSuggeree\":\"Demandez à la personne qui entretient le site d'inspecter la page de contact en affichage mobile et d'identifier l'élément superposé qui intercepte les appuis — bandeau, fenêtre de consentement, calque décoratif ou zone de menu restée active — puis de rendre à nouveau accessibles les boutons et champs du formulaire.\"}]}"
+}

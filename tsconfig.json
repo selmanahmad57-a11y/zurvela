@@ -1,10 +1,14 @@
 {
   "compilerOptions": {
     "target": "ES2022",
-    "lib": ["ES2022"],
+    "lib": [
+      "ES2022"
+    ],
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
-    "types": ["node"],
+    "types": [
+      "node"
+    ],
     "strict": true,
     "noUncheckedIndexedAccess": true,
     "noImplicitOverride": true,
@@ -13,5 +17,11 @@
     "skipLibCheck": true,
     "noEmit": true
   },
-  "include": ["core/**/*.ts", "banc/**/*.ts", "scripts/**/*.ts", "vitest.config.ts"]
+  "include": [
+    "core/**/*.ts",
+    "banc/**/*.ts",
+    "prompts/**/*.ts",
+    "scripts/**/*.ts",
+    "vitest.config.ts"
+  ]
 }

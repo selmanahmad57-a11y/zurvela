@@ -1,0 +1,78 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "zurvela/config/rapport",
+  "title": "Configuration du rapport business",
+  "description": "Langue du rapport et bornes de l'appel de rédaction. Aucune de ces valeurs ne décide d'un STATUT : les statuts épistémiques et leurs formulations vivent en code, parce qu'une formulation qui promet plus que son statut est un mensonge au client et qu'un mensonge ne se règle pas dans un fichier de configuration (constitution §2 : les invariants vivent en code, les réglages en config).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "langueRapport",
+    "sectionsMax",
+    "localisationsMaxParSection",
+    "faitsMaxChars",
+    "cheminMaxChars",
+    "maxTokensReponse",
+    "relancesMax",
+    "symptomesMaxChars",
+    "ligneMaxChars",
+    "appelMaxMs"
+  ],
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "$commentaire": {
+      "type": "string"
+    },
+    "langueRapport": {
+      "type": "string",
+      "minLength": 2,
+      "description": "Langue du rapport par DÉFAUT, indépendante de la langue du site : c'est celle du client. Un scan peut la surcharger (OptionsScan.langueRapport). Elle doit appartenir aux langues dont le code porte une table de formulations vérifiée ; une langue inconnue est refusée au chargement, bruyamment — servir une formulation de statut dans la mauvaise langue serait pire que refuser."
+    },
+    "sectionsMax": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Nombre maximal de sections soumises à la rédaction. Les sections au-delà restent DANS le rapport, avec leurs faits et leur statut, et sans prose : un plafond borne la dépense, il ne fait pas disparaître une anomalie."
+    },
+    "localisationsMaxParSection": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Nombre maximal de localisations MONTRÉES AU MODÈLE par section. Elle ne touche jamais le rapport publié : un plafond borne une dépense, il ne fait pas disparaître une page où le défaut se manifeste. Les chemins d'URL sont choisis par le SITE : c'est la principale surface d'injection du bloc de rédaction, donc elle se borne."
+    },
+    "faitsMaxChars": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Troncature du bloc factuel CUMULÉ montré au modèle."
+    },
+    "cheminMaxChars": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Troncature d'un chemin d'URL MONTRÉ AU MODÈLE, pris isolément. Elle ne touche jamais le rapport publié : le propriétaire du site lit l'adresse entière de la page qu'il doit faire réparer, et c'est le rendu qui l'échappe, pas qui la coupe. Distincte du plafond cumulé : sans elle, un seul chemin très long consommerait tout le bloc factuel et évincerait les autres sections."
+    },
+    "symptomesMaxChars": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Plafond de la LIGNE de symptômes montrée au rédacteur, et de chaque description prise isolément. Le nombre de descriptions d'un groupe n'est pas borné (un groupe réseau en agrège une par détecteur) : sans plafond sur la ligne entière, la pire ligne de symptômes croîtrait sans limite et serait coupée en silence par ligneMaxChars."
+    },
+    "ligneMaxChars": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Plafond d'UNE ligne du bloc factuel, appliqué au seuil de core/ia comme filet de sécurité contre un appelant indiscipliné. Il doit être assez large pour ne JAMAIS tronquer une ligne légitime : la ligne des pages peut porter localisationsMaxParSection chemins de cheminMaxChars caractères, plus leurs viewports et leurs séparateurs. Un test calcule la pire ligne légitime depuis cette configuration et échoue si elle ne tient pas — sans quoi relever localisationsMaxParSection ferait disparaître des pages du bloc en silence."
+    },
+    "maxTokensReponse": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Plafond de génération de l'appel de rédaction. Large, contrairement aux autres appels : c'est le seul qui produise réellement du texte, et une génération coupée rend un rapport sans prose."
+    },
+    "relancesMax": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Relances autorisées quand la réponse ne valide pas le contrat ; au-delà, le rapport est STRUCTUREL — lisible, sans prose."
+    },
+    "appelMaxMs": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Délai maximal d'UNE TENTATIVE d'appel de rédaction, transmis au SDK. La rédaction est la dernière étape du scan et son appel est le plus long : sans cette borne, une réponse lente faisait dépasser le timeoutMs du scan sans limite. Attention à la composition : le délai s'applique PAR TENTATIVE, et le SDK réessaie `ia.reessaisReseauMax` fois. Le dépassement d'un scan imputable à la rédaction est donc majoré par appelMaxMs × (1 + ia.reessaisReseauMax) × (1 + relancesMax)."
+    }
+  }
+}

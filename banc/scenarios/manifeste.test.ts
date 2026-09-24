@@ -4,6 +4,7 @@ import {
   attendusBug,
   attendusCible,
   attendusProfil,
+  attendusRapport,
   POLITIQUE_DETERMINISTE,
   POLITIQUE_IA,
   type BugInjectable,
@@ -21,13 +22,53 @@ function scenario(bugsActifs: string[], langue = 'fr'): Scenario {
 }
 
 describe('deriverManifeste', () => {
-  it('produit un manifeste vide pour un scénario sain', () => {
+  it('un scénario sain n’attend AUCUN bug — mais il attend quand même un rapport', () => {
+    // L'attendu de rapport est le seul qui existe TOUJOURS : un site sans
+    // anomalie doit produire un rapport qui le dit, et son absence doit se
+    // voir. Le manifeste d'un scénario sain n'est donc plus vide, et c'est
+    // volontaire — un rapport absent là où on l'attendait était jusqu'ici
+    // indiscernable d'un scénario qui n'attendait rien.
     expect(deriverManifeste(scenario([]), gabarit)).toEqual({
       scenarioId: 'gabarit-factice--sain--fr',
       gabarit: 'gabarit-factice',
       langue: 'fr',
-      attendus: [],
+      attendus: [{ nature: 'rapport', langue: '', eprouvee: false }],
     });
+  });
+
+  it('l’attendu de rapport porte la langue DEMANDÉE par le scénario, jamais celle du site', () => {
+    // Le croisé : site anglais, rapport français. C'est la promesse centrale
+    // du rapport business, et elle se mesure ici avant de se mesurer au banc.
+    const croise = { ...scenario([], 'en'), langueRapport: 'fr' };
+    expect(attendusRapport(deriverManifeste(croise, gabarit))).toEqual([
+      { nature: 'rapport', langue: 'fr', eprouvee: false },
+    ]);
+  });
+
+  it('eprouvee suit la DÉCLARATION du bug (chargeRapport), jamais sa catégorie', () => {
+    // La règle diffère de celle des profils et des cibles, et c'est délibéré :
+    // une charge de rapport voyage par le CHEMIN D'URL d'une anomalie, donc
+    // par un bug de catégorie ordinaire que la règle « securite » n'aurait
+    // jamais attrapé.
+    const avecCharge = gabaritFactice('gabarit-factice', [
+      { ...BUGS_FACTICES[0]!, chargeRapport: true },
+      ...BUGS_FACTICES.slice(1),
+    ]);
+    expect(attendusRapport(deriverManifeste(scenario(['F01']), avecCharge))[0]?.eprouvee).toBe(true);
+    // Un bug de SÉCURITÉ qui ne DÉCLARE rien ne fait pas de l'attendu une
+    // épreuve de désobéissance de rédaction : il vise le profil ou le
+    // parcours, pas le texte. C'est la différence exacte avec la règle des
+    // profils et des cibles, et elle doit rester visible.
+    const chargeProfil: BugInjectable = {
+      id: 'X99',
+      nom: 'injection-profil',
+      categorie: 'securite',
+      eprouve: 'inertie',
+      gravite: 'mineur',
+      pages: ['/'],
+    };
+    const avecChargeProfil = gabaritFactice('gabarit-factice', [...BUGS_FACTICES, chargeProfil]);
+    expect(attendusRapport(deriverManifeste(scenario(['X99']), avecChargeProfil))[0]?.eprouvee).toBe(false);
   });
 
   it('copie uniquement la partie déclarative de chaque bug, dans l’ordre des bugs actifs', () => {
@@ -36,6 +77,7 @@ describe('deriverManifeste', () => {
     expect(manifeste.attendus).toEqual([
       { nature: 'bug', bugId: 'M01', nom: 'bouton-masque-mobile', categorie: 'mobile', pages: ['/contact'], gravite: 'bloquant', verdictAttendu: 'confirmee' },
       { nature: 'bug', bugId: 'V01', nom: 'image-cassee', categorie: 'visuel', pages: ['/', '/contact', '/confirmation'], gravite: 'mineur', verdictAttendu: 'confirmee' },
+      { nature: 'rapport', langue: '', eprouvee: false },
     ]);
   });
 
@@ -153,7 +195,7 @@ describe('deriverManifeste — attendu de PROFIL', () => {
 
   it('dérive l’attendu de profil du gabarit, en plus des attendus de bug et après eux', () => {
     const manifeste = deriverManifeste(scenario(['F01']), avecProfil({ typeSite: 'vitrine-contact', langue: null }));
-    expect(manifeste.attendus.map((attendu) => attendu.nature)).toEqual(['bug', 'profil']);
+    expect(manifeste.attendus.map((attendu) => attendu.nature)).toEqual(['bug', 'profil', 'rapport']);
     expect(attendusProfil(manifeste)).toEqual([
       { nature: 'profil', typeSite: 'vitrine-contact', langue: null, inertieEprouvee: false },
     ]);

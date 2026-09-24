@@ -59,6 +59,40 @@ réfuter un constat documenté, preuve à l'appui — est une tâche cadrée.
 qui produit le code ni à ce qui garde la sécurité. C'est la doctrine de
 proportion au risque appliquée au modèle au lieu du nombre.
 
+### Le péage du banc, et quand les trois runs sont exigés
+
+Arbitrage du 2026-09-24 : **le déterminisme est un invariant de l'instrument,
+pas un rituel de chaque mesure.**
+
+- Les **trois runs par politique** restent exigés là où le déterminisme est
+  l'OBJET mesuré : tout ce qui touche aux cassettes, au protocole, aux
+  décisions.
+- Pour une extension dont l'objet est le **contenu** (le rapport business),
+  **un run par politique suffit aux scénarios NOUVEAUX** ; les trois runs
+  restent sur le **périmètre historique**, qui garde son rôle de témoin de
+  non-régression.
+
+### L'ordre de l'enregistrement : geler ce qui entre dans la clé, PUIS payer
+
+Arbitrage du 2026-09-24, payé deux fois dans la même brique. Le parc de
+cassettes a dû être ré-enregistré **trois fois** — non pour une raison de
+mesure, mais parce qu'une correction avait touché une valeur qui entre dans la
+CLÉ : une borne de contexte, puis une empreinte de contrat, puis la structure
+même du contexte.
+
+**Règle** : avant de lancer un enregistrement, lister ce qui compose la clé —
+version de prompt, empreinte de contrat, entrée normalisée — et n'enregistrer
+qu'une fois ces trois-là stabilisés. Concrètement : la revue adversariale et
+ses corrections passent AVANT l'enregistrement, jamais après. Un parc
+enregistré au milieu d'une revue est un parc qu'on paiera deux fois.
+
+**Ce qui l'a rendu visible, et qu'il faut garder** : la jumelle de couverture.
+Un parc devenu introuvable produit des rapports STRUCTURELS — donc justes sur
+tous les contrôles de structure — et une scorecard verte. La seule chose qui
+disait la vérité était « 0/26 section(s) rédigée(s) pour 0,00 ». Depuis, le
+banc en tire un ÉCHEC : une rédaction qui n'a rien mesuré, hors absence
+déclarée d'IA, interdit le statut `ok`.
+
 ### Le coût du BANC ne dépend pas de la brique
 
 Le temps d'exécution du banc croît avec le banc, jamais avec la taille de la
@@ -71,7 +105,18 @@ compté à part, et il ne diminue jamais.
 
 Quel que soit le niveau, une garantie ne se déclare pas, elle s'éprouve :
 **si un compteur ne peut pas mentir, il faut que quelqu'un ait essayé de le
-faire mentir.** C'est la version opérationnelle du principe des métriques
+faire mentir.** Et son pendant, côté relecture : **une vérification qui ne
+peut pas échouer ne vérifie rien** — quand un contrôle ne trouve rien à
+redire, lui demander ce qu'il AURAIT trouvé si le défaut avait été présent ;
+un relecteur qui ne sait pas répondre n'a pas contrôlé, il a regardé.
+
+**Un contrôle qui va chercher sa propre source est un contrôle qui aurait pu
+échouer.** C'est la forme définitive de la règle, et elle se reconnaît à des
+gestes : reconstruire une référence par `git archive` au lieu de lire un log
+d'archive ; retrouver la scorecard d'origine au lieu de croire un corpus sur
+parole ; recalculer une mesure par un chemin indépendant de celui qui l'a
+produite. Un contrôle qui accepte l'artefact qu'on lui tend ne vérifie que la
+cohérence de cet artefact avec lui-même. C'est la version opérationnelle du principe des métriques
 jumelles (`docs/APPRENTISSAGES.md` n°3) : la vérification d'une garde se
 fait en construisant le cas qui la déclenche, pas en relisant son code.
 
@@ -132,3 +177,70 @@ vérité qui les rend calculables.
 
 Quand une frontière tient sans qu'on l'ait consciemment posée, c'est le
 signe que les structures en amont étaient bonnes.
+
+## 6. Une version de prompt se compte, elle ne se décide pas
+
+Avant d'incrémenter un prompt, on compte les cassettes qui portent sa version
+actuelle. Zéro → on corrige SUR PLACE. La constitution §6 le dit déjà ; ce qui
+manquait, c'est le geste qui la rend applicable, parce que « incrémenter » est
+le réflexe prudent et qu'il produit ici exactement le contraire de la prudence :
+une lignée vide, un fichier mort que plus rien n'importe, et un trou dans la
+numérotation que personne ne saura expliquer dans six mois.
+
+La commande :
+
+    grep -l '"versionPrompt": "vN"' banc/cassettes/*.json | wc -l
+
+Et le corollaire, payé au prix fort : replier une version APRÈS l'avoir
+enregistrée coûte le réenregistrement du parc concerné, en appels réels. C'est
+la même leçon que « geler ce qui entre dans la clé, PUIS payer », vue depuis
+l'autre bout — ici ce n'est pas une borne qui a bougé, c'est le NUMÉRO lui-même.
+
+## 7. Une purge décide par VIVACITÉ, jamais par étiquette
+
+Tout outil qui supprime **liste d'abord, demande confirmation, supprime
+ensuite**. Et il décide de ce qu'il supprime en répondant à *« qu'est-ce qui
+référence encore ceci ? »*, jamais à *« qu'est-ce qui porte cette
+étiquette ? »*.
+
+Ce qui l'a écrit : la purge des cassettes orphelines après le repli de
+`redaction/v2` sur `v1`. Le filtre visait « les cassettes en `v2` » ; or
+`navigation/v2` est la version VIVANTE de la navigation, et son parc porte la
+même étiquette. **165 cassettes supprimées au lieu de 19**, 89 récupérées par
+`git checkout`, 76 perdues et réenregistrées en appels réels. Aucune
+confirmation n'avait été demandée, et rien n'avait été listé avant d'agir.
+
+La bonne question était vivante, pas déclarative : *quel prompt importe
+encore cette version ?* — une seule ligne de `grep` sur les imports y
+répondait.
+
+## 8. Une cassette enregistrée se committe dans la session qui l'enregistre
+
+L'intervalle entre l'enregistrement et le commit est la **fenêtre de perte** :
+pendant tout cet intervalle, le parc n'existe qu'en fichiers non suivis, qu'une
+commande maladroite efface sans recours. Les 76 cassettes perdues ci-dessus
+étaient exactement celles qui n'avaient pas encore été committées — les 89
+autres sont revenues par `git checkout`, sans un appel.
+
+Une cassette coûte de l'argent réel. Elle se committe le jour où elle est
+payée.
+
+## 9. La revue de prose d'une nouvelle langue de rédaction
+
+Avant d'ajouter une langue à `LANGUES_RAPPORT`, deux relectures, et aucune
+n'est mécanisable :
+
+1. **Les formulations de statut** (`core/rapport/voix.ts`) : chacune promet-elle
+   exactement ce que son statut autorise, ni plus ? C'est le prix de
+   l'exception au Mur 1, et c'est ce qui fait que la liste des langues est
+   close.
+2. **Le bord du superlatif** : dans la prose produite par le modèle, tout
+   superlatif d'impact doit être DÉRIVÉ DU PROFIL (« le rôle principal de ce
+   site est X, donc Y est le point le plus coûteux ») et jamais tiré de
+   l'emphase (« c'est un problème majeur »). Le premier expose sa prémisse et
+   reste réfutable ; le second est un fait déguisé, adressé à la personne la
+   moins armée pour le contester. Le détail du raisonnement est dans l'en-tête
+   de `prompts/redaction/v1.ts`.
+
+Aucun contrôle ne distingue une déduction d'une emphase. Une langue dont la
+prose n'a pas été relue sur ces deux points n'est pas livrable.

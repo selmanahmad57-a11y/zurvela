@@ -1,0 +1,12 @@
+{
+  "cle": "0e1bd393b92210f4fe0d56024d25baecd32d9fd343a86ef84fbd65cdc7ecd5af",
+  "metadonnees": {
+    "date": "2026-09-24T17:41:40.717Z",
+    "modeleDemande": "claude-haiku-4-5",
+    "modeleServi": "claude-haiku-4-5-20251001",
+    "versionPrompt": "v2",
+    "coutApi": 0.002038,
+    "apresRelance": false
+  },
+  "reponse": "{\"actionId\": \"c1\", \"raison\": \"Le site est un site vitrine-contact avec un formulaire de demande de devis déjà testé. La page Contact est une page clé où un visiteur agit réellement (formulaire de contact). Avec 18 pages restantes du budget, explorer cette page d'interaction importante avant de terminer l'exploration est prioritaire.\"}"
+}

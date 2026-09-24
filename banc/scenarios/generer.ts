@@ -19,6 +19,9 @@ import { depuisRacine } from '../outils/racine.js';
 import type { ConfigBanc, Gabarit, Scenario } from '../types.js';
 import { construireIdScenario, idDepuisNomFichier, nomFichierScenario } from './identifiant.js';
 
+/** Ce qui sépare la langue du SITE de celle du RAPPORT dans l'identifiant d'un scénario croisé. */
+export const SEGMENT_RAPPORT = '-rapport-';
+
 export function genererScenarios(gabarit: Gabarit, config: ConfigBanc): Scenario[] {
   const idsConnus = new Set(gabarit.bugs.map((bug) => bug.id));
   // Les combinaisons sont déclarées PAR GABARIT : un gabarit absent n'en
@@ -51,7 +54,7 @@ export function genererScenarios(gabarit: Gabarit, config: ConfigBanc): Scenario
   // prise.
   const contraintes = config.scenarios.contraintes[gabarit.nom];
 
-  const scenarios = config.langues.flatMap((langue) =>
+  const scenarios: Scenario[] = config.langues.flatMap((langue) =>
     jeuxDeBugs.map(
       (bugsActifs): Scenario => ({
         id: construireIdScenario(gabarit.nom, bugsActifs, langue, config.scenarios.jetonSain),
@@ -62,6 +65,48 @@ export function genererScenarios(gabarit: Gabarit, config: ConfigBanc): Scenario
       }),
     ),
   );
+
+  // Les scénarios CROISÉS, s'il y en a pour ce gabarit. Leur segment de
+  // langue porte les DEUX langues (`en-rapport-fr`) : le format
+  // `<gabarit>--<bugs>--<langue>` est respecté, le nom de fichier reste
+  // lisible, et aucune grammaire d'identifiant ne change. `scenario.langue`,
+  // lui, reste celle du SITE — c'est elle qui choisit les locales servies.
+  //
+  // LES DEUX SENS COMPTENT, et le second n'est pas une symétrie décorative.
+  // Le sens dont la langue de rapport est celle du DÉFAUT de
+  // `config/rapport.json` est incapable de distinguer un canal qui fonctionne
+  // d'un canal MUET : un `OptionsScan.langueRapport` jamais transmis au moteur
+  // produirait exactement le même rapport, et le contrôle passerait — la
+  // mesure verte du comportement par défaut, étiquetée du nom de l'autre
+  // (APPRENTISSAGES n°6). Seul le sens inverse le prouve.
+  const croises = (config.scenarios.croises ?? [])
+    .filter((croise) => croise.gabarit === gabarit.nom)
+    .map((croise): Scenario => {
+      for (const bugId of croise.bugsActifs) {
+        if (!idsConnus.has(bugId)) {
+          throw new Error(`Scénario croisé [${croise.bugsActifs.join(', ')}] : bug ${bugId} inconnu du gabarit ${gabarit.nom}`);
+        }
+      }
+      if (croise.langue === croise.langueRapport) {
+        throw new Error(
+          `Scénario croisé du gabarit ${gabarit.nom} : la langue du site et celle du rapport sont identiques (${croise.langue}) — il ne croise rien`,
+        );
+      }
+      return {
+        id: construireIdScenario(
+          gabarit.nom,
+          croise.bugsActifs,
+          `${croise.langue}${SEGMENT_RAPPORT}${croise.langueRapport}`,
+          config.scenarios.jetonSain,
+        ),
+        gabarit: gabarit.nom,
+        langue: croise.langue,
+        bugsActifs: [...croise.bugsActifs],
+        ...(contraintes === undefined ? {} : { contraintes: { ...contraintes } }),
+        langueRapport: croise.langueRapport,
+      };
+    });
+  scenarios.push(...croises);
 
   // Deux combinaisons identiques dans la configuration donneraient deux fichiers de même nom.
   const idsVus = new Set<string>();

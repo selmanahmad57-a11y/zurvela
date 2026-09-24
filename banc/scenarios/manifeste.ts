@@ -8,7 +8,17 @@
 import { VERDICTS_RETENUS, type VerdictConfirmation } from '../../core/types.js';
 import { normaliserLocalisation } from '../correcteur/appariement.js';
 import { depuisRacine } from '../outils/racine.js';
-import type { AttenduBug, AttenduCible, AttenduManifeste, AttenduProfil, BugInjectable, Gabarit, Manifeste, Scenario } from '../types.js';
+import type {
+  AttenduBug,
+  AttenduCible,
+  AttenduManifeste,
+  AttenduProfil,
+  AttenduRapport,
+  BugInjectable,
+  Gabarit,
+  Manifeste,
+  Scenario,
+} from '../types.js';
 
 /** Schéma commun à tous les manifestes. */
 export const FICHIER_SCHEMA_MANIFESTE = depuisRacine('banc', 'schemas', 'manifeste.schema.json');
@@ -141,6 +151,41 @@ function deriverAttendusCible(
   });
 }
 
+/**
+ * L'attendu de RAPPORT du scénario. Il est dérivé pour TOUT scénario, sain
+ * compris : un site sans anomalie doit produire un rapport qui le dit, et un
+ * rapport absent là où on l'attendait est exactement ce que la colonne « non
+ * mesuré » existe pour rendre visible.
+ *
+ * `langue` est celle que le SCÉNARIO demande. Quand il ne demande rien, le
+ * manifeste ne peut pas l'inventer — le défaut vit dans `config/rapport.json`,
+ * qui appartient au moteur, et le banc ne possède pas les réglages du moteur
+ * (METHODE §5). Le correcteur résout alors la langue depuis le rapport RENDU,
+ * exactement comme `ResultatProfil.langueAttendue` résout `null` en langue du
+ * scénario.
+ *
+ * `eprouvee` est DÉCLARÉ par le bug (`chargeRapport`) et non déduit de sa
+ * catégorie : voir la raison, longue et précise, sur `BugInjectable`.
+ */
+function deriverAttenduRapport(scenario: Scenario, bugsActifs: readonly BugInjectable[]): AttenduRapport {
+  return {
+    nature: 'rapport',
+    langue: scenario.langueRapport ?? LANGUE_RAPPORT_DU_MOTEUR,
+    eprouvee: bugsActifs.some((bug) => bug.chargeRapport === true),
+  };
+}
+
+/**
+ * Marqueur signifiant « la langue que le moteur applique par défaut ».
+ *
+ * Le banc ne lit PAS `config/rapport.json` : ce serait lui faire posséder un
+ * réglage du moteur, et surtout cela rendrait l'attendu vrai par construction
+ * — le banc comparerait la config du moteur à elle-même. Le correcteur
+ * compare donc la langue rendue à celle du scénario quand il y en a une, et se
+ * contente de la relever quand il n'y en a pas.
+ */
+export const LANGUE_RAPPORT_DU_MOTEUR = '';
+
 export function deriverManifeste(scenario: Scenario, gabarit: Gabarit): Manifeste {
   if (scenario.gabarit !== gabarit.nom) {
     throw new Error(
@@ -177,6 +222,7 @@ export function deriverManifeste(scenario: Scenario, gabarit: Gabarit): Manifest
     ...attendusBug,
     ...(attenduProfil === null ? [] : [attenduProfil]),
     ...deriverAttendusCible(scenario, gabarit, bugsActifs),
+    deriverAttenduRapport(scenario, bugsActifs),
   ];
   return { scenarioId: scenario.id, gabarit: gabarit.nom, langue: scenario.langue, attendus };
 }

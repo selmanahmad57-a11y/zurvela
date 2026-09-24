@@ -7,6 +7,7 @@ import { readFile } from 'node:fs/promises';
 import type { Categorie, Gravite, Viewport } from '../types.js';
 import { depuisRacine } from '../outils/racine.js';
 import { chargerSchema, valider } from '../outils/schema.js';
+import { LANGUES_RAPPORT, estLangueRapport } from '../rapport/voix.js';
 
 export interface RegleRemplissage {
   types: string[];
@@ -85,6 +86,16 @@ export interface ConfigIa {
    * être gênée.
    */
   variableWorkspace: string;
+  /**
+   * Nombre de RÉESSAIS réseau par appel, confié au SDK.
+   *
+   * Il vit ici parce qu'il est l'un des trois facteurs de la durée maximale
+   * d'un appel : le délai transmis au SDK s'applique PAR TENTATIVE. Laissé
+   * implicite, il valait 2 par défaut et faisait mentir d'un facteur trois la
+   * borne annoncée du dépassement de scan. Un réglage qui fabrique une borne
+   * ne peut pas rester tacite.
+   */
+  reessaisReseauMax: number;
   modeles: { profilage: string; navigation: string; diagnostic: string; redaction: string };
   /** Tarifs par identifiant de modèle. Un modèle sans tarif n'est pas appelé. */
   tarifs: Record<string, { entreeParMillion: number; sortieParMillion: number }>;
@@ -149,6 +160,7 @@ export const FICHIER_CONFIG_SCANNER = depuisRacine('config', 'scanner.json');
 export const FICHIER_CONFIG_PROFILAGE = depuisRacine('config', 'profilage.json');
 export const FICHIER_CONFIG_DIAGNOSTIC = depuisRacine('config', 'diagnostic.json');
 export const FICHIER_ACTIONS_INTERDITES = depuisRacine('config', 'actions-interdites.json');
+export const FICHIER_CONFIG_RAPPORT = depuisRacine('config', 'rapport.json');
 
 async function chargerValide<T>(fichier: string, schema: string, nom: string): Promise<T> {
   const [schemaJson, contenu] = await Promise.all([chargerSchema(schema), readFile(fichier, 'utf8')]);
@@ -172,6 +184,56 @@ export interface ConfigDiagnostic {
 
 export async function chargerConfigDiagnostic(fichier: string = FICHIER_CONFIG_DIAGNOSTIC): Promise<ConfigDiagnostic> {
   return chargerValide<ConfigDiagnostic>(fichier, depuisRacine('config', 'diagnostic.schema.json'), 'config/diagnostic.json');
+}
+
+/**
+ * Langue et bornes de la rédaction du rapport business (config/rapport.json).
+ *
+ * Aucun de ces réglages ne décide d'un STATUT : la table des statuts
+ * épistémiques et leurs formulations vivent en code (`core/rapport/statuts.ts`).
+ */
+export interface ConfigRapport {
+  langueRapport: string;
+  sectionsMax: number;
+  localisationsMaxParSection: number;
+  faitsMaxChars: number;
+  cheminMaxChars: number;
+  symptomesMaxChars: number;
+  ligneMaxChars: number;
+  maxTokensReponse: number;
+  relancesMax: number;
+  appelMaxMs: number;
+}
+
+/**
+ * Charge et valide `config/rapport.json`, LANGUE COMPRISE.
+ *
+ * Le schéma JSON dit « c'est une chaîne d'au moins deux caractères » ; il ne
+ * peut rien dire de plus, parce que la liste des langues dont les
+ * formulations de statut ont été vérifiées vit en CODE (`core/rapport/voix.ts`)
+ * — et elle y vit parce qu'une formulation qui promet plus que son statut est
+ * un mensonge au client, pas un réglage.
+ *
+ * La vérification est donc faite ICI, au chargement, et elle LÈVE. C'est
+ * l'apprentissage n°5 dans sa forme littérale : « un schéma JSON qui dit
+ * “c'est une chaîne” ne dit rien de la validité de la chaîne », et « toute
+ * valeur de configuration qui ne s'active que dans un mode futur doit porter
+ * un test de forme dès sa naissance ». Sans cette ligne, une langue inconnue
+ * serait acceptée au démarrage et ne se manifesterait qu'au premier scan — ou
+ * pas du tout, si l'IA était indisponible ce jour-là.
+ */
+export async function chargerConfigRapport(fichier: string = FICHIER_CONFIG_RAPPORT): Promise<ConfigRapport> {
+  const config = await chargerValide<ConfigRapport>(
+    fichier,
+    depuisRacine('config', 'rapport.schema.json'),
+    'config/rapport.json',
+  );
+  if (!estLangueRapport(config.langueRapport)) {
+    throw new Error(
+      `config/rapport.json : langueRapport « ${config.langueRapport} » n'a pas de formulations de statut vérifiées (langues connues : ${LANGUES_RAPPORT.join(', ')})`,
+    );
+  }
+  return config;
 }
 
 export async function chargerConfigProfilage(fichier: string = FICHIER_CONFIG_PROFILAGE): Promise<ConfigProfilage> {

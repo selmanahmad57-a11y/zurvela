@@ -64,8 +64,16 @@ export interface EntreeJournal {
 }
 
 /**
- * Le coût des appels aux modèles, par famille d'appel. Les trois familles
+ * Le coût des appels aux modèles, par famille d'appel. Les QUATRE familles
  * partitionnent : leur somme est le coût total du scan.
+ *
+ * La rédaction est arrivée en quatrième et n'a PAS été rangée dans l'une des
+ * trois existantes, bien que ce fût la modification la plus courte : un coût
+ * ne dit quelque chose que placé à côté de ce qu'il achète (APPRENTISSAGES
+ * n°3), et un coût placé à côté de ce qu'il n'achète pas est un diagnostic
+ * faux (n°6). C'est exactement ce que la ventilation a été créée pour
+ * réparer quand la navigation IA faisait lire un coût de PARCOURS sous
+ * l'étiquette du profilage.
  */
 export interface CoutParFamille {
   /** Décisions de navigation, engagées pendant l'exploration. */
@@ -74,6 +82,8 @@ export interface CoutParFamille {
   profilage: number;
   /** Protocole de confirmation. */
   confirmation: number;
+  /** Rédaction du rapport business : un appel par scan, après tout le reste. */
+  redaction: number;
 }
 
 /** Le résultat complet d'un scan. */
@@ -123,6 +133,17 @@ export interface Rapport {
    * sera son premier lecteur.
    */
   profil?: ProfilSiteRapporte;
+  /**
+   * Le rapport tel qu'un humain le lit (brique 5). Produit APRÈS tout le
+   * reste et À PARTIR DU PRÉSENT RAPPORT SEUL.
+   *
+   * Il voyage DANS le rapport technique plutôt qu'à côté parce que le contrat
+   * du moteur est `Scanner → Rapport` : un second canal de sortie obligerait
+   * chaque consommateur — le banc aujourd'hui, l'interface demain — à savoir
+   * qu'il existe. Absent quand rien ne l'a demandé (`OptionsScan.langueRapport`
+   * jamais résolue) ; PRÉSENT même sans IA, structurel et sans prose.
+   */
+  rapportBusiness?: RapportBusiness;
 }
 
 /** Le profil tel qu'il voyage dans un rapport : la valeur, plus d'où elle vient. */
@@ -155,6 +176,18 @@ export interface ProfilSiteRapporte {
 export interface OptionsScan {
   /** Durée maximale du scan ; le moteur doit rendre un rapport (éventuellement partiel) avant. */
   timeoutMs: number;
+  /**
+   * Langue du RAPPORT BUSINESS, indépendante de celle du site : c'est la
+   * langue du CLIENT. Un commerçant français dont le site est en anglais lit
+   * un rapport français — le plan l'exige, et le banc l'éprouve par un
+   * scénario croisé.
+   *
+   * Absente = celle de `config/rapport.json`. C'est un PARAMÈTRE DE SCAN et
+   * non un réglage de moteur : deux clients du même moteur n'ont pas la même
+   * langue, et le jour où le scan est déclenché par une interface, c'est
+   * l'interface qui la porte.
+   */
+  langueRapport?: string;
 }
 
 /** Signature du point d'entrée du moteur, telle que le banc l'invoque. */
@@ -855,4 +888,181 @@ export interface AvisDiagnostic {
   provenance?: ProvenanceSortieIa;
   /** Prose du modèle, terminale : journalisée, jamais lue par une logique. */
   justification?: string | null;
+}
+
+// ===========================================================================
+// RAPPORT BUSINESS (brique 5) — le moteur parle à un humain
+// ===========================================================================
+
+/**
+ * Statut épistémique d'une section, tel qu'un lecteur non technicien doit le
+ * comprendre. C'est la VOIX DE LA MARQUE : aucune formulation ne promet plus
+ * que son statut, et le statut est posé par le CODE depuis le rapport
+ * technique — jamais par le modèle.
+ */
+export type StatutSection =
+  /** Reproduite par les re-exécutions. */
+  | 'confirmee'
+  /** Reproduite partiellement : un défaut sur deux tentatives est un défaut. */
+  | 'intermittente'
+  /** Constatée pendant la vérification seulement, jamais re-testée (troisième état épistémique). */
+  | 'constatee-au-rejeu'
+  /** Constatée une fois, non reproduite, cause site suspectée par le diagnostic — non re-confirmée. */
+  | 'diagnostic-site';
+
+/** Où une anomalie se manifeste, dit à un humain : des pages et des viewports, pas des sélecteurs. */
+export interface LocalisationLisible {
+  /** Chemin d'URL de la page. */
+  page: string;
+  /**
+   * Viewports concernés. Une anomalie vue sur un seul viewport reste
+   * distinguable jusqu'ici — « mobile uniquement » a été préservé trois
+   * briques durant pour arriver dans cette phrase.
+   */
+  viewports: string[];
+}
+
+/**
+ * Chiffrage monétaire de l'impact. LOGEMENT VIDE en Phase 1, et
+ * délibérément.
+ *
+ * Le moteur ne connaît ni le panier moyen ni le trafic : un montant estimé
+ * par le modèle serait un diagnostic faux adressé à la personne la moins
+ * armée pour s'en défendre. Ce champ se remplira quand le client aura fourni
+ * ses grandeurs, jamais par estimation.
+ */
+export interface ImpactChiffre {
+  montantParJour: number;
+  devise: string;
+  /** Grandeurs fournies par le client d'où le montant est dérivé. Sans elles, pas de montant. */
+  hypotheses: Record<string, number>;
+}
+
+/**
+ * Une anomalie retenue, dite à un humain.
+ *
+ * SÉPARATION STRICTE — les champs de PROSE sont rédigés par le modèle, les
+ * champs de FAIT sont posés par le code depuis le rapport technique. Le
+ * modèle rédige des phrases DANS des champs ; il ne produit jamais un
+ * chiffre, une gravité ni un statut. Un rapport où le modèle aurait PU
+ * altérer un fait est un rapport où il l'a peut-être fait.
+ */
+export interface SectionRapport {
+  /**
+   * Identifiant OPAQUE attribué par le moteur (`s1`, `s2`…), dans l'ordre des
+   * anomalies retenues.
+   *
+   * C'est l'ÉNUMÉRATION de la brique 4b appliquée à la rédaction, et pour la
+   * même raison : le contrat de sortie envoyé au modèle porte ces
+   * identifiants en `enum`, donc le modèle ne peut ni en inventer un, ni en
+   * omettre un, ni en dupliquer un — la bijection entre les sections et les
+   * anomalies retenues devient impossible à rompre, au lieu d'être vérifiée
+   * après coup. Un identifiant dérivé de la page (clé de groupe, URL) aurait
+   * en plus fait entrer du contenu de site dans un champ structurant.
+   */
+  id: string;
+  /** Clé du groupe de cause racine d'où vient la section : la traçabilité descend jusqu'au moteur. */
+  groupe?: string;
+  // --- FAITS (posés par le code, jamais par le modèle) ---
+  categorie: Categorie;
+  gravite: Gravite;
+  statut: StatutSection;
+  /** Formulation du statut, prise dans la table code → texte. Jamais rédigée librement. */
+  statutFormule: string;
+  localisations: LocalisationLisible[];
+  /** Chiffrage monétaire : absent en Phase 1. */
+  impactChiffre?: ImpactChiffre;
+  // --- PROSE (rédigée par le modèle, terminale : aucune logique ne la lit) ---
+  titre: string;
+  constat: string;
+  impact: string;
+  actionSuggeree: string;
+}
+
+/**
+ * Le rapport tel qu'un propriétaire de site le lit. Produit APRÈS le rapport
+ * technique et À PARTIR DE LUI SEUL : aucun accès à la page, aucun réseau
+ * hors l'appel de rédaction.
+ */
+export interface RapportBusiness {
+  /** Langue du rapport, indépendante de celle du site : c'est la langue du CLIENT. */
+  langue: string;
+  /** État global en une phrase (prose). */
+  synthese: string;
+  sections: SectionRapport[];
+  /**
+   * Nombre de signalements écartés par les re-vérifications. Le chiffre
+   * NEUTRE : sa décomposition (fausses alertes évitées / anomalies perdues)
+   * appartient au banc, qui seul possède la vérité terrain.
+   *
+   * `null` quand le protocole de confirmation n'a PAS consolidé en groupes de
+   * cause racine — parce qu'il est tombé, ou parce que l'implémentation
+   * utilisée ne consolide pas. Dans ces deux cas, il n'existe aucun compte de
+   * signalements écartés PAR DES RE-VÉRIFICATIONS, puisqu'il n'y a pas eu de
+   * re-vérification. Publier le nombre de candidates à la place serait
+   * doublement faux : mauvaise unité (des signalements, pas des causes) et
+   * mauvaise phrase (« écartés par nos re-vérifications » alors que rien n'a
+   * été rejoué). Le rendu dit alors qu'il ne peut pas se prononcer — c'est le
+   * seul énoncé honnête, et c'est au pire moment qu'il compte : quand la
+   * confirmation vient de tomber.
+   */
+  nbEcartes: number | null;
+  /**
+   * Signalements écartés SANS avoir été re-vérifiés : échéance atteinte avant
+   * leur tour, ou aucun rejeu exploitable.
+   *
+   * Ils sont comptés À PART de `nbEcartes`, et ce n'est pas une nuance. Le
+   * protocole les a écartés, mais il ne les a pas ÉPROUVÉS : les additionner
+   * ferait dire au rapport « nos re-vérifications ont écarté N signalements »
+   * alors qu'une partie d'entre eux n'a jamais été rejouée — le différenciateur
+   * commercial du produit, affiché à son maximum au moment précis où il n'a pas
+   * fonctionné. Les taire serait l'autre mensonge : le lecteur croirait que
+   * tout ce qui a été vu a été jugé.
+   *
+   * `null` dans le même cas que `nbEcartes` : aucune consolidation, donc aucun
+   * compte possible.
+   */
+  nbNonVerifies: number | null;
+  /**
+   * Phrase de méthode, rédigée par le modèle, posée À CÔTÉ de ce chiffre.
+   *
+   * Elle ne le PORTE pas : tout chiffre est refusé dans la prose (le modèle
+   * n'énonce jamais un fait), et c'est le rendu qui écrit le compte à partir
+   * de `nbEcartes` et `nbNonVerifies`. Un consommateur qui n'afficherait que
+   * ce champ rendrait une méthode sans son chiffre.
+   */
+  ligneMethode: string;
+  /**
+   * Combien de sections PUBLIÉES portent une prose.
+   *
+   * Ce n'est pas la même chose que `sansProse`. La rédaction se fait en un
+   * appel, sur un bloc de faits BORNÉ : quand les faits dépassent la borne,
+   * des sections entières en sortent — elles restent publiées, avec leurs
+   * faits, mais sans titre, sans constat, sans impact et sans action. Le
+   * rapport est alors PARTIEL, et un partiel muet est le pire des deux
+   * mondes : le lecteur ne peut pas distinguer « nous n'avons rien à en dire »
+   * de « le budget s'est arrêté là ». Le rendu le dit, et il lui faut ce
+   * compte pour le dire.
+   */
+  nbSectionsRedigees: number;
+  /**
+   * Localisations PUBLIÉES que le rédacteur n'a PAS vues.
+   *
+   * Le rapport publie toutes les pages d'une section ; le bloc factuel montré
+   * au modèle, lui, est borné (`localisationsMaxParSection`). L'écart n'est pas
+   * une curiosité d'implémentation : c'est par le CHEMIN d'une page qu'un site
+   * inspecté peut adresser une phrase à notre rédacteur, donc c'est par cette
+   * borne qu'une charge peut disparaître avant de l'atteindre. Le banc a besoin
+   * de ce compte pour distinguer « le rédacteur a résisté » de « le rédacteur
+   * n'a jamais rien vu » — la première fois, il a crédité la seconde comme la
+   * première (APPRENTISSAGES n°11).
+   *
+   * `null` quand aucune rédaction n'a été demandée : rien n'a été montré, et
+   * un zéro laisserait croire que tout l'a été.
+   */
+  nbLocalisationsMasquees: number | null;
+  /** Provenance de la rédaction. Absente quand le rapport est produit en mode dégradé. */
+  provenance?: ProvenanceSortieIa;
+  /** true si aucune prose n'a pu être rédigée : le rapport est STRUCTUREL, et il reste lisible. */
+  sansProse: boolean;
 }

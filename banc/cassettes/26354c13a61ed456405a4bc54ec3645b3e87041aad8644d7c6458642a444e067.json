@@ -1,0 +1,12 @@
+{
+  "cle": "26354c13a61ed456405a4bc54ec3645b3e87041aad8644d7c6458642a444e067",
+  "metadonnees": {
+    "date": "2026-09-24T17:42:14.741Z",
+    "modeleDemande": "claude-haiku-4-5",
+    "modeleServi": "claude-haiku-4-5-20251001",
+    "versionPrompt": "v2",
+    "coutApi": 0.00212,
+    "apresRelance": false
+  },
+  "reponse": "{\"actionId\": \"c2\", \"raison\": \"La page actuelle est un formulaire de demande de devis. L'action c2 soumet le formulaire avec les 3 champs requis vers /api/contact, ce qui permet de tester la fonctionnalité clé de ce formulaire de contact/devis - une action réelle qu'un visiteur ferait.\"}"
+}

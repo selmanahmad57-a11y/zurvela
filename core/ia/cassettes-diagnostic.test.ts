@@ -17,7 +17,9 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterAll, describe, expect, it } from 'vitest';
 import { VERSION } from '../../prompts/diagnostic/v1.js';
-import { chargerConfigDiagnostic, chargerConfigProfilage, chargerConfigScanner } from '../scanner/config.js';
+import { chargerConfigDiagnostic, chargerConfigProfilage, chargerConfigScanner,
+  chargerConfigRapport,
+} from '../scanner/config.js';
 import { contexteDeTest } from './aide-tests-diagnostic.js';
 import {
   COMMANDE_ENREGISTREMENT_IA,
@@ -57,6 +59,8 @@ const options = {
   profilage,
   decision: { modele: configScanner.ia.modeles.navigation, config: navigation },
   diagnostic: { modele: MODELE, config: diagnosticConfig },
+  /** Réglages de rédaction : requis par `clientRejouable`, sans effet sur les diagnostics. */
+  redaction: { modele: configScanner.ia.modeles.redaction, config: await chargerConfigRapport() },
 };
 
 const AVIS = JSON.stringify({ avis: AVIS_AVEU, justification: 'le journal ne dit rien du code de réponse' });

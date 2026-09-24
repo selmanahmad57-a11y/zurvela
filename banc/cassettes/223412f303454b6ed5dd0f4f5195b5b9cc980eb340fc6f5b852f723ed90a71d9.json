@@ -1,0 +1,12 @@
+{
+  "cle": "223412f303454b6ed5dd0f4f5195b5b9cc980eb340fc6f5b852f723ed90a71d9",
+  "metadonnees": {
+    "date": "2026-09-24T17:41:23.923Z",
+    "modeleDemande": "claude-haiku-4-5",
+    "modeleServi": "claude-haiku-4-5-20251001",
+    "versionPrompt": "v2",
+    "coutApi": 0.00205,
+    "apresRelance": false
+  },
+  "reponse": "{\"actionId\":\"c1\",\"raison\":\"La page actuelle contient un formulaire de contact avec 3 champs requis. Selon la priorité de test des pages où les visiteurs agissent (formulaires, contact), il faut d'abord remplir ce formulaire avant de le soumettre.\"}"
+}

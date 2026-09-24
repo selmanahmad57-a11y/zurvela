@@ -48,6 +48,16 @@ import {
   replisDecisionSubis,
   verifierContraintes,
 } from './navigation.js';
+import {
+  RAISON_PROSE_NON_MESUREE,
+  RAISON_RAPPORTS_NON_MESURES,
+  RAISON_RAPPORT_SCENARIO_EN_ERREUR,
+  noterRapports,
+  prosesNonMesureesSubies,
+  rapportsNonMesures,
+  rapportsNonMesuresSubis,
+} from './rapport.js';
+import { chargerDetectionLangue, type ConfigDetectionLangue } from './langue-prose.js';
 import { calculerScorecard, ecrireScorecard, purgerResultats, rendreScorecardConsole } from './scorecard.js';
 
 export interface ParametresNotation {
@@ -69,6 +79,26 @@ export interface ParametresNotation {
    * pas distinguer une absence demandée d'une absence subie.
    */
   iaDeclareeAbsente?: boolean;
+  /**
+   * `true` quand le sujet noté ne produit AUCUN rapport business par
+   * construction — le scanner factice, témoin négatif du banc.
+   *
+   * Distinct d'`iaDeclareeAbsente` : `--sans-ia` retire l'IA, pas le rapport.
+   * Le moteur en produit un STRUCTUREL sans clé, et c'est précisément dans
+   * cette exécution que l'invariant doit pouvoir mordre.
+   */
+  sujetSansRapport?: boolean;
+  /**
+   * Table de détection de langue (`config/detection-langue.json`).
+   *
+   * OBLIGATOIRE, et `null` pour dire « ce contrôle n'est pas exercé ». Le champ
+   * a d'abord été optionnel, et la revue a montré ce que l'optionnalité coûte :
+   * deux des chemins réels de la notation ne le passaient pas — dont
+   * `banc:enregistrer-ia`, la SEULE exécution où le modèle écrit réellement la
+   * prose. Le contrôle y était donc inexistant, et son absence valait
+   * SUCCÈS. Un appelant peut renoncer à ce contrôle ; il ne peut plus l'oublier.
+   */
+  detectionLangue: ConfigDetectionLangue | null;
 }
 
 export interface ParametresBanc extends ParametresNotation {
@@ -82,13 +112,24 @@ export interface ParametresBanc extends ParametresNotation {
  * retient jamais le processus ; un rejet tardif du scanner (après le
  * timeout) est absorbé pour ne pas devenir un rejet non géré.
  */
-function scannerSousTimeout(scanner: Scanner, url: string, timeoutMs: number, messageTimeout: string): Promise<Rapport> {
+function scannerSousTimeout(
+  scanner: Scanner,
+  url: string,
+  timeoutMs: number,
+  messageTimeout: string,
+  langueRapport?: string,
+): Promise<Rapport> {
   let timer: NodeJS.Timeout | undefined;
   const echeance = new Promise<never>((_resoudre, rejeter) => {
     timer = setTimeout(() => rejeter(new Error(messageTimeout)), timeoutMs);
     timer.unref();
   });
-  const scan = (async () => scanner(url, { timeoutMs }))();
+  // La langue du rapport est un PARAMÈTRE DE SCAN : le banc la demande, puis
+  // la vérifie dans le rapport rendu. Un canal muet ferait noter un rapport
+  // français sous l'étiquette d'une demande anglaise — la mesure verte du
+  // comportement par défaut, étiquetée du nom de l'autre (APPRENTISSAGES n°6).
+  const scan = (async () =>
+    scanner(url, { timeoutMs, ...(langueRapport === undefined ? {} : { langueRapport }) }))();
   scan.catch(() => undefined);
   return Promise.race([scan, echeance]).finally(() => clearTimeout(timer));
 }
@@ -119,7 +160,13 @@ export async function noterScenario(scenario: Scenario, params: ParametresNotati
   // Durée mesurée par le banc (pas auto-déclarée par le scanner) : disponible même en cas d'erreur ou de timeout.
   const debut = Date.now();
   try {
-    rapport = await scannerSousTimeout(scanner, serveur.url, timeoutMs, traduire(dico, 'banc.timeoutScan', { timeoutMs }));
+    rapport = await scannerSousTimeout(
+      scanner,
+      serveur.url,
+      timeoutMs,
+      traduire(dico, 'banc.timeoutScan', { timeoutMs }),
+      scenario.langueRapport,
+    );
   } catch (cause: unknown) {
     erreur = messageErreur(cause);
   } finally {
@@ -149,6 +196,7 @@ export async function noterScenario(scenario: Scenario, params: ParametresNotati
       attendus: toutRate(),
       profils: profilsNonMesures(manifeste),
       cibles: ciblesNonMesurees(manifeste, politique),
+      rapports: rapportsNonMesures(manifeste, RAISON_RAPPORT_SCENARIO_EN_ERREUR),
       nbReplisDecision: 0,
       fauxPositifs: [],
       coutApi: 0,
@@ -185,6 +233,26 @@ export async function noterScenario(scenario: Scenario, params: ParametresNotati
     const appliquee = politiqueAppliquee(rapport);
     const contextePolitique = { demandee: politique, ...(appliquee === undefined ? {} : { appliquee }) };
     const cibles = noterCibles(rapport, manifeste, contextePolitique);
+    const rapports = noterRapports(rapport, manifeste, params.detectionLangue, params.iaDeclareeAbsente === true);
+    // INVARIANT ÉTENDU (4a → 5) : un attendu de rapport non mesuré est une
+    // absence SUBIE dès que l'IA n'a pas été déclarée absente — et un rapport
+    // business est produit MÊME sans IA (structurel). Son absence totale est
+    // donc un défaut du moteur, jamais un effet du mode dégradé.
+    // `sujetSansRapport` et NON `iaDeclareeAbsente` : un rapport business est
+    // produit même sans IA (structurel), donc `--sans-ia` n'excuse pas son
+    // absence — c'est au contraire la run où l'invariant doit mordre.
+    if (statut === 'ok' && rapportsNonMesuresSubis(rapports, params.sujetSansRapport === true) > 0) {
+      statut = 'erreur';
+      raison = RAISON_RAPPORTS_NON_MESURES;
+    }
+    // INVARIANT JUMEAU : un rapport qui avait des sections à rédiger et n'a
+    // aucune prose, hors absence DÉCLARÉE d'IA, est une rédaction non mesurée.
+    // Sans lui, un parc de cassettes introuvable produit des rapports
+    // STRUCTURELS — donc justes — et une scorecard verte.
+    if (statut === 'ok' && prosesNonMesureesSubies(rapports, params.iaDeclareeAbsente === true) > 0) {
+      statut = 'erreur';
+      raison = RAISON_PROSE_NON_MESUREE;
+    }
     const couverture = calculerCouverture(rapport, manifeste, contextePolitique);
     const nbReplisDecision = compterReplisDecision(rapport);
     // INVARIANT ÉTENDU (4a → 4b) : un repli par décision est une absence
@@ -204,6 +272,8 @@ export async function noterScenario(scenario: Scenario, params: ParametresNotati
       attendus,
       profils,
       cibles,
+      rapports,
+      ...(rapport.rapportBusiness === undefined ? {} : { rapportBusiness: rapport.rapportBusiness }),
       ...(couverture === undefined ? {} : { couverture }),
       nbReplisDecision,
       fauxPositifs,
@@ -240,6 +310,7 @@ export async function noterScenario(scenario: Scenario, params: ParametresNotati
       attendus: toutRate(),
       profils: profilsNonMesures(manifeste),
       cibles: ciblesNonMesurees(manifeste, politique),
+      rapports: rapportsNonMesures(manifeste, RAISON_RAPPORT_SCENARIO_EN_ERREUR),
       nbReplisDecision: 0,
       fauxPositifs: [],
       coutApi,
@@ -249,8 +320,30 @@ export async function noterScenario(scenario: Scenario, params: ParametresNotati
   }
 }
 
+/**
+ * Les deux absences DÉCLARÉES d'un run, décidées en UN endroit.
+ *
+ * Elles ne disent pas la même chose, et les confondre éteint un invariant :
+ *  - `iaDeclareeAbsente` couvre `--sans-ia` ET un sujet sans IA. Sans IA, il
+ *    n'y a ni profil ni prose : leur absence est normale.
+ *  - `sujetSansRapport` ne couvre QUE le sujet qui ne produit aucun rapport
+ *    par construction. `--sans-ia` n'en fait pas partie : le moteur produit un
+ *    rapport STRUCTUREL sans clé, et c'est précisément dans ce mode que la
+ *    promesse de la constitution §4 doit être éprouvée.
+ *
+ * Extraite de la CLI et EXPORTÉE pour une seule raison : elle y vivait dans
+ * `principal()`, que rien n'invoque en test. Une régression — les deux
+ * drapeaux confondus — n'aurait fait échouer aucun test, et aurait désarmé
+ * l'invariant du rapport dans la seule exécution où il mord (APPRENTISSAGES
+ * n°12 : une correction que rien n'éprouve n'est pas une correction).
+ */
+export function absencesDeclarees(nomSujet: string, sansIa: boolean): { iaDeclareeAbsente: boolean; sujetSansRapport: boolean } {
+  const sujetReel = nomSujet === 'reel';
+  return { iaDeclareeAbsente: sansIa || !sujetReel, sujetSansRapport: !sujetReel };
+}
+
 export async function executerBanc(params: ParametresBanc): Promise<Scorecard> {
-  const { scenarios, sujet, politique, config, dico, obtenirGabarit, iaDeclareeAbsente } = params;
+  const { scenarios, sujet, politique, config, dico, obtenirGabarit, iaDeclareeAbsente, sujetSansRapport, detectionLangue } = params;
   const journal = params.journal ?? ((): void => undefined);
   const horodatage = new Date().toISOString();
 
@@ -258,7 +351,16 @@ export async function executerBanc(params: ParametresBanc): Promise<Scorecard> {
   const resultats: ResultatScenario[] = [];
   for (const scenario of scenarios) {
     journal(traduire(dico, 'banc.scenarioEnCours', { id: scenario.id }));
-    const resultat = await noterScenario(scenario, { sujet, politique, config, dico, obtenirGabarit, iaDeclareeAbsente });
+    const resultat = await noterScenario(scenario, {
+      sujet,
+      politique,
+      config,
+      dico,
+      obtenirGabarit,
+      iaDeclareeAbsente,
+      sujetSansRapport,
+      detectionLangue,
+    });
     resultats.push(resultat);
     if (resultat.statut === 'erreur') {
       journal(traduire(dico, 'banc.scenarioErreur', { id: resultat.scenarioId, erreur: resultat.erreur ?? '' }));
@@ -405,11 +507,14 @@ async function principal(): Promise<void> {
     return;
   }
 
-  // L'absence de profil est DÉCLARÉE de deux façons : `--sans-ia` (on a dit au
-  // banc de ne pas appeler l'IA) et un sujet qui, par construction, n'en
-  // produit aucun (le scanner factice, témoin négatif du banc). Toute autre
-  // absence est SUBIE et interdit `ok`.
-  const iaDeclareeAbsente = options.sansIa || nomSujet !== 'reel';
+  // Les deux absences déclarées, décidées par `absencesDeclarees` — une seule
+  // source, et elle est testée : ici, dans `principal()`, rien ne l'exercerait.
+  const { iaDeclareeAbsente, sujetSansRapport } = absencesDeclarees(nomSujet, options.sansIa);
+  // La table de détection de langue est chargée UNE FOIS : sans elle, le
+  // contrôle de la langue de la prose ne s'exerce pas, et le critère
+  // « rapport intégralement dans la langue demandée » retomberait sur la
+  // comparaison d'étiquettes qui ne peut pas échouer.
+  const detectionLangue = await chargerDetectionLangue();
   const scorecard = await executerBanc({
     scenarios,
     sujet,
@@ -419,6 +524,8 @@ async function principal(): Promise<void> {
     obtenirGabarit,
     journal: console.log,
     iaDeclareeAbsente,
+    sujetSansRapport,
+    detectionLangue,
   });
   console.log(rendreScorecardConsole(scorecard, dico, config.langueConsole, { iaDeclareeAbsente }));
   const dossierResultats = depuisRacine(config.scorecard.dossierResultats);

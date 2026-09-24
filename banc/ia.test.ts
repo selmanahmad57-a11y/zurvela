@@ -10,13 +10,19 @@
 import { describe, expect, it } from 'vitest';
 import { COMMANDE_ENREGISTREMENT_IA, RAISON_CASSETTE_ABSENTE, type DepotCassettes } from '../core/ia/index.js';
 import { chargerConfigScanner } from '../core/scanner/config.js';
-import type { Rapport } from '../core/types.js';
+import type { ContexteRedaction } from '../core/ia/index.js';
+import { etatDeTest } from '../core/ia/aide-tests-decision.js';
+import { contexteDeTest } from '../core/ia/aide-tests-diagnostic.js';
 import { RAISON_BANC_REJEU_SEUL, RAISON_BANC_SANS_IA, creerClientIaBanc, tarifsConfigures } from './ia.js';
 
 const CONTEXTE = { url: 'http://127.0.0.1:4800/', texte: 'contenu de page', langueDeclaree: 'fr' };
 
-/** Rapport minimal : sert uniquement à interroger une fonction que le décorateur ne rejoue pas. */
-const RAPPORT_VIDE: Rapport = { url: CONTEXTE.url, anomalies: [], coutApi: 0, dureeMs: 0, journal: [] };
+/** Contexte de rédaction minimal : le décorateur le rejoue désormais comme les trois autres. */
+const CONTEXTE_REDACTION: ContexteRedaction = {
+  langue: 'fr',
+  enTete: ['type de site: vitrine-contact'],
+  sections: [{ id: 's1', lignes: ['catégorie: fonctionnel', 'statut: confirmee', 'pages: /contact'] }],
+};
 
 /** Dépôt VIDE qui refuse d'écrire : toute tentative d'enregistrement échoue bruyamment dans un test. */
 const depotVide: DepotCassettes = {
@@ -38,11 +44,57 @@ describe('creerClientIaBanc — régime rejeu (le défaut de `pnpm banc`)', () =
     // nommée, et jamais la moindre écriture.
     expect(client.mode).toBe('actif');
     expect(client.raisonDegrade).toBeNull();
-    // Le client DÉCORÉ, lui, n'a bien aucune capacité propre. Les fonctions
-    // que le décorateur ne rejoue PAS tombent directement sur lui, et elles
-    // répondent « rejeu seul » : la capacité vient du dépôt, d'aucun moyen
-    // d'appeler.
-    await expect(client.rediger(RAPPORT_VIDE, 'fr')).resolves.toMatchObject({ disponible: false, raison: RAISON_BANC_REJEU_SEUL });
+    // LES QUATRE capacités passent désormais par le dépôt, rédaction comprise.
+    // Avant la brique 5, `rediger` était un passe-plat vers le client décoré
+    // et tombait donc sur « rejeu seul » : sans conséquence tant qu'aucun
+    // client ne savait rédiger, et chemin d'appel RÉSEAU depuis un run de
+    // notation le jour où l'un d'eux a su. C'est le trou que la brique 4c
+    // avait trouvé sur `diagnostiquer`, au même endroit, à un nom près.
+    await expect(client.rediger(CONTEXTE_REDACTION)).resolves.toMatchObject({
+      disponible: false,
+      raison: RAISON_CASSETTE_ABSENTE,
+    });
+  });
+
+  it('AUCUNE capacité ne contourne plus le dépôt : « rejeu seul » n’est plus jamais rendu', async () => {
+    // La garde d'unicité du chemin réseau, prise par l'autre bout. Le client
+    // DÉCORÉ est sans capacité et sa raison est `banc-rejeu-seul` ; tant
+    // qu'une capacité était un passe-plat, cette raison remontait jusqu'à
+    // l'appelant — et c'était le signe visible d'un appel qui, le jour où le
+    // client concret saurait faire, partirait sur le réseau depuis un run de
+    // notation. Depuis la brique 5, les QUATRE passent par le dépôt : une
+    // cassette manque, on le dit ; on ne tombe jamais sur le client décoré.
+    //
+    // Ce test échoue donc si une cinquième capacité est ajoutée en passe-plat,
+    // ce qui est exactement ce qu'on veut qu'il attrape.
+    const { client } = await creerClientIaBanc({ regime: 'rejeu', depot: depotVide });
+    const resultats = await Promise.all([
+      client.profiler(CONTEXTE),
+      client.decider(etatDeTest()),
+      client.diagnostiquer(contexteDeTest()),
+      client.rediger(CONTEXTE_REDACTION),
+    ]);
+    for (const resultat of resultats) {
+      expect(resultat).toMatchObject({ disponible: false, raison: RAISON_CASSETTE_ABSENTE });
+      expect(resultat).not.toMatchObject({ raison: RAISON_BANC_REJEU_SEUL });
+    }
+  });
+
+  it('la rédaction ne peut pas contourner les cassettes : aucune écriture, aucun appel', async () => {
+    // `depotVide` LÈVE à l'écriture : si le décorateur laissait passer un
+    // enregistrement, ce test exploserait au lieu de rendre une
+    // indisponibilité. C'est la garde qui peut échouer, pas la promesse qu'on
+    // se fait.
+    const journal: { type: string; details?: unknown }[] = [];
+    const { client } = await creerClientIaBanc({
+      regime: 'rejeu',
+      depot: depotVide,
+      journaliser: (type, details) => journal.push({ type, details }),
+    });
+    const resultat = await client.rediger(CONTEXTE_REDACTION);
+    expect(resultat).toMatchObject({ disponible: false, raison: RAISON_CASSETTE_ABSENTE });
+    expect(journal.map((entree) => entree.type)).toContain('ia.cassette.absente');
+    expect(journal.map((entree) => entree.type)).not.toContain('ia.cassette.enregistree');
   });
 
   it('rend une indisponibilité CLAIRE quand la cassette manque, en nommant la commande à lancer', async () => {

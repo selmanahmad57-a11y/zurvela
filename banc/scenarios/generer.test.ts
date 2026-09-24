@@ -5,7 +5,8 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { chargerConfig } from '../config.js';
 import { obtenirGabarit } from '../gabarits/index.js';
 import { BUGS_FACTICES, configFactice, gabaritFactice } from './factices.js';
-import { ecrireScenarios, genererScenarios } from './generer.js';
+import { SEGMENT_RAPPORT, ecrireScenarios, genererScenarios } from './generer.js';
+import type { ConfigBanc } from '../types.js';
 
 describe('genererScenarios (gabarit factice)', () => {
   const gabarit = gabaritFactice();
@@ -63,7 +64,7 @@ describe('genererScenarios (gabarit factice)', () => {
 
   it('suit l’ordre du registre du gabarit et l’ordre déclaré des combinaisons', () => {
     const inverse = gabaritFactice('g', [...BUGS_FACTICES].reverse());
-    const ids = genererScenarios(inverse, configFactice({ langues: ['fr'], scenarios: { dossier: 'x', jetonSain: 'ok', combinaisons: { g: [['V01', 'F02'], ['M01', 'F01']] }, contraintes: {} } })).map((scenario) => scenario.id);
+    const ids = genererScenarios(inverse, configFactice({ langues: ['fr'], scenarios: { dossier: 'x', jetonSain: 'ok', combinaisons: { g: [['V01', 'F02'], ['M01', 'F01']] }, contraintes: {}, croises: [] } })).map((scenario) => scenario.id);
     expect(ids).toEqual([
       'g--ok--fr',
       'g--l01--fr',
@@ -80,12 +81,12 @@ describe('genererScenarios (gabarit factice)', () => {
   });
 
   it('lève si une combinaison cite un bug inconnu du gabarit', () => {
-    const config = configFactice({ scenarios: { dossier: 'x', jetonSain: 'sain', combinaisons: { 'gabarit-factice': [['F01', 'X99']] }, contraintes: {} } });
+    const config = configFactice({ scenarios: { dossier: 'x', jetonSain: 'sain', combinaisons: { 'gabarit-factice': [['F01', 'X99']] }, contraintes: {}, croises: [] } });
     expect(() => genererScenarios(gabarit, config)).toThrow(/X99/);
   });
 
   it('lève si deux combinaisons donnent le même identifiant', () => {
-    const config = configFactice({ scenarios: { dossier: 'x', jetonSain: 'sain', combinaisons: { 'gabarit-factice': [['F01', 'M01'], ['F01', 'M01']] }, contraintes: {} } });
+    const config = configFactice({ scenarios: { dossier: 'x', jetonSain: 'sain', combinaisons: { 'gabarit-factice': [['F01', 'M01'], ['F01', 'M01']] }, contraintes: {}, croises: [] } });
     expect(() => genererScenarios(gabarit, config)).toThrow(/double/);
   });
 });
@@ -135,7 +136,11 @@ describe('genererScenarios (registre réel)', () => {
     const scenarios = genererScenarios(gabarit, config);
     // Dérivé du registre et de la config (jamais un compte figé) : ajouter un bug ne doit pas casser ce test.
     const attendusParLangue = 1 + gabarit.bugs.length + (config.scenarios.combinaisons[gabarit.nom]?.length ?? 0);
-    expect(scenarios).toHaveLength(attendusParLangue * config.langues.length);
+    // Les CROISÉS s'ajoutent hors de la grille par langue : ils portent deux
+    // langues à eux seuls, et c'est ce qui les rend non dérivables de la
+    // grille. Ils sont donc comptés à part, jamais absorbés dans le produit.
+    const croises = config.scenarios.croises.filter((croise) => croise.gabarit === gabarit.nom).length;
+    expect(scenarios).toHaveLength(attendusParLangue * config.langues.length + croises);
     expect(scenarios.map((scenario) => scenario.id)).toContain('formulaire-contact--f01-m01--fr');
     expect(scenarios.map((scenario) => scenario.id)).toContain('formulaire-contact--sain--en');
   });
@@ -148,5 +153,58 @@ describe('genererScenarios (registre réel)', () => {
         expect(ids).toContain(`formulaire-contact--${jeton}--${langue}`);
       }
     }
+  });
+});
+
+/**
+ * Les scénarios CROISÉS : un site dans une langue, un rapport dans une autre.
+ *
+ * Ils sont la seule façon d'éprouver la promesse centrale du rapport business
+ * — un commerçant français dont le site est en anglais lit un rapport
+ * français — et ils ne se dérivent pas des combinaisons ordinaires, qui ne
+ * portent qu'une langue.
+ */
+describe('genererScenarios — scénarios croisés', () => {
+  const croise = { gabarit: 'gabarit-factice', bugsActifs: ['F01'], langue: 'en', langueRapport: 'fr' };
+
+  function configCroisee(croises = [croise]): ConfigBanc {
+    return configFactice({
+      langues: ['fr'],
+      scenarios: { dossier: 'banc/scenarios', jetonSain: 'sain', combinaisons: {}, contraintes: {}, croises },
+    });
+  }
+
+  it('produit un scénario dont l’identifiant porte les DEUX langues', () => {
+    const scenarios = genererScenarios(gabaritFactice(), configCroisee());
+    const produit = scenarios.find((scenario) => scenario.langueRapport !== undefined);
+    expect(produit?.id).toBe(`gabarit-factice--f01--en${SEGMENT_RAPPORT}fr`);
+    // `langue` reste celle du SITE : c'est elle qui choisit les locales servies.
+    expect(produit).toMatchObject({ langue: 'en', langueRapport: 'fr', bugsActifs: ['F01'] });
+  });
+
+  it('n’en produit aucun pour un gabarit que la config ne nomme pas', () => {
+    const scenarios = genererScenarios(gabaritFactice('autre-gabarit'), configCroisee());
+    expect(scenarios.filter((scenario) => scenario.langueRapport !== undefined)).toEqual([]);
+  });
+
+  it('LÈVE sur un bug inconnu : un scénario qui disparaît sans le dire est une mesure qui s’éteint', () => {
+    expect(() => genererScenarios(gabaritFactice(), configCroisee([{ ...croise, bugsActifs: ['ZZ9'] }]))).toThrow('ZZ9');
+  });
+
+  it('la config RÉELLE croise dans les DEUX sens, dont un contre le défaut du moteur', async () => {
+    // Le sens `rapport = défaut de config/rapport.json` ne peut pas échouer
+    // sur un canal muet : un paramètre jamais transmis rendrait le même
+    // rapport. Le sens inverse, lui, le prouve. Ce test verrouille la
+    // présence des deux — sans lui, quelqu'un retirerait un jour « celui qui
+    // fait doublon ».
+    const config = await chargerConfig();
+    const langues = config.scenarios.croises.map((croise) => croise.langueRapport);
+    expect(new Set(langues).size).toBeGreaterThanOrEqual(2);
+  });
+
+  it('LÈVE quand les deux langues sont identiques : le scénario ne croiserait rien', () => {
+    expect(() => genererScenarios(gabaritFactice(), configCroisee([{ ...croise, langueRapport: 'en' }]))).toThrow(
+      'il ne croise rien',
+    );
   });
 });

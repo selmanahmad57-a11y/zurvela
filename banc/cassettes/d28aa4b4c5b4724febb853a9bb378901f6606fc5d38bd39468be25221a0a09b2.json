@@ -1,0 +1,12 @@
+{
+  "cle": "d28aa4b4c5b4724febb853a9bb378901f6606fc5d38bd39468be25221a0a09b2",
+  "metadonnees": {
+    "date": "2026-09-24T17:41:42.794Z",
+    "modeleDemande": "claude-haiku-4-5",
+    "modeleServi": "claude-haiku-4-5-20251001",
+    "versionPrompt": "v2",
+    "coutApi": 0.00202,
+    "apresRelance": false
+  },
+  "reponse": "{\"actionId\": \"c1\", \"raison\": \"Un formulaire de contact avec 3 champs requis n'a pas encore été rempli. C'est une action que tout visiteur peut faire sur ce type de site, et elle doit être testée avant la soumission.\"}"
+}

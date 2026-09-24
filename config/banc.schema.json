@@ -152,6 +152,47 @@
             }
           },
           "description": "Contraintes imposées au moteur pour les scénarios d'un gabarit (clé = nom du gabarit). Un gabarit absent n'en reçoit aucune et garde les réglages de config/scanner.json."
+        },
+        "croises": {
+          "type": "array",
+          "description": "Scénarios CROISÉS : un site servi dans une langue, un rapport business demandé dans une autre. Ils existent pour éprouver la promesse centrale du rapport — un commerçant français dont le site est en anglais doit lire un rapport français. Ils ne sont pas dérivables des combinaisons ordinaires : celles-ci ne portent qu'une langue, celle du site. LES DEUX SENS SONT REQUIS, et ce n'est pas une symétrie décorative : le sens dont la langue de rapport est celle du DÉFAUT de config/rapport.json ne peut pas distinguer un canal qui fonctionne d'un canal MUET — un paramètre de scan jamais transmis rendrait exactement le même rapport. Seul le sens inverse le prouve. Une vérification qui ne peut pas échouer ne vérifie rien (docs/METHODE.md).",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "gabarit",
+              "bugsActifs",
+              "langue",
+              "langueRapport"
+            ],
+            "properties": {
+              "gabarit": {
+                "type": "string",
+                "minLength": 1,
+                "description": "Nom du gabarit servi."
+              },
+              "bugsActifs": {
+                "type": "array",
+                "minItems": 1,
+                "uniqueItems": true,
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "description": "Bugs injectés. Au moins un : un scénario croisé SAIN n'aurait aucune section à rédiger, donc rien à éprouver dans une langue ou dans l'autre."
+              },
+              "langue": {
+                "type": "string",
+                "minLength": 1,
+                "description": "Langue du SITE servi."
+              },
+              "langueRapport": {
+                "type": "string",
+                "minLength": 1,
+                "description": "Langue demandée pour le RAPPORT. Différente de celle du site, sinon le scénario ne croise rien."
+              }
+            }
+          }
         }
       }
     },

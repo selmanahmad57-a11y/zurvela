@@ -1,0 +1,34 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "zurvela/config/detection-langue",
+  "title": "Détection mécanique de la langue d'une prose (banc d'essai)",
+  "description": "Table de mots-outils par langue, et seuils de décision. Consommée UNIQUEMENT par le correcteur du banc, jamais par le moteur : ce n'est pas une détection d'anomalie, c'est une mesure de vérité terrain. Un motif de langue naturelle ne vit jamais dans le code (constitution §2), d'où ce fichier — même raison et même forme que config/actions-interdites.json.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["tokensMin", "margeMin", "motsOutils"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "$commentaire": { "type": "string" },
+    "tokensMin": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Nombre minimal de mots-outils reconnus, toutes langues confondues, en dessous duquel la détection REFUSE de se prononcer. Une prose trop courte ne se détecte pas, et prétendre le contraire ferait passer un contrôle qui n'a rien vu."
+    },
+    "margeMin": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Écart minimal entre la langue la mieux notée et la suivante. En dessous, la détection refuse de trancher : deux langues à égalité ne désignent personne, et un contrôle qu'on ne peut pas faire n'est pas un contrôle qui passe."
+    },
+    "motsOutils": {
+      "type": "object",
+      "minProperties": 2,
+      "additionalProperties": {
+        "type": "array",
+        "minItems": 20,
+        "uniqueItems": true,
+        "items": { "type": "string", "minLength": 1 }
+      },
+      "description": "Par code de langue : les mots-outils de cette langue. Classe FERMÉE (articles, prépositions, conjonctions, auxiliaires, déterminants) : fréquents dans toute prose, et muets sur le sujet du texte — on mesure une langue, pas un contenu. Au moins deux langues, sans quoi il n'y a rien à départager."
+    }
+  }
+}

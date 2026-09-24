@@ -1,6 +1,6 @@
 import type Anthropic from '@anthropic-ai/sdk';
 import { describe, expect, it } from 'vitest';
-import { chargerConfigDiagnostic, chargerConfigProfilage, chargerConfigScanner } from '../scanner/config.js';
+import { chargerConfigDiagnostic, chargerConfigProfilage, chargerConfigRapport, chargerConfigScanner } from '../scanner/config.js';
 import {
   ENTETE_WORKSPACE,
   FORMAT_IDENTIFIANT_MODELE,
@@ -14,19 +14,24 @@ import {
   RAISON_DIAGNOSTIC_INVALIDE,
   RAISON_NON_IMPLEMENTE,
   RAISON_PROFIL_INVALIDE,
+  RAISON_REDACTION_INVALIDE,
   RAISON_REFUS_MODELE,
   RAISON_REPONSE_TRONQUEE,
   RAISON_TARIF_ABSENT,
   chargerConfigNavigation,
   creerClientAnthropic,
   enTetesWorkspace,
+  parametresSdk,
   type ContexteProfilage,
+  type ContexteRedaction,
   type PorteeSdk,
   type TarifsIa,
 } from './index.js';
 import { coutAppel } from './anthropic.js';
 import { schemaContratModele } from './schema-profil.js';
 import { creerValidateurDecision } from './schema-decision.js';
+import { schemaContratModeleRedaction } from './schema-redaction.js';
+import { bornerContexteRedaction, identifiantsSections } from './contexte-redaction.js';
 import { AVIS_AVEU, schemaContratModeleDiagnostic } from './schema-diagnostic.js';
 import { contexteDeTest } from './aide-tests-diagnostic.js';
 import { identifiantsEnumeres, normaliserEtatDecision } from './etat-decision.js';
@@ -38,6 +43,7 @@ const configScanner = await chargerConfigScanner();
 const profilage = await chargerConfigProfilage();
 const navigation = await chargerConfigNavigation(configScanner.exploration);
 const diagnostic = await chargerConfigDiagnostic();
+const rapport = await chargerConfigRapport();
 const MODELE = configScanner.ia.modeles.profilage;
 /**
  * Forme RÉSOLUE que le serveur sert pour cet alias — volontairement distincte
@@ -138,7 +144,7 @@ describe('identifiants de modèle (APPRENTISSAGES n°5)', () => {
 
 describe('creerClientAnthropic — mode dégradé', () => {
   it('sans clé : dégradé, indisponible, sans réseau et sans exception', async () => {
-    const client = creerClientAnthropic({ config: configScanner.ia, profilage, navigation, diagnostic, tarifs: TARIFS, env: {} });
+    const client = creerClientAnthropic({ config: configScanner.ia, profilage, navigation, diagnostic, rapport, tarifs: TARIFS, env: {} });
     expect(client.mode).toBe('degrade');
     expect(client.raisonDegrade).toBe(RAISON_CLE_ABSENTE);
     await expect(client.profiler(contexte)).resolves.toMatchObject({ disponible: false, raison: RAISON_CLE_ABSENTE });
@@ -151,6 +157,7 @@ describe('creerClientAnthropic — mode dégradé', () => {
       profilage,
       navigation,
       diagnostic,
+      rapport,
       tarifs: {},
       env: { [configScanner.ia.variableCle]: 'cle-factice' },
     });
@@ -161,7 +168,7 @@ describe('creerClientAnthropic — mode dégradé', () => {
 
 describe('creerClientAnthropic — appel réel (doublure de SDK)', () => {
   function client(sdk: PorteeSdk) {
-    return creerClientAnthropic({ config: configScanner.ia, profilage, navigation, diagnostic, tarifs: TARIFS, env: {}, sdk });
+    return creerClientAnthropic({ config: configScanner.ia, profilage, navigation, diagnostic, rapport, tarifs: TARIFS, env: {}, sdk });
   }
 
   it('envoie le modèle de config, le plafond de génération et le schéma dérivé', async () => {
@@ -246,14 +253,6 @@ describe('creerClientAnthropic — appel réel (doublure de SDK)', () => {
     expect(appels).toHaveLength(1);
   });
 
-  it('rédiger reste non implémenté : aucun chemin réseau hors profilage, décision et diagnostic', async () => {
-    const { sdk, appels } = sdkQuiRepond([message(VALIDE)]);
-    await expect(client(sdk).rediger({} as never, 'fr')).resolves.toEqual({
-      disponible: false,
-      raison: RAISON_NON_IMPLEMENTE,
-    });
-    expect(appels).toHaveLength(0);
-  });
 });
 
 /**
@@ -274,6 +273,7 @@ describe('creerClientAnthropic — diagnostiquer (doublure de SDK)', () => {
       profilage,
       navigation,
       diagnostic: reglages,
+      rapport,
       tarifs,
       env: {},
       sdk,
@@ -382,7 +382,7 @@ describe('creerClientAnthropic — diagnostiquer (doublure de SDK)', () => {
 
 describe('provenance : modeleServi est EXTRAIT, jamais déduit (APPRENTISSAGES n°6)', () => {
   function client(sdk: PorteeSdk) {
-    return creerClientAnthropic({ config: configScanner.ia, profilage, navigation, diagnostic, tarifs: TARIFS, env: {}, sdk });
+    return creerClientAnthropic({ config: configScanner.ia, profilage, navigation, diagnostic, rapport, tarifs: TARIFS, env: {}, sdk });
   }
 
   it('recopie le champ `model` de la RÉPONSE, quel qu’il soit — pas l’alias demandé', async () => {
@@ -413,6 +413,27 @@ describe('provenance : modeleServi est EXTRAIT, jamais déduit (APPRENTISSAGES n
  * autres tests injectent une doublure de SDK et n'exécuteraient donc jamais
  * cette ligne (APPRENTISSAGES n°5).
  */
+describe('parametresSdk — la borne de durée d’un appel', () => {
+  it('passe au SDK le nombre de réessais de la CONFIG : sans lui, la borne annoncée est fausse d’un facteur trois', () => {
+    // Le délai transmis à `messages.create` s'applique PAR TENTATIVE. Laissé
+    // au défaut du SDK (2 réessais), un seul appel peut durer trois fois la
+    // borne annoncée — et la promesse publique de `OptionsScan.timeoutMs`
+    // tombe avec elle.
+    expect(parametresSdk(configScanner.ia, 'sk-test', {})).toMatchObject({ apiKey: 'sk-test', maxRetries: configScanner.ia.reessaisReseauMax });
+  });
+
+  it('la valeur vient bien de la config et non d’une constante : la changer change le paramètre', () => {
+    const config = { ...configScanner.ia, reessaisReseauMax: 0 };
+    expect(parametresSdk(config, 'sk-test', {}).maxRetries).toBe(0);
+  });
+
+  it('emporte l’en-tête de workspace quand il y en a un', () => {
+    expect(parametresSdk(configScanner.ia, 'sk-test', { [configScanner.ia.variableWorkspace]: 'wrkspc_123' })).toMatchObject({
+      defaultHeaders: { [ENTETE_WORKSPACE]: 'wrkspc_123' },
+    });
+  });
+});
+
 describe('enTetesWorkspace', () => {
   it('ajoute l’en-tête quand la variable est renseignée', () => {
     const entetes = enTetesWorkspace(configScanner.ia, { [configScanner.ia.variableWorkspace]: 'wrkspc_123' });
@@ -441,6 +462,7 @@ describe('creerClientAnthropic — erreurs du SDK', () => {
       profilage,
       navigation,
       diagnostic,
+      rapport,
       tarifs: TARIFS,
       env: {},
       sdk: sdkQuiLeve(erreur),
@@ -497,7 +519,7 @@ describe('creerClientAnthropic — décider (doublure de SDK)', () => {
   const ELECTION = JSON.stringify({ actionId: 'c3', raison: 'le formulaire de commande' });
 
   function client(sdk: PorteeSdk) {
-    return creerClientAnthropic({ config: configScanner.ia, profilage, navigation, diagnostic, tarifs: TARIFS, env: {}, sdk });
+    return creerClientAnthropic({ config: configScanner.ia, profilage, navigation, diagnostic, rapport, tarifs: TARIFS, env: {}, sdk });
   }
 
   it('envoie le modèle de navigation, son plafond et le contrat DÉRIVÉ de l’énumération', async () => {
@@ -564,6 +586,7 @@ describe('creerClientAnthropic — décider (doublure de SDK)', () => {
       profilage,
       navigation,
       diagnostic,
+      rapport,
       tarifs: TARIFS,
       env: {},
       sdk,
@@ -580,10 +603,289 @@ describe('creerClientAnthropic — décider (doublure de SDK)', () => {
       profilage,
       navigation,
       diagnostic,
+      rapport,
       tarifs: TARIFS,
       env: {},
       sdk: sdkQuiLeve(new Sdk.APIConnectionError({ message: 'réseau' })),
     });
     await expect(decore.decider(etat)).resolves.toMatchObject({ disponible: false, raison: RAISON_APPEL_RESEAU });
+  });
+});
+
+describe('creerClientAnthropic — rédiger (doublure de SDK)', () => {
+  const MODELE_REDACTION = configScanner.ia.modeles.redaction;
+  /** Le modèle de rédaction a son propre tarif : sans lui, on n'appelle pas. */
+  const TARIFS_REDACTION: TarifsIa = { ...TARIFS, [MODELE_REDACTION]: { entreeParMillion: 5, sortieParMillion: 25 } };
+
+  const CONTEXTE_REDACTION: ContexteRedaction = {
+    langue: 'fr',
+    enTete: ['type de site: vitrine-contact'],
+    sections: [
+      {
+        id: 's1',
+        lignes: ['catégorie: fonctionnel', 'gravité: bloquant', 'statut: confirmee', 'symptôme technique: bouton-sans-effet', 'pages: /contact'],
+      },
+    ],
+  };
+  const REDACTION_VALIDE = JSON.stringify({
+    synthese: 'Un défaut empêche vos visiteurs de vous écrire.',
+    ligneMethode: 'Chaque signalement est re-vérifié avant publication.',
+    sections: [
+      {
+        sectionId: 's1',
+        titre: 'Le bouton d’envoi ne répond pas',
+        constat: 'Le clic sur le bouton d’envoi ne déclenche rien.',
+        impact: 'Tant que ce défaut persiste, aucune demande ne vous parvient.',
+        actionSuggeree: 'Faire vérifier le script du formulaire de contact.',
+      },
+    ],
+  });
+
+  function client(sdk: PorteeSdk, tarifs = TARIFS_REDACTION) {
+    return creerClientAnthropic({ config: configScanner.ia, profilage, navigation, diagnostic, rapport, tarifs, env: {}, sdk });
+  }
+
+  it('envoie le modèle de rédaction, son plafond et le contrat FERMÉ sur les identifiants de section', async () => {
+    const { sdk, appels } = sdkQuiRepond([message(REDACTION_VALIDE)]);
+    const resultat = await client(sdk).rediger(CONTEXTE_REDACTION);
+    expect(resultat).toMatchObject({ disponible: true });
+
+    const appel = appels[0];
+    if (appel === undefined) throw new Error('aucun appel');
+    expect(appel.model).toBe(MODELE_REDACTION);
+    expect(appel.max_tokens).toBe(rapport.maxTokensReponse);
+    // Le contrat envoyé au modèle est DÉRIVÉ de l'énumération : il n'existe
+    // aucun identifiant admissible en dehors de ceux que le moteur a posés.
+    expect(appel.output_config).toEqual({
+      format: { type: 'json_schema', schema: schemaContratModeleRedaction(identifiantsSections(CONTEXTE_REDACTION)) },
+    });
+  });
+
+  it('la brique 5 ferme le dernier chemin « non implémenté » du client concret', async () => {
+    // Tant que `rediger` répondait « non implémenté », le contrat de
+    // `ClientIa` était plus large que ce que le produit savait faire — et rien
+    // ne l'aurait signalé, puisqu'un contrat additif ne casse aucune
+    // compilation (APPRENTISSAGES n°7).
+    const { sdk } = sdkQuiRepond([message(REDACTION_VALIDE)]);
+    const resultat = await client(sdk).rediger(CONTEXTE_REDACTION);
+    expect(JSON.stringify(resultat)).not.toContain(RAISON_NON_IMPLEMENTE);
+  });
+
+  it('sans tarif pour le modèle de rédaction : indisponible BRUYANT, et aucun appel', async () => {
+    const { sdk, appels } = sdkQuiRepond([message(REDACTION_VALIDE)]);
+    await expect(client(sdk, TARIFS).rediger(CONTEXTE_REDACTION)).resolves.toMatchObject({
+      disponible: false,
+      raison: RAISON_TARIF_ABSENT,
+    });
+    expect(appels).toHaveLength(0);
+  });
+
+  it('une indisponibilité de rédaction n’éteint PAS le profilage : la panne est par capacité', async () => {
+    const { sdk } = sdkQuiRepond([message(VALIDE)]);
+    await expect(client(sdk, TARIFS).profiler(contexte)).resolves.toMatchObject({ disponible: true });
+  });
+
+  it('un CHIFFRE dans la prose fait relancer, puis rend le rapport structurel', async () => {
+    const chiffree = JSON.stringify({
+      synthese: 'Nous avons relevé 2 défauts.',
+      ligneMethode: 'Chaque signalement est re-vérifié avant publication.',
+      sections: [
+        {
+          sectionId: 's1',
+          titre: 'Le bouton d’envoi ne répond pas',
+          constat: 'Le clic ne déclenche rien.',
+          impact: 'Aucune demande ne vous parvient.',
+          actionSuggeree: 'Faire vérifier le script.',
+        },
+      ],
+    });
+    // Deux réponses chiffrées : l'appel plus la relance (`relancesMax`).
+    const { sdk, appels } = sdkQuiRepond([message(chiffree), message(chiffree)]);
+    await expect(client(sdk).rediger(CONTEXTE_REDACTION)).resolves.toMatchObject({
+      disponible: false,
+      raison: RAISON_REDACTION_INVALIDE,
+    });
+    expect(appels).toHaveLength(1 + rapport.relancesMax);
+  });
+});
+
+/**
+ * LA BORNE DU SEUIL, ÉPROUVÉE.
+ *
+ * La revue a montré par MUTATION que les deux appels à
+ * `bornerContexteRedaction` ajoutés dans `anthropic.ts` pouvaient être
+ * supprimés sans faire tomber un seul test : les fixtures de rédaction
+ * tiennent toutes très largement sous les plafonds, donc la borne y est un
+ * no-op. Une garde que rien n'éprouve est une garde absente (METHODE).
+ */
+describe('creerClientAnthropic — la borne du seuil de core/ia est RÉELLEMENT appliquée', () => {
+  const MODELE_REDACTION = configScanner.ia.modeles.redaction;
+  const TARIFS_BORNE: TarifsIa = { ...TARIFS, [MODELE_REDACTION]: { entreeParMillion: 5, sortieParMillion: 25 } };
+  /** Réglages SERRÉS : deux sections au plus, et de quoi n'en faire tenir qu'une. */
+  /**
+   * Réglages SERRÉS : deux sections au plus, des lignes courtes, et de quoi
+   * n'en faire tenir que deux. Sans cela la borne serait un no-op sur les
+   * fixtures — c'est ce que la revue a démontré par mutation, en supprimant
+   * les deux appels sans faire tomber un seul test.
+   */
+  const RAPPORT_SERRE = {
+    ...rapport,
+    sectionsMax: 2,
+    faitsMaxChars: 600,
+    cheminMaxChars: 40,
+    symptomesMaxChars: 40,
+    ligneMaxChars: 60,
+  };
+
+  function sectionLongue(id: string) {
+    return { id, lignes: ['catégorie: fonctionnel', 'gravité: bloquant', 'statut: confirmee', `pages: /${'x'.repeat(200)}`] };
+  }
+
+  it('tronque le contexte d’un appelant indiscipliné, et n’exige de prose que sur ce qu’il montre', async () => {
+    const contexteEnorme: ContexteRedaction = {
+      langue: 'fr',
+      enTete: ['type de site: vitrine-contact'],
+      sections: [sectionLongue('s1'), sectionLongue('s2'), sectionLongue('s3'), sectionLongue('s4')],
+    };
+    const attendus = identifiantsSections(bornerContexteRedaction(contexteEnorme, RAPPORT_SERRE));
+    const reponse = JSON.stringify({
+      synthese: 'Un défaut empêche vos visiteurs de vous écrire.',
+      ligneMethode: 'Chaque signalement est re-vérifié avant publication.',
+      sections: attendus.map((id) => ({
+        sectionId: id,
+        titre: 'Titre',
+        constat: 'Constat',
+        impact: 'Impact',
+        actionSuggeree: 'Action',
+      })),
+    });
+    const { sdk, appels } = sdkQuiRepond([message(reponse)]);
+    const client = creerClientAnthropic({
+      config: configScanner.ia,
+      profilage,
+      navigation,
+      diagnostic,
+      rapport: RAPPORT_SERRE,
+      tarifs: TARIFS_BORNE,
+      env: {},
+      sdk,
+    });
+
+    const resultat = await client.rediger(contexteEnorme);
+    expect(resultat).toMatchObject({ disponible: true });
+
+    const appel = appels[0];
+    if (appel === undefined) throw new Error('aucun appel');
+    const envoye = typeof appel.messages[0]?.content === 'string' ? appel.messages[0].content : '';
+
+    // Le contexte a bien été BORNÉ avant l'envoi : le chemin de 200 caractères
+    // ne traverse pas intact, et les sections évincées ne sont pas montrées.
+    expect(envoye).not.toContain('x'.repeat(200));
+    expect(attendus.length).toBeGreaterThan(0);
+    expect(attendus.length).toBeLessThan(4);
+    // Et le CONTRAT n'exige une prose que sur les sections réellement montrées.
+    expect(appel.output_config).toEqual({
+      format: { type: 'json_schema', schema: schemaContratModeleRedaction(attendus) },
+    });
+    for (const id of attendus) {
+      expect(envoye).toContain(`section ${id}`);
+    }
+  });
+
+  it('une réponse portant une section NON montrée est refusée', async () => {
+    // La garde par l'autre bout : si la borne n'était pas appliquée, le
+    // validateur accepterait des identifiants que le modèle n'a jamais vus.
+    const contexteEnorme: ContexteRedaction = {
+      langue: 'fr',
+      enTete: ['type de site: vitrine-contact'],
+      sections: [sectionLongue('s1'), sectionLongue('s2'), sectionLongue('s3')],
+    };
+    const troisSections = JSON.stringify({
+      synthese: 'Synthèse.',
+      ligneMethode: 'Méthode.',
+      sections: ['s1', 's2', 's3'].map((id) => ({
+        sectionId: id,
+        titre: 'Titre',
+        constat: 'Constat',
+        impact: 'Impact',
+        actionSuggeree: 'Action',
+      })),
+    });
+    const { sdk } = sdkQuiRepond([message(troisSections), message(troisSections)]);
+    const client = creerClientAnthropic({
+      config: configScanner.ia,
+      profilage,
+      navigation,
+      diagnostic,
+      rapport: RAPPORT_SERRE,
+      tarifs: TARIFS_BORNE,
+      env: {},
+      sdk,
+    });
+    await expect(client.rediger(contexteEnorme)).resolves.toMatchObject({
+      disponible: false,
+      raison: RAISON_REDACTION_INVALIDE,
+    });
+  });
+});
+
+describe('creerClientAnthropic — la DURÉE de l’appel de rédaction est bornée', () => {
+  const MODELE_REDACTION = configScanner.ia.modeles.redaction;
+  const TARIFS_DELAI: TarifsIa = { ...TARIFS, [MODELE_REDACTION]: { entreeParMillion: 5, sortieParMillion: 25 } };
+
+  it('transmet `rapport.appelMaxMs` au SDK', async () => {
+    // Une PORTE d'entrée qui vérifie l'échéance avant d'appeler ne borne pas
+    // la durée de l'appel une fois engagé : c'est un « check-then-act », et il
+    // laisse un scan dépasser son budget sans limite si le fournisseur tarde.
+    // Seule une borne sur l'opération elle-même le referme — et c'est elle que
+    // docs/DETTES.md n°6 chiffre désormais.
+    const options: ({ timeout?: number } | undefined)[] = [];
+    const sdk: PorteeSdk = {
+      messages: {
+        create: async (_params, opts) => {
+          options.push(opts);
+          return {
+            id: 'msg',
+            type: 'message',
+            role: 'assistant',
+            model: `${MODELE_REDACTION}-20260101`,
+            stop_reason: 'end_turn',
+            stop_sequence: null,
+            usage: usage(100, 100),
+            content: [
+              {
+                type: 'text',
+                text: JSON.stringify({
+                  synthese: 'Un défaut empêche vos visiteurs de vous écrire.',
+                  ligneMethode: 'Chaque signalement est re-vérifié avant publication.',
+                  sections: [
+                    { sectionId: 's1', titre: 'T', constat: 'C', impact: 'I', actionSuggeree: 'A' },
+                  ],
+                }),
+                citations: null,
+              },
+            ],
+          } as unknown as Awaited<ReturnType<PorteeSdk['messages']['create']>>;
+        },
+      },
+    };
+    const client = creerClientAnthropic({
+      config: configScanner.ia,
+      profilage,
+      navigation,
+      diagnostic,
+      rapport,
+      tarifs: TARIFS_DELAI,
+      env: {},
+      sdk,
+    });
+
+    await client.rediger({
+      langue: 'fr',
+      enTete: ['type de site: vitrine-contact'],
+      sections: [{ id: 's1', lignes: ['catégorie: fonctionnel', 'statut: confirmee', 'pages: /contact'] }],
+    });
+
+    expect(options[0]).toEqual({ timeout: rapport.appelMaxMs });
   });
 });

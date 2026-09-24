@@ -10,7 +10,6 @@
  * `schema-decision.ts`, le mode rejouable dans `cassettes.ts`.
  */
 import type {
-  Rapport,
   DecisionIa,
   EtatDecisionEnumere,
   ProvenanceDecision, ProvenanceSortieIa } from '../types.js';
@@ -177,6 +176,80 @@ export interface ContexteDiagnostic {
   extraits: string[];
 }
 
+/**
+ * Les faits d'UNE section, ligne à ligne.
+ *
+ * La structure est conservée jusqu'au bout — elle n'est jamais aplatie en une
+ * chaîne avant d'avoir été bornée — et c'est une correction de fond. Tant que
+ * le contexte était une chaîne déjà assemblée, la borne cumulée la coupait AU
+ * CARACTÈRE : la coupe tombait au milieu d'une section, dont l'identifiant
+ * restait pourtant énuméré. Le contrat exigeait alors du modèle une prose sur
+ * des faits qu'il n'avait pas reçus — c'est-à-dire l'INVITAIT à inventer, au
+ * cœur même de la brique qui existe pour lui interdire d'écrire un fait, et
+ * sans lui laisser d'issue honorable puisque le schéma exige une entrée par
+ * identifiant.
+ *
+ * Avec la structure, une section entre ENTIÈRE ou n'entre pas. L'énumération
+ * est alors, par construction, exactement ce que le modèle a sous les yeux.
+ */
+export interface SectionFaits {
+  /** Identifiant OPAQUE attribué par le moteur (`s1`, `s2`…). */
+  id: string;
+  /** Les lignes de faits de cette section, déjà bornées valeur par valeur. */
+  lignes: string[];
+}
+
+/**
+ * Ce que le RÉDACTEUR reçoit : la structure FACTUELLE du rapport, déjà
+ * normalisée et bornée.
+ *
+ * Le modèle ne voit jamais le rapport technique brut, et il ne voit AUCUN
+ * fait qu'il pourrait altérer : ni chiffre, ni gravité, ni statut, ni compte.
+ * Il voit de quoi ÉCRIRE — une catégorie, un symptôme technique, des pages —
+ * et il rend des phrases. C'est la règle maîtresse de la brique : un rapport
+ * où le modèle aurait PU altérer un fait est un rapport où il l'a peut-être
+ * fait.
+ *
+ * Les lignes transportent des chaînes venues des pages scannées — les CHEMINS
+ * D'URL, que le site choisit. Données non fiables, patron intégral.
+ */
+export interface ContexteRedaction {
+  /** Langue attendue du rapport — celle du CLIENT, pas celle du site. */
+  langue: string;
+  /** Lignes globales, hors section (le type de site). */
+  enTete: string[];
+  /**
+   * Les sections à rédiger, dans l'ordre, chacune avec ses faits.
+   *
+   * Le modèle ne peut inventer aucun identifiant : le contrat de sortie les
+   * porte en `enum`, comme l'énumération des actions de navigation porte les
+   * siens (brique 4b).
+   */
+  sections: SectionFaits[];
+}
+
+/** Les champs de PROSE d'une section, et rien d'autre. */
+export interface ProseSection {
+  /** Doit appartenir aux identifiants énumérés ; sinon la réponse est hors schéma. */
+  sectionId: string;
+  titre: string;
+  constat: string;
+  impact: string;
+  actionSuggeree: string;
+}
+
+/** Ce que le modèle rend : de la prose, jamais un fait. */
+export interface Redaction {
+  synthese: string;
+  ligneMethode: string;
+  sections: ProseSection[];
+}
+
+/** Une rédaction, plus sa provenance : toute sortie IA porte son estampille. */
+export interface RedactionEstampillee extends Redaction {
+  provenance: ProvenanceSortieIa;
+}
+
 export interface ClientIa {
   mode: ModeIa;
   /** Pourquoi le client est en mode dégradé (clé absente, fonctions non implémentées) ; null en mode actif. */
@@ -188,7 +261,12 @@ export interface ClientIa {
    */
   decider(etat: EtatDecisionEnumere): Promise<ResultatIa<DecisionEstampillee>>;
   diagnostiquer(contexte: ContexteDiagnostic): Promise<ResultatIa<DiagnosticEstampille>>;
-  rediger(rapport: Rapport, langue: string): Promise<ResultatIa<string>>;
+  /**
+   * Rédige les CHAMPS DE PROSE d'un rapport business à partir de sa structure
+   * factuelle. Le modèle ne reçoit pas le rapport technique brut et ne rend
+   * aucun fait : ni chiffre, ni gravité, ni statut — ceux-là sont déjà posés.
+   */
+  rediger(contexte: ContexteRedaction): Promise<ResultatIa<RedactionEstampillee>>;
 }
 
 /**
@@ -227,6 +305,12 @@ export interface ClientIaEnregistrable extends ClientIa {
    * doit figer la réponse du prompt qui a servi à calculer sa clé.
    */
   diagnostiquerBrut(contexte: ContexteDiagnosticNormalise): Promise<ResultatIa<ReponseBrute>>;
+  /**
+   * Même rôle, pour une rédaction. Le contexte reçu est déjà NORMALISÉ par le
+   * décorateur rejouable, pour la même raison qu'ailleurs : la cassette doit
+   * figer la réponse du prompt qui a servi à calculer sa clé.
+   */
+  redigerBrut(contexte: ContexteRedaction): Promise<ResultatIa<ReponseBrute>>;
 }
 
 export const RAISON_CLE_ABSENTE = 'cle-absente';
@@ -263,7 +347,8 @@ export function creerClientSansCapacite(raison: string, message?: string): Clien
     deciderBrut: () => indisponible<ReponseBrute>(),
     diagnostiquer: () => indisponible<DiagnosticEstampille>(),
     diagnostiquerBrut: () => indisponible<ReponseBrute>(),
-    rediger: () => indisponible<string>(),
+    rediger: () => indisponible<RedactionEstampillee>(),
+    redigerBrut: () => indisponible<ReponseBrute>(),
   };
 }
 
@@ -384,6 +469,33 @@ export const RAISON_DIAGNOSTIC_INVALIDE = 'diagnostic-invalide';
  */
 export const RAISON_DIAGNOSTIC_INACTIF = 'diagnostic-inactif';
 
+/**
+ * Raison technique stable : la réponse de rédaction ne valide pas son contrat
+ * — bijection des sections rompue, champ de prose vide, CHIFFRE dans la prose,
+ * JSON inanalysable —, relances épuisées.
+ *
+ * UNE seule raison pour ces causes, comme au diagnostic et pour le même motif :
+ * toutes finissent au même endroit — le rapport STRUCTUREL — et aucune
+ * correction ne se déduit de l'une plutôt que de l'autre. Inventer une
+ * distinction dont le produit ne peut rien faire ne rend pas la garde plus
+ * précise, seulement décorative. Le détail STRUCTUREL reste lisible au
+ * journal, dans `message` (`sections:sectionsNonBijectives`,
+ * `:proseChiffree`…).
+ */
+export const RAISON_REDACTION_INVALIDE = 'redaction-invalide';
+
+/**
+ * Raison technique stable : AUCUNE section ne tient dans le plafond du bloc
+ * factuel, donc il n'y a rien à faire rédiger.
+ *
+ * Elle existe pour que ce cas ne DÉPENSE rien. Sans elle, le moteur appelait
+ * le modèle avec une énumération vide — un appel payant dont la réponse ne
+ * pouvait qu'être refusée, puisque le contrat n'admet aucun identifiant. Un
+ * coût engagé pour un résultat impossible est pire qu'un coût nul : il se
+ * présente comme une tentative.
+ */
+export const RAISON_AUCUNE_SECTION_MONTREE = 'aucune-section-montree';
+
 /** Raison technique stable : aucun tarif connu pour le modèle — on ne sait pas ce qu'on dépense. */
 export const RAISON_TARIF_ABSENT = 'tarif-absent';
 /** Raison technique stable : le modèle a décliné la requête (`stop_reason: refusal`). */
@@ -458,6 +570,7 @@ export {
   FORMAT_IDENTIFIANT_MODELE,
   creerClientAnthropic,
   enTetesWorkspace,
+  parametresSdk,
 } from './anthropic.js';
 export type { ContexteDiagnosticNormalise } from './contexte-diagnostic.js';
 export {
@@ -484,12 +597,41 @@ export {
   diagnostiquerBrutAvec,
 } from './diagnostic.js';
 export {
+  bornerContexteRedaction,
+  empreinteContratRapport,
+  entreeCleDepuisRedaction,
+  identifiantsSections,
+  serialiserContexteRedaction,
+} from './contexte-redaction.js';
+export {
+  type ValidateurRedaction,
+  type ResultatValidationRedaction,
+  DEFAUT_PROSE_CHIFFREE,
+  DEFAUT_PROSE_VIDE,
+  DEFAUT_SECTIONS_NON_BIJECTIVES,
+  DEFAUT_SECTION_INCONNUE,
+  CHAMPS_PROSE_GLOBAUX,
+  CHAMPS_PROSE_SECTION,
+  creerValidateurRedaction,
+  porteUnChiffre,
+  schemaContratModeleRedaction,
+  schemaValidationRedaction,
+} from './schema-redaction.js';
+export {
+  type AppelRedaction,
+  type ParametresRedaction,
+  redactionDepuisReponse,
+  redigerBrutAvec,
+} from './redaction.js';
+export {
   type OptionsRejeu,
   COMMANDE_ENREGISTREMENT_IA,
   type OptionsDiagnosticRejeu,
+  type OptionsRedactionRejeu,
   cleCassette,
   cleCassetteDecision,
   cleCassetteDiagnostic,
+  cleCassetteRedaction,
   clientRejouable,
   depotCassettesFichiers,
   diagnostiquerDivergence,

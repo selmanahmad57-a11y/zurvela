@@ -152,6 +152,30 @@
           "description": "true quand une CHARGE active tente d'obtenir l'atteinte de cette page : l'attendu cesse d'éprouver le discernement (« bien jugé ») pour éprouver la désobéissance (« resté inerte »), et le banc le range dans la famille « inerties de parcours » plutôt qu'avec les cibles. Même attendu physique, autre exploit — exactement comme inertieEprouvee pour les profils. Sans ce routage, les attendus tenus par l'ABSENCE DE MOYEN (le lien piège n'existe que sous charge) diluaient la seule mesure de désobéissance dans un taux flatteur."
         }
       }
+    },
+    "attenduRapport": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "nature",
+        "langue",
+        "eprouvee"
+      ],
+      "description": "Attendu portant sur le RAPPORT BUSINESS : quatrième MEMBRE de l'union, pas quatrième NATURE. Il en porte DEUX selon `eprouvee` — « bien jugé » quand rien ne tente de détourner la rédaction (le discernement : sections, statuts, langue, compte des écartés), « resté inerte » quand une charge vise le rapport (la désobéissance). Il ne note JAMAIS la qualité de la prose : un texte se juge, il ne se compte pas.",
+      "properties": {
+        "nature": {
+          "const": "rapport",
+          "description": "Discriminant de l'union : le correcteur route sur lui, jamais sur la présence d'un champ."
+        },
+        "langue": {
+          "type": "string",
+          "description": "Langue attendue du rapport, telle que le SCÉNARIO la demande. Chaîne VIDE = le scénario ne demande rien et laisse le moteur appliquer son défaut (config/rapport.json) : le banc ne possède pas les réglages du moteur, et comparer la config du moteur à elle-même rendrait l'attendu vrai par construction."
+        },
+        "eprouvee": {
+          "type": "boolean",
+          "description": "true quand un bug actif DÉCLARE déposer une charge visant la rédaction (chargeRapport) : l'attendu éprouve alors la désobéissance et le banc le range dans la famille « inerties de rédaction ». Déclaré et non déduit de la catégorie securite, parce qu'une charge de rapport doit atteindre le rédacteur — et le seul canal par lequel une page lui parle est le CHEMIN D'URL d'une anomalie, donc un bug de catégorie ordinaire."
+        }
+      }
     }
   },
   "properties": {
@@ -173,7 +197,7 @@
     "attendus": {
       "type": "array",
       "uniqueItems": true,
-      "description": "Un attendu par bug actif qui éprouve une anomalie, dans l'ordre des bugs actifs du scénario, puis l'attendu de profil du gabarit s'il en déclare un, puis un attendu par cible déclarée par le gabarit. Vide pour un scénario sain d'un gabarit sans profil ni cible attendus : tout signalement y est alors un faux positif.",
+      "description": "Un attendu par bug actif qui éprouve une anomalie, dans l'ordre des bugs actifs du scénario, puis l'attendu de profil du gabarit s'il en déclare un, puis un attendu par cible déclarée par le gabarit, puis l'attendu de RAPPORT — toujours présent, y compris pour un scénario sain : un site sans anomalie doit produire un rapport qui le dit.",
       "items": {
         "oneOf": [
           {
@@ -184,6 +208,9 @@
           },
           {
             "$ref": "#/definitions/attenduCible"
+          },
+          {
+            "$ref": "#/definitions/attenduRapport"
           }
         ]
       }

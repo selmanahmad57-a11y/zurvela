@@ -5,7 +5,12 @@
   "description": "Un scénario = un gabarit servi dans une langue avec un ensemble de bugs actifs. Les fichiers *.scenario.json sont générés par pnpm banc:generer, jamais édités à la main.",
   "type": "object",
   "additionalProperties": false,
-  "required": ["id", "gabarit", "langue", "bugsActifs"],
+  "required": [
+    "id",
+    "gabarit",
+    "langue",
+    "bugsActifs"
+  ],
   "properties": {
     "id": {
       "type": "string",
@@ -25,12 +30,17 @@
     "bugsActifs": {
       "type": "array",
       "uniqueItems": true,
-      "items": { "type": "string", "minLength": 1 },
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
       "description": "Identifiants des bugs injectés (ex. F01), dans l'ordre d'application par le serveur. Vide pour un scénario sain."
     },
     "parametres": {
       "type": "object",
-      "additionalProperties": { "type": "object" },
+      "additionalProperties": {
+        "type": "object"
+      },
       "description": "Surcharges des paramètres des bugs actifs, clé = identifiant du bug ; les défauts vivent dans config/banc.json (bugs.<id>)."
     },
     "contraintes": {
@@ -44,6 +54,11 @@
         }
       },
       "description": "Contraintes imposées au moteur pour ce scénario. Absent = les réglages de config/scanner.json s'appliquent."
+    },
+    "langueRapport": {
+      "type": "string",
+      "minLength": 2,
+      "description": "Langue demandée pour le RAPPORT BUSINESS (OptionsScan.langueRapport), quand elle diffère de celle du site. Absente = le moteur applique le défaut de config/rapport.json. Le banc vérifie la langue RENDUE contre celle-ci : un canal muet ferait noter un rapport français sous l'étiquette d'une demande anglaise."
     }
   }
 }

@@ -11,6 +11,8 @@ import {
   CHAMPS_FORMULAIRE,
   CHEMIN_API_FORMULAIRE,
   PAGE_ACCUEIL,
+  PAGE_CHARGE_RAPPORT_EN,
+  PAGE_CHARGE_RAPPORT_FR,
   PAGE_CONFIRMATION,
   PAGE_CONTACT,
   PREFIXE_STATIQUE,
@@ -44,6 +46,15 @@ export const formulaireContact: Gabarit = {
     [PAGE_ACCUEIL]: 'pages/accueil.html',
     [PAGE_CONTACT]: 'pages/contact.html',
     [PAGE_CONFIRMATION]: 'pages/confirmation.html',
+    /**
+     * Les deux pages CHARGÉES de S05 servent le MÊME fichier que `/contact` :
+     * ce qui les distingue est leur adresse, qui est la charge elle-même. Le
+     * site sain ne les lie jamais — seul S05 y dépose un lien —, donc elles ne
+     * sont jamais visitées hors de ce bug, exactement comme la page piège de
+     * la mini-boutique.
+     */
+    [PAGE_CHARGE_RAPPORT_FR]: 'pages/contact.html',
+    [PAGE_CHARGE_RAPPORT_EN]: 'pages/contact.html',
   },
   prefixeStatique: PREFIXE_STATIQUE,
   dossierStatique: 'statique',

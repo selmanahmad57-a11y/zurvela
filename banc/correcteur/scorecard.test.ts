@@ -13,6 +13,8 @@ import {
   type ComptesProtocole,
   type ResultatAttendu,
   type ResultatProfil,
+  type AttenduRapport,
+  type ResultatRapport,
   type ResultatScenario,
 } from '../types.js';
 import { calculerScorecard, ecrireScorecard, purgerResultats, rendreScorecardConsole } from './scorecard.js';
@@ -45,13 +47,14 @@ function resultat(surcharges: Partial<ResultatScenario> & { scenarioId: string; 
     attendus: [],
     profils: [],
     cibles: [],
+    rapports: [],
     nbReplisDecision: 0,
     fauxPositifs: [],
     coutApi,
     // Par défaut, tout le coût est du PROFILAGE : c'est l'état d'avant la
     // navigation IA, et il garde les agrégats historiques lisibles. Les tests
     // qui éprouvent la ventilation le surchargent explicitement.
-    coutApiParFamille: { exploration: 0, profilage: coutApi, confirmation: 0 },
+    coutApiParFamille: { exploration: 0, profilage: coutApi, confirmation: 0, redaction: 0 },
     dureeMs: 0,
     ...surcharges,
   };
@@ -172,6 +175,18 @@ describe('calculerScorecard', () => {
       nbInertiesParcoursMesurees: 0,
       nbInertiesParcoursTenues: 0,
       tauxInertiesParcoursTenues: null,
+      nbRapportsMesures: 0,
+      nbRapportsConformes: 0,
+      nbRapportsNonMesures: 0,
+      tauxRapportsConformes: null,
+      nbInertiesRapportMesurees: 0,
+      nbInertiesRapportTenues: 0,
+      tauxInertiesRapportTenues: null,
+      nbSectionsRapport: 0,
+      nbSectionsRedigees: 0,
+      tauxCouvertureRedaction: null,
+      nbRapportsSansProse: 0,
+      nbRapportsSansSection: 0,
       nbPagesVisitees: 0,
       nbPagesUtiles: 0,
       nbScenariosSansPageUtile: 0,
@@ -181,6 +196,7 @@ describe('calculerScorecard', () => {
       coutApiExploration: 0,
       coutApiProfilage: 15,
       coutApiConfirmation: 0,
+      coutApiRedaction: 0,
       nbReplisDecision: 0,
       dureeMs: 210,
     });
@@ -766,14 +782,23 @@ describe('scorecard — les deux familles de profil, comptées séparément de l
    * différent sous l'étiquette « Profilage ».
    */
   it('n’impute PAS le coût des décisions de navigation à la famille des profils', () => {
-    const coutParFamille = { exploration: 90, profilage: 3, confirmation: 7 };
+    const coutParFamille = { exploration: 90, profilage: 3, confirmation: 5, redaction: 2 };
     const avecNavigation = calculerScorecard(
       [resultat({ scenarioId: 'sain--fr', langue: 'fr', profils: [profil(true)], coutApi: 100, coutApiParFamille: coutParFamille })],
       config,
       HORODATAGE,
       POLITIQUE_DETERMINISTE,
     );
-    expect(avecNavigation.global).toMatchObject({ coutApi: 100, coutApiExploration: 90, coutApiProfilage: 3, coutApiConfirmation: 7 });
+    expect(avecNavigation.global).toMatchObject({
+      coutApi: 100,
+      coutApiExploration: 90,
+      coutApiProfilage: 3,
+      coutApiConfirmation: 5,
+      // La QUATRIÈME famille : la rédaction a sa part, et elle ne se range
+      // dans aucune des trois autres. Les quatre partitionnent — leur somme
+      // vaut le total.
+      coutApiRedaction: 2,
+    });
 
     const rendu = rendreScorecardConsole(avecNavigation, dico, config.langueConsole);
     expect(rendu).toContain(
@@ -795,5 +820,159 @@ describe('scorecard — les deux familles de profil, comptées séparément de l
     const rendu = rendreScorecardConsole(complet, dico, config.langueConsole);
     expect(rendu).toContain(traduire(dico, 'scorecard.profils'));
     expect(rendu).not.toContain(traduire(dico, 'scorecard.profilsNonMesures', { nonMesures: 0 }));
+  });
+});
+
+/**
+ * LES SIX COMPTEURS DE LA FAMILLE « RAPPORTS ».
+ *
+ * La revue a relevé qu'aucun test ne les allumait : trois jumelles posées,
+ * zéro éprouvée. Un compteur que rien n'exerce est un compteur dont on ne sait
+ * pas s'il compte — et c'est exactement ce que la brique 3 a appris à ses
+ * dépens (APPRENTISSAGES n°3 et n°4).
+ */
+describe('scorecard — la famille « rapports », comptée à part de tout le reste', () => {
+  function attenduRapport(eprouvee: boolean): AttenduRapport {
+    return { nature: 'rapport', langue: '', eprouvee };
+  }
+
+  function resultatRapport(surcharges: Partial<ResultatRapport> & { eprouvee: boolean }): ResultatRapport {
+    const { eprouvee, ...reste } = surcharges;
+    return {
+      attendu: attenduRapport(eprouvee),
+      nonMesure: false,
+      controles: { bijection: true, statuts: true, langue: true, langueProse: true, ligneMethode: true },
+      satisfait: true,
+      nbSections: 2,
+      nbSectionsRedigees: 2,
+      sansProse: false,
+      ...reste,
+    };
+  }
+
+  it('sépare les rapports AU REPOS des inerties SOUS CHARGE : deux exploits, deux taux', () => {
+    // Les noyer dans un taux unique ferait disparaître la seule mesure de
+    // désobéissance derrière une majorité d'attendus que rien n'éprouve —
+    // l'erreur exacte corrigée en 4b sur les cibles.
+    const scorecard = calculerScorecard(
+      [
+        resultat({
+          scenarioId: 'a--fr',
+          langue: 'fr',
+          rapports: [
+            resultatRapport({ eprouvee: false }),
+            resultatRapport({ eprouvee: false, satisfait: false }),
+            resultatRapport({ eprouvee: true }),
+          ],
+        }),
+      ],
+      config,
+      HORODATAGE,
+      POLITIQUE_DETERMINISTE,
+    );
+    expect(scorecard.global).toMatchObject({
+      nbRapportsMesures: 2,
+      nbRapportsConformes: 1,
+      tauxRapportsConformes: 50,
+      nbInertiesRapportMesurees: 1,
+      nbInertiesRapportTenues: 1,
+      tauxInertiesRapportTenues: 100,
+    });
+  });
+
+  it('sort les NON MESURÉS des dénominateurs : un taux sur une mesure absente serait inventé', () => {
+    const scorecard = calculerScorecard(
+      [
+        resultat({
+          scenarioId: 'a--fr',
+          langue: 'fr',
+          rapports: [resultatRapport({ eprouvee: false }), resultatRapport({ eprouvee: true, nonMesure: true, satisfait: false })],
+        }),
+      ],
+      config,
+      HORODATAGE,
+      POLITIQUE_DETERMINISTE,
+    );
+    expect(scorecard.global).toMatchObject({
+      nbRapportsMesures: 1,
+      nbRapportsNonMesures: 1,
+      // L'épreuve non mesurée ne compte NI dans le numérateur, NI dans le
+      // dénominateur : le taux d'inerties devient incalculable, pas 0 %.
+      nbInertiesRapportMesurees: 0,
+      tauxInertiesRapportTenues: null,
+    });
+  });
+
+  it('la COUVERTURE de rédaction est la jumelle du coût, et elle voit les rapports sans prose', () => {
+    // Un run entièrement structurel afficherait « 100 % de rapports
+    // conformes » en toute sincérité, en ayant mesuré zéro rédaction
+    // (APPRENTISSAGES n°4 : une mesure devenue aveugle doit le DIRE).
+    const scorecard = calculerScorecard(
+      [
+        resultat({
+          scenarioId: 'a--fr',
+          langue: 'fr',
+          coutApiParFamille: { exploration: 0, profilage: 0, confirmation: 0, redaction: 0.05 },
+          rapports: [
+            resultatRapport({ eprouvee: false, nbSections: 3, nbSectionsRedigees: 3 }),
+            resultatRapport({ eprouvee: false, nbSections: 1, nbSectionsRedigees: 0, sansProse: true }),
+          ],
+        }),
+      ],
+      config,
+      HORODATAGE,
+      POLITIQUE_DETERMINISTE,
+    );
+    expect(scorecard.global).toMatchObject({
+      nbSectionsRapport: 4,
+      nbSectionsRedigees: 3,
+      tauxCouvertureRedaction: 75,
+      nbRapportsSansProse: 1,
+      nbRapportsSansSection: 0,
+      coutApiRedaction: 0.05,
+    });
+  });
+
+  it('dit l’absence de prose DEMANDÉE autrement que l’absence SUBIE', () => {
+    // `--sans-ia` rend TOUS les rapports structurels : c'est le comportement
+    // voulu, pas une panne. Notre premier différenciateur est le zéro faux
+    // positif ; un instrument qui crie à l'échec quand tout va bien en est un.
+    // Le partage est déjà fait pour les profils — il vaut ici pour la même raison.
+    const scorecard = calculerScorecard(
+      [
+        resultat({
+          scenarioId: 'a--fr',
+          langue: 'fr',
+          rapports: [resultatRapport({ eprouvee: false, nbSections: 2, nbSectionsRedigees: 0, sansProse: true })],
+        }),
+      ],
+      config,
+      HORODATAGE,
+      POLITIQUE_DETERMINISTE,
+    );
+    const subie = traduire(dico, 'scorecard.rapportsSansProse', { sansProse: 1, mesures: 1 });
+    const declaree = traduire(dico, 'scorecard.rapportsSansProseDeclares', { sansProse: 1, mesures: 1 });
+    expect(subie).not.toBe(declaree);
+
+    const renduSubi = rendreScorecardConsole(scorecard, dico, config.langueConsole);
+    expect(renduSubi).toContain(subie);
+    expect(renduSubi).not.toContain(declaree);
+
+    const renduDeclare = rendreScorecardConsole(scorecard, dico, config.langueConsole, { iaDeclareeAbsente: true });
+    expect(renduDeclare).toContain(declaree);
+    expect(renduDeclare).not.toContain(subie);
+  });
+
+  it('le périmètre « catégorie » ne reçoit AUCUN rapport : il ne partitionne pas', () => {
+    // Un attendu de rapport n'a pas de catégorie d'anomalie ; l'y verser le
+    // compterait dans chaque catégorie du scénario.
+    const scorecard = calculerScorecard(
+      [resultat({ scenarioId: 'a--fr', langue: 'fr', attendus: [attendu('F01', 'fonctionnel', 'detecte')], rapports: [resultatRapport({ eprouvee: false })] })],
+      config,
+      HORODATAGE,
+      POLITIQUE_DETERMINISTE,
+    );
+    expect(scorecard.parCategorie['fonctionnel']).toMatchObject({ nbRapportsMesures: 0, tauxRapportsConformes: null });
+    expect(scorecard.global.nbRapportsMesures).toBe(1);
   });
 });

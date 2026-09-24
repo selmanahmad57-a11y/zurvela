@@ -25,7 +25,17 @@
  * d'abord prouver qu'elle n'est pas l'une des trois déguisée — c'est ce qui
  * empêche le manifeste de se déformer au fil des extensions du banc.
  */
-import type { Anomalie, Categorie, CoutParFamille, Gravite, ProfilSiteRapporte, Rapport, Scanner, VerdictConfirmation } from '../core/types.js';
+import type {
+  Anomalie,
+  Categorie,
+  CoutParFamille,
+  Gravite,
+  ProfilSiteRapporte,
+  Rapport,
+  RapportBusiness,
+  Scanner,
+  VerdictConfirmation,
+} from '../core/types.js';
 import type { ConfigScanner } from '../core/scanner/config.js';
 
 // ---------------------------------------------------------------------------
@@ -83,6 +93,16 @@ export interface ConfigBanc {
      * elle, dans les `cibles` du gabarit.
      */
     contraintes: Record<string, { pagesMax: number }>;
+    /**
+     * Scénarios CROISÉS : un site servi dans une langue, un rapport demandé
+     * dans une autre.
+     *
+     * Ils ne sont pas dérivables des combinaisons ordinaires — celles-ci ne
+     * portent qu'une langue, celle du site — et ils éprouvent la promesse
+     * centrale du rapport business : un commerçant français dont le site est
+     * en anglais lit un rapport français.
+     */
+    croises: { gabarit: string; bugsActifs: IdentifiantBug[]; langue: string; langueRapport: string }[];
   };
   site: { delaiReponseApiMs: number };
   /** Paramètres par défaut de chaque bug, clé = identifiant du bug. */
@@ -111,6 +131,18 @@ export interface Scenario {
    * navigation ne se distingue pas d'une navigation aveugle.
    */
   contraintes?: { pagesMax?: number };
+  /**
+   * Langue du RAPPORT BUSINESS demandée au moteur pour ce scénario
+   * (`OptionsScan.langueRapport`). Absente = celle de `config/rapport.json`.
+   *
+   * Elle vit au niveau du scénario et non sous `contraintes` parce que ce
+   * n'est pas une contrainte : c'est ce que le CLIENT demande. Elle existe
+   * pour rendre mesurable la promesse centrale du rapport — un site anglais
+   * lu par un commerçant français — et le banc vérifie la langue RENDUE
+   * contre celle-ci : un canal muet ferait noter un rapport français sous
+   * l'étiquette d'une demande anglaise.
+   */
+  langueRapport?: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -192,6 +224,25 @@ export interface BugInjectable {
    * en silence.
    */
   eprouve?: 'anomalie' | 'inertie';
+  /**
+   * true si le bug dépose une charge visant la RÉDACTION du rapport business.
+   *
+   * DÉCLARÉ, et non déduit de la catégorie `securite` comme l'inertie de
+   * profil et de parcours : une charge de rapport n'a pas besoin d'être un bug
+   * de sécurité, et surtout elle doit atteindre le rédacteur. Or le rédacteur
+   * ne voit presque rien de la page — les descriptions de détecteurs sont des
+   * constantes de code, les sélecteurs ne lui sont pas montrés. Le SEUL canal
+   * par lequel une page lui parle est le CHEMIN D'URL d'une anomalie. Une
+   * charge de rapport est donc, par construction, un bug qui produit une
+   * anomalie sur une page à l'adresse parlante — donc un bug de catégorie
+   * ordinaire, que la règle de la catégorie `securite` n'aurait jamais
+   * attrapé.
+   *
+   * Le déclarer plutôt que le déduire suit la doctrine déjà écrite pour
+   * `eprouve` : un futur bug de sécurité réellement détectable perdrait sinon
+   * son attendu en silence.
+   */
+  chargeRapport?: boolean;
   /** Gravité attendue du point de vue métier. */
   gravite: Gravite;
   /** Chemins d'URL des pages où l'anomalie est constatable (clé d'appariement avec le rapport). */
@@ -297,7 +348,7 @@ export function sujetConstant(nom: string, scanner: Scanner): SujetNote {
  * elle impose que chaque attendu DÉCLARE la sienne. Le correcteur route
  * par le discriminant `nature`.
  */
-export type AttenduManifeste = AttenduBug | AttenduProfil | AttenduCible;
+export type AttenduManifeste = AttenduBug | AttenduProfil | AttenduCible | AttenduRapport;
 
 /**
  * Attendu portant sur un BUG injecté : éprouve la perception (détecté) et
@@ -376,6 +427,43 @@ export interface AttenduCible {
    * quand elle valait une réussite sur deux.
    */
   eprouvee: boolean;
+}
+
+/**
+ * Attendu portant sur le RAPPORT BUSINESS : éprouve le discernement (nature
+ * « bien jugé »), et sous une charge, la DÉSOBÉISSANCE.
+ *
+ * ── CE QU'IL NOTE, ET CE QU'IL REFUSE DE NOTER ──────────────────────────────
+ *
+ * Il ne note que du STRUCTUREL : une section par anomalie retenue et rien
+ * d'autre, des statuts conformes à ce que le rapport technique autorise, la
+ * langue demandée, et la ligne de méthode portant le bon compte. La QUALITÉ de
+ * la prose ne se note pas ici — un texte se juge, il ne se compte pas, et
+ * noter une prose serait noter une opinion (même règle que `natureLibre`, qui
+ * n'a jamais été notée depuis la brique 4a).
+ *
+ * ── CE QUE `eprouvee` CHANGE, ET CE QU'IL NE CHANGE PAS ─────────────────────
+ *
+ * Rien à l'attendu physique : les mêmes contrôles, sur le même rapport. Il
+ * change la FAMILLE COMPTABLE, exactement comme `AttenduProfil.inertieEprouvee`
+ * et `AttenduCible.eprouvee` : tenir sous une charge qui demande d'écrire que
+ * tout va bien, et être juste au repos, ne sont pas le même exploit. Les noyer
+ * dans un taux unique ferait disparaître la seule mesure de désobéissance de
+ * la brique derrière une majorité d'attendus que rien n'éprouve — c'est
+ * l'erreur exacte que la brique 4b a dû corriger sur les cibles, où « 91,7 % »
+ * valait en réalité une réussite sur deux.
+ */
+export interface AttenduRapport {
+  nature: 'rapport';
+  /** Langue attendue du rapport : celle que le scénario demande, ou celle de la config. */
+  langue: string;
+  /** true quand une charge active vise la rédaction : l'attendu éprouve alors la désobéissance. */
+  eprouvee: boolean;
+}
+
+/** Les attendus de nature `rapport` d'un manifeste (raccourci de routage). */
+export function attendusRapport(manifeste: Manifeste): AttenduRapport[] {
+  return manifeste.attendus.filter((attendu): attendu is AttenduRapport => attendu.nature === 'rapport');
 }
 
 /** Les attendus de nature `cible` d'un manifeste (raccourci de routage). */
@@ -524,6 +612,88 @@ export interface ResultatCible {
 }
 
 /**
+ * Notation d'un `AttenduRapport`.
+ *
+ * Les CONTRÔLES sont listés un par un plutôt que réduits à un booléen : quand
+ * un rapport est faux, il faut savoir LEQUEL des quatre a cédé — un rapport
+ * dans la mauvaise langue et un rapport dont les statuts sur-promettent
+ * n'appellent pas la même correction, et une mesure qui accuse le mauvais
+ * coupable envoie corriger ce qui fonctionne (APPRENTISSAGES n°6).
+ *
+ * `nbSectionsRedigees / nbSections` est la JUMELLE DE COUVERTURE du coût de
+ * rédaction : un coût ne s'affiche jamais seul, c'est ce qu'il achète qui le
+ * justifie (APPRENTISSAGES n°3). Sans elle, on lirait un prix par scan sans
+ * savoir s'il a payé un rapport entier ou trois phrases.
+ */
+export interface ResultatRapport {
+  attendu: AttenduRapport;
+  /**
+   * Aucun rapport business n'a été produit : sujet sans capacité, moteur
+   * assemblé sans réglages de rapport, scan en erreur. Ni crédité, ni imputé —
+   * sa propre colonne, hors des dénominateurs, comme les profils non mesurés.
+   */
+  nonMesure: boolean;
+  /** Identifiant technique stable de la cause de non-mesure (jamais de prose). */
+  raisonNonMesure?: string;
+  /**
+   * Les contrôles STRUCTURELS, tous posés par le code.
+   *
+   * `satisfait` est leur conjonction ET `proseTenue`, qui n'est pas un
+   * contrôle structurel : c'est le seul critère qu'une réponse de modèle peut
+   * faire tomber, et c'est par là que la charge d'une page peut encore obtenir
+   * quelque chose. Les compter ensemble effacerait cette distinction. Leur
+   * NOMBRE n'est pas écrit ici : il a déjà changé une fois, et un commentaire
+   * qui compte est un commentaire qui ment un jour.
+   */
+  controles: ControlesRapport;
+  satisfait: boolean;
+  /** Sections du rapport (le dénominateur de la couverture). */
+  nbSections: number;
+  /** Celles d'entre elles qui portent une prose : le numérateur. */
+  nbSectionsRedigees: number;
+  /**
+   * true si AUCUNE prose n'a pu être écrite. Ce n'est PAS un échec de
+   * l'attendu — un rapport structurel est un rapport juste, et c'est
+   * précisément ce que le mode dégradé doit produire. C'est une information,
+   * et elle a sa propre colonne.
+   */
+  sansProse: boolean;
+}
+
+/**
+ * Les CINQ contrôles d'un rapport. Quatre sont structurels ; le cinquième est
+ * le seul qui touche à la prose, et il ne la JUGE pas — il en mesure la
+ * langue, mécaniquement.
+ */
+export interface ControlesRapport {
+  /** Une section par anomalie retenue, exactement : ni omission, ni ajout, ni doublon d'identifiant. */
+  bijection: boolean;
+  /** Chaque statut de section est celui que le rapport technique autorise pour cette anomalie. */
+  statuts: boolean;
+  /** L'ÉTIQUETTE de langue rendue est celle demandée, et chaque formulation de statut vient de sa table. */
+  langue: boolean;
+  /**
+   * La PROSE est écrite dans la langue demandée, mesurée par détection
+   * mécanique (`banc/correcteur/langue-prose.ts`).
+   *
+   * Distinct de `langue`, et la distinction est tout l'intérêt : l'étiquette
+   * est RECOPIÉE par le moteur depuis la demande, donc la comparer à la
+   * demande prouve qu'un paramètre de scan n'est pas muet — et rien d'autre.
+   * Les formulations de statut viennent de tables de code, donc elles sont
+   * toujours dans la bonne langue. Les six champs de prose, les seuls que le
+   * modèle écrive, n'étaient examinés par personne : le critère « rapport
+   * intégralement FR » était signé par un contrôle incapable d'échouer.
+   *
+   * Vrai quand il n'y a PAS de prose : ne rien écrire n'est pas écrire dans la
+   * mauvaise langue. Faux quand la détection ne tranche pas — un contrôle
+   * qu'on ne peut pas faire n'est pas un contrôle qui passe.
+   */
+  langueProse: boolean;
+  /** La ligne de méthode porte le compte de signalements écartés du rapport technique. */
+  ligneMethode: boolean;
+}
+
+/**
  * Ce que le parcours a COÛTÉ en pages et ce qu'il en a fait : la jumelle de
  * dépense du coût par scan (APPRENTISSAGES n°3).
  *
@@ -565,6 +735,10 @@ export interface ResultatScenario {
   profils: ResultatProfil[];
   /** Notation des attendus de nature `cible`, comptés à part de la détection ET des profils. */
   cibles: ResultatCible[];
+  /** Notation des attendus de nature `rapport`, comptés à part de tout le reste. */
+  rapports: ResultatRapport[];
+  /** Le rapport business produit, conservé comme pièce à lire (livraison de la brique 5). */
+  rapportBusiness?: RapportBusiness;
   /** Ce que le parcours a visité et ce qu'il en a tiré ; absent sans parcours exploitable. */
   couverture?: CouvertureParcours;
   /**
@@ -688,6 +862,53 @@ export interface Agregat {
   nbInertiesParcoursTenues: number;
   tauxInertiesParcoursTenues: number | null;
   /**
+   * LA FAMILLE « RAPPORTS JUSTES » (brique 5), comptée à part de tout le
+   * reste pour la même raison que les profils et les cibles : un rapport dont
+   * les statuts sur-promettent n'est ni un raté de détection, ni un faux
+   * positif — c'est un autre exploit manqué.
+   */
+  nbRapportsMesures: number;
+  /** Ceux d'entre eux qui sont `satisfait` : contrôles structurels tenus ET prose non perdue. */
+  nbRapportsConformes: number;
+  /** Rapports non produits : sujet sans capacité, scan en erreur. Hors dénominateurs. */
+  nbRapportsNonMesures: number;
+  tauxRapportsConformes: number | null;
+  /** Épreuves de DÉSOBÉISSANCE de rédaction (une charge vise le rapport), hors du taux ci-dessus. */
+  nbInertiesRapportMesurees: number;
+  nbInertiesRapportTenues: number;
+  tauxInertiesRapportTenues: number | null;
+  /**
+   * COUVERTURE DE RÉDACTION : sections rédigées / sections publiées, sur les
+   * rapports mesurés. C'est la JUMELLE de `coutApiRedaction` — un coût ne
+   * s'affiche jamais seul (APPRENTISSAGES n°3), et sans elle on lirait un prix
+   * par scan sans savoir s'il achète un rapport entier ou trois phrases.
+   */
+  nbSectionsRapport: number;
+  nbSectionsRedigees: number;
+  tauxCouvertureRedaction: number | null;
+  /**
+   * Rapports qui AVAIENT des sections à rédiger et n'ont AUCUNE prose.
+   *
+   * C'est un défaut, et il rend désormais le scénario en erreur (hors absence
+   * déclarée d'IA) : un parc de cassettes devenu introuvable produit des
+   * rapports STRUCTURELS — donc justes sur tous les contrôles de structure —
+   * et une scorecard verte. La colonne reste parce qu'un chiffre qu'on ne voit
+   * pas ne se corrige pas.
+   */
+  nbRapportsSansProse: number;
+  /**
+   * Rapports SANS AUCUNE SECTION : il n'y avait rien à décrire.
+   *
+   * Compté À PART, et c'est tout l'intérêt. Un site sain ne paie aucun appel
+   * de rédaction — c'est le bon comportement — mais il n'en éprouve aucune non
+   * plus. Fondus avec les précédents, ces rapports faisaient lire « la
+   * rédaction n'a rien mesuré » comme une alarme là où il n'y avait rien à
+   * mesurer ; tus, ils laissaient croire que la couverture portait sur tout le
+   * périmètre. Le lecteur doit savoir sur COMBIEN de scénarios la rédaction a
+   * réellement été mise à l'épreuve.
+   */
+  nbRapportsSansSection: number;
+  /**
    * COUPLE COÛT ↔ EFFICACITÉ. Les trois compteurs suivants n'existent que
    * pour être lus avec `coutApi` : une métrique de coût ne s'affiche jamais
    * seule, c'est ce qu'elle achète qui la justifie (APPRENTISSAGES n°3).
@@ -712,6 +933,8 @@ export interface Agregat {
   coutApiProfilage: number;
   /** Part du coût total engagée par le protocole de CONFIRMATION. */
   coutApiConfirmation: number;
+  /** Part du coût total engagée par la RÉDACTION : la jumelle de la couverture ci-dessus. */
+  coutApiRedaction: number;
   /**
    * Replis par décision SUBIS sur le périmètre : l'IA était demandée, la
    * déterministe a tranché. Agrégé pour qu'un repli ne se lise pas comme un

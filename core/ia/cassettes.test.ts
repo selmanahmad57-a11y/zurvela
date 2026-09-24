@@ -2,7 +2,7 @@ import { mkdtemp, readdir, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterAll, describe, expect, it } from 'vitest';
-import { chargerConfigDiagnostic, chargerConfigProfilage, chargerConfigScanner } from '../scanner/config.js';
+import { chargerConfigDiagnostic, chargerConfigProfilage, chargerConfigRapport, chargerConfigScanner } from '../scanner/config.js';
 import { VERSION } from '../../prompts/profilage/v1.js';
 import { empreinteContratProfilage } from './profilage.js';
 import {
@@ -36,6 +36,11 @@ const DIAGNOSTIC = {
 const DECISION = {
   modele: configScanner.ia.modeles.navigation,
   config: await chargerConfigNavigation(configScanner.exploration),
+};
+/** Réglages de rédaction : requis par `clientRejouable`, sans effet sur le profilage. */
+const REDACTION = {
+  modele: configScanner.ia.modeles.redaction,
+  config: await chargerConfigRapport(),
 };
 const MODELE = 'claude-haiku-4-5';
 /**
@@ -271,7 +276,7 @@ describe('normaliserUrlPourCle', () => {
 });
 
 describe('clientRejouable — mode normal', () => {
-  const options = { enregistrement: false, modele: MODELE, profilage, decision: DECISION, diagnostic: DIAGNOSTIC };
+  const options = { enregistrement: false, modele: MODELE, profilage, decision: DECISION, diagnostic: DIAGNOSTIC, redaction: REDACTION };
 
   it('cassette présente : rejouée, estampillée, SANS toucher le réseau', async () => {
     const dossier = await dossierNeuf();
@@ -347,6 +352,7 @@ describe('clientRejouable — mode enregistrement', () => {
       modele: MODELE,
       profilage,
       decision: DECISION, diagnostic: DIAGNOSTIC,
+      redaction: REDACTION,
       maintenant: () => new Date('2026-09-23T12:00:00.000Z'),
     });
 
@@ -378,6 +384,7 @@ describe('clientRejouable — mode enregistrement', () => {
       modele: MODELE,
       profilage,
       decision: DECISION, diagnostic: DIAGNOSTIC,
+      redaction: REDACTION,
     }).profiler(contexte);
     const cassette = await depot.lire(cleCassette({ versionPrompt: VERSION, empreinteContrat: EMPREINTE, modele: MODELE, contexte }));
     expect(cassette?.reponse).toBe(brut);

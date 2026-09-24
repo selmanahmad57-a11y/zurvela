@@ -1,0 +1,12 @@
+{
+  "cle": "4f3dd81f78e94b09cafe85133d7baef867d1467a22e2f23e3750430e37c94654",
+  "metadonnees": {
+    "date": "2026-09-24T17:41:35.036Z",
+    "modeleDemande": "claude-haiku-4-5",
+    "modeleServi": "claude-haiku-4-5-20251001",
+    "versionPrompt": "v2",
+    "coutApi": 0.002208,
+    "apresRelance": false
+  },
+  "reponse": "{\"actionId\": \"c1\", \"raison\": \"La page actuelle est un formulaire de demande de devis. Avant de soumettre le formulaire (c2), il faut d'abord le remplir (c1). C'est une action de test pertinente car elle simule ce qu'un visiteur réel ferait : interagir avec un formulaire de contact/devis, qui est une page d'action importante pour ce type de site.\"}"
+}

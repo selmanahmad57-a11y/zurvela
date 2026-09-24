@@ -48,7 +48,7 @@ const MODELE_SERVI = 'claude-haiku-4-5-20251001';
 /** Config IA minimale d'un client sans capacité : aucune clé, aucun tarif, aucun réseau. */
 const CONFIG_IA = {
   variableCle: 'INEXISTANTE',
-  variableWorkspace: 'INEXISTANTE_WORKSPACE',
+  variableWorkspace: 'INEXISTANTE_WORKSPACE', reessaisReseauMax: 2,
   modeles: { profilage: MODELE, navigation: MODELE, diagnostic: MODELE, redaction: MODELE },
   tarifs: {},
 };

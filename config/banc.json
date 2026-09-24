@@ -37,7 +37,27 @@
       "mini-boutique": {
         "pagesMax": 5
       }
-    }
+    },
+    "croises": [
+      {
+        "gabarit": "formulaire-contact",
+        "bugsActifs": [
+          "F01",
+          "M01"
+        ],
+        "langue": "en",
+        "langueRapport": "fr"
+      },
+      {
+        "gabarit": "formulaire-contact",
+        "bugsActifs": [
+          "F01",
+          "M01"
+        ],
+        "langue": "fr",
+        "langueRapport": "en"
+      }
+    ]
   },
   "site": {
     "delaiReponseApiMs": 0

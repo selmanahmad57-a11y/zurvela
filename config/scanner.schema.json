@@ -497,6 +497,7 @@
       "required": [
         "variableCle",
         "variableWorkspace",
+        "reessaisReseauMax",
         "modeles",
         "tarifs"
       ],
@@ -508,6 +509,11 @@
         "variableWorkspace": {
           "type": "string",
           "description": "Nom de la variable d'environnement portant l'identifiant de workspace ; renseignée → l'en-tête anthropic-workspace-id accompagne chaque requête, absente → aucun en-tête et comportement inchangé (une clé déjà rattachée à un workspace ne doit pas être gênée)."
+        },
+        "reessaisReseauMax": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Réessais réseau par appel, transmis au SDK (0 = aucun). Le délai d'un appel s'applique PAR TENTATIVE : ce nombre entre donc dans la durée maximale d'un appel, et il est explicite pour cette raison. Défaut : 2, la valeur que le SDK applique de lui-même."
         },
         "modeles": {
           "type": "object",

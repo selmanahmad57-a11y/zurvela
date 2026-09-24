@@ -9,13 +9,16 @@
  * détecteurs techniques (constitution §4, mode dégradé obligatoire).
  */
 import Anthropic from '@anthropic-ai/sdk';
-import type { ConfigDiagnostic, ConfigProfilage, ConfigScanner } from '../scanner/config.js';
+import type { ConfigDiagnostic, ConfigProfilage, ConfigRapport, ConfigScanner } from '../scanner/config.js';
 import type { EtatDecisionEnumere } from '../types.js';
 import type { ConfigNavigation } from './config-navigation.js';
 import { deciderBrutAvec, decisionDepuisReponse, type AppelDecision } from './decision.js';
 import { diagnosticDepuisReponse, diagnostiquerBrutAvec, type AppelDiagnostic } from './diagnostic.js';
 import { normaliserContexteDiagnostic, type ContexteDiagnosticNormalise } from './contexte-diagnostic.js';
 import { creerValidateurDiagnostic } from './schema-diagnostic.js';
+import { redactionDepuisReponse, redigerBrutAvec, type AppelRedaction } from './redaction.js';
+import { bornerContexteRedaction, identifiantsSections } from './contexte-redaction.js';
+import { creerValidateurRedaction } from './schema-redaction.js';
 import { identifiantsEnumeres, normaliserEtatDecision, type EtatNormalise } from './etat-decision.js';
 import { creerValidateurDecision } from './schema-decision.js';
 import {
@@ -25,7 +28,6 @@ import {
   RAISON_APPEL_RESEAU,
   RAISON_CLE_ABSENTE,
   RAISON_DIAGNOSTIC_INACTIF,
-  RAISON_NON_IMPLEMENTE,
   RAISON_CONTEXTE_DEPASSE,
   RAISON_REFUS_MODELE,
   RAISON_REPONSE_TRONQUEE,
@@ -34,9 +36,11 @@ import {
   type ClientIaEnregistrable,
   type ContexteDiagnostic,
   type ContexteProfilage,
+  type ContexteRedaction,
   type DecisionEstampillee,
   type DiagnosticEstampille,
   type ProfilPage,
+  type RedactionEstampillee,
   type ReponseBrute,
   type ResultatIa,
 } from './index.js';
@@ -92,7 +96,13 @@ export type TarifsIa = Readonly<Record<string, TarifModele>>;
  */
 export interface PorteeSdk {
   messages: {
-    create(params: Anthropic.MessageCreateParamsNonStreaming): Promise<Anthropic.Message>;
+    /**
+     * `options` porte le DÉLAI de la requête. Il est optionnel parce que seuls
+     * les appels qui en ont besoin le passent — la rédaction, dont l'appel est
+     * le plus long du scan et la dernière étape, donc celle qui peut faire
+     * dépasser le `timeoutMs` sans que rien ne la borne.
+     */
+    create(params: Anthropic.MessageCreateParamsNonStreaming, options?: { timeout?: number }): Promise<Anthropic.Message>;
   };
 }
 
@@ -113,6 +123,13 @@ export interface OptionsClientAnthropic {
    * le typecheck suit (APPRENTISSAGES n°7).
    */
   diagnostic: ConfigDiagnostic;
+  /**
+   * Réglages de la RÉDACTION. REQUIS, même raison qu'à la navigation et au
+   * diagnostic : le contrat de la brique 5 est additif, donc rien n'aurait
+   * signalé un client concret incapable de rédiger. Le rendre obligatoire crée
+   * le trou que le typecheck suit (APPRENTISSAGES n°7).
+   */
+  rapport: ConfigRapport;
   tarifs: TarifsIa;
   env?: NodeJS.ProcessEnv;
   /** Doublure de SDK (tests). En production, le SDK est construit depuis la clé. */
@@ -141,7 +158,7 @@ export function creerClientAnthropic(options: OptionsClientAnthropic): ClientIaE
     return creerClientSansCapacite(RAISON_TARIF_ABSENT, `aucun tarif configuré pour le modèle ${modele}`);
   }
 
-  const sdk: PorteeSdk = options.sdk ?? new Anthropic({ apiKey: cle, ...enTetesWorkspace(config, env) });
+  const sdk: PorteeSdk = options.sdk ?? new Anthropic(parametresSdk(config, cle ?? '', env));
   const validateur = creerValidateurProfil(profilage);
 
   const appelerProfilage: AppelModele = (prompt) =>
@@ -261,13 +278,68 @@ export function creerClientAnthropic(options: OptionsClientAnthropic): ClientIaE
     });
   };
 
+  // ---------------------------------------------------------------------
+  // Rédaction du rapport business (brique 5)
+  // ---------------------------------------------------------------------
+  const { rapport } = options;
+  const modeleRedaction = config.modeles.redaction;
+  const tarifRedaction = tarifs[modeleRedaction];
+
+  /**
+   * Le chemin qui DÉPENSE pour la rédaction. Comme ailleurs,
+   * l'indisponibilité est PAR CAPACITÉ : un modèle de rédaction sans tarif
+   * n'éteint ni le profilage, ni la navigation, ni le diagnostic — il rend un
+   * rapport STRUCTUREL, qui reste un rapport.
+   */
+  const redigerBrut = (contexteRecu: ContexteRedaction): Promise<ResultatIa<ReponseBrute>> => {
+    // LA BORNE EST REFAITE ICI, au seuil de `core/ia`, et pas seulement sur le
+    // chemin rejouable. Une borne de sécurité ne doit pas dépendre de la
+    // discipline de son appelant — c'est la règle écrite dans
+    // `contexte-redaction.ts`, et elle était FAUSSE : seul `cassettes.ts`
+    // l'appliquait, donc un client concret appelé directement (hors banc)
+    // envoyait le contexte brut, sans troncature ni neutralisation des
+    // séparateurs de ligne d'Unicode. Un contrat faux est cru comme un
+    // diagnostic faux (APPRENTISSAGES n°6).
+    //
+    // La borne est IDEMPOTENTE : l'appliquer deux fois — ici après
+    // `cassettes.ts` — ne change rien, donc la clé de cassette reste la même.
+    const contexte = bornerContexteRedaction(contexteRecu, rapport);
+    if (tarifRedaction === undefined) {
+      return Promise.resolve({
+        disponible: false,
+        raison: RAISON_TARIF_ABSENT,
+        message: `aucun tarif configuré pour le modèle ${modeleRedaction}`,
+      });
+    }
+    const appelerRedaction: AppelRedaction = (prompt, schemaContratModele) =>
+      appeler(
+        {
+          sdk,
+          modele: modeleRedaction,
+          tarif: tarifRedaction,
+          maxTokens: rapport.maxTokensReponse,
+          nomPlafond: 'rapport.maxTokensReponse',
+          detailEntree: `rapport.faitsMaxChars ${rapport.faitsMaxChars}`,
+          delaiMs: rapport.appelMaxMs,
+        },
+        prompt,
+        schemaContratModele,
+      );
+    return redigerBrutAvec({
+      contexte,
+      config: rapport,
+      // Le contrat de sortie est DÉRIVÉ de l'énumération des sections : le
+      // modèle n'a littéralement aucun identifiant admissible en dehors.
+      validateur: creerValidateurRedaction(identifiantsSections(contexte)),
+      appeler: appelerRedaction,
+    });
+  };
+
   const profilerBrut = (contexte: ContexteProfilage): Promise<ResultatIa<ReponseBrute>> =>
     profilerBrutAvec({ contexte, config: profilage, validateur, appeler: appelerProfilage });
 
-  const nonImplemente = async <T>(): Promise<ResultatIa<T>> => ({
-    disponible: false,
-    raison: RAISON_NON_IMPLEMENTE,
-  });
+  // Plus aucune capacité « non implémentée » : la brique 5 était la dernière,
+  // et le client concret sait désormais les quatre.
 
   return {
     mode: 'actif',
@@ -275,6 +347,7 @@ export function creerClientAnthropic(options: OptionsClientAnthropic): ClientIaE
     profilerBrut,
     deciderBrut,
     diagnostiquerBrut,
+    redigerBrut,
     async profiler(contexte): Promise<ResultatIa<ProfilPage>> {
       const brut = await profilerBrut(contexte);
       if (!brut.disponible) return brut;
@@ -329,8 +402,27 @@ export function creerClientAnthropic(options: OptionsClientAnthropic): ClientIaE
         coutApi: brut.valeur.coutApi,
       });
     },
-    // La brique finale implémentera la rédaction ; elle ne touche rien aujourd'hui.
-    rediger: nonImplemente,
+    /**
+     * Le modèle MET EN PHRASES des faits déjà posés. Le contexte lui arrive
+     * déjà normalisé — c'est `core/rapport/faits.ts` qui le construit, une
+     * fois, pour le prompt comme pour la clé de cassette.
+     */
+    async rediger(contexteRecu: ContexteRedaction): Promise<ResultatIa<RedactionEstampillee>> {
+      // Le validateur est construit sur le contexte BORNÉ, celui-là même qui a
+      // été envoyé : construire l'énumération sur le contexte reçu accepterait
+      // des identifiants que le modèle n'a jamais vus.
+      const contexte = bornerContexteRedaction(contexteRecu, rapport);
+      const brut = await redigerBrut(contexte);
+      if (!brut.disponible) return brut;
+      return redactionDepuisReponse({
+        texte: brut.valeur.texte,
+        validateur: creerValidateurRedaction(identifiantsSections(contexte)),
+        modeleDemande: modeleRedaction,
+        modeleServi: brut.valeur.modeleServi,
+        apresRelance: brut.valeur.apresRelance,
+        coutApi: brut.valeur.coutApi,
+      });
+    },
   };
 }
 
@@ -340,6 +432,15 @@ interface ParametresAppel {
   modele: string;
   tarif: TarifModele;
   maxTokens: number;
+  /**
+   * Délai maximal de la requête, en millisecondes. Absent : celui du SDK.
+   *
+   * Une PORTE d'entrée qui vérifie l'échéance avant d'appeler ne borne pas la
+   * DURÉE de l'appel une fois engagé : c'est un « check-then-act », et il
+   * laisse un scan dépasser son budget sans limite si le fournisseur tarde.
+   * Seule une borne sur l'opération elle-même le referme.
+   */
+  delaiMs?: number;
   /** Réglage de config qui porte le plafond de génération : sert à nommer la VRAIE cause. */
   nomPlafond: string;
   /** Réglage de config qui borne l'entrée, même raison. */
@@ -362,7 +463,7 @@ async function appeler(
   prompt: { systeme: string; utilisateur: string },
   schemaContratModele: Record<string, unknown>,
 ): Promise<ResultatAppel> {
-  const { sdk, modele, tarif, maxTokens, nomPlafond, detailEntree } = parametres;
+  const { sdk, modele, tarif, maxTokens, nomPlafond, detailEntree, delaiMs } = parametres;
   try {
     const reponse = await sdk.messages.create({
       model: modele,
@@ -377,7 +478,7 @@ async function appeler(
       // font pas partie du sous-ensemble accepté par les sorties structurées,
       // et les envoyer vaut soit un refus, soit un contrat qui ne ferme rien.
       output_config: { format: { type: 'json_schema', schema: schemaContratModele } },
-    });
+    }, delaiMs === undefined ? undefined : { timeout: delaiMs });
     const coutApi = coutAppel(reponse.usage, tarif);
     if (reponse.stop_reason === 'refusal') {
       return { ok: false, raison: RAISON_REFUS_MODELE, coutApi };
@@ -425,6 +526,23 @@ async function appeler(
  * Laisser cette fonction privée en ferait exactement ce que l'apprentissage
  * n°5 interdit — une configuration que rien n'exécute.
  */
+/**
+ * Les paramètres du client SDK, rassemblés pour qu'un test puisse les lire.
+ *
+ * `maxRetries` y figure EXPLICITEMENT. Laissé au défaut du SDK il vaut 2, et
+ * le délai passé à `messages.create` s'applique PAR TENTATIVE : la borne de
+ * durée annoncée pour un appel était donc fausse d'un facteur trois, et avec
+ * elle la promesse publique de `OptionsScan.timeoutMs`. Un réglage qui
+ * fabrique une borne ne peut pas être tacite.
+ */
+export function parametresSdk(
+  config: ConfigScanner['ia'],
+  cle: string,
+  env: NodeJS.ProcessEnv,
+): { apiKey: string; maxRetries: number; defaultHeaders?: Record<string, string> } {
+  return { apiKey: cle, maxRetries: config.reessaisReseauMax, ...enTetesWorkspace(config, env) };
+}
+
 export function enTetesWorkspace(
   config: ConfigScanner['ia'],
   env: NodeJS.ProcessEnv,

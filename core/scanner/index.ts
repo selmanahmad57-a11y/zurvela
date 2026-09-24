@@ -18,9 +18,10 @@ import type {
   ResultatConfirmation,
   Scanner,
 } from '../types.js';
-import type { ConfigScanner } from './config.js';
+import type { ConfigRapport, ConfigScanner } from './config.js';
 import { detecter } from './detection/index.js';
 import { ouvrirProfilage, type ExplorateurProfilant, type OptionsProfilage } from './profilage.js';
+import { redigerRapportBusiness, type ResultatRapportBusiness } from '../rapport/index.js';
 
 /**
  * Ressource de rejeu d'un scan : le protocole de confirmation re-exécute
@@ -50,6 +51,13 @@ export interface DependancesScanner {
    * (constitution §4).
    */
   profilage?: OptionsProfilage;
+  /**
+   * Réglages du RAPPORT BUSINESS (brique 5). ABSENTS : le scan ne produit
+   * aucun rapport business et le journal le dit — même doctrine que le
+   * profilage, et le banc la garde : pour le sujet réel, un attendu de
+   * rapport non mesuré est une absence SUBIE, qui interdit le statut `ok`.
+   */
+  rapport?: ConfigRapport;
 }
 
 /**
@@ -205,26 +213,20 @@ export function creerScanner(dependances: DependancesScanner): Scanner {
       await session.fermer().catch(() => undefined);
     }
 
-    const coutApiParFamille = {
-      exploration: coutExploration,
-      profilage: profilage.coutApi,
-      confirmation: confirmation.coutApi,
-    };
-    const coutApi = coutApiParFamille.exploration + coutApiParFamille.profilage + coutApiParFamille.confirmation;
-    const dureeMs = Date.now() - debut;
-    journaliser('scan.fin', { dureeMs, coutApi, nbAnomalies: confirmation.retenues.length, arret: parcours.arret });
-
-    // `groupes` et `decouvertes` ne sont présents que si le protocole en rend :
-    // le passe-plat ne consolide pas et ne rejoue rien, son rapport ne doit
-    // donc pas prétendre le contraire avec des listes vides. Portés par le
-    // Rapport, ils permettent de compter en GROUPES (cahier §1a) et de
-    // remonter d'une anomalie à sa cause sans re-parser le journal.
-    return {
+    // 5. RAPPORT BUSINESS. Dernière étape, et la seule qui ne regarde pas le
+    // site : elle part du rapport technique, et de lui seul. Une panne de
+    // rédaction ne coûte jamais un scan — elle coûte la prose, et le rapport
+    // structurel reste publié (constitution §4).
+    //
+    // Ce rapport est CELUI QUI SERA RENDU : les coûts et la durée y sont
+    // provisoires, parce qu'ils ne sont connus qu'après la rédaction, et ils
+    // sont écrasés au retour. La rédaction ne les lit pas — elle ne lit que
+    // les anomalies, les groupes, les découvertes et le profil.
+    const rapportTechnique: Rapport = {
       url,
       anomalies: confirmation.retenues,
-      coutApi,
-      coutApiParFamille,
-      dureeMs,
+      coutApi: 0,
+      dureeMs: 0,
       journal,
       parcours,
       candidates,
@@ -233,5 +235,48 @@ export function creerScanner(dependances: DependancesScanner): Scanner {
       ...(confirmation.decouvertes === undefined ? {} : { decouvertes: confirmation.decouvertes }),
       ...(profilage.profil === undefined ? {} : { profil: profilage.profil }),
     };
+    // La rédaction est la DERNIÈRE étape, et la seule qui n'avait pas son
+    // filet : son module lève délibérément sur une configuration dont la
+    // langue n'a pas de formulations vérifiées, et une exception à cet endroit
+    // aurait emporté un rapport technique DÉJÀ COMPLET. Toutes les autres
+    // étapes du pipeline rendent un rapport partiel plutôt qu'une exception
+    // (constitution §4) ; celle-ci fait désormais de même.
+    let redaction: ResultatRapportBusiness | undefined;
+    if (dependances.rapport !== undefined) {
+      try {
+        redaction = await redigerRapportBusiness({
+          rapport: rapportTechnique,
+          config: dependances.rapport,
+          ia,
+          journaliser,
+          echeance,
+          ...(options.langueRapport === undefined ? {} : { langueDemandee: options.langueRapport }),
+        });
+      } catch (cause: unknown) {
+        journaliser('scan.erreur', { etape: 'rapport', message: messageErreur(cause) });
+      }
+    }
+
+    const coutApiParFamille = {
+      exploration: coutExploration,
+      profilage: profilage.coutApi,
+      confirmation: confirmation.coutApi,
+      redaction: redaction?.coutApi ?? 0,
+    };
+    const coutApi =
+      coutApiParFamille.exploration +
+      coutApiParFamille.profilage +
+      coutApiParFamille.confirmation +
+      coutApiParFamille.redaction;
+    const dureeMs = Date.now() - debut;
+    journaliser('scan.fin', { dureeMs, coutApi, nbAnomalies: confirmation.retenues.length, arret: parcours.arret });
+
+    // Le rapport rendu est celui qui a servi à la rédaction, complété de ce
+    // qui n'était pas encore connu quand elle a eu lieu : les coûts et la
+    // durée. Le construire une seconde fois à quarante lignes d'écart aurait
+    // été deux vérités à tenir d'accord — et c'est la copie oubliée qui aurait
+    // porté le champ manquant.
+    return { ...rapportTechnique, coutApi, coutApiParFamille, dureeMs,
+      ...(redaction === undefined ? {} : { rapportBusiness: redaction.rapportBusiness }) };
   };
 }

@@ -10,6 +10,7 @@ import {
   type ClientIa,
   type ContexteProfilage,
   type ProfilPage,
+  type RedactionEstampillee,
   type ResultatIa,
 } from '../ia/index.js';
 import type {
@@ -24,7 +25,7 @@ import type {
   Reexecuteur,
   Signal,
 } from '../types.js';
-import { chargerConfigScanner, type ConfigProfilage, type ConfigScanner } from './config.js';
+import { chargerConfigScanner, type ConfigProfilage, type ConfigRapport, type ConfigScanner } from './config.js';
 import { autoDiagnosticMecanique } from './confirmation/auto-diagnostic.js';
 import { protocolePassePlat } from './confirmation/passe-plat.js';
 import { reexecuteurFactice } from './confirmation/fabriques-test.js';
@@ -733,5 +734,214 @@ describe('creerScanner — profilage IA', () => {
     expect(rapport.profil).toBeUndefined();
     expect(rapport.coutApi).toBe(0);
     expect(rapport.journal.find((entree) => entree.type === 'profilage.indisponible')?.details).toMatchObject({ raison: RAISON_CONTEXTE_ABSENT });
+  });
+});
+
+/**
+ * LA CINQUIÈME ÉTAPE — le rapport business, dernière du pipeline et seule qui
+ * ne regarde pas le site.
+ *
+ * Ce qui est éprouvé ici est son INSERTION : que le rapport soit produit, que
+ * son coût forme bien une QUATRIÈME famille, et qu'une panne de rédaction ne
+ * coûte jamais un scan.
+ */
+describe('creerScanner — rapport business', () => {
+  const CONFIG_RAPPORT: ConfigRapport = {
+    langueRapport: 'fr',
+    sectionsMax: 20,
+    localisationsMaxParSection: 8,
+    faitsMaxChars: 6000,
+    cheminMaxChars: 120,
+      symptomesMaxChars: 200,
+      ligneMaxChars: 1400,
+    maxTokensReponse: 4096,
+    relancesMax: 1,
+    appelMaxMs: 120000,
+  };
+
+  /** Client qui rédige : une phrase par champ, un identifiant par section énumérée. */
+  function iaQuiRedige(coutApi: number): ClientIa & { langues: string[] } {
+    const langues: string[] = [];
+    return {
+      ...ia,
+      langues,
+      rediger: async (contexte): Promise<ResultatIa<RedactionEstampillee>> => {
+        langues.push(contexte.langue);
+        return {
+          disponible: true,
+          coutApi,
+          valeur: {
+            synthese: 'Un défaut empêche vos visiteurs d’aller au bout.',
+            ligneMethode: 'Chaque signalement est re-vérifié avant publication.',
+            sections: contexte.sections.map((section) => ({
+              sectionId: section.id,
+              titre: 'Titre',
+              constat: 'Constat',
+              impact: 'Impact',
+              actionSuggeree: 'Action',
+            })),
+            provenance: {
+              versionPrompt: 'v1',
+              modeleDemande: 'claude-opus-5',
+              modeleServi: 'claude-opus-5-20260101',
+              apresRelance: false,
+            },
+          },
+        };
+      },
+    };
+  }
+
+  it('produit le rapport après la confirmation, et son coût forme la QUATRIÈME famille', async () => {
+    const clientIa = iaQuiRedige(0.03);
+    const scanner = creerScanner(
+      dependances({
+        explorateur: explorateurSimule(['desktop']),
+        detecteurs: [detecteurInerteSimule({ viewports: [] })],
+        protocole: protocoleCoutant(0.01),
+        ia: clientIa,
+        rapport: CONFIG_RAPPORT,
+      }),
+    );
+
+    const rapport = await scanner(ORIGINE, { timeoutMs: 60000 });
+
+    // Le protocole `protocoleCoutant` n'ayant RETENU aucune anomalie, il n'y a
+    // rien à rédiger : aucun appel, aucun coût de rédaction. Un site sain ne
+    // doit pas payer un modèle pour qu'on lui écrive qu'il va bien.
+    expect(clientIa.langues).toEqual([]);
+    expect(rapport.rapportBusiness?.sections).toEqual([]);
+    expect(rapport.coutApiParFamille).toEqual({ exploration: 0, profilage: 0, confirmation: 0.01, redaction: 0 });
+    // Les QUATRE familles partitionnent : leur somme vaut le total.
+    const parFamille = rapport.coutApiParFamille;
+    if (parFamille === undefined) throw new Error('ventilation absente');
+    const somme = parFamille.exploration + parFamille.profilage + parFamille.confirmation + parFamille.redaction;
+    expect(somme).toBeCloseTo(rapport.coutApi, 10);
+  });
+
+  /**
+   * Le pipeline avec le VRAI protocole : lui seul rend des VERDICTS, et sans
+   * verdict il n'existe aucun statut honnête à publier — le passe-plat, qui
+   * retient tout sans rien vérifier, ne produit donc aucune section. C'est le
+   * comportement voulu, et il est éprouvé à part.
+   */
+  function scannerConfirmant(clientIa: ClientIa) {
+    const detecteurs = [creerDetecteurHttp(config.detecteurs.http), creerDetecteurImage(config.detecteurs.image)];
+    return creerScanner(
+      dependances({
+        explorateur: explorateurLogoMort('desktop'),
+        detecteurs,
+        protocole: creerProtocole({ config: config.confirmation, autoDiagnostic: autoDiagnosticMecanique }),
+        ouvrirRejeu: () => ({ reexecuteur: reexecuteurLogoMort, fermer: () => Promise.resolve() }),
+        ia: clientIa,
+        rapport: CONFIG_RAPPORT,
+      }),
+    );
+  }
+
+  it('avec des anomalies retenues : la prose est écrite, le coût est ventilé, la somme tient', async () => {
+    const clientIa = iaQuiRedige(0.03);
+    const scanner = scannerConfirmant(clientIa);
+
+    const rapport = await scanner(ORIGINE, { timeoutMs: 60000 });
+
+    expect(rapport.rapportBusiness?.sansProse).toBe(false);
+    expect(rapport.rapportBusiness?.sections[0]?.titre).toBe('Titre');
+    expect(rapport.coutApiParFamille?.redaction).toBeCloseTo(0.03, 10);
+    expect(rapport.coutApi).toBeCloseTo(0.03, 10);
+    expect(rapport.journal.find((entree) => entree.type === 'rapport.redige')).toBeDefined();
+  });
+
+  it('la LANGUE du scan est transmise au rédacteur, et elle prime sur la config', async () => {
+    const clientIa = iaQuiRedige(0);
+    const scanner = scannerConfirmant(clientIa);
+
+    const rapport = await scanner(ORIGINE, { timeoutMs: 60000, langueRapport: 'en' });
+
+    expect(clientIa.langues).toEqual(['en']);
+    expect(rapport.rapportBusiness?.langue).toBe('en');
+  });
+
+  it('une rédaction INDISPONIBLE ne coûte pas le scan : rapport structurel, scan vert', async () => {
+    // Constitution §4 : le moteur reste utile sans IA. C'est ici que cela se
+    // voit à l'œil nu.
+    const muet: ClientIa = { ...ia, rediger: async () => ({ disponible: false, raison: RAISON_CLE_ABSENTE, coutApi: 0.002 }) };
+    const scanner = scannerConfirmant(muet);
+
+    const rapport = await scanner(ORIGINE, { timeoutMs: 60000 });
+
+    expect(rapport.rapportBusiness?.sansProse).toBe(true);
+    expect(rapport.rapportBusiness?.sections).toHaveLength(1);
+    expect(rapport.rapportBusiness?.sections[0]?.statutFormule).not.toBe('');
+    expect(rapport.anomalies).toHaveLength(1);
+    // Le coût DÉPENSÉ sans rien produire reste compté : un coût invisible ment.
+    expect(rapport.coutApiParFamille?.redaction).toBeCloseTo(0.002, 10);
+    expect(rapport.journal.find((entree) => entree.type === 'rapport.sans-prose')).toBeDefined();
+  });
+
+  it('sans réglages de rapport, le scan ne produit AUCUN rapport business et ne facture rien', async () => {
+    const scanner = creerScanner(
+      dependances({ explorateur: explorateurSimule(['desktop']), detecteurs: [detecteurInerteSimule({ viewports: [] })] }),
+    );
+    const rapport = await scanner(ORIGINE, { timeoutMs: 60000 });
+    expect(rapport.rapportBusiness).toBeUndefined();
+    expect(rapport.coutApiParFamille?.redaction).toBe(0);
+  });
+
+  it('une anomalie retenue SANS verdict ne reçoit aucun statut, et le journal la NOMME', async () => {
+    // Le protocole passe-plat retient tout sans rien vérifier : aucune des
+    // quatre formulations ne peut alors être promise sans mentir. L'anomalie
+    // n'est ni publiée sous le statut du voisin, ni perdue en silence.
+    const scanner = creerScanner(
+      dependances({
+        explorateur: explorateurSimule(['desktop']),
+        detecteurs: [detecteurInerteSimule({ viewports: [] })],
+        ia: iaQuiRedige(0),
+        rapport: CONFIG_RAPPORT,
+      }),
+    );
+    const rapport = await scanner(ORIGINE, { timeoutMs: 60000 });
+    expect(rapport.anomalies).toHaveLength(1);
+    expect(rapport.rapportBusiness?.sections).toEqual([]);
+    expect(rapport.journal.find((entree) => entree.type === 'rapport.section-non-situee')).toBeDefined();
+  });
+});
+
+/**
+ * LE FILET DE LA DERNIÈRE ÉTAPE. Toutes les étapes du pipeline rendent un
+ * rapport PARTIEL plutôt qu'une exception (constitution §4) ; la rédaction
+ * était la seule sans try/catch, et son module lève délibérément sur une
+ * configuration dont la langue n'a pas de formulations vérifiées.
+ */
+describe('creerScanner — une panne de rédaction ne coûte jamais le rapport technique', () => {
+  it('une configuration de rapport invalide ne tue pas le scan : le rapport technique survit', async () => {
+    const scanner = creerScanner(
+      dependances({
+        explorateur: explorateurSimule(['desktop']),
+        detecteurs: [detecteurInerteSimule({ viewports: [] })],
+        // `de` n'a aucune formulation de statut vérifiée : `resoudreLangue`
+        // lève. En production le chargement de config l'attrape d'abord ; ici
+        // la config est construite à la main, exactement comme le ferait un
+        // assemblage futur qui court-circuiterait le chargeur.
+        rapport: {
+          langueRapport: 'de',
+          sectionsMax: 20,
+          localisationsMaxParSection: 8,
+          faitsMaxChars: 6000,
+          cheminMaxChars: 120,
+          symptomesMaxChars: 200,
+          ligneMaxChars: 1400,
+          maxTokensReponse: 4096,
+          relancesMax: 1,
+          appelMaxMs: 120000,
+        },
+      }),
+    );
+
+    const rapport = await scanner(ORIGINE, { timeoutMs: 60000 });
+
+    expect(rapport.anomalies).toHaveLength(1);
+    expect(rapport.rapportBusiness).toBeUndefined();
+    expect(rapport.journal.find((entree) => entree.type === 'scan.erreur')?.details).toMatchObject({ etape: 'rapport' });
   });
 });

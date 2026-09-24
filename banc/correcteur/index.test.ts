@@ -17,7 +17,7 @@ import {
   RAISON_POLITIQUE_NON_TRANSMISE,
   RAISON_REPLIS_DECISION,
 } from './navigation.js';
-import { executerBanc, noterScenario } from './index.js';
+import { absencesDeclarees, executerBanc, noterScenario } from './index.js';
 
 /** Trace structurelle de F01 : un bouton `type="button"` (le sain n’en a aucun). */
 const BOUTON_INERTE = { balise: 'button', attribut: 'type', valeur: 'button' };
@@ -135,7 +135,7 @@ describe('noterScenario', () => {
       return scannerControle(url, options);
     };
 
-    const resultat = await noterScenario(F01_M01_FR, { sujet: sujetConstant('test', scanner), politique: POLITIQUE_DETERMINISTE, config, dico, obtenirGabarit, iaDeclareeAbsente: true });
+    const resultat = await noterScenario(F01_M01_FR, { sujet: sujetConstant('test', scanner), politique: POLITIQUE_DETERMINISTE, config, dico, obtenirGabarit, iaDeclareeAbsente: true, sujetSansRapport: true, detectionLangue: null });
 
     expect(urlServie).toMatch(/^http:\/\/127\.0\.0\.1:\d+$/);
     expect(resultat).toMatchObject({ scenarioId: F01_M01_FR.id, gabarit: formulaireContact.nom, langue: 'fr', statut: 'ok', coutApi: 0.25 });
@@ -158,7 +158,7 @@ describe('noterScenario', () => {
       expect(compterBalises(html, BOUTON_INERTE)).toBe(0);
       return rapport(url, []);
     };
-    const resultat = await noterScenario(SAIN_EN, { sujet: sujetConstant('test', scanner), politique: POLITIQUE_DETERMINISTE, config, dico, obtenirGabarit, iaDeclareeAbsente: true });
+    const resultat = await noterScenario(SAIN_EN, { sujet: sujetConstant('test', scanner), politique: POLITIQUE_DETERMINISTE, config, dico, obtenirGabarit, iaDeclareeAbsente: true, sujetSansRapport: true, detectionLangue: null });
     expect(resultat).toMatchObject({ statut: 'ok', attendus: [], fauxPositifs: [], coutApi: 0 });
   });
 
@@ -169,7 +169,7 @@ describe('noterScenario', () => {
       return scannerEnPanne(url, options);
     };
 
-    const resultat = await noterScenario(F01_M01_FR, { sujet: sujetConstant('test', scanner), politique: POLITIQUE_DETERMINISTE, config, dico, obtenirGabarit, iaDeclareeAbsente: true });
+    const resultat = await noterScenario(F01_M01_FR, { sujet: sujetConstant('test', scanner), politique: POLITIQUE_DETERMINISTE, config, dico, obtenirGabarit, iaDeclareeAbsente: true, sujetSansRapport: true, detectionLangue: null });
 
     expect(resultat).toMatchObject({ statut: 'erreur', erreur: 'panne simulée', coutApi: 0, fauxPositifs: [] });
     expect(resultat.rapport).toBeUndefined();
@@ -182,7 +182,7 @@ describe('noterScenario', () => {
     const configCourte: ConfigBanc = { ...config, scan: { ...config.scan, timeoutMs } };
     const debut = Date.now();
 
-    const resultat = await noterScenario(F01_M01_FR, { sujet: sujetConstant('test', scannerLent(timeoutMs * 50)), politique: POLITIQUE_DETERMINISTE, config: configCourte, dico, obtenirGabarit, iaDeclareeAbsente: true });
+    const resultat = await noterScenario(F01_M01_FR, { sujet: sujetConstant('test', scannerLent(timeoutMs * 50)), politique: POLITIQUE_DETERMINISTE, config: configCourte, dico, obtenirGabarit, iaDeclareeAbsente: true, sujetSansRapport: true, detectionLangue: null });
 
     expect(Date.now() - debut).toBeLessThan(timeoutMs * 20);
     expect(resultat.statut).toBe('erreur');
@@ -193,12 +193,12 @@ describe('noterScenario', () => {
 
   it('laisse remonter une erreur du banc lui-même (scénario incohérent avec le gabarit)', async () => {
     const inconnu = scenario('test--zz9--fr', 'fr', ['ZZ9']);
-    await expect(noterScenario(inconnu, { sujet: sujetConstant('test', scannerControle), politique: POLITIQUE_DETERMINISTE, config, dico, obtenirGabarit, iaDeclareeAbsente: true })).rejects.toThrow('ZZ9');
+    await expect(noterScenario(inconnu, { sujet: sujetConstant('test', scannerControle), politique: POLITIQUE_DETERMINISTE, config, dico, obtenirGabarit, iaDeclareeAbsente: true, sujetSansRapport: true, detectionLangue: null })).rejects.toThrow('ZZ9');
   });
 
   it('laisse remonter une erreur du banc lui-même (paramètre de bug invalide) au lieu de noter un site mal servi', async () => {
     const invalide: Scenario = { ...F01_M01_FR, parametres: { M01: { largeurMaxMobilePx: 'grand' } } };
-    await expect(noterScenario(invalide, { sujet: sujetConstant('test', scannerControle), politique: POLITIQUE_DETERMINISTE, config, dico, obtenirGabarit, iaDeclareeAbsente: true })).rejects.toThrow('M01');
+    await expect(noterScenario(invalide, { sujet: sujetConstant('test', scannerControle), politique: POLITIQUE_DETERMINISTE, config, dico, obtenirGabarit, iaDeclareeAbsente: true, sujetSansRapport: true, detectionLangue: null })).rejects.toThrow('M01');
   });
 
   it('marque en erreur (sans lever) un rapport inexploitable par l’appariement, et garde le rapport', async () => {
@@ -206,7 +206,7 @@ describe('noterScenario', () => {
       // Rapport structurellement faux (anomalies absentes) : le contrat est violé par le sujet, pas par le banc.
       return { ...rapport(url, []), anomalies: undefined as unknown as Anomalie[] };
     };
-    const resultat = await noterScenario(F01_M01_FR, { sujet: sujetConstant('test', scannerInexploitable), politique: POLITIQUE_DETERMINISTE, config, dico, obtenirGabarit, iaDeclareeAbsente: true });
+    const resultat = await noterScenario(F01_M01_FR, { sujet: sujetConstant('test', scannerInexploitable), politique: POLITIQUE_DETERMINISTE, config, dico, obtenirGabarit, iaDeclareeAbsente: true, sujetSansRapport: true, detectionLangue: null });
     expect(resultat.statut).toBe('erreur');
     expect(resultat.erreur).toBeTruthy();
     expect(resultat.attendus.map((attendu) => attendu.verdict)).toEqual(['rate', 'rate']);
@@ -228,13 +228,13 @@ describe('noterScenario', () => {
         return { ...rapport(url, [], coutApi), anomalies: undefined as unknown as Anomalie[] };
       };
 
-    const paye = await noterScenario(F01_M01_FR, { sujet: sujetConstant('test', inexploitableAvecCout(0.0042)), politique: POLITIQUE_DETERMINISTE, config, dico, obtenirGabarit, iaDeclareeAbsente: true });
+    const paye = await noterScenario(F01_M01_FR, { sujet: sujetConstant('test', inexploitableAvecCout(0.0042)), politique: POLITIQUE_DETERMINISTE, config, dico, obtenirGabarit, iaDeclareeAbsente: true, sujetSansRapport: true, detectionLangue: null });
     expect(paye.statut).toBe('erreur');
     expect(paye.coutApi).toBe(0.0042);
 
     // Le garde-fou : l'hypothèse de cette branche est un rapport structurellement
     // suspect, et un NaN propagé dans tous les agrégats serait pire que zéro.
-    const absurde = await noterScenario(F01_M01_FR, { sujet: sujetConstant('test', inexploitableAvecCout(Number.NaN)), politique: POLITIQUE_DETERMINISTE, config, dico, obtenirGabarit, iaDeclareeAbsente: true });
+    const absurde = await noterScenario(F01_M01_FR, { sujet: sujetConstant('test', inexploitableAvecCout(Number.NaN)), politique: POLITIQUE_DETERMINISTE, config, dico, obtenirGabarit, iaDeclareeAbsente: true, sujetSansRapport: true, detectionLangue: null });
     expect(absurde.coutApi).toBe(0);
   });
 
@@ -253,7 +253,7 @@ describe('noterScenario', () => {
       };
     };
 
-    const resultat = await noterScenario(F01_M01_FR, { sujet: sujetConstant('test', scannerProtocole), politique: POLITIQUE_DETERMINISTE, config, dico, obtenirGabarit, iaDeclareeAbsente: true });
+    const resultat = await noterScenario(F01_M01_FR, { sujet: sujetConstant('test', scannerProtocole), politique: POLITIQUE_DETERMINISTE, config, dico, obtenirGabarit, iaDeclareeAbsente: true, sujetSansRapport: true, detectionLangue: null });
 
     expect(resultat.protocole).toEqual({
       nbCandidates: 3,
@@ -280,7 +280,7 @@ describe('noterScenario', () => {
       };
     };
 
-    const resultat = await noterScenario(F01_M01_FR, { sujet: sujetConstant('test', scannerPerte), politique: POLITIQUE_DETERMINISTE, config, dico, obtenirGabarit, iaDeclareeAbsente: true });
+    const resultat = await noterScenario(F01_M01_FR, { sujet: sujetConstant('test', scannerPerte), politique: POLITIQUE_DETERMINISTE, config, dico, obtenirGabarit, iaDeclareeAbsente: true, sujetSansRapport: true, detectionLangue: null });
 
     expect(resultat.protocole?.nbPertesProtocole).toBe(1);
     expect(resultat.statut).not.toBe('ok');
@@ -303,7 +303,7 @@ describe('noterScenario', () => {
       };
     };
 
-    const resultat = await noterScenario(F01_M01_FR, { sujet: sujetConstant('test', scannerSansPerte), politique: POLITIQUE_DETERMINISTE, config, dico, obtenirGabarit, iaDeclareeAbsente: true });
+    const resultat = await noterScenario(F01_M01_FR, { sujet: sujetConstant('test', scannerSansPerte), politique: POLITIQUE_DETERMINISTE, config, dico, obtenirGabarit, iaDeclareeAbsente: true, sujetSansRapport: true, detectionLangue: null });
 
     expect(resultat.protocole?.nbPertesProtocole).toBe(0);
     expect(resultat.statut).toBe('ok');
@@ -322,7 +322,7 @@ describe('noterScenario', () => {
       };
     };
 
-    const resultat = await noterScenario(F01_M01_FR, { sujet: sujetConstant('test', scannerProtocoleTombe), politique: POLITIQUE_DETERMINISTE, config, dico, obtenirGabarit, iaDeclareeAbsente: true });
+    const resultat = await noterScenario(F01_M01_FR, { sujet: sujetConstant('test', scannerProtocoleTombe), politique: POLITIQUE_DETERMINISTE, config, dico, obtenirGabarit, iaDeclareeAbsente: true, sujetSansRapport: true, detectionLangue: null });
 
     expect(resultat.statut).toBe('erreur');
     expect(resultat.erreur).toBe(RAISON_ECARTEES_SANS_GROUPES);
@@ -339,7 +339,7 @@ describe('noterScenario', () => {
     const scannerPassePlat: Scanner = async function scannerPassePlat(url) {
       return { ...rapport(url, [anomalie('fonctionnel', `${url}${PAGE_CONTACT}`)]), candidates: [candidate('fonctionnel', `${url}${PAGE_CONTACT}`)], ecartees: [] };
     };
-    const resultat = await noterScenario(F01_M01_FR, { sujet: sujetConstant('test', scannerPassePlat), politique: POLITIQUE_DETERMINISTE, config, dico, obtenirGabarit, iaDeclareeAbsente: true });
+    const resultat = await noterScenario(F01_M01_FR, { sujet: sujetConstant('test', scannerPassePlat), politique: POLITIQUE_DETERMINISTE, config, dico, obtenirGabarit, iaDeclareeAbsente: true, sujetSansRapport: true, detectionLangue: null });
     expect(resultat.statut).toBe('ok');
     expect(resultat.protocole).toMatchObject({ nbCandidates: 1, nbGroupes: 0, nbGroupesEcartes: 0 });
     expect(resultat.attendus.map((attendu) => attendu.verdict)).toEqual(['detecte', 'rate']);
@@ -347,9 +347,9 @@ describe('noterScenario', () => {
 
   it('rend des comptes de protocole à zéro pour un sujet qui n’en a pas, et pour un scénario en erreur', async () => {
     const zero = comptesProtocoleZero();
-    const sansProtocole = await noterScenario(F01_M01_FR, { sujet: sujetConstant('test', scannerControle), politique: POLITIQUE_DETERMINISTE, config, dico, obtenirGabarit, iaDeclareeAbsente: true });
+    const sansProtocole = await noterScenario(F01_M01_FR, { sujet: sujetConstant('test', scannerControle), politique: POLITIQUE_DETERMINISTE, config, dico, obtenirGabarit, iaDeclareeAbsente: true, sujetSansRapport: true, detectionLangue: null });
     expect(sansProtocole.protocole).toEqual(zero);
-    const enErreur = await noterScenario(F01_M01_FR, { sujet: sujetConstant('test', scannerEnPanne), politique: POLITIQUE_DETERMINISTE, config, dico, obtenirGabarit, iaDeclareeAbsente: true });
+    const enErreur = await noterScenario(F01_M01_FR, { sujet: sujetConstant('test', scannerEnPanne), politique: POLITIQUE_DETERMINISTE, config, dico, obtenirGabarit, iaDeclareeAbsente: true, sujetSansRapport: true, detectionLangue: null });
     expect(enErreur.protocole).toEqual(zero);
   });
 
@@ -357,7 +357,7 @@ describe('noterScenario', () => {
     const scannerMalForme: Scanner = async function scannerMalForme(url) {
       return rapport(url, [anomalie('fonctionnel', 'http://')]);
     };
-    const scorecard = await executerBanc({ scenarios: [F01_M01_FR, SAIN_EN], sujet: sujetConstant('test', scannerMalForme), politique: POLITIQUE_DETERMINISTE, config, dico, obtenirGabarit, iaDeclareeAbsente: true });
+    const scorecard = await executerBanc({ scenarios: [F01_M01_FR, SAIN_EN], sujet: sujetConstant('test', scannerMalForme), politique: POLITIQUE_DETERMINISTE, config, dico, obtenirGabarit, iaDeclareeAbsente: true, sujetSansRapport: true, detectionLangue: null });
     expect(scorecard.scenarios).toHaveLength(2);
     expect(scorecard.global).toMatchObject({ nbErreurs: 0, nbFauxPositifs: 2, nbDetectes: 0 });
   });
@@ -368,7 +368,8 @@ describe('executerBanc', () => {
     const lignes: string[] = [];
     const scenarios = [F01_M01_FR, SAIN_EN];
 
-    const scorecard = await executerBanc({ scenarios, sujet: sujetConstant('test', scannerControle), politique: POLITIQUE_DETERMINISTE, config, dico, obtenirGabarit, iaDeclareeAbsente: true, journal: (ligne) => lignes.push(ligne) });
+    const scorecard = await executerBanc({ scenarios, sujet: sujetConstant('test', scannerControle), politique: POLITIQUE_DETERMINISTE, config, dico, obtenirGabarit, iaDeclareeAbsente: true, sujetSansRapport: true,
+      detectionLangue: null, journal: (ligne) => lignes.push(ligne) });
 
     expect(scorecard.scenarios.map((resultat) => resultat.scenarioId)).toEqual(scenarios.map((s) => s.id));
     expect(scorecard.horodatage).toMatch(/^\d{4}-\d{2}-\d{2}T/);
@@ -389,13 +390,14 @@ describe('executerBanc', () => {
 
   it('journalise banc.scenarioErreur pour un scanner en panne et compte l’erreur dans la scorecard', async () => {
     const lignes: string[] = [];
-    const scorecard = await executerBanc({ scenarios: [F01_M01_FR], sujet: sujetConstant('test', scannerEnPanne), politique: POLITIQUE_DETERMINISTE, config, dico, obtenirGabarit, iaDeclareeAbsente: true, journal: (ligne) => lignes.push(ligne) });
+    const scorecard = await executerBanc({ scenarios: [F01_M01_FR], sujet: sujetConstant('test', scannerEnPanne), politique: POLITIQUE_DETERMINISTE, config, dico, obtenirGabarit, iaDeclareeAbsente: true, sujetSansRapport: true,
+      detectionLangue: null, journal: (ligne) => lignes.push(ligne) });
     expect(scorecard.global).toMatchObject({ nbScenarios: 1, nbErreurs: 1, nbAttendus: 2, nbDetectes: 0, nbSignalements: 0, tauxDetection: 0, tauxFauxPositifs: null });
     expect(lignes[2]).toBe(traduire(dico, 'banc.scenarioErreur', { id: F01_M01_FR.id, erreur: 'panne simulée' }));
   });
 
   it('reste silencieux sans journal et accepte une liste vide', async () => {
-    const scorecard = await executerBanc({ scenarios: [], sujet: sujetConstant('test', scannerControle), politique: POLITIQUE_DETERMINISTE, config, dico, obtenirGabarit, iaDeclareeAbsente: true });
+    const scorecard = await executerBanc({ scenarios: [], sujet: sujetConstant('test', scannerControle), politique: POLITIQUE_DETERMINISTE, config, dico, obtenirGabarit, iaDeclareeAbsente: true, sujetSansRapport: true, detectionLangue: null });
     expect(scorecard.global.nbScenarios).toBe(0);
     expect(scorecard.scenarios).toEqual([]);
   });
@@ -460,7 +462,8 @@ describe('noterScenario — navigation sous budget', () => {
       config,
       dico,
       obtenirGabarit,
-      iaDeclareeAbsente: true,
+      iaDeclareeAbsente: true, sujetSansRapport: true,
+      detectionLangue: null,
     });
     expect(resultat.cibles.map((cible) => [cible.attendu.page, cible.atteinte, cible.satisfait])).toEqual([
       ['/devis', true, true],
@@ -478,7 +481,8 @@ describe('noterScenario — navigation sous budget', () => {
       config,
       dico,
       obtenirGabarit,
-      iaDeclareeAbsente: true,
+      iaDeclareeAbsente: true, sujetSansRapport: true,
+      detectionLangue: null,
     });
     expect(resultat.statut).toBe('ok');
     expect(resultat.cibles.every((cible) => cible.satisfait)).toBe(true);
@@ -495,7 +499,8 @@ describe('noterScenario — navigation sous budget', () => {
       config,
       dico,
       obtenirGabarit,
-      iaDeclareeAbsente: true,
+      iaDeclareeAbsente: true, sujetSansRapport: true,
+      detectionLangue: null,
     });
     expect(resultat.statut).toBe('erreur');
     expect(resultat.erreur).toContain(RAISON_POLITIQUE_NON_TRANSMISE);
@@ -509,7 +514,8 @@ describe('noterScenario — navigation sous budget', () => {
       config,
       dico,
       obtenirGabarit,
-      iaDeclareeAbsente: true,
+      iaDeclareeAbsente: true, sujetSansRapport: true,
+      detectionLangue: null,
     });
     expect(resultat.statut).toBe('erreur');
     expect(resultat.erreur).toContain(RAISON_BUDGET_NON_APPLIQUE);
@@ -522,7 +528,8 @@ describe('noterScenario — navigation sous budget', () => {
       config,
       dico,
       obtenirGabarit,
-      iaDeclareeAbsente: true,
+      iaDeclareeAbsente: true, sujetSansRapport: true,
+      detectionLangue: null,
     });
     expect(enIa.nbReplisDecision).toBe(1);
     expect(enIa).toMatchObject({ statut: 'erreur', erreur: RAISON_REPLIS_DECISION });
@@ -533,7 +540,8 @@ describe('noterScenario — navigation sous budget', () => {
       config,
       dico,
       obtenirGabarit,
-      iaDeclareeAbsente: true,
+      iaDeclareeAbsente: true, sujetSansRapport: true,
+      detectionLangue: null,
     });
     expect(enDeterministe.statut).toBe('ok');
   });
@@ -546,7 +554,8 @@ describe('noterScenario — navigation sous budget', () => {
       config,
       dico,
       obtenirGabarit,
-      iaDeclareeAbsente: true,
+      iaDeclareeAbsente: true, sujetSansRapport: true,
+      detectionLangue: null,
     });
     expect(resultat.cibles.every((cible) => cible.nonMesure)).toBe(true);
     expect(resultat.cibles.every((cible) => cible.raisonNonMesure === RAISON_CIBLE_POLITIQUE_NON_APPLIQUEE)).toBe(true);
@@ -567,9 +576,34 @@ describe('noterScenario — navigation sous budget', () => {
       config,
       dico,
       obtenirGabarit,
-      iaDeclareeAbsente: true,
+      iaDeclareeAbsente: true, sujetSansRapport: true,
+      detectionLangue: null,
     });
     expect(recus).toEqual([scenarioNote]);
     expect(recus[0]?.contraintes?.pagesMax).toBe(5);
+  });
+});
+
+/**
+ * LES DEUX ABSENCES DÉCLARÉES, et pourquoi elles ne se confondent pas.
+ *
+ * Cette décision vivait dans `principal()`, que rien n'invoque en test : la
+ * remplacer par une version fautive n'aurait fait échouer aucun test, et aurait
+ * désarmé l'invariant du rapport dans la seule exécution où il mord.
+ */
+describe('absencesDeclarees', () => {
+  it('`--sans-ia` déclare l’absence d’IA, PAS celle du rapport', () => {
+    // Le moteur produit un rapport STRUCTUREL sans clé : c'est la promesse de
+    // la constitution §4, et c'est en `--sans-ia` qu'elle doit être éprouvée.
+    expect(absencesDeclarees('reel', true)).toEqual({ iaDeclareeAbsente: true, sujetSansRapport: false });
+  });
+
+  it('un sujet NON réel déclare les deux : il ne produit ni profil ni rapport', () => {
+    expect(absencesDeclarees('factice', false)).toEqual({ iaDeclareeAbsente: true, sujetSansRapport: true });
+    expect(absencesDeclarees('factice', true)).toEqual({ iaDeclareeAbsente: true, sujetSansRapport: true });
+  });
+
+  it('un run nominal ne déclare AUCUNE absence : toute absence y est subie', () => {
+    expect(absencesDeclarees('reel', false)).toEqual({ iaDeclareeAbsente: false, sujetSansRapport: false });
   });
 });

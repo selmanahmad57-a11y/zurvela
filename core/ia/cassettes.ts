@@ -13,6 +13,7 @@ import type { ConfigProfilage } from '../scanner/config.js';
 import { VERSION } from '../../prompts/profilage/v1.js';
 import { VERSION as VERSION_NAVIGATION } from '../../prompts/navigation/v2.js';
 import { VERSION as VERSION_DIAGNOSTIC } from '../../prompts/diagnostic/v1.js';
+import { VERSION as VERSION_REDACTION } from '../../prompts/redaction/v1.js';
 import { hacherEntree, normaliserUrlPourCle } from './cle.js';
 import {
   DIVERGENCE_GLISSEMENT_ALIAS,
@@ -28,7 +29,9 @@ import {
   type DepotCassettes,
   type DiagnosticEstampille,
   type ModeIa,
+  type ContexteRedaction,
   type ProfilPage,
+  type RedactionEstampillee,
   type ReponseBrute,
   type ResultatIa,
 } from './index.js';
@@ -53,7 +56,15 @@ import {
 import { creerValidateurDecision } from './schema-decision.js';
 import { creerValidateurDiagnostic } from './schema-diagnostic.js';
 import { creerValidateurProfil } from './schema-profil.js';
-import type { ConfigDiagnostic } from '../scanner/config.js';
+import { creerValidateurRedaction } from './schema-redaction.js';
+import { redactionDepuisReponse } from './redaction.js';
+import {
+  bornerContexteRedaction,
+  empreinteContratRapport,
+  entreeCleDepuisRedaction,
+  identifiantsSections,
+} from './contexte-redaction.js';
+import type { ConfigDiagnostic, ConfigRapport } from '../scanner/config.js';
 
 export { normaliserUrlPourCle };
 
@@ -141,6 +152,29 @@ export function cleCassetteDiagnostic(parametres: {
 }): string {
   const { versionPrompt, empreinteContrat, modele, contexte } = parametres;
   return hacherEntree([versionPrompt, empreinteContrat, modele, ...entreeCleDepuisContexteDiagnostic(contexte)]);
+}
+
+/**
+ * Clé d'une cassette de RÉDACTION : hash(version du prompt de rédaction +
+ * empreinte de contrat + ALIAS de modèle + contexte BORNÉ).
+ *
+ * Une cassette PAR RAPPORT, et non par section : un seul appel rédige tout le
+ * rapport, parce qu'une prose écrite section par section perdrait la
+ * cohérence d'ensemble que la synthèse exige.
+ *
+ * La clé porte la LANGUE, par le contexte : le même scan rendu en français et
+ * en anglais sont deux réponses différentes, et ce sont donc deux cassettes.
+ * C'est ce qui permet au scénario croisé (site anglais, rapport français)
+ * d'être rejoué comme les autres.
+ */
+export function cleCassetteRedaction(parametres: {
+  versionPrompt: string;
+  empreinteContrat: string;
+  modele: string;
+  contexte: ContexteRedaction;
+}): string {
+  const { versionPrompt, empreinteContrat, modele, contexte } = parametres;
+  return hacherEntree([versionPrompt, empreinteContrat, modele, ...entreeCleDepuisRedaction(contexte)]);
 }
 
 /** Dépôt sur disque : une cassette par fichier, JSON lisible, committé. */
@@ -251,6 +285,22 @@ export interface OptionsDiagnosticRejeu {
   config: ConfigDiagnostic;
 }
 
+/**
+ * Ce que le rejeu d'une RÉDACTION a besoin de savoir. Champ REQUIS
+ * d'`OptionsRejeu`, pour la raison exacte qui a rendu `decision` requis en 4b
+ * et `diagnostic` requis en 4c.
+ *
+ * Le contrat de la brique est ADDITIF : rien n'obligeait le compilateur à
+ * signaler qu'un client rejouable laissé tel quel appellerait le modèle EN
+ * DIRECT depuis un run normal du banc. Le rendre requis crée le trou que le
+ * typecheck suivra (APPRENTISSAGES n°7).
+ */
+export interface OptionsRedactionRejeu {
+  /** ALIAS du modèle de rédaction (`ia.modeles.redaction`) : il entre dans la clé. */
+  modele: string;
+  config: ConfigRapport;
+}
+
 export interface OptionsRejeu {
   /** true UNIQUEMENT depuis la commande d'enregistrement : c'est le seul mode qui appelle le modèle. */
   enregistrement: boolean;
@@ -261,6 +311,8 @@ export interface OptionsRejeu {
   decision: OptionsDecisionRejeu;
   /** Réglages du rejeu des diagnostics (brique 4c). */
   diagnostic: OptionsDiagnosticRejeu;
+  /** Réglages du rejeu des rédactions (brique 5). */
+  redaction: OptionsRedactionRejeu;
   journaliser?: (type: string, details?: unknown) => void;
   /** Horloge injectable : la date d'enregistrement est une métadonnée, pas un comportement. */
   maintenant?: () => Date;
@@ -283,13 +335,14 @@ export function clientRejouable(
   depot: DepotCassettes,
   options: OptionsRejeu,
 ): ClientIa {
-  const { enregistrement, modele, profilage, decision, diagnostic } = options;
+  const { enregistrement, modele, profilage, decision, diagnostic, redaction } = options;
   const journaliser = options.journaliser ?? (() => undefined);
   const maintenant = options.maintenant ?? (() => new Date());
   const validateur = creerValidateurProfil(profilage);
   const empreinteContrat = empreinteContratProfilage(profilage);
   const empreinteNavigation = empreinteContratNavigation(decision.config);
   const empreinteDiagnostic = empreinteContratDiagnostic(diagnostic.config);
+  const empreinteRedaction = empreinteContratRapport(redaction.config);
   const validateurDiagnostic = creerValidateurDiagnostic();
 
   const enProfil = (cassette: Cassette): ResultatIa<ProfilPage> =>
@@ -402,7 +455,52 @@ export function clientRejouable(
   return {
     mode,
     raisonDegrade,
-    rediger: client.rediger.bind(client),
+
+    /**
+     * Une cassette PAR RAPPORT — et la MÊME GARDE RÉSEAU que les trois autres
+     * capacités.
+     *
+     * Jusqu'à cette brique, `rediger` était un passe-plat vers le client
+     * décoré (`client.rediger.bind(client)`), sans conséquence tant qu'aucun
+     * client ne savait rédiger. C'est le trou EXACT que la brique 4c a trouvé
+     * et refermé sur `diagnostiquer`, à un caractère près : le laisser aurait
+     * ouvert, le jour où un client a su, un chemin d'appel RÉSEAU depuis un
+     * run normal du banc — l'instrument aurait cessé d'être déterministe sans
+     * qu'aucune cassette ne manque, et sans qu'une seule ligne du banc ne
+     * change.
+     *
+     * Le validateur est construit sur l'énumération DU MOMENT, comme celui
+     * d'une décision : une réponse figée dont les identifiants de section ne
+     * correspondent plus au rapport courant est rejetée au rejeu comme elle
+     * l'aurait été à chaud.
+     */
+    rediger: (contexte: ContexteRedaction) => {
+      const contexteBorne = bornerContexteRedaction(contexte, redaction.config);
+      const validateurRedaction = creerValidateurRedaction(identifiantsSections(contexteBorne));
+      return rejouer<RedactionEstampillee>({
+        cle: cleCassetteRedaction({
+          versionPrompt: VERSION_REDACTION,
+          empreinteContrat: empreinteRedaction,
+          modele: redaction.modele,
+          contexte: contexteBorne,
+        }),
+        modele: redaction.modele,
+        versionPrompt: VERSION_REDACTION,
+        enValeur: (cassette) =>
+          redactionDepuisReponse({
+            texte: cassette.reponse,
+            validateur: validateurRedaction,
+            // Les DEUX modèles sont rejoués depuis la cassette : une prose
+            // rejouée doit dire quel modèle l'a réellement écrite, pas celui
+            // que la config demande aujourd'hui.
+            modeleDemande: cassette.metadonnees.modeleDemande,
+            modeleServi: cassette.metadonnees.modeleServi,
+            apresRelance: cassette.metadonnees.apresRelance,
+            coutApi: cassette.metadonnees.coutApi,
+          }),
+        appelerBrut: () => client.redigerBrut(contexteBorne),
+      });
+    },
 
     /**
      * Une cassette PAR DIAGNOSTIC — et surtout, la MÊME GARDE RÉSEAU que les

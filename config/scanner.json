@@ -189,6 +189,7 @@
   "ia": {
     "variableCle": "ANTHROPIC_API_KEY",
     "variableWorkspace": "ANTHROPIC_WORKSPACE_ID",
+    "reessaisReseauMax": 2,
     "modeles": {
       "profilage": "claude-haiku-4-5",
       "navigation": "claude-haiku-4-5",

@@ -29,7 +29,13 @@ import {
   type TarifsIa,
 } from '../core/ia/index.js';
 import { chargerConfigNavigation } from '../core/ia/config-navigation.js';
-import { chargerConfigDiagnostic, chargerConfigProfilage, chargerConfigScanner, type ConfigScanner } from '../core/scanner/config.js';
+import {
+  chargerConfigDiagnostic,
+  chargerConfigProfilage,
+  chargerConfigRapport,
+  chargerConfigScanner,
+  type ConfigScanner,
+} from '../core/scanner/config.js';
 
 /** Dossier des cassettes, COMMITÉES : une réponse figée a un auteur, une date et un hash. */
 export const DOSSIER_CASSETTES = depuisRacine('banc', 'cassettes');
@@ -73,10 +79,11 @@ export function tarifsConfigures(ia: ConfigScanner['ia']): TarifsIa {
  */
 export async function creerClientIaBanc(options: OptionsIaBanc): Promise<{ client: ClientIa; modele: string }> {
   const { regime } = options;
-  const [config, profilage, configDiagnostic] = await Promise.all([
+  const [config, profilage, configDiagnostic, configRapport] = await Promise.all([
     chargerConfigScanner(),
     chargerConfigProfilage(),
     chargerConfigDiagnostic(),
+    chargerConfigRapport(),
   ]);
   const modele = config.ia.modeles.profilage;
   // Les réglages de DÉCISION : le budget de l'appel (`config/navigation.json`)
@@ -90,6 +97,11 @@ export async function creerClientIaBanc(options: OptionsIaBanc): Promise<{ clien
   // rejeu du corpus déterministe, et ce qui fait qu'un desserrage de borne
   // invalide les cassettes au lieu de les rejouer sous une autre politique.
   const diagnostic = { modele: config.ia.modeles.diagnostic, config: configDiagnostic };
+  // Les réglages de la RÉDACTION entrent dans la clé de cassette par
+  // l'empreinte de son contrat, exactement comme les deux précédents. La
+  // LANGUE, elle, n'y entre pas par la config mais par le contexte : c'est le
+  // scénario qui la demande, et deux langues sont deux cassettes.
+  const redaction = { modele: config.ia.modeles.redaction, config: configRapport };
 
   if (regime === 'sans-ia') {
     return { client: creerClientSansCapacite(RAISON_BANC_SANS_IA), modele };
@@ -101,6 +113,7 @@ export async function creerClientIaBanc(options: OptionsIaBanc): Promise<{ clien
       profilage,
       navigation,
       diagnostic: configDiagnostic,
+      rapport: configRapport,
       tarifs: tarifsConfigures(config.ia),
       ...(options.env === undefined ? {} : { env: options.env }),
     });
@@ -124,6 +137,7 @@ export async function creerClientIaBanc(options: OptionsIaBanc): Promise<{ clien
         profilage,
         decision,
         diagnostic,
+        redaction,
         ...(options.journaliser === undefined ? {} : { journaliser: options.journaliser }),
       },
     ),

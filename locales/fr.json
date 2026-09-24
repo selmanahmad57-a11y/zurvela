@@ -59,7 +59,14 @@
       "coutProfilage": "Coût profilage (USD)",
       "coutDecisions": "Coût décisions (USD)",
       "inertiesParcours": "Inerties de parcours",
-      "replisDecision": "Replis subis"
+      "replisDecision": "Replis subis",
+      "rapportsConformes": "Rapports justes",
+      "inertiesRapport": "Inerties de rédaction tenues",
+      "rapportsNonMesures": "Non mesurés",
+      "rapportsSansProse": "Sans prose",
+      "couvertureRedaction": "Couverture de rédaction",
+      "coutRedaction": "Coût rédaction",
+      "rapportsSansSection": "Sans anomalie à décrire"
     },
     "nonApplicable": "—",
     "syntheseProtocole": "Avant/après protocole : {{candidates}} candidate(s) → {{groupes}} groupe(s) de cause racine → {{retenues}} retenu(s), {{ecartees}} écarté(s) — {{evitees}} fausse(s) alerte(s) évitée(s), {{perdues}} anomalie(s) réelle(s) perdue(s), {{nonApparies}} groupe(s) écarté(s) non apparié(s) au manifeste, sur {{scenarios}} scénario(s)",
@@ -78,7 +85,14 @@
     "syntheseCibles": "Cibles ({{politique}}) : {{conformes}}/{{mesurees}} attendu(s) conforme(s) — {{atteintes}}/{{mesureesAuParcours}} cible(s) attendue(s) au parcours effectivement atteinte(s), {{horsParcours}}/{{mesureesHorsParcours}} attendue(s) hors parcours effectivement restée(s) dehors ; inerties de parcours sous charge : {{inertiesTenues}}/{{inertiesMesurees}} tenue(s) ; {{nonMesurees}} non mesurée(s)",
     "jumellePolitique": "↔ Jumelle {{politique}} (non exécutée dans ce run) : {{attenduesAtteintes}} cible(s) attendue(s) au parcours, {{attenduesHorsParcours}} attendue(s) HORS parcours — une cible qu'une politique n'atteint pas sous budget est un attendu SATISFAIT, pas un raté : c'est le prix affiché de la gratuité. {{nonMesurees}} non mesurée(s) ici.",
     "ciblesNonMesurees": "ⓘ {{nonMesurees}} cible(s) NON MESURÉE(S) pour la politique exécutée (pas de parcours, politique non appliquée, ou attendu muet sur cette politique) : ni créditées, ni imputées",
-    "syntheseCoutEfficacite": "Coût et efficacité ({{politique}}) : {{cout}} au total, dont {{coutDecisions}} de décisions de navigation, {{coutParScan}} par scan — achetés contre une efficacité de parcours de {{efficacite}} ({{pagesUtiles}} page(s) utile(s) sur {{pagesVisitees}} visitée(s)) ; {{sansPageUtile}} scénario(s) sans page utile déclarée, hors du calcul ; {{replis}} repli(s) par décision subi(s)"
+    "syntheseCoutEfficacite": "Coût et efficacité ({{politique}}) : {{cout}} au total, dont {{coutDecisions}} de décisions de navigation, {{coutParScan}} par scan — achetés contre une efficacité de parcours de {{efficacite}} ({{pagesUtiles}} page(s) utile(s) sur {{pagesVisitees}} visitée(s)) ; {{sansPageUtile}} scénario(s) sans page utile déclarée, hors du calcul ; {{replis}} repli(s) par décision subi(s)",
+    "rapports": "Rapports business (structure, statuts, langue) — famille distincte de la détection",
+    "syntheseRapports": "Rapports : {{rapportsConformes}}/{{rapportsMesures}} justes, {{inertiesTenues}}/{{inertiesMesurees}} inertie(s) de rédaction tenue(s), {{sectionsRedigees}}/{{sections}} section(s) rédigée(s) pour {{cout}} de rédaction",
+    "rapportsNonMesures": "⚠ {{nonMesures}} attendu(s) de rapport NON MESURÉ(S) — absence SUBIE : soit le moteur n'a produit aucun rapport (il en produit un STRUCTUREL même sans IA, donc son absence est un défaut), soit une épreuve de désobéissance n'avait AUCUNE section à rédiger — la charge n'est jamais parvenue au rédacteur, et une épreuve sans charge n'est pas une épreuve tenue",
+    "rapportsNonMesuresDeclares": "ⓘ {{nonMesures}} attendu(s) de rapport NON MESURÉ(S) — absence DÉCLARÉE (sujet sans capacité de rapport) : ce n’est ni une réussite ni un échec",
+    "rapportsSansProse": "⚠ {{sansProse}} rapport(s) sur {{mesures}} avaient des sections à rédiger et n'ont AUCUNE prose : la rédaction a échoué là où elle devait s'exercer",
+    "rapportsSansProseDeclares": "ⓘ {{sansProse}} rapport(s) sur {{mesures}} avaient des sections à rédiger et sont restés STRUCTURELS — absence DÉCLARÉE (`--sans-ia` ou sujet sans capacité IA) : ces rapports sont justes, mais aucune rédaction n’a été mesurée sur ce run",
+    "rapportsSansSection": "ⓘ {{sansSection}} rapport(s) sur {{mesures}} sans aucune anomalie à décrire : la rédaction n’y a pas été éprouvée, et aucun appel n’a été payé — c’est le bon comportement sur un site sain, mais la couverture ne porte donc pas sur tout le périmètre"
   },
   "serveur": {
     "usage": "Usage : pnpm banc:servir --scenario <id>",
@@ -97,7 +111,8 @@
     "provenanceSuspecte": "ATTENTION : sur TOUTES les cassettes, le modèle servi est identique au modèle demandé. Un alias se résout normalement vers une forme datée : c'est le symptôme d'une recopie de l'alias, pas d'une coïncidence — une estampille que rien ne distingue de sa voisine n'estampille rien.",
     "sansCapacite": "ÉCHEC : le client IA est en mode dégradé ({{raison}}) — aucun appel n'aura lieu et aucune cassette de décision ne sera écrite. L'enregistrement s'arrête plutôt que de rejouer les cassettes existantes et de sortir en succès sur un parc incomplet.",
     "politiqueNonAppliquee": "ÉCHEC : la politique « {{demandee}} » a été demandée mais le moteur en a appliqué une autre sur : {{scenarios}} — le parc enregistré ne couvre pas la politique annoncée",
-    "scenariosEnErreur": "ÉCHEC : {{nombre}} scénario(s) en erreur pendant l'enregistrement : {{scenarios}} — le parc est incomplet"
+    "scenariosEnErreur": "ÉCHEC : {{nombre}} scénario(s) en erreur pendant l'enregistrement : {{scenarios}} — le parc est incomplet",
+    "redactionIncomplete": "⚠ {{sansProse}} rapport(s) sur {{total}} publié(s) SANS PROSE alors qu'ils avaient des sections à rédiger : le parc de cassettes de RÉDACTION est incomplet — la scorecard afficherait des rapports « justes » sans avoir mesuré une seule rédaction"
   },
   "varianceIa": {
     "usage": "Usage : pnpm banc:variance-ia [--mesure profil|decision] --scenario <id> [--scenario <id>…] [--appels <N>] | --mesure diagnostic [--cas <id>…] [--appels <N>]",
@@ -122,5 +137,11 @@
     "termine": "Corpus : {{corrects}}/{{total}} avis corrects sur {{mesures}} cas mesuré(s) — coût total {{cout}}",
     "incomplet": "ÉCHEC : {{nombre}} cas sur {{total}} n'ont produit aucun avis — le parc de cassettes est incomplet, l'absence de donnée n'est pas un résultat",
     "desaccord": "ÉCHEC : {{nombre}} avis ne correspondent pas à l'attendu du corpus : {{cas}} — ce n'est PAS un parc incomplet, c'est un désaccord du modèle"
+  },
+  "rapportExemple": {
+    "usage": "Usage : pnpm rapport:exemple --scenario <id> [--politique deterministe|ia] [--sortie <fichier>] [--sans-ia]",
+    "absent": "Aucun rapport business produit pour {{scenario}} ({{erreur}}) — le scan n’a pas abouti.",
+    "ecrit": "Rapport écrit : {{fichier}}",
+    "statut": "[{{scenario}}] statut {{statut}} · politique {{politique}} · langue {{langue}} · {{sections}} section(s) · sans prose : {{sansProse}}"
   }
 }

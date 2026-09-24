@@ -69,7 +69,7 @@ describe('sujet factice', () => {
     ];
     const lignes: string[] = [];
 
-    const scorecard = await executerBanc({ scenarios, sujet: sujetConstant('factice', SUJETS.factice), politique: POLITIQUE_DETERMINISTE, config, dico, obtenirGabarit, iaDeclareeAbsente: true, journal: (ligne) => lignes.push(ligne) });
+    const scorecard = await executerBanc({ scenarios, sujet: sujetConstant('factice', SUJETS.factice), politique: POLITIQUE_DETERMINISTE, config, dico, obtenirGabarit, iaDeclareeAbsente: true, sujetSansRapport: true, detectionLangue: null, journal: (ligne) => lignes.push(ligne) });
 
     expect(lignes[0]).toBe(traduire(dico, 'banc.demarrage', { nombre: 2, scanner: 'factice', politique: POLITIQUE_DETERMINISTE }));
     expect(scorecard.global).toMatchObject({

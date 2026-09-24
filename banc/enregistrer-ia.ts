@@ -28,6 +28,7 @@ import { chargerDictionnaire, traduire, type Dictionnaire } from '../core/i18n.j
 import type { Cassette } from '../core/ia/index.js';
 import { chargerConfigScanner } from '../core/scanner/config.js';
 import { chargerConfig } from './config.js';
+import { chargerDetectionLangue } from './correcteur/langue-prose.js';
 import { executerBanc } from './correcteur/index.js';
 import { creerSujet } from './correcteur/sujets.js';
 import { obtenirGabarit } from './gabarits/index.js';
@@ -147,7 +148,13 @@ async function principal(): Promise<void> {
 
   const avant = new Set((await lireCassettes(DOSSIER_CASSETTES)).map((c) => c.cle));
   const sujet = await creerSujet(config.scan.sujetParDefaut, client, { politique });
-  const scorecard = await executerBanc({ scenarios, sujet, politique, config, dico, obtenirGabarit, journal: console.log });
+  // La table de détection de langue est chargée ICI AUSSI, et ce n'est pas une
+  // redite : c'est la SEULE exécution où le modèle écrit réellement la prose.
+  // Quand le paramètre était optionnel, ce chemin ne le passait pas, et le
+  // contrôle de la langue de la prose y était donc inexistant — absent au seul
+  // endroit où il y avait quelque chose à contrôler.
+  const detectionLangue = await chargerDetectionLangue();
+  const scorecard = await executerBanc({ scenarios, sujet, politique, config, dico, obtenirGabarit, detectionLangue, journal: console.log });
   const cassettes = await lireCassettes(DOSSIER_CASSETTES);
   // La DÉPENSE de cette exécution est la somme des cassettes réellement
   // ÉCRITES, pas l'agrégat de la scorecard : dès qu'une clé existe déjà, le
@@ -209,6 +216,28 @@ async function principal(): Promise<void> {
     );
     process.exitCode = 1;
   }
+  // LE PARC DE RÉDACTION. Un rapport publié SANS PROSE alors qu'il avait des
+  // sections à écrire est une cassette de rédaction manquante ou refusée — et
+  // la scorecard le compterait « 100 % de rapports conformes » en toute
+  // sincérité, puisque la structure, elle, est juste. C'est exactement l'angle
+  // mort de l'apprentissage n°4 : une mesure devenue aveugle doit le DIRE.
+  //
+  // Les rapports SANS SECTION en sont exclus : un site sain n'a rien à faire
+  // rédiger, et aucune cassette ne lui manque.
+  const rapportsAEcrire = scorecard.scenarios
+    .flatMap((scenario) => scenario.rapports)
+    .filter((resultat) => !resultat.nonMesure && resultat.nbSections > 0);
+  const sansProse = rapportsAEcrire.filter((resultat) => resultat.sansProse);
+  if (sansProse.length > 0) {
+    console.error(
+      traduire(dico, 'enregistrerIa.redactionIncomplete', {
+        sansProse: sansProse.length,
+        total: rapportsAEcrire.length,
+      }),
+    );
+    process.exitCode = 1;
+  }
+
   if (scorecard.global.nbErreurs > 0) {
     console.error(
       traduire(dico, 'enregistrerIa.scenariosEnErreur', {

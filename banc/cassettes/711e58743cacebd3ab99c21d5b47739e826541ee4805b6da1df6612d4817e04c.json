@@ -1,0 +1,12 @@
+{
+  "cle": "711e58743cacebd3ab99c21d5b47739e826541ee4805b6da1df6612d4817e04c",
+  "metadonnees": {
+    "date": "2026-09-24T17:42:00.314Z",
+    "modeleDemande": "claude-haiku-4-5",
+    "modeleServi": "claude-haiku-4-5-20251001",
+    "versionPrompt": "v2",
+    "coutApi": 0.001977,
+    "apresRelance": false
+  },
+  "reponse": "{\"actionId\":\"c2\",\"raison\":\"Le formulaire de devis a déjà été soumis. L'action c2 vers la page Contact permet de tester un autre chemin d'interaction client important. c3 terminerait prématurément l'exploration avec un budget encore disponible.\"}"
+}

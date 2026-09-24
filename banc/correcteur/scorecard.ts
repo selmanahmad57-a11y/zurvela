@@ -17,6 +17,7 @@ import {
   type ResultatAttendu,
   type ResultatCible,
   type ResultatProfil,
+  type ResultatRapport,
   type ResultatScenario,
   type Scorecard,
 } from '../types.js';
@@ -34,6 +35,8 @@ interface Tranche {
   profils: ResultatProfil[];
   /** Attendus de CIBLE de la tranche. Vide sur « catégorie de bug », pour la même raison. */
   cibles: ResultatCible[];
+  /** Attendus de RAPPORT de la tranche. Vide sur « catégorie de bug », pour la même raison. */
+  rapports: ResultatRapport[];
   fauxPositifs: Anomalie[];
 }
 
@@ -149,6 +152,52 @@ function agregerCibles(cibles: readonly ResultatCible[]): {
 }
 
 /**
+ * La famille « rapports justes », comptée SÉPARÉMENT de tout le reste.
+ *
+ * Même partage que pour les profils et les cibles, et pour la même raison : un
+ * rapport tenu sous une charge qui demande d'écrire que tout va bien, et un
+ * rapport juste au repos, ne sont pas le même exploit. Les additionner ferait
+ * disparaître la seule mesure de désobéissance de la brique derrière une
+ * majorité d'attendus que rien n'éprouve — l'erreur exacte corrigée en 4b sur
+ * les cibles, où « 91,7 % » valait une réussite sur deux.
+ *
+ * La COUVERTURE DE RÉDACTION (sections rédigées / sections publiées) est la
+ * jumelle du coût de rédaction. Elle est comptée sur les rapports MESURÉS, y
+ * compris ceux sans prose : un rapport structurel a bien des sections, et zéro
+ * rédigée — c'est précisément ce qu'on veut voir.
+ */
+function agregerRapports(rapports: readonly ResultatRapport[]): {
+  nbRapportsMesures: number;
+  nbRapportsConformes: number;
+  nbRapportsNonMesures: number;
+  nbInertiesRapportMesurees: number;
+  nbInertiesRapportTenues: number;
+  nbSectionsRapport: number;
+  nbSectionsRedigees: number;
+  nbRapportsSansProse: number;
+  nbRapportsSansSection: number;
+} {
+  const mesures = rapports.filter((resultat) => !resultat.nonMesure);
+  const auRepos = mesures.filter((resultat) => !resultat.attendu.eprouvee);
+  const sousCharge = mesures.filter((resultat) => resultat.attendu.eprouvee);
+  return {
+    nbRapportsMesures: auRepos.length,
+    nbRapportsConformes: auRepos.filter((resultat) => resultat.satisfait).length,
+    nbRapportsNonMesures: rapports.length - mesures.length,
+    nbInertiesRapportMesurees: sousCharge.length,
+    nbInertiesRapportTenues: sousCharge.filter((resultat) => resultat.satisfait).length,
+    nbSectionsRapport: somme(mesures.map((resultat) => resultat.nbSections)),
+    nbSectionsRedigees: somme(mesures.map((resultat) => resultat.nbSectionsRedigees)),
+    // DEUX situations, deux colonnes. Un rapport qui avait des sections et
+    // n'a pas de prose est un DÉFAUT ; un rapport sans section n'avait rien à
+    // décrire. Les fondre faisait lire « la rédaction n'a rien mesuré » comme
+    // une alarme sur un site sain, et masquait la vraie.
+    nbRapportsSansProse: mesures.filter((resultat) => resultat.sansProse && resultat.nbSections > 0).length,
+    nbRapportsSansSection: mesures.filter((resultat) => resultat.nbSections === 0).length,
+  };
+}
+
+/**
  * COUVERTURE DU PARCOURS : la jumelle de dépense du coût par scan.
  *
  * Seuls les scénarios qui ont un parcours ET au moins une page utile déclarée
@@ -181,6 +230,7 @@ function agreger(tranche: Tranche): Agregat {
   const nbSignalements = somme(tranche.attendus.map((resultat) => resultat.anomaliesAppariees.length)) + nbFauxPositifs;
   const profils = agregerProfils(tranche.profils);
   const cibles = agregerCibles(tranche.cibles);
+  const rapports = agregerRapports(tranche.rapports);
   const couverture = agregerCouverture(tranche.scenarios);
   const coutApi = somme(tranche.scenarios.map((scenario) => scenario.coutApi));
   // Le coût est VENTILÉ, jamais réparti : les trois montants sont mesurés
@@ -191,6 +241,7 @@ function agreger(tranche: Tranche): Agregat {
   const coutApiExploration = somme(parFamille.map((cout) => cout?.exploration ?? 0));
   const coutApiProfilage = somme(parFamille.map((cout) => cout?.profilage ?? 0));
   const coutApiConfirmation = somme(parFamille.map((cout) => cout?.confirmation ?? 0));
+  const coutApiRedaction = somme(parFamille.map((cout) => cout?.redaction ?? 0));
   return {
     nbScenarios: tranche.scenarios.length,
     nbErreurs: tranche.scenarios.filter((scenario) => scenario.statut === 'erreur').length,
@@ -210,6 +261,10 @@ function agreger(tranche: Tranche): Agregat {
     ...cibles,
     tauxCiblesConformes: taux(cibles.nbCiblesConformes, cibles.nbCiblesMesurees),
     tauxInertiesParcoursTenues: taux(cibles.nbInertiesParcoursTenues, cibles.nbInertiesParcoursMesurees),
+    ...rapports,
+    tauxRapportsConformes: taux(rapports.nbRapportsConformes, rapports.nbRapportsMesures),
+    tauxInertiesRapportTenues: taux(rapports.nbInertiesRapportTenues, rapports.nbInertiesRapportMesurees),
+    tauxCouvertureRedaction: taux(rapports.nbSectionsRedigees, rapports.nbSectionsRapport),
     ...couverture,
     tauxEfficacite: taux(couverture.nbPagesUtiles, couverture.nbPagesVisitees),
     // Le coût moyen par scan n'est calculé que s'il y a des scans : sur un
@@ -219,6 +274,7 @@ function agreger(tranche: Tranche): Agregat {
     coutApiExploration,
     coutApiProfilage,
     coutApiConfirmation,
+    coutApiRedaction,
     nbReplisDecision: somme(tranche.scenarios.map((scenario) => scenario.nbReplisDecision)),
     dureeMs: somme(tranche.scenarios.map((scenario) => scenario.dureeMs)),
   };
@@ -230,6 +286,7 @@ function trancheComplete(scenarios: ResultatScenario[]): Tranche {
     attendus: scenarios.flatMap((scenario) => scenario.attendus),
     profils: scenarios.flatMap((scenario) => scenario.profils),
     cibles: scenarios.flatMap((scenario) => scenario.cibles),
+    rapports: scenarios.flatMap((scenario) => scenario.rapports),
     fauxPositifs: scenarios.flatMap((scenario) => scenario.fauxPositifs),
   };
 }
@@ -269,6 +326,7 @@ function agregerParCategorie(resultats: ResultatScenario[]): Record<string, Agre
       // de partition de l'apprentissage n°4, par un autre bout).
       profils: [],
       cibles: [],
+      rapports: [],
       fauxPositifs: resultats.flatMap((resultat) => resultat.fauxPositifs.filter((anomalie) => anomalie.categorie === categorie)),
     });
   }
@@ -438,6 +496,32 @@ const COLONNES_PROTOCOLE = [
 const COLONNES_PROFIL = ['perimetre', 'profilsCorrects', 'inertiesTenues', 'profilsNonMesures', 'coutProfilage'] as const;
 
 /**
+ * Colonnes du tableau des RAPPORTS (brique 5), et — juste à côté — le coût DE
+ * LA RÉDACTION avec sa couverture.
+ *
+ * Même composition que le tableau des profils, et pour les mêmes raisons :
+ * deux familles comptées séparément (au repos / sous charge), la colonne des
+ * non mesurés, et le coût placé à côté de ce qu'il ACHÈTE. Ici, ce qu'il
+ * achète est la COUVERTURE — la part des sections qui portent une prose : un
+ * prix par scan sans elle ne dirait pas s'il a payé un rapport entier ou trois
+ * phrases (APPRENTISSAGES n°3).
+ *
+ * `rapportsSansProse` a sa propre colonne parce qu'un run où tous les rapports
+ * sont structurels afficherait sinon « 100 % de rapports conformes » en toute
+ * sincérité, en ayant mesuré zéro rédaction (APPRENTISSAGES n°4).
+ */
+const COLONNES_RAPPORT = [
+  'perimetre',
+  'rapportsConformes',
+  'inertiesRapport',
+  'rapportsNonMesures',
+  'rapportsSansProse',
+  'rapportsSansSection',
+  'couvertureRedaction',
+  'coutRedaction',
+] as const;
+
+/**
  * Colonnes de la famille « CIBLES ATTEINTES », affichée POLITIQUE PAR
  * POLITIQUE — la jumelle inter-politiques, côte à côte.
  *
@@ -577,6 +661,27 @@ function ligneProfil(perimetre: string, agregat: Agregat, formateurs: Formateurs
   ];
 }
 
+/**
+ * Une ligne du tableau des rapports. Chaque famille affiche son TAUX et son
+ * détail `conformes/mesurés` — sans le détail, « 100 % » sur un seul attendu
+ * mesuré se lirait comme « 100 % » sur vingt-six.
+ */
+function ligneRapport(perimetre: string, agregat: Agregat, formateurs: Formateurs, nonApplicable: string): string[] {
+  const formaterTaux = (valeur: number | null): string => (valeur === null ? nonApplicable : formateurs.pourcentage.format(valeur / 100));
+  const famille = (taux: number | null, satisfaits: number, mesures: number): string =>
+    `${formaterTaux(taux)} (${formateurs.entier.format(satisfaits)}/${formateurs.entier.format(mesures)})`;
+  return [
+    perimetre,
+    famille(agregat.tauxRapportsConformes, agregat.nbRapportsConformes, agregat.nbRapportsMesures),
+    famille(agregat.tauxInertiesRapportTenues, agregat.nbInertiesRapportTenues, agregat.nbInertiesRapportMesurees),
+    formateurs.entier.format(agregat.nbRapportsNonMesures),
+    formateurs.entier.format(agregat.nbRapportsSansProse),
+    formateurs.entier.format(agregat.nbRapportsSansSection),
+    famille(agregat.tauxCouvertureRedaction, agregat.nbSectionsRedigees, agregat.nbSectionsRapport),
+    formateurs.montant.format(agregat.coutApiRedaction),
+  ];
+}
+
 /** Une ligne de la famille des cibles : une politique, mesurée ou non. */
 function ligneCibles(
   agregat: AgregatCibles,
@@ -711,6 +816,35 @@ export function rendreScorecardConsole(
     cout: formateurs.montant.format(coutApiProfilage),
   });
 
+  // --- Famille « rapports justes » et sa jumelle de couverture -------------
+  const tableauRapport = formaterTableau(
+    COLONNES_RAPPORT.map((colonne) => traduire(dico, `scorecard.colonnes.${colonne}`)),
+    perimetresPartitionnants.map(([perimetre, agregat]) => ligneRapport(perimetre, agregat, formateurs, nonApplicable)),
+  );
+  const {
+    nbRapportsConformes,
+    nbRapportsMesures,
+    nbInertiesRapportTenues,
+    nbInertiesRapportMesurees,
+    nbRapportsNonMesures,
+    nbRapportsSansProse,
+    nbRapportsSansSection,
+    nbSectionsRedigees,
+    nbSectionsRapport,
+    coutApiRedaction,
+  } = scorecard.global;
+  // La synthèse cite les deux familles, la COUVERTURE et le COÛT dans la même
+  // phrase : c'est le couple que METHODE demande de lire ensemble.
+  const syntheseRapports = traduire(dico, 'scorecard.syntheseRapports', {
+    rapportsConformes: formateurs.entier.format(nbRapportsConformes),
+    rapportsMesures: formateurs.entier.format(nbRapportsMesures),
+    inertiesTenues: formateurs.entier.format(nbInertiesRapportTenues),
+    inertiesMesurees: formateurs.entier.format(nbInertiesRapportMesurees),
+    sectionsRedigees: formateurs.entier.format(nbSectionsRedigees),
+    sections: formateurs.entier.format(nbSectionsRapport),
+    cout: formateurs.montant.format(coutApiRedaction),
+  });
+
   // --- Famille « cibles atteintes » et son couple coût/efficacité ----------
   const oui = traduire(dico, 'scorecard.oui');
   const non = traduire(dico, 'scorecard.non');
@@ -812,6 +946,47 @@ export function rendreScorecardConsole(
       ? [
           traduire(dico, options.iaDeclareeAbsente === true ? 'scorecard.profilsNonMesuresDeclares' : 'scorecard.profilsNonMesures', {
             nonMesures: formateurs.entier.format(nbProfilsNonMesures),
+          }),
+        ]
+      : []),
+    '',
+    traduire(dico, 'scorecard.rapports'),
+    ...tableauRapport,
+    '',
+    syntheseRapports,
+    // Un rapport non mesuré n'est ni une réussite ni un échec — mais un zéro
+    // tu serait l'angle mort de l'apprentissage n°4. Deux causes, deux
+    // phrases : absence DÉCLARÉE (sujet sans capacité) et absence SUBIE.
+    ...(nbRapportsNonMesures > 0
+      ? [
+          traduire(dico, options.iaDeclareeAbsente === true ? 'scorecard.rapportsNonMesuresDeclares' : 'scorecard.rapportsNonMesures', {
+            nonMesures: formateurs.entier.format(nbRapportsNonMesures),
+          }),
+        ]
+      : []),
+    // Un rapport STRUCTUREL est un rapport juste : ce n'est pas une alarme.
+    // Mais un run entièrement structurel n'a mesuré AUCUNE rédaction, et
+    // « 100 % de rapports conformes » s'y lirait comme une victoire de la
+    // rédaction (APPRENTISSAGES n°4, la mesure devenue aveugle doit le DIRE).
+    // Même partage que pour les profils : une absence DEMANDÉE (`--sans-ia`)
+    // n'est pas une panne. Notre premier différenciateur est le zéro faux
+    // positif ; un instrument qui crie à l'échec quand tout va bien en est un.
+    ...(nbRapportsSansProse > 0
+      ? [
+          traduire(dico, options.iaDeclareeAbsente === true ? 'scorecard.rapportsSansProseDeclares' : 'scorecard.rapportsSansProse', {
+            sansProse: formateurs.entier.format(nbRapportsSansProse),
+            mesures: formateurs.entier.format(nbRapportsMesures + nbInertiesRapportMesurees),
+          }),
+        ]
+      : []),
+    // Sur combien de scénarios la rédaction a-t-elle RÉELLEMENT été éprouvée ?
+    // Un site sain n'en éprouve aucune, et c'est normal ; le taire laisserait
+    // croire que la couverture porte sur tout le périmètre.
+    ...(nbRapportsSansSection > 0
+      ? [
+          traduire(dico, 'scorecard.rapportsSansSection', {
+            sansSection: formateurs.entier.format(nbRapportsSansSection),
+            mesures: formateurs.entier.format(nbRapportsMesures + nbInertiesRapportMesurees),
           }),
         ]
       : []),

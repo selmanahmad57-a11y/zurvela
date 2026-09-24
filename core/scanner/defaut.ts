@@ -16,6 +16,7 @@ import {
   chargerActionsInterdites,
   chargerConfigDiagnostic,
   chargerConfigProfilage,
+  chargerConfigRapport,
   chargerConfigScanner,
   type ActionsInterdites,
   type ConfigScanner,
@@ -196,11 +197,12 @@ function appliquerSurcharges(config: ConfigScanner, surcharges: OptionsAssemblag
 }
 
 export async function creerScannerParDefaut(options: OptionsAssemblage = {}): Promise<Scanner> {
-  const [configChargee, actionsInterdites, configProfilage, configDiagnostic] = await Promise.all([
+  const [configChargee, actionsInterdites, configProfilage, configDiagnostic, configRapport] = await Promise.all([
     chargerConfigScanner(),
     chargerActionsInterdites(),
     chargerConfigProfilage(),
     chargerConfigDiagnostic(),
+    chargerConfigRapport(),
   ]);
   const config = appliquerSurcharges(configChargee, options.exploration);
   const ia = options.ia ?? creerClientIa(config.ia);
@@ -230,5 +232,9 @@ export async function creerScannerParDefaut(options: OptionsAssemblage = {}): Pr
     // qui décide s'il peut répondre. Un scan sans clé n'a donc pas de profil,
     // mais il a une raison au journal (constitution §4, cahier §1).
     profilage: { config: configProfilage, modele: config.ia.modeles.profilage },
+    // Le rapport business est TOUJOURS assemblé, comme le profilage : c'est le
+    // client IA, et lui seul, qui décide si la prose peut être écrite. Un scan
+    // sans clé rend donc un rapport STRUCTUREL, et le journal dit pourquoi.
+    rapport: configRapport,
   });
 }

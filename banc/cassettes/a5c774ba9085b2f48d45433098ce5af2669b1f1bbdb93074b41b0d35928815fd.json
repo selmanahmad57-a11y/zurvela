@@ -1,0 +1,12 @@
+{
+  "cle": "a5c774ba9085b2f48d45433098ce5af2669b1f1bbdb93074b41b0d35928815fd",
+  "metadonnees": {
+    "date": "2026-09-24T17:41:21.683Z",
+    "modeleDemande": "claude-haiku-4-5",
+    "modeleServi": "claude-haiku-4-5-20251001",
+    "versionPrompt": "v2",
+    "coutApi": 0.002038,
+    "apresRelance": false
+  },
+  "reponse": "{\"actionId\": \"c1\", \"raison\": \"Le site est un vitrine-contact avec budget restant. Après avoir rempli et soumis un formulaire de devis, la page /contact représente une action concrète qu'un visiteur effectuerait réellement pour entrer en contact avec l'entreprise. C'est une page fonctionnelle de test prioritaire.\"}"
+}

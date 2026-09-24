@@ -90,6 +90,24 @@ dette est levée (le commit qui la lève renvoie à ce fichier).
   le pipeline d'une annulation coopérative de bout en bout (signal propagé
   jusqu'aux appels Playwright) et rendre la borne exacte.
 
+- **Mise à jour du 2026-09-24 (brique 5)** : la RÉDACTION du rapport business
+  s'ajoute aux étapes qui peuvent déborder, et c'est la dernière du scan —
+  donc celle qui déborde sur un budget déjà consommé. Deux bornes l'encadrent,
+  et il a fallu les deux : une PORTE d'entrée (`redigerRapportBusiness` ne
+  s'engage pas si l'échéance est déjà passée) et une borne sur l'OPÉRATION
+  (`rapport.appelMaxMs`, transmis au SDK). La première seule était un
+  « check-then-act » : elle empêchait d'engager l'appel trop tard, pas de le
+  laisser durer.
+- **Correction du même jour, après revue** : la borne annoncée ci-dessus était
+  fausse d'un facteur trois. Le délai transmis au SDK s'applique **par
+  tentative**, et le SDK réessaie de lui-même — deux fois par défaut, sans que
+  rien dans notre code ne le dise. Le nombre de réessais est devenu un réglage
+  explicite (`ia.reessaisReseauMax`), et la borne vraie s'écrit
+  `appelMaxMs × (1 + ia.reessaisReseauMax) × (1 + relancesMax)`, soit 720 s
+  avec la configuration livrée. Elle reste supérieure au `timeoutMs` d'un scan
+  ordinaire : la dette n'est pas levée, elle est enfin CHIFFRÉE juste. Ce qui
+  la lèvera est inchangé — une annulation coopérative de bout en bout.
+
 ## 7. S01 n'éprouve qu'un vecteur d'injection, et le plus bruyant (2026-09-23)
 
 - **Quoi** : le bug S01 mesure l'inertie du profilage sous **une** charge —
@@ -132,3 +150,185 @@ dette est levée (le commit qui la lève renvoie à ce fichier).
   le contrat seul** (ce que le format du profil permet de forger), sans
   itération contre le modèle. À défaut, le vecteur reste **documenté comme
   non mesuré** — ce qui est un statut, pas un oubli.
+
+## 9. L'interdiction des chiffres dans la prose est PARTIELLE (2026-09-24)
+
+- **Quoi** : le contrat de rédaction interdit au modèle d'écrire un chiffre
+  dans sa prose — c'est ce qui rend impossible qu'un rapport affiche deux
+  nombres contradictoires, l'un mesuré et l'autre rédigé. La garde
+  (`porteUnChiffre`, sur `\p{Nd}`) attrape les chiffres écrits **en
+  chiffres**, dans toutes les écritures Unicode. Elle n'attrape **pas** un
+  nombre écrit **en toutes lettres** (« deux pages », « trois fois »).
+- **Pourquoi pas maintenant** : aucune expression régulière ne le ferait dans
+  toutes les langues, et une garde qui prétendrait le faire serait fausse dans
+  la plupart d'entre elles — donc silencieusement absente là où personne ne la
+  relirait. Le prompt l'interdit explicitement, en toutes lettres ; la revue
+  le lit.
+- **Ce qui est en place** : la garde est documentée comme partielle **dans le
+  code et dans son test**, qui écrit noir sur blanc qu'un nombre en lettres
+  passe. Une garde partielle est utile tant qu'elle ne se fait pas passer pour
+  totale.
+- **Condition de levée** : le jour où le rapport aura des destinataires dans
+  des langues que nous ne relisons pas. La levée n'est pas une expression
+  régulière plus large, c'est un contrôle d'une autre nature — comparer les
+  nombres de la prose à ceux de la structure, ce qui suppose de les extraire,
+  donc de lire la prose : exactement ce que la règle de terminalité interdit
+  au moteur. C'est donc une vérification de REVUE, pas de produit.
+
+## 10. Un rapport PARTIEL le dit, mais il reste partiel (2026-09-24)
+
+- **Quoi** : la rédaction se fait en UN appel, sur un bloc de faits borné. Les
+  sections qui n'y entrent pas restent **dans** le rapport, avec leurs faits,
+  leur statut et leurs localisations — elles n'ont simplement pas de phrases.
+  Un plafond borne une dépense ; il ne fait pas disparaître une anomalie d'un
+  rapport destiné à celui qui la subit.
+- **Corrigé le jour même, après revue — ce qui était faux dans la première
+  écriture de cette dette** : elle ne nommait qu'un déclencheur,
+  `sectionsMax` (20), et fixait sa levée à « quand un scan réel produira plus
+  de sections que le plafond ». C'était faux : `faitsMaxChars` évince des
+  sections **bien en dessous** du plafond de sections, et il le fait d'autant
+  plus tôt que les CHEMINS des pages sont longs — or ces chemins sont choisis
+  par le site inspecté. Mesuré avec la configuration livrée : 12 anomalies sur
+  8 pages chacune donnent 12 sections publiées dont 10 rédigées ; 30 anomalies
+  en donnent 20 sur 30. Le régime partiel n'est donc pas un cas de bord
+  lointain, et un site hostile peut l'obtenir exprès.
+- **Ce qui a été fait** : le rapport DIT désormais qu'il est partiel — une
+  phrase en tête qui donne le compte et prévient que la synthèse n'a pas vu
+  ces sections-là, plus un marqueur sur chaque section muette (deux sections
+  muettes de même catégorie portaient jusqu'au même titre de repli). Le moteur
+  publie `nbSectionsRedigees` et `nbLocalisationsMasquees`, et le banc s'en
+  sert pour refuser de créditer une épreuve de charge dont le bloc factuel
+  était amputé.
+- **Ce qui reste** : le rapport est honnête, il n'est pas complet. La vraie
+  levée est le découpage de la rédaction en plusieurs appels — au prix de la
+  cohérence d'ensemble de la synthèse, qui est précisément ce qu'un seul appel
+  achète. À trancher quand un client réel lira un rapport partiel.
+
+## 11. Une cassette ne dit pas de QUELLE surface d'IA elle vient (2026-09-24)
+
+- **Quoi** : `Cassette.metadonnees.versionPrompt` porte `v1`, `v2`… sans
+  nommer le prompt. Tant que chaque surface avait son modèle, le couple
+  (version, modèle) suffisait à les distinguer dans le parc. Depuis la
+  brique 5, le **diagnostic** et la **rédaction** partagent la version `v1`
+  ET le modèle `claude-opus-5` : vingt-quatre cassettes du parc sont, à la
+  lecture, indiscernables. La correction du prompt de rédaction a un temps
+  ouvert un `v2` qui écartait la collision ; ce `v2` était une faute de
+  méthode (une lignée que rien n'avait mesurée) et a été replié sur `v1`. La
+  collision revient donc, et c'est le bon état : elle est un défaut de
+  LISIBILITÉ du parc, pas une raison d'inventer une version.
+- **Ce que cela ne casse PAS** : aucune collision de clé. La clé hache aussi
+  l'**empreinte de contrat**, qui diffère entre les deux surfaces, et la forme
+  de l'entrée normalisée. Le rejeu reste exact ; c'est la LISIBILITÉ du parc
+  qui souffre.
+- **Ce que cela coûte** : quand un prompt sera incrémenté, ses anciennes
+  cassettes deviendront orphelines et **on ne saura pas lesquelles**. Elles
+  s'accumuleront en silence — exactement le genre de dérive que le parc
+  committé existe pour empêcher.
+- **Condition de levée** : qualifier `versionPrompt` (`redaction/v1`) rendrait
+  le parc lisible, mais cette chaîne entre dans la CLÉ : le faire périmerait
+  les 184 cassettes d'un coup, pour une raison de confort. La bonne levée est
+  un champ de métadonnées ADDITIF (`famille`), posé au prochain renouvellement
+  du parc — celui-là sera payé de toute façon.
+
+## 12. `modeleServi` n'apporte rien pour la famille Opus (2026-09-24)
+
+- **Quoi** : la provenance à trois champs distingue l'ALIAS demandé de la
+  forme RÉSOLUE servie, pour attraper le jour où un alias glisse vers un autre
+  instantané. Pour `claude-haiku-4-5`, l'API répond bien
+  `claude-haiku-4-5-20251001` et la distinction fait son travail. Pour
+  `claude-opus-5`, l'API répond `claude-opus-5` : les deux champs sont
+  identiques, et le glissement d'alias serait invisible sur cette famille.
+- **Pourquoi ce n'est pas un défaut du code** : `modeleServi` est bien
+  **extrait** de la réponse, jamais recopié depuis l'alias — un test unitaire
+  l'éprouve avec une doublure qui renvoie une forme distincte. C'est le
+  fournisseur qui ne datifie pas cet identifiant aujourd'hui.
+- **Ce qui reste vrai** : la garde de divergence de cassette
+  (`diagnostiquerDivergence`) nomme alors la cause « prompt modifié sans
+  incrément, ou variabilité du modèle » plutôt que « glissement d'alias » —
+  ce qui est exact, puisqu'elle ne peut pas trancher. Elle n'accuse pas le
+  mauvais coupable ; elle dit qu'elle ne sait pas.
+- **Condition de levée** : aucune de notre côté. À surveiller si Anthropic
+  commence à servir une forme datée pour cette famille — le parc divergerait
+  alors d'un coup, avec le bon diagnostic.
+
+## 13. ~~La LANGUE de la prose n'est mesurée dans aucune langue~~ — LEVÉE le 2026-09-24 (brique 5)
+
+- **Ce qu'elle disait** : le banc vérifiait que `RapportBusiness.langue` est
+  celle demandée et que chaque formulation de statut vient de la table de
+  CETTE langue — deux moitiés écrites par le CODE. La **prose du modèle**
+  n'était vérifiée dans aucune langue : rien n'empêchait mécaniquement un
+  rapport annoncé `fr` de contenir des phrases anglaises, et le critère
+  d'acceptation « rapport intégralement FR » était signé par une vérification
+  incapable de voir son propre échec.
+- **Levée, et par quoi** : `banc/correcteur/langue-prose.ts` + le contrôle
+  `langueProse`. Détection MÉCANIQUE par mots-outils — une classe fermée, pas
+  du vocabulaire métier —, table en configuration
+  (`config/detection-langue.json`), aucun modèle, aucun coût, aucune cassette.
+  Ce que la dette craignait (« un modèle de plus, donc une variance de plus »)
+  n'a pas eu lieu : il n'y a pas de modèle.
+- **Ce que la levée a dû apprendre en chemin**, et qui vaut pour la suite :
+  - une détection sur la prose ENTIÈRE répond « majoritairement FR », jamais
+    « intégralement FR ». Le mode de panne réaliste d'une rédaction
+    multi-sections est le dérapage d'UNE section, qui reste sous la majorité.
+    La détection se fait donc aussi par BLOC (une section = un bloc), et un
+    seul bloc étranger suffit à faire rougir ;
+  - la SECTION est le bon grain, pas le champ : un titre de cinq mots
+    n'atteint jamais le minimum de jetons, et un contrôle qui répond
+    « indécidable » partout ne contrôle rien ;
+  - le paramètre a d'abord été OPTIONNEL, absence valant succès. Deux chemins
+    réels ne le passaient pas — dont `banc:enregistrer-ia`, la seule exécution
+    où le modèle écrit réellement la prose. Il est désormais obligatoire, et
+    `null` DIT qu'on y renonce.
+- **Ce qui reste** : la détection ne tranche qu'au-delà d'un minimum de jetons
+  et d'une marge (`tokensMin`, `margeMin`). Sous ce seuil elle répond `null`,
+  et le contrôle est alors FAUX plutôt qu'ignoré. Elle ne couvre que les deux
+  langues de `LANGUES_RAPPORT` : une troisième langue de rapport demandera sa
+  liste de mots-outils avant sa première livraison.
+
+## 14. Les viewports d'une page sans viewport déclaré sont ceux de TOUTE l'anomalie (2026-09-24)
+
+- **Quoi** : `localisationsLisibles` affiche, pour chaque page, les viewports
+  déclarés par ses localisations. Quand aucune n'en déclare — le cas d'une
+  anomalie qui ne DÉPEND pas du viewport — il affiche ceux où le GROUPE a été
+  observé, les mêmes pour toutes les pages de la section.
+- **Ce que cela peut faire dire** : une cause observée sur `/a` en desktop et
+  sur `/b` en mobile affichera « desktop, mobile » sur les deux pages. C'est
+  vrai de l'anomalie, approximatif de chaque page.
+- **Pourquoi c'est acceptable aujourd'hui** : l'information que le rapport
+  doit porter est « ce défaut touche-t-il les mobiles ? », et elle est exacte.
+  L'asymétrie réelle — « mobile uniquement » — vient des localisations qui,
+  elles, DÉCLARENT leur viewport, et elle est préservée exactement.
+- **Condition de levée** : quand une localisation portera son viewport dans
+  tous les cas, pas seulement quand l'anomalie en dépend. C'est une
+  modification de la consolidation (brique 3), pas du rapport.
+
+## 15. Le lien entre le PROMPT et la TABLE DES FORMULATIONS n'est pas mécanique (2026-09-24)
+
+- **Quoi** : `prompts/redaction/v1.ts` décrit à un modèle ce que chaque statut
+  SIGNIFIE ; `core/rapport/voix.ts` écrit la phrase que le client lira pour ce
+  même statut. Les deux doivent dire la même chose — sinon le rapport porte deux
+  affirmations contradictoires, et c'est la plus forte qu'un lecteur retient.
+  **Rien ne les relie mécaniquement.**
+- **Ce qui est garanti** : les deux tables sont des `Record<StatutSection, …>`,
+  donc un cinquième statut casse la compilation des DEUX. C'est une garantie de
+  COUVERTURE, pas de cohérence : rien n'empêche deux descriptions divergentes du
+  même statut.
+- **Comment on l'a découvert** : par MUTATION. Un sceptique a remplacé la
+  description de `confirmee` dans le prompt par la phrase fautive de v1 et a
+  relancé la suite — **1382 tests passés, zéro tué**. Les deux tests censés
+  garder cette propriété (`core/ia/prompt-redaction.test.ts`) n'assertent que
+  des sous-chaînes du fichier qu'ils testent : ils vont chercher leur propre
+  source, et ne peuvent pas échouer pour la raison du défaut (METHODE).
+- **Pourquoi pas maintenant** : la cohérence entre une explication en prose
+  française et une formulation en prose française est SÉMANTIQUE. La rendre
+  mécanique demanderait soit un troisième modèle qui les compare — un oracle de
+  plus, et un oracle qu'on ne peut pas éprouver ment tôt ou tard — soit de
+  dériver l'une de l'autre, ce qui ferait écrire le prompt par la table des
+  libellés et le rendrait illisible.
+- **Ce qui couvre en attendant** : la revue LIT les deux côte à côte, et le
+  cahier en fait un critère bloquant (« un “détecté” qui se lit comme un
+  “confirmé” est un constat bloquant »). Toute modification de l'un des deux
+  fichiers doit rouvrir l'autre.
+- **Condition de levée** : le jour où un troisième statut naîtra. Trois paires
+  à tenir d'accord à la main, ce n'est plus une relecture, c'est un oubli qui
+  attend.

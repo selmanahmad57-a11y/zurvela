@@ -1,0 +1,14 @@
+{
+  "$schema": "./rapport.schema.json",
+  "$commentaire": "Rédaction du rapport business (brique 5). Le modèle rédige des phrases DANS des champs ; les faits — chiffres, gravités, statuts, comptes — sont posés par le code depuis le Rapport technique et ne lui sont jamais demandés. Ces réglages bornent ce qu'il VOIT et ce qu'il peut écrire ; ils ne décident jamais de ce qu'il dit.",
+  "langueRapport": "fr",
+  "sectionsMax": 20,
+  "localisationsMaxParSection": 8,
+  "faitsMaxChars": 6000,
+  "cheminMaxChars": 120,
+  "symptomesMaxChars": 200,
+  "ligneMaxChars": 1400,
+  "maxTokensReponse": 8192,
+  "relancesMax": 1,
+  "appelMaxMs": 120000
+}

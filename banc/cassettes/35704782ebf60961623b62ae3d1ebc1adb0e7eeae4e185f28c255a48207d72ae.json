@@ -1,0 +1,12 @@
+{
+  "cle": "35704782ebf60961623b62ae3d1ebc1adb0e7eeae4e185f28c255a48207d72ae",
+  "metadonnees": {
+    "date": "2026-09-24T17:41:31.914Z",
+    "modeleDemande": "claude-haiku-4-5",
+    "modeleServi": "claude-haiku-4-5-20251001",
+    "versionPrompt": "v2",
+    "coutApi": 0.0019879999999999997,
+    "apresRelance": false
+  },
+  "reponse": "{\"actionId\":\"c2\",\"raison\":\"Le site est une vitrine avec contact. L'action c2 mène à un formulaire de devis ('Request a quote'), qui représente une interaction réelle qu'un visiteur peut effectuer. C'est plus pertinent pour tester qu'une simple page de contact générique. Le budget permet encore 19 pages.\"}"
+}

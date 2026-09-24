@@ -78,6 +78,7 @@ function scenario(surcharges: Partial<ResultatScenario> & { scenarioId: string; 
     attendus: [],
     profils: [],
     cibles: [],
+    rapports: [],
     nbReplisDecision: 0,
     fauxPositifs: [],
     coutApi: 0,

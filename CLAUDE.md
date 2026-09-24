@@ -33,6 +33,18 @@ configuration. Concrètement :
   Tout seuil vit dans `config/` avec une valeur par défaut documentée.
 - INTERDIT : texte destiné à l'utilisateur écrit dans le code.
   Tout passe par les fichiers i18n (`locales/`), même si seul `fr` existe.
+- EXCEPTION — les TEXTES À GARANTIE SÉMANTIQUE. Une poignée de phrases ne
+  sont pas de la prose utilitaire : elles ÉNONCENT une propriété que le
+  moteur doit tenir. « Constaté, puis reproduit lors de nos N vérifications
+  indépendantes » n'est pas une traduction, c'est une promesse — la déplacer
+  en `locales/` la rendrait modifiable sans revue, et une formulation qui
+  promet plus que son statut détruit le différenciateur n°1 sans qu'aucun
+  test ne rougisse. Ces textes vivent donc en CODE TYPÉ, au même régime que
+  les prompts : une table par langue, la complétude imposée par `tsc` (toute
+  langue × tout statut, sans trou possible), et modification sous revue
+  seulement. Le canal reste par-langue ; c'est la GARANTIE qui change de
+  nature, pas l'internationalisation. Aujourd'hui : `core/rapport/voix.ts`.
+  Tout le reste de la prose utilisateur reste dans `locales/`.
 - AUTORISÉ en dur : standards techniques universels (codes HTTP, types
   MIME, balises HTML, attributs ARIA), signaux physiques (page vide,
   dimensions, image au naturalWidth nul). Résumé : le code peut connaître

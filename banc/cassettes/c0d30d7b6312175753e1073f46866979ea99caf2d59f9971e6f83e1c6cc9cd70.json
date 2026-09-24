@@ -1,0 +1,12 @@
+{
+  "cle": "c0d30d7b6312175753e1073f46866979ea99caf2d59f9971e6f83e1c6cc9cd70",
+  "metadonnees": {
+    "date": "2026-09-24T17:41:16.162Z",
+    "modeleDemande": "claude-haiku-4-5",
+    "modeleServi": "claude-haiku-4-5-20251001",
+    "versionPrompt": "v2",
+    "coutApi": 0.001938,
+    "apresRelance": false
+  },
+  "reponse": "{\"actionId\": \"c1\", \"raison\": \"The current page is a quote request form with 3 required fields. Filling out the form is a meaningful action that a visitor would perform on this site, testing the form's functionality before submission.\"}"
+}

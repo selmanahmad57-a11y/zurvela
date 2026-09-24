@@ -1,0 +1,12 @@
+{
+  "cle": "a1f3e5dd1acd90e997091323a03c298ea339b0f09b73b63018a1f3b5b9e41c5c",
+  "metadonnees": {
+    "date": "2026-09-24T17:42:20.057Z",
+    "modeleDemande": "claude-haiku-4-5",
+    "modeleServi": "claude-haiku-4-5-20251001",
+    "versionPrompt": "v2",
+    "coutApi": 0.002182,
+    "apresRelance": false
+  },
+  "reponse": "{\"actionId\":\"c2\",\"raison\":\"Nous sommes sur une page de contact avec un formulaire à 3 champs requis. L'action c2 est une soumission de formulaire, ce qui correspond à ce qu'un visiteur ferait naturellement après avoir rempli les champs (action c1). Soumettre le formulaire de contact est un comportement utilisateur pertinent à tester pour ce type de site vitrine.\"}"
+}

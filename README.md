@@ -24,10 +24,12 @@ Cahiers des charges des briques : [docs/cahiers/](docs/cahiers/).
 | `pnpm banc --tous` | note le moteur sur tous les scénarios et écrit la scorecard |
 | `pnpm banc --scenario <id>` | note un seul scénario |
 | `pnpm banc:servir --scenario <id>` | sert un scénario en local pour l'inspecter dans un navigateur |
+| `pnpm rapport:exemple --scenario <id>` | produit le RAPPORT BUSINESS d'un scénario, en texte lisible (aucun réseau : rejeu sur cassettes) |
 
 ## Arborescence
 
 - `core/` — moteur ; `core/types.ts` est le contrat `scanner(url, options) → Rapport`
+- `core/rapport/` — le rapport business : structure factuelle, statuts épistémiques, voix de la marque, rendu
 - `banc/` — banc d'essai : gabarits (mini-sites + bugs injectables), scénarios, correcteur, scorecard
 - `config/` — tous les seuils et réglages (`banc.json`, validé par `banc.schema.json`)
 - `locales/` — textes affichés à l'utilisateur (console du banc)

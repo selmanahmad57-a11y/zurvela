@@ -1,0 +1,12 @@
+{
+  "cle": "22eadbfefea1cfc5f1f9b9f70e301d30e27eff4eb45789e487b763023fee184e",
+  "metadonnees": {
+    "date": "2026-09-24T17:42:12.191Z",
+    "modeleDemande": "claude-haiku-4-5",
+    "modeleServi": "claude-haiku-4-5-20251001",
+    "versionPrompt": "v2",
+    "coutApi": 0.002163,
+    "apresRelance": false
+  },
+  "reponse": "{\"actionId\":\"c2\",\"raison\":\"Le site est un vitrine-contact avec budget de 19 pages. L'action c2 mène à une page de demande de devis, qui est une page d'action réelle où un visiteur interagit avec un formulaire - cela correspond exactement au critère de priorisation des pages où l'utilisateur agit. C'est plus pertinent que la simple page de contact c1 pour tester les fonctionnalités essentielles du site.\"}"
+}

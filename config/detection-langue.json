@@ -1,0 +1,22 @@
+{
+  "$schema": "./detection-langue.schema.json",
+  "$commentaire": "Détection MÉCANIQUE de la langue d'une prose, pour le BANC et lui seul. Elle ne sert jamais à une détection d'anomalie : le moteur n'y a pas accès. Le cahier de la brique 5 l'exige — « langue du rapport = langue demandée (détection mécanique) » — parce que sans elle, le critère « rapport intégralement FR » serait signé par un contrôle incapable de voir l'échec pour lequel il existe. Les listes sont des MOTS-OUTILS (classe fermée : articles, prépositions, conjonctions, auxiliaires) : ils sont fréquents dans toute prose, et ils ne disent rien du SUJET du texte. Elles vivent en configuration, comme la liste noire d'actions destructives, parce qu'un motif de langue naturelle ne vit jamais dans le code (constitution §2).",
+  "tokensMin": 12,
+  "margeMin": 3,
+  "motsOutils": {
+    "fr": [
+      "le", "la", "les", "un", "une", "des", "du", "de", "au", "aux",
+      "et", "ou", "mais", "donc", "car", "ni", "que", "qui", "dont", "où",
+      "ce", "cette", "ces", "son", "sa", "ses", "leur", "leurs", "votre", "vos",
+      "est", "sont", "été", "être", "avoir", "ont", "peut", "pas", "ne", "plus",
+      "dans", "sur", "sous", "pour", "par", "avec", "sans", "vers", "chez", "tant"
+    ],
+    "en": [
+      "the", "a", "an", "of", "to", "in", "on", "at", "by", "for",
+      "and", "or", "but", "so", "because", "nor", "that", "which", "who", "where",
+      "this", "these", "those", "its", "their", "your", "our", "it", "they", "we",
+      "is", "are", "was", "were", "be", "been", "has", "have", "can", "not",
+      "with", "without", "from", "into", "over", "under", "while", "when", "as", "than"
+    ]
+  }
+}
