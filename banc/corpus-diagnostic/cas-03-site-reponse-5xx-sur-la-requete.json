@@ -1,0 +1,25 @@
+{
+  "id": "cas-03-site-reponse-5xx-sur-la-requete",
+  "avisAttendu": "site",
+  "derive": {
+    "ecritDeZero": false,
+    "scenario": "formulaire-contact--f01--fr",
+    "groupeReel": "d-inerte:element:body > main > form > div:nth-of-type(4) > button[type=\"button\"]",
+    "journalReel": "journal-reel.json",
+    "editions": [
+      "entrée `confirmation.groupe` : REPRISE TELLE QUELLE du journal réel",
+      "tentatives 1 et 2 : `reproduite` passé de true à false, `echecOutillage` à true, ajout de `causeEchec: indetermine` et `erreur: delai-depasse`, `dureeMs` porté de 1962/1865 à 10437/10419 (le budget d'action, 10 000 ms) ; observations : `nbActions` 3→2, `arreteA` null→\"soumettre\", `nbSignaux` 9→11, `statuts` [200]→[200,503] et `reponsesHors2xx` []→[\"503 POST http://127.0.0.1:4800/api/contact\"]",
+      "aucune contre-épreuve : `d-inerte` ne dépend pas du viewport, et deux tentatives inexploitables n'en autoriseraient de toute façon aucune"
+    ]
+  },
+  "pourquoiCetAvis": "La soumission a bien été déclenchée, deux fois, dans deux contextes navigateur neufs — et le serveur a RÉPONDU : la réponse à cette requête figure au journal, NOMMÉE : 503 POST /api/contact, à côté du 200 du document. Le robot a donc mené l'action jusqu'à l'envoi et ce qui est revenu est fautif. Le bouton paraît sans effet parce que la requête qu'il déclenche est refusée par le serveur ; que le rejeu ait ensuite expiré n'y change rien, la réponse était déjà là.",
+  "contexte": {
+    "groupe": "d-inerte:element:body > main > form > div:nth-of-type(4) > button[type=\"button\"]",
+    "description": "element-sans-effet",
+    "extraits": [
+      "confirmation.groupe {\"cle\":\"d-inerte:element:body > main > form > div:nth-of-type(4) > button[type=\\\"button\\\"]\",\"confiance\":0.75,\"nbMembres\":1,\"viewports\":[\"desktop\",\"mobile\"],\"detecteur\":\"d-inerte\",\"viewportRejeu\":\"desktop\",\"urlOuEtape\":\"http://127.0.0.1:4800/contact\",\"description\":\"element-sans-effet\",\"action\":\"soumettre\",\"nbPrealables\":1,\"budgetChargementMs\":15000,\"budgetActionMs\":10000}",
+      "confirmation.tentative {\"cle\":\"d-inerte:element:body > main > form > div:nth-of-type(4) > button[type=\\\"button\\\"]\",\"numero\":1,\"viewport\":\"desktop\",\"reproduite\":false,\"echecOutillage\":true,\"causeEchec\":\"indetermine\",\"erreur\":\"delai-depasse\",\"dureeMs\":10437,\"observations\":{\"nbPages\":1,\"statutDocument\":200,\"nbActions\":2,\"nbActionsPrevues\":3,\"arreteA\":\"soumettre\",\"nbSignaux\":11,\"statuts\":[200,503],\"reponsesHors2xx\":[\"503 POST http://127.0.0.1:4800/api/contact\"],\"echecsReseau\":[],\"requetesEnAttente\":[]}}",
+      "confirmation.tentative {\"cle\":\"d-inerte:element:body > main > form > div:nth-of-type(4) > button[type=\\\"button\\\"]\",\"numero\":2,\"viewport\":\"desktop\",\"reproduite\":false,\"echecOutillage\":true,\"causeEchec\":\"indetermine\",\"erreur\":\"delai-depasse\",\"dureeMs\":10419,\"observations\":{\"nbPages\":1,\"statutDocument\":200,\"nbActions\":2,\"nbActionsPrevues\":3,\"arreteA\":\"soumettre\",\"nbSignaux\":11,\"statuts\":[200,503],\"reponsesHors2xx\":[\"503 POST http://127.0.0.1:4800/api/contact\"],\"echecsReseau\":[],\"requetesEnAttente\":[]}}"
+    ]
+  }
+}

@@ -28,7 +28,7 @@ import {
   type ReponseBrute,
   type ResultatIa,
 } from './index.js';
-import { chargerConfigProfilage } from '../scanner/config.js';
+import { chargerConfigDiagnostic, chargerConfigProfilage } from '../scanner/config.js';
 
 const configScanner = await chargerConfigScanner();
 const profilage = await chargerConfigProfilage();
@@ -41,7 +41,15 @@ const MODELE_SERVI = `${MODELE}-20251001`;
 const EMPREINTE = empreinteContratNavigation(navigation);
 
 const DECISION = { modele: MODELE, config: navigation };
-const options = { enregistrement: false, modele: MODELE_PROFILAGE, profilage, decision: DECISION };
+/** Réglages de diagnostic : requis par `clientRejouable`, sans effet sur les décisions. */
+const DIAGNOSTIC = { modele: configScanner.ia.modeles.diagnostic, config: await chargerConfigDiagnostic() };
+const options = {
+  enregistrement: false,
+  modele: MODELE_PROFILAGE,
+  profilage,
+  decision: DECISION,
+  diagnostic: DIAGNOSTIC,
+};
 
 const ELECTION = JSON.stringify({ actionId: 'c3', raison: 'le formulaire de commande' });
 

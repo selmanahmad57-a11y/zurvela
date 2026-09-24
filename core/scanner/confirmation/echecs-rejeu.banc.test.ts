@@ -143,10 +143,22 @@ describe('échecs de rejeu — à qui la faute ?', () => {
     expect(journal.some((entree) => (entree.details as { motif?: string } | undefined)?.motif === MOTIF_CONSTATEE_AU_REJEU)).toBe(true);
 
     // 2. L'échec est imputé au SITE, pas au robot : la tentative reste exploitable.
-    const tentatives = journal.filter((entree) => entree.type === 'confirmation.tentative').map((entree) => entree.details as { causeEchec?: string });
+    const tentatives = journal
+      .filter((entree) => entree.type === 'confirmation.tentative')
+      .map((entree) => entree.details as { causeEchec?: string; observations?: Record<string, unknown> });
     expect(tentatives.length).toBeGreaterThan(0);
     for (const tentative of tentatives) {
       expect(tentative.causeEchec).toBe('reseau-site');
+      // CE QUE LE REJEU A OBSERVÉ, y compris quand il a échoué — c'est là
+      // que cela sert. Un serveur coupé laisse une trace RÉSEAU : c'est ce
+      // qui distingue « le site s'est tu » de « le robot n'a pas su agir »,
+      // et sans ce champ le journal ne la portait nulle part.
+      expect(tentative.observations).toMatchObject({ nbPages: 0, statutDocument: null, arreteA: 'naviguer' });
+      // La ressource est NOMMÉE, pas seulement comptée : « une requête a
+      // échoué » ne dit pas si c'est celle dont l'anomalie parle.
+      const echecs = tentative.observations?.['echecsReseau'] as string[];
+      expect(echecs.length).toBeGreaterThan(0);
+      expect(echecs.every((echec) => echec.includes(urlDepart))).toBe(true);
     }
     // 3. Et donc AUCUN groupe n'est classé « limite d'automatisation ».
     for (const groupe of resultat.groupes ?? []) {
@@ -174,6 +186,15 @@ describe('échecs de rejeu — à qui la faute ?', () => {
     expect(tentatives.length).toBeGreaterThan(0);
     for (const tentative of tentatives) {
       expect(tentative.causeEchec).toBe('outil');
+    }
+    // Le contraste avec le cas précédent est LA mesure de ce champ : ici le
+    // rejeu n'a rien observé du tout — aucune erreur réseau, aucun signal.
+    // Le même « échec » se lit différemment selon ce qui a été vu.
+    const observations = journal
+      .filter((entree) => entree.type === 'confirmation.tentative')
+      .map((entree) => (entree.details as { observations?: Record<string, unknown> }).observations);
+    for (const observation of observations) {
+      expect(observation).toMatchObject({ nbPages: 0, nbSignaux: 0, echecsReseau: [], requetesEnAttente: [], nbActions: 0 });
     }
   }, 90_000);
 });

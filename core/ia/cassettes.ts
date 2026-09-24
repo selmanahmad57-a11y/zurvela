@@ -12,6 +12,7 @@ import path from 'node:path';
 import type { ConfigProfilage } from '../scanner/config.js';
 import { VERSION } from '../../prompts/profilage/v1.js';
 import { VERSION as VERSION_NAVIGATION } from '../../prompts/navigation/v2.js';
+import { VERSION as VERSION_DIAGNOSTIC } from '../../prompts/diagnostic/v1.js';
 import { hacherEntree, normaliserUrlPourCle } from './cle.js';
 import {
   DIVERGENCE_GLISSEMENT_ALIAS,
@@ -21,9 +22,11 @@ import {
   type Cassette,
   type ClientIa,
   type ClientIaEnregistrable,
+  type ContexteDiagnostic,
   type ContexteProfilage,
   type DecisionEstampillee,
   type DepotCassettes,
+  type DiagnosticEstampille,
   type ModeIa,
   type ProfilPage,
   type ReponseBrute,
@@ -40,8 +43,17 @@ import {
   type EtatNormalise,
 } from './etat-decision.js';
 import { empreinteContratProfilage, profilDepuisReponse } from './profilage.js';
+import { diagnosticDepuisReponse } from './diagnostic.js';
+import {
+  empreinteContratDiagnostic,
+  entreeCleDepuisContexteDiagnostic,
+  normaliserContexteDiagnostic,
+  type ContexteDiagnosticNormalise,
+} from './contexte-diagnostic.js';
 import { creerValidateurDecision } from './schema-decision.js';
+import { creerValidateurDiagnostic } from './schema-diagnostic.js';
 import { creerValidateurProfil } from './schema-profil.js';
+import type { ConfigDiagnostic } from '../scanner/config.js';
 
 export { normaliserUrlPourCle };
 
@@ -109,6 +121,26 @@ export function cleCassetteDecision(parametres: {
 }): string {
   const { versionPrompt, empreinteContrat, modele, etat } = parametres;
   return hacherEntree([versionPrompt, empreinteContrat, modele, ...entreeCleDepuisEtat(etat)]);
+}
+
+/**
+ * Clé d'une cassette de DIAGNOSTIC : hash(version du prompt de diagnostic +
+ * empreinte de contrat + ALIAS de modèle + contexte NORMALISÉ).
+ *
+ * Même clé, même forme et mêmes raisons que les deux précédentes. L'empreinte
+ * de contrat couvre ici deux sources : les bornes de `config/diagnostic.json`
+ * ET le vocabulaire des avis, qui vit en code et s'écrit en toutes lettres
+ * dans le prompt — sans quoi un quatrième avis rejouerait une réponse produite
+ * sous un autre contrat.
+ */
+export function cleCassetteDiagnostic(parametres: {
+  versionPrompt: string;
+  empreinteContrat: string;
+  modele: string;
+  contexte: ContexteDiagnosticNormalise;
+}): string {
+  const { versionPrompt, empreinteContrat, modele, contexte } = parametres;
+  return hacherEntree([versionPrompt, empreinteContrat, modele, ...entreeCleDepuisContexteDiagnostic(contexte)]);
 }
 
 /** Dépôt sur disque : une cassette par fichier, JSON lisible, committé. */
@@ -203,6 +235,22 @@ export interface OptionsDecisionRejeu {
   config: ConfigNavigation;
 }
 
+/**
+ * Ce que le rejeu d'un DIAGNOSTIC a besoin de savoir. Champ REQUIS de
+ * `OptionsRejeu`, pour la raison exacte qui a rendu `decision` requis en 4b.
+ *
+ * Le contrat de la brique est ADDITIF : rien n'obligeait le compilateur à
+ * signaler qu'un client rejouable laissé tel quel ne rejouerait aucun
+ * diagnostic — il appellerait le modèle EN DIRECT depuis un run normal, ce qui
+ * est précisément le trou que le mode rejouable existe pour fermer. Le rendre
+ * requis crée le trou que le typecheck suivra (APPRENTISSAGES n°7).
+ */
+export interface OptionsDiagnosticRejeu {
+  /** ALIAS du modèle de diagnostic (`ia.modeles.diagnostic`) : il entre dans la clé. */
+  modele: string;
+  config: ConfigDiagnostic;
+}
+
 export interface OptionsRejeu {
   /** true UNIQUEMENT depuis la commande d'enregistrement : c'est le seul mode qui appelle le modèle. */
   enregistrement: boolean;
@@ -211,6 +259,8 @@ export interface OptionsRejeu {
   profilage: ConfigProfilage;
   /** Réglages du rejeu des décisions de navigation (brique 4b). */
   decision: OptionsDecisionRejeu;
+  /** Réglages du rejeu des diagnostics (brique 4c). */
+  diagnostic: OptionsDiagnosticRejeu;
   journaliser?: (type: string, details?: unknown) => void;
   /** Horloge injectable : la date d'enregistrement est une métadonnée, pas un comportement. */
   maintenant?: () => Date;
@@ -233,12 +283,14 @@ export function clientRejouable(
   depot: DepotCassettes,
   options: OptionsRejeu,
 ): ClientIa {
-  const { enregistrement, modele, profilage, decision } = options;
+  const { enregistrement, modele, profilage, decision, diagnostic } = options;
   const journaliser = options.journaliser ?? (() => undefined);
   const maintenant = options.maintenant ?? (() => new Date());
   const validateur = creerValidateurProfil(profilage);
   const empreinteContrat = empreinteContratProfilage(profilage);
   const empreinteNavigation = empreinteContratNavigation(decision.config);
+  const empreinteDiagnostic = empreinteContratDiagnostic(diagnostic.config);
+  const validateurDiagnostic = creerValidateurDiagnostic();
 
   const enProfil = (cassette: Cassette): ResultatIa<ProfilPage> =>
     profilDepuisReponse({
@@ -350,8 +402,46 @@ export function clientRejouable(
   return {
     mode,
     raisonDegrade,
-    diagnostiquer: client.diagnostiquer.bind(client),
     rediger: client.rediger.bind(client),
+
+    /**
+     * Une cassette PAR DIAGNOSTIC — et surtout, la MÊME GARDE RÉSEAU que les
+     * deux autres capacités.
+     *
+     * Jusqu'à cette brique, `diagnostiquer` était un passe-plat vers le client
+     * décoré (`client.diagnostiquer.bind(client)`), ce qui était sans
+     * conséquence tant qu'aucun client ne savait diagnostiquer. Le laisser
+     * aurait ouvert, le jour où l'un d'eux a su, un chemin d'appel RÉSEAU
+     * depuis un run normal du banc : l'instrument aurait cessé d'être
+     * déterministe sans qu'aucune cassette ne manque, et sans qu'une seule
+     * ligne du banc ne change.
+     */
+    diagnostiquer: (contexte: ContexteDiagnostic) => {
+      const contexteNormalise = normaliserContexteDiagnostic(contexte, diagnostic.config);
+      return rejouer<DiagnosticEstampille>({
+        cle: cleCassetteDiagnostic({
+          versionPrompt: VERSION_DIAGNOSTIC,
+          empreinteContrat: empreinteDiagnostic,
+          modele: diagnostic.modele,
+          contexte: contexteNormalise,
+        }),
+        modele: diagnostic.modele,
+        versionPrompt: VERSION_DIAGNOSTIC,
+        enValeur: (cassette) =>
+          diagnosticDepuisReponse({
+            texte: cassette.reponse,
+            validateur: validateurDiagnostic,
+            // Les DEUX modèles sont rejoués depuis la cassette : un avis
+            // rejoué doit dire quel modèle l'a réellement produit, pas celui
+            // que la config demande aujourd'hui.
+            modeleDemande: cassette.metadonnees.modeleDemande,
+            modeleServi: cassette.metadonnees.modeleServi,
+            apresRelance: cassette.metadonnees.apresRelance,
+            coutApi: cassette.metadonnees.coutApi,
+          }),
+        appelerBrut: () => client.diagnostiquerBrut(contexteNormalise),
+      });
+    },
 
     profiler: (contexte) =>
       rejouer({

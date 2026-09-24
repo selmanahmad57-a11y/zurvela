@@ -100,15 +100,27 @@
     "scenariosEnErreur": "ÉCHEC : {{nombre}} scénario(s) en erreur pendant l'enregistrement : {{scenarios}} — le parc est incomplet"
   },
   "varianceIa": {
-    "usage": "Usage : pnpm banc:variance-ia [--mesure profil|decision] --scenario <id> [--scenario <id>…] [--appels <N>]",
+    "usage": "Usage : pnpm banc:variance-ia [--mesure profil|decision] --scenario <id> [--scenario <id>…] [--appels <N>] | --mesure diagnostic [--cas <id>…] [--appels <N>]",
     "demarrage": "Variance du modèle — mesure « {{mesure}} », politique {{politique}}, {{nombre}} scénario(s) × {{appels}} appel(s) RÉELS, modèle {{modele}}",
     "appel": "  appel {{appel}}/{{appels}} : {{valeurs}}",
     "accord": "{{id}} [{{mesure}}] : {{accords}} — {{mesures}} appel(s) exploitable(s) sur {{appels}}, coût : {{cout}}",
     "horsScorecard": "Mesure INFORMATIVE, hors scorecard : l'instrument de notation reste bit à bit (cassettes)",
     "aucuneMesure": "⚠ {{id}} [{{mesure}}] : AUCUNE mesure exploitable sur {{appels}} appel(s) — aucune valeur produite (clé API absente, mode dégradé, échec d'appel, ou aucune décision prise par le modèle). Il n'y a pas d'accord à publier : l'absence de donnée n'est pas un résultat.",
-    "echec": "ÉCHEC : {{nombre}} scénario(s) sur {{total}} n'ont produit aucune mesure. Renseignez la clé API (voir ia.variableCle de config/scanner.json) et relancez."
+    "echec": "ÉCHEC : {{nombre}} scénario(s) sur {{total}} n'ont produit aucune mesure. Renseignez la clé API (voir ia.variableCle de config/scanner.json) et relancez.",
+    "demarrageCorpus": "Variance du modèle — mesure « {{mesure}} », {{nombre}} cas du corpus × {{appels}} appel(s) RÉELS, modèle {{modele}}",
+    "accordCorpus": "{{id}} [diagnostic] : avis « {{modalite}} » {{occurrences}}/{{appels}} ({{distinctes}} valeur(s) distincte(s)), attendu {{attendu}} — {{mesures}} appel(s) exploitable(s), coût : {{cout}}",
+    "aucuneMesureCorpus": "⚠ {{id}} [diagnostic] : AUCUN avis sur {{appels}} appel(s) — il n'y a pas d'accord à publier : l'absence de donnée n'est pas un résultat."
   },
   "generer": {
     "termine": "{{nombre}} scénario(s) écrit(s) dans {{dossier}}"
+  },
+  "enregistrerDiagnostic": {
+    "usage": "Usage : pnpm banc:enregistrer-diagnostic [--cas <id>]… (sans --cas : tout le corpus)",
+    "aucunCas": "ÉCHEC : aucun cas du corpus ne correspond à « {{cas}} »",
+    "demarrage": "Enregistrement des cassettes de diagnostic — {{nombre}} cas du corpus, modèle {{modele}}, dossier {{dossier}} — APPELS RÉELS au modèle",
+    "cas": "  {{id}} : attendu {{attendu}}, rendu {{rendu}} — {{verdict}} — coût {{cout}}",
+    "termine": "Corpus : {{corrects}}/{{total}} avis corrects sur {{mesures}} cas mesuré(s) — coût total {{cout}}",
+    "incomplet": "ÉCHEC : {{nombre}} cas sur {{total}} n'ont produit aucun avis — le parc de cassettes est incomplet, l'absence de donnée n'est pas un résultat",
+    "desaccord": "ÉCHEC : {{nombre}} avis ne correspondent pas à l'attendu du corpus : {{cas}} — ce n'est PAS un parc incomplet, c'est un désaccord du modèle"
   }
 }

@@ -37,6 +37,8 @@ import type { ConfigConfirmation } from '../config.js';
 import { calibrer } from './calibration.js';
 import { consolider } from './consolidation.js';
 import { anomalieDecouverte, collecterDecouvertes, MOTIF_CONSTATEE_AU_REJEU } from './decouvertes.js';
+import { detailsGroupe, TYPE_JOURNAL_GROUPE } from './extraits-journal.js';
+import { confianceMinoree } from './pont-vocabulaires.js';
 import { reexecuterGroupe, viewportDuGroupe } from './reexecution.js';
 import { juger, MOTIF_CONFIANCE_SUFFISANTE, MOTIF_ECHEANCE_ATTEINTE } from './verdict.js';
 
@@ -121,20 +123,24 @@ export function creerProtocole(dependances: DependancesProtocole): ProtocoleConf
       const resultats: ResultatGroupe[] = [];
       /** Tout ce que les rejeux ont relevé, groupes d'origine compris : le tri vient après. */
       const candidatesRejeu: AnomalieCandidate[] = [];
+      /**
+       * Découvertes à émettre SUR AVIS du diagnostic (cause site), indexées
+       * par le résultat de leur groupe.
+       *
+       * Elles ne sont PAS publiées ici : elles le sont dans la branche
+       * « écartée » du tri final, et nulle part ailleurs. C'est la forme
+       * structurelle de l'invariant — une découverte sur avis ne peut pas
+       * exister pour un groupe retenu, non parce qu'on y a pensé, mais parce
+       * que le code qui la fabrique ne s'exécute que dans l'autre branche.
+       */
+      const decouvertesSurAvis = new Map<ResultatGroupe, { facteurConfiance: number; motif: string }>();
       let coutApi = 0;
 
       for (const groupe of groupes) {
         const detecteur: Detecteur | undefined = contexte.detecteurs.find(
           (candidat) => candidat.nom === groupe.representant.detecteur,
         );
-        contexte.journaliser('confirmation.groupe', {
-          cle: groupe.cle,
-          confiance: groupe.confiance,
-          nbMembres: groupe.membres.length,
-          viewports: groupe.observations.map((observation) => observation.viewport),
-          detecteur: groupe.representant.detecteur,
-          viewportRejeu: viewportDuGroupe(groupe).nom,
-        });
+        contexte.journaliser(TYPE_JOURNAL_GROUPE, detailsGroupe(groupe, viewportDuGroupe(groupe).nom, config.rejeu));
 
         let resultat: ResultatGroupe;
         if (config.politique === 'econome' && groupe.confiance >= config.seuilConfirmationDirecte) {
@@ -169,10 +175,26 @@ export function creerProtocole(dependances: DependancesProtocole): ProtocoleConf
         // Auto-diagnostic : consulté APRÈS le verdict brut, AVANT la
         // calibration. Son avis ne remplace le verdict que s'il en diffère —
         // sinon le motif d'origine, plus précis, est conservé.
+        //
+        // UNE EXCEPTION, et une seule : un avis qui porte une PROVENANCE vient
+        // d'un modèle, et son motif est tout ce que l'appel a acheté. « Le
+        // silence demeure, mais il est désormais MOTIVÉ » — c'est la
+        // différence entre se taire et n'avoir rien à dire, et elle ne vit
+        // que dans le motif. Le jeter parce que le verdict n'a pas bougé
+        // reviendrait à payer un diagnostic pour l'oublier.
         const avis = await autoDiagnostic.diagnostiquer(resultat, contexte);
         if (avis !== null) {
           resultat.coutApi += avis.coutApi;
-          if (avis.verdict !== resultat.verdict) {
+          // L'UNIQUE effet d'un avis « cause site ». Le groupe n'est pas
+          // touché : il reste écarté, son verdict n'est pas promu, sa
+          // confiance n'est pas remontée — une opinion ne remonte jamais un
+          // verdict (A5). Ce qui est publié est une DÉCOUVERTE, dans le
+          // troisième état épistémique (« constatée, non re-confirmée »),
+          // avec une confiance MINORÉE : un avis n'est pas une preuve.
+          if (avis.decouverte !== undefined) {
+            decouvertesSurAvis.set(resultat, avis.decouverte);
+          }
+          if (avis.verdict !== resultat.verdict || avis.provenance !== undefined) {
             contexte.journaliser('confirmation.auto-diagnostic', {
               cle: groupe.cle,
               diagnostic: autoDiagnostic.nom,
@@ -215,18 +237,45 @@ export function creerProtocole(dependances: DependancesProtocole): ProtocoleConf
 
       const retenues: Anomalie[] = [];
       const ecartees: CandidateEcartee[] = [];
+      const decouvertes: Anomalie[] = [];
       for (const resultat of resultats) {
         if (VERDICTS_RETENUS.includes(resultat.verdict)) {
           retenues.push(anomalieRetenue(resultat));
-        } else {
-          ecartees.push(...candidatesEcartees(resultat));
+          continue;
         }
+        ecartees.push(...candidatesEcartees(resultat));
+        // Le groupe est écarté — et c'est DANS cette branche, et seulement
+        // ici, qu'un avis « cause site » peut publier sa découverte. Confiance
+        // d'ORIGINE minorée, jamais la confiance calibrée : la découverte
+        // n'est pas le groupe, elle n'a pas été re-confirmée, et le facteur
+        // dit qu'un avis n'est pas une preuve.
+        const surAvis = decouvertesSurAvis.get(resultat);
+        if (surAvis === undefined) {
+          continue;
+        }
+        const anomalie: Anomalie = {
+          ...anomalieDecouverte(resultat.groupe),
+          confiance: confianceMinoree(resultat.confianceInitiale, surAvis.facteurConfiance),
+          motif: surAvis.motif,
+        };
+        contexte.journaliser('confirmation.decouverte', {
+          cle: resultat.groupe.cle,
+          detecteur: resultat.groupe.representant.detecteur,
+          description: resultat.groupe.representant.description,
+          urlOuEtape: anomalie.urlOuEtape,
+          motif: surAvis.motif,
+          confiance: anomalie.confiance,
+          confianceOrigine: resultat.confianceInitiale,
+          nbMembres: resultat.groupe.membres.length,
+          verdictGroupe: resultat.verdict,
+        });
+        decouvertes.push(anomalie);
+        retenues.push(anomalie);
       }
 
       // DÉCOUVERTES : ce que les rejeux ont vu sans être venus le chercher.
       // Retenues sans calibration (elles n'ont pas été re-confirmées) et
       // journalisées à part : leur statut est « constatée une fois ».
-      const decouvertes: Anomalie[] = [];
       for (const groupe of collecterDecouvertes(candidatesRejeu, groupes)) {
         const anomalie = anomalieDecouverte(groupe);
         contexte.journaliser('confirmation.decouverte', {

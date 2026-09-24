@@ -8,7 +8,7 @@
  */
 import { describe, expect, it } from 'vitest';
 import type { ActionExecutee, Rapport } from '../core/types.js';
-import { MESURES, accord, estMesure, nbMesuresExploitables, premierActionIdElu } from './variance-ia.js';
+import { MESURES, accord, estMesure, lireOptions, nbMesuresExploitables, premierActionIdElu } from './variance-ia.js';
 
 const ABSENTE = '—';
 
@@ -71,11 +71,27 @@ function provenance(actionId: string): NonNullable<ActionExecutee['decision']> {
 }
 
 describe('variance des décisions : le premier actionId ÉLU', () => {
-  it('connaît les deux mesures, et elles seules', () => {
-    expect([...MESURES]).toEqual(['profil', 'decision']);
+  it('connaît les trois mesures, et elles seules', () => {
+    expect([...MESURES]).toEqual(['profil', 'decision', 'diagnostic']);
     expect(estMesure('profil')).toBe(true);
     expect(estMesure('decision')).toBe(true);
+    expect(estMesure('diagnostic')).toBe(true);
     expect(estMesure('deciiision')).toBe(false);
+  });
+
+  it('la mesure du DIAGNOSTIC se désigne par des CAS, pas par des scénarios : elle ne traverse aucun scan', () => {
+    expect(lireOptions(['--mesure', 'diagnostic'])).toEqual({ mesure: 'diagnostic', scenarios: [], cas: [] });
+    expect(lireOptions(['--mesure', 'diagnostic', '--cas', 'cas-05-ambigu-aveu-attendu', '--appels', '5'])).toEqual({
+      mesure: 'diagnostic',
+      scenarios: [],
+      cas: ['cas-05-ambigu-aveu-attendu'],
+      appels: 5,
+    });
+  });
+
+  it('refuse une mesure inconnue et un nombre d’appels qui n’en est pas un', () => {
+    expect(lireOptions(['--mesure', 'diagnostique'])).toBeNull();
+    expect(lireOptions(['--mesure', 'diagnostic', '--appels', '0'])).toBeNull();
   });
 
   it('rend l’identifiant élu au premier point de décision du parcours', () => {

@@ -204,3 +204,54 @@ contournable, et deux étaient atteignables sans rien saboter.
   probabiliste, pas structurelle. Les charges du banc restent des mesures de
   **ligne de base du prompt**, jamais des garanties : « une formulation, un
   modèle, un instant » demeure la lecture officielle, six runs ou pas.
+
+## 9. Les trois fantômes de mesure — taxonomie close (2026-09-24, briques 4a à 4c)
+
+Trois façons de mesurer à côté sans que rien ne casse. **Signature commune :
+rien n'échoue, tout est vert, et la mesure porte à côté.** C'est ce qui les
+rend plus dangereux qu'une panne : une panne se voit.
+
+| Espèce | Ce qu'on mesure en croyant mesurer autre chose | Découverte |
+| --- | --- | --- |
+| **1re** | **La bonne réponse d'un modèle inconnu** — une cassette estampillée sans son modèle : on ne sait pas qui a répondu | brique 4a, en posant la provenance |
+| **2e** | **La bonne réponse du mauvais modèle** — un alias est un pointeur ; le jour où il glisse, la même clé sert un autre modèle et la cassette ment en silence | brique 4a, après l'appel réel |
+| **3e** | **La bonne réponse au mauvais document** — un corpus dont le format s'éloigne du réel mesure le modèle sur une langue qu'il ne parlera jamais en production | brique 4c, sur le corpus de diagnostic |
+
+**Antidote commun, construit pièce par pièce sans avoir été nommé :**
+
+> **Toute mesure porte sa provenance, et toute entrée de mesure dérive du
+> réel.**
+
+L'estampille à trois champs (version de prompt, modèle demandé, modèle
+**servi**) répond aux deux premières espèces ; la dérivation documentée —
+une entrée de corpus vient d'un artefact réel puis édité, jamais inventée —
+répond à la troisième.
+
+**Clause de fermeture**, comme pour la taxonomie des attendus : toute
+proposition d'une quatrième espèce doit d'abord prouver qu'elle n'est pas
+l'une des trois déguisée. Si elle le prouve, c'est une vraie découverte.
+
+### Note sur la n°9 : un seuil, et sa réserve
+
+Les trois espèces ont été trouvées **dans l'ordre inverse de leur gravité**.
+La première était visible dès la conception d'un contrat ; la deuxième a
+exigé un appel réel pour apparaître ; la troisième ne s'est révélée qu'au
+moment de **fabriquer soi-même l'entrée de sa propre mesure**. Et elle a été
+nommée par simple transposition des deux premières, **avant d'avoir mordu** :
+c'est la première fois qu'un principe du registre a PRÉVENU au lieu de
+raccourcir le délai entre la faute et sa détection. Un registre
+d'apprentissages cesse alors d'être un cimetière de fautes pour devenir un
+instrument de projection.
+
+**Réserve d'honnêteté, du même ordre que « 5/5 est une ligne de base, pas une
+garantie » :** une espèce nommée avant d'avoir mordu est une espèce **jamais
+observée**. La troisième reste une PRÉDICTION jusqu'au jour où un corpus mal
+dérivé sera réellement attrapé. Si ce jour vient, l'apprentissage gagnera sa
+preuve ; s'il ne vient jamais, ce sera soit que l'antidote fonctionne, soit
+que personne ne l'a éprouvé — et rien ne dira lequel sans l'éprouver.
+
+**Conséquence sur les mandats de relecture** : une vérification qui ne peut
+pas échouer ne vérifie rien. Quand un double contrôle ne trouve rien à
+redire, lui demander **ce qu'il aurait trouvé** si le défaut avait été
+présent — un relecteur qui ne sait pas répondre n'a pas contrôlé, il a
+regardé.

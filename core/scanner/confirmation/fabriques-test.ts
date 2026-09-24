@@ -11,6 +11,7 @@
  */
 import type {
   AnomalieCandidate,
+  CauseEchecRejeu,
   ContexteConfirmation,
   ContexteReproduction,
   Detecteur,
@@ -51,6 +52,13 @@ export interface RejeuScripte {
   /** Durée de la réponse rejouée, pour un détecteur gradué. */
   dureeMs?: number;
   echecOutillage?: boolean;
+  /**
+   * À qui la faute, quand le rejeu échoue. Sans elle, un échec scripté n'est
+   * imputé à personne : la tentative est inexploitable mais sa cause reste
+   * `undefined`, donc le résidu `indetermine` — le seul client de
+   * l'auto-diagnostic IA — serait inatteignable en test.
+   */
+  causeEchec?: CauseEchecRejeu;
   erreur?: string;
 }
 
@@ -99,6 +107,7 @@ export function reexecuteurFactice(scripts: RejeuScripte[]): ReexecuteurFactice 
           signaux: [],
           parcours: { ...parcours, actions: [], arret: 'erreur' as const, enAttenteALArret: 0, pagesRestantesALArret: 0 },
           echecOutillage: true,
+          ...(script.causeEchec === undefined ? {} : { causeEchec: script.causeEchec }),
           ...(script.erreur === undefined ? {} : { erreur: script.erreur }),
           dureeMs: 10,
         });

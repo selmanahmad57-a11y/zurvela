@@ -1,0 +1,26 @@
+{
+  "id": "cas-05-ambigu-aveu-attendu",
+  "avisAttendu": "indetermine",
+  "derive": {
+    "ecritDeZero": false,
+    "scenario": "formulaire-contact--v01--fr",
+    "groupeReel": "reseau:GET:/statique/images/logo-v2.svg",
+    "journalReel": "journal-reel.json",
+    "editions": [
+      "entrée `confirmation.groupe` : REPRISE TELLE QUELLE du journal réel",
+      "tentative 1 : `reproduite` passé de true à false, `echecOutillage` à true, ajout de `causeEchec: indetermine` et `erreur: delai-depasse`, `dureeMs` porté de 1384 à 10602 ; observations : `nbActions` 2→1, `arreteA` null→\"naviguer\", `nbSignaux` 11→9. `statuts` et `reponsesHors2xx` INCHANGÉS : la ressource de l'anomalie a bien été servie, et en 404",
+      "tentative 2 : mêmes éditions, `dureeMs` porté de 1329 à 9871 ; observations : `statuts` [200,404]→[200] et `reponsesHors2xx` VIDÉE — au même endroit, quelques secondes plus tard, la même ressource n'a produit aucune réponse hors 2xx",
+      "rien d'ajouté : aucune troisième tentative, aucune contre-épreuve — le cas est PAUVRE en preuves par construction"
+    ]
+  },
+  "pourquoiCetAvis": "C'est le cas le plus important des cinq, et il est construit pour être INDÉCIDABLE, pas pour être facile. Les deux tentatives ont atteint le site et chargé la page en 200 — l'excuse « on n'a pas pu regarder » n'est donc pas disponible — et elles se CONTREDISENT sur le seul point qui compte : la première a vu la ressource de l'anomalie servie en 404, la seconde, quelques secondes plus tard et dans un contexte neuf, n'a vu aucune réponse hors 2xx. Deux lectures tiennent exactement autant. Un défaut INTERMITTENT du serveur : ce serait le site. Un artefact de nos propres contextes froids — ordre de chargement, cache vide, ressource demandée dans un cas et pas dans l'autre : ce serait l'outil. Et aucune des deux tentatives n'est allée à son terme, donc aucune n'a rien établi. Il n'y a ni contre-épreuve, ni troisième tentative, ni autre viewport pour départager. Un diagnostic qui tranche ici FABRIQUE de la certitude.",
+  "contexte": {
+    "groupe": "reseau:GET:/statique/images/logo-v2.svg",
+    "description": "ressource-interne-404",
+    "extraits": [
+      "confirmation.groupe {\"cle\":\"reseau:GET:/statique/images/logo-v2.svg\",\"confiance\":0.95,\"nbMembres\":6,\"viewports\":[\"desktop\",\"mobile\"],\"detecteur\":\"d-http\",\"viewportRejeu\":\"desktop\",\"urlOuEtape\":\"http://127.0.0.1:4800/\",\"description\":\"ressource-interne-404\",\"action\":\"naviguer\",\"nbPrealables\":0,\"budgetChargementMs\":15000,\"budgetActionMs\":10000}",
+      "confirmation.tentative {\"cle\":\"reseau:GET:/statique/images/logo-v2.svg\",\"numero\":1,\"viewport\":\"desktop\",\"reproduite\":false,\"echecOutillage\":true,\"causeEchec\":\"indetermine\",\"erreur\":\"delai-depasse\",\"dureeMs\":10602,\"observations\":{\"nbPages\":1,\"statutDocument\":200,\"nbActions\":1,\"nbActionsPrevues\":2,\"arreteA\":\"naviguer\",\"nbSignaux\":9,\"statuts\":[200,404],\"reponsesHors2xx\":[\"404 GET http://127.0.0.1:4800/statique/images/logo-v2.svg\"],\"echecsReseau\":[],\"requetesEnAttente\":[]}}",
+      "confirmation.tentative {\"cle\":\"reseau:GET:/statique/images/logo-v2.svg\",\"numero\":2,\"viewport\":\"desktop\",\"reproduite\":false,\"echecOutillage\":true,\"causeEchec\":\"indetermine\",\"erreur\":\"delai-depasse\",\"dureeMs\":9871,\"observations\":{\"nbPages\":1,\"statutDocument\":200,\"nbActions\":1,\"nbActionsPrevues\":2,\"arreteA\":\"naviguer\",\"nbSignaux\":9,\"statuts\":[200],\"reponsesHors2xx\":[],\"echecsReseau\":[],\"requetesEnAttente\":[]}}"
+    ]
+  }
+}

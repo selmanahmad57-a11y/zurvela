@@ -100,3 +100,16 @@ entrée indique la brique ou la phase où elle a vocation à être traitée.
   accompagnera le rapport business. Un changement de contrat sans
   consommateur serait de la spéculation. Origine : clôture de la brique 3
   (2026-09-23).
+
+## Phase 2
+
+- **Mesurer la répétabilité inter-scans des états énumérés d'un même site
+  AVANT de concevoir le cache de décisions.** Le coût IA d'un scan vit dans
+  le NOMBRE d'appels, pas dans le prix du modèle : un profilage par scan
+  contre une décision par point de choix — facteur 14 mesuré à la brique 4b
+  (0,041 contre 0,583 USD sur 34 scans). Le cache attaquera donc le bon
+  terme, mais son gain est proportionnel à une grandeur que personne n'a
+  encore mesurée : la part des états énumérés identiques d'un scan à l'autre
+  sur un même site. La mesurer d'abord, concevoir ensuite — c'est la règle
+  des métriques jumelles appliquée par avance à une optimisation qui
+  n'existe pas encore. Origine : brique 4b (2026-09-23).

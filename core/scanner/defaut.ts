@@ -2,8 +2,9 @@
  * Assemblage par défaut du scanner réel : config + liste noire chargées,
  * politique déterministe, filtre d'actions, six détecteurs, protocole
  * anti-faux-positifs (consolidation, re-exécution, verdict, calibration)
- * avec son auto-diagnostic mécanique, client IA (mode dégradé sans clé,
- * constitution §4) et profilage IA de la page de départ (brique 4a).
+ * avec son auto-diagnostic — mécanique d'abord, IA sur le seul résidu
+ * (brique 4c) —, client IA (mode dégradé sans clé, constitution §4) et
+ * profilage IA de la page de départ (brique 4a).
  *
  * Seul module du moteur qui relie le pipeline aux modules concrets
  * (navigateur, exploration, observation, détection, re-exécution).
@@ -13,12 +14,14 @@ import type { Browser } from 'playwright';
 import type { ContexteExploration, PolitiqueDecision, Scanner } from '../types.js';
 import {
   chargerActionsInterdites,
+  chargerConfigDiagnostic,
   chargerConfigProfilage,
   chargerConfigScanner,
   type ActionsInterdites,
   type ConfigScanner,
 } from './config.js';
 import { autoDiagnosticMecanique } from './confirmation/auto-diagnostic.js';
+import { creerAutoDiagnosticIa } from './confirmation/auto-diagnostic-ia.js';
 import { creerProtocole } from './confirmation/protocole.js';
 import { creerDetecteurs } from './detection/index.js';
 import { creerExplorateur } from './exploration/explorateur.js';
@@ -193,10 +196,11 @@ function appliquerSurcharges(config: ConfigScanner, surcharges: OptionsAssemblag
 }
 
 export async function creerScannerParDefaut(options: OptionsAssemblage = {}): Promise<Scanner> {
-  const [configChargee, actionsInterdites, configProfilage] = await Promise.all([
+  const [configChargee, actionsInterdites, configProfilage, configDiagnostic] = await Promise.all([
     chargerConfigScanner(),
     chargerActionsInterdites(),
     chargerConfigProfilage(),
+    chargerConfigDiagnostic(),
   ]);
   const config = appliquerSurcharges(configChargee, options.exploration);
   const ia = options.ia ?? creerClientIa(config.ia);
@@ -205,7 +209,21 @@ export async function creerScannerParDefaut(options: OptionsAssemblage = {}): Pr
     explorateur: explorateurAvecNavigateur(config, actionsInterdites, ia),
     observateur: creerObservateur,
     detecteurs: creerDetecteurs(config.detecteurs),
-    protocole: creerProtocole({ config: config.confirmation, autoDiagnostic: autoDiagnosticMecanique }),
+    // L'auto-diagnostic IA DÉCORE le mécanique : la règle gratuite reste la
+    // première consultée, le modèle n'est appelé que sur ce qu'elle laisse
+    // dans le silence, et le point de montage reste unique. Le monter ici est
+    // sans risque pour le déterminisme du banc : celui-ci injecte un client
+    // REJOUABLE, qui n'appelle aucun réseau — une cassette absente est une
+    // indisponibilité, donc exactement le comportement d'avant la brique.
+    protocole: creerProtocole({
+      config: config.confirmation,
+      autoDiagnostic: creerAutoDiagnosticIa({
+        mecanique: autoDiagnosticMecanique,
+        client: ia,
+        config: configDiagnostic,
+        budgetsRejeu: config.confirmation.rejeu,
+      }),
+    }),
     ouvrirRejeu: (journaliser, echeance) => sessionRejeu(config, journaliser, echeance),
     ia,
     // Le profilage est TOUJOURS assemblé : c'est le client IA, et lui seul,

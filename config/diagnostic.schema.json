@@ -1,0 +1,48 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "zurvela/config/diagnostic",
+  "title": "Configuration de l'auto-diagnostic IA",
+  "description": "Déclenchement, bornes et calibration de l'avis de cause. Le diagnostic est un AFFINEUR, jamais un prérequis : coupé, le moteur se comporte exactement comme avant lui.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["actif", "groupesMax", "extraitsMaxChars", "extraitsMaxParGroupe", "maxTokensReponse", "relancesMax", "facteurConfianceDecouverte"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "$commentaire": { "type": "string" },
+    "actif": {
+      "type": "boolean",
+      "description": "Porte du diagnostic. À false, le comportement est STRICTEMENT celui d'avant la brique 4c : le résidu s'effondre en limite d'automatisation, en silence."
+    },
+    "groupesMax": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Nombre maximal de groupes diagnostiqués par scan. Le résidu est rare ; ce plafond borne la dépense d'un scan pathologique."
+    },
+    "extraitsMaxChars": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Troncature du bloc d'extraits de journal montré au modèle. Le journal transporte des chaînes venues de la page : c'est une surface d'injection, donc elle se borne."
+    },
+    "extraitsMaxParGroupe": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Nombre maximal d'entrées de journal retenues pour un groupe."
+    },
+    "maxTokensReponse": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Plafond de génération de l'appel de diagnostic (un avis et sa justification, pas une rédaction)."
+    },
+    "relancesMax": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Relances autorisées quand la réponse ne valide pas le schéma ; au-delà, pas d'avis — le silence d'avant."
+    },
+    "facteurConfianceDecouverte": {
+      "type": "number",
+      "exclusiveMinimum": 0,
+      "exclusiveMaximum": 1,
+      "description": "Facteur appliqué à la confiance du détecteur pour la découverte émise sur un avis « site ». STRICTEMENT inférieur à 1 : un avis n'est pas une preuve, et le doute ne monte jamais la confiance."
+    }
+  }
+}

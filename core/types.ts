@@ -365,16 +365,22 @@ export interface DecisionPrise {
 }
 
 /**
- * Provenance d'une décision IA. Trois champs, comme toute sortie de modèle :
- * version de prompt, modèle demandé, modèle servi — plus la prose journalisée.
+ * Provenance d'une sortie de modèle, quelle qu'elle soit. Les TROIS champs du
+ * patron — version de prompt, modèle demandé, modèle servi — plus le drapeau
+ * de relance. Un alias est un pointeur : sans le modèle SERVI, on mesure la
+ * bonne réponse d'un modèle inconnu.
  */
-export interface ProvenanceDecision {
+export interface ProvenanceSortieIa {
   versionPrompt: string;
   modeleDemande: string;
   modeleServi: string;
+  apresRelance: boolean;
+}
+
+/** Provenance d'une décision de navigation : le patron, plus ce qui lui est propre. */
+export interface ProvenanceDecision extends ProvenanceSortieIa {
   /** Prose du modèle, terminale : journalisée, jamais lue par une logique. */
   raison: string | null;
-  apresRelance: boolean;
   actionId: string;
 }
 
@@ -694,6 +700,69 @@ export interface Reexecuteur {
   rejouer(reproduction: ContexteReproduction, viewport: Viewport): Promise<ResultatRejeu>;
 }
 
+/**
+ * Ce que le rejeu a OBSERVÉ — jusqu'où il est allé, et ce qu'il a vu passer.
+ *
+ * Pourquoi ces chiffres entrent dans le résultat du rejeu, et de là dans le
+ * journal : sans eux, une tentative en échec dit qu'elle a échoué et ne dit
+ * PAS si le site a été interrogé. « delai-depasse en 10 623 ms » se lit
+ * exactement pareil quand le robot n'a jamais atteint le bouton et quand le
+ * serveur a reçu la requête et ne l'a jamais servie — or c'est précisément la
+ * question que le protocole pose. Le manque a été découvert en MESURANT
+ * l'auto-diagnostic sur un corpus de journaux : le modèle a répondu cinq fois
+ * qu'il lui manquait de savoir si la requête avait été émise et à quelle
+ * étape l'attente avait expiré. C'est un manque du JOURNAL — un lecteur
+ * humain a le même — pas une commodité pour un modèle.
+ *
+ * Aucun de ces champs n'interprète : ce sont des comptes, des statuts HTTP et
+ * des codes d'erreur du navigateur (standards techniques universels,
+ * constitution §2). L'imputation reste au-dessus.
+ */
+export interface ObservationsRejeu {
+  /** Pages effectivement chargées. 0 : la page n'a jamais été obtenue. */
+  nbPages: number;
+  /** Statut HTTP du document de la dernière page chargée ; null si la navigation n'a pas abouti. */
+  statutDocument: number | null;
+  /** Actions menées à leur terme, le chargement compris. */
+  nbActions: number;
+  /** Actions que le rejeu devait mener : chargement, actions préalables, action déclenchante. */
+  nbActionsPrevues: number;
+  /** Type de la première action NON menée ; null quand le rejeu est allé au bout. */
+  arreteA: string | null;
+  /** Signaux collectés pendant le rejeu, tous types confondus. */
+  nbSignaux: number;
+  /** Statuts HTTP distincts observés, triés. */
+  statuts: number[];
+  /**
+   * Réponses dont le statut est HORS de la classe 2xx : `<statut> <MÉTHODE>
+   * <url>`, distinctes et triées.
+   *
+   * `statuts` seul est ANONYME — « un 503 est passé » ne dit pas sur quelle
+   * requête, et la mesure l'a montré : le modèle a refusé d'imputer un 503
+   * faute de savoir s'il concernait la soumission examinée. La classe 2xx est
+   * un standard technique du web (constitution §2, « le code peut connaître LE
+   * WEB »), pas un jugement : la liste dit quelles réponses n'y appartiennent
+   * pas, elle ne dit pas qu'elles sont fautives.
+   */
+  reponsesHors2xx: string[];
+  /**
+   * Requêtes en ÉCHEC réseau : `<code> <MÉTHODE> <url>`, distinctes et triées.
+   *
+   * Le code seul ne suffisait pas, et c'est la mesure qui l'a montré : « une
+   * requête a échoué » ne dit pas si c'est celle dont l'anomalie parle. La
+   * ressource NOMME ce qui a échoué, et c'est elle qui fait la différence
+   * entre « le site a cassé la requête que nous lui avons envoyée » et « une
+   * image tierce n'est pas arrivée ».
+   */
+  echecsReseau: string[];
+  /**
+   * Requêtes restées SANS RÉPONSE à la fin d'une fenêtre d'observation :
+   * `<MÉTHODE> <url>`, distinctes et triées. Même raison que ci-dessus — une
+   * requête pendante ANONYME est une information qu'on ne peut pas utiliser.
+   */
+  requetesEnAttente: string[];
+}
+
 /** Une tentative de re-exécution d'un groupe. */
 export interface TentativeReexecution {
   /** Numéro de la tentative, à partir de 1. */
@@ -710,6 +779,13 @@ export interface TentativeReexecution {
   /** Mesure brute quand le détecteur est gradué (durée observée pour D-LENTEUR). */
   mesureMs?: number;
   dureeMs: number;
+  /**
+   * Ce que le rejeu a observé. Optionnel parce que le champ est arrivé après
+   * le type : une tentative fabriquée par un test peut s'en passer, un rejeu
+   * réel jamais — un test de `reexecuterGroupe` l'exige sur CHAQUE tentative,
+   * y compris celles qui ont échoué, parce que c'est là qu'il sert.
+   */
+  observations?: ObservationsRejeu;
 }
 
 /**
@@ -723,6 +799,12 @@ export interface ContreEpreuve {
   echecOutillage: boolean;
   /** true si le résultat est celui qu'on attendait (non reproduite dans l'autre viewport). */
   attendue: boolean;
+  /**
+   * Ce que le rejeu de contre-épreuve a observé. C'est souvent la pièce la
+   * plus parlante du dossier : un rejeu qui va jusqu'au bout dans l'AUTRE
+   * viewport, au même instant, prouve que le site répondait.
+   */
+  observations?: ObservationsRejeu;
 }
 
 export interface ResultatGroupe {
@@ -757,4 +839,20 @@ export interface AvisDiagnostic {
   /** Identifiant technique du motif. */
   motif: string;
   coutApi: number;
+  /**
+   * Découverte à émettre en plus du verdict. C'est le SEUL effet d'un avis
+   * « cause site » : le groupe RESTE écarté — une opinion ne remonte jamais
+   * un verdict (principe du doute) — et l'anomalie est publiée dans le
+   * troisième état épistémique, « constatée, non re-confirmée », avec une
+   * confiance minorée : un avis n'est pas une preuve.
+   *
+   * Le jour où l'on voudra retenir sur avis, ce sera par une RE-EXÉCUTION
+   * supplémentaire déclenchée par l'avis — une preuve achetée, pas une
+   * opinion crue. C'est une brique future, pas un ajustement de cette table.
+   */
+  decouverte?: { facteurConfiance: number; motif: string };
+  /** Provenance, quand l'avis vient d'un modèle. Absente pour l'auto-diagnostic mécanique. */
+  provenance?: ProvenanceSortieIa;
+  /** Prose du modèle, terminale : journalisée, jamais lue par une logique. */
+  justification?: string | null;
 }

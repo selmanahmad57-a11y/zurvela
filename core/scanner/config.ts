@@ -147,6 +147,7 @@ export interface ConfigProfilage {
 
 export const FICHIER_CONFIG_SCANNER = depuisRacine('config', 'scanner.json');
 export const FICHIER_CONFIG_PROFILAGE = depuisRacine('config', 'profilage.json');
+export const FICHIER_CONFIG_DIAGNOSTIC = depuisRacine('config', 'diagnostic.json');
 export const FICHIER_ACTIONS_INTERDITES = depuisRacine('config', 'actions-interdites.json');
 
 async function chargerValide<T>(fichier: string, schema: string, nom: string): Promise<T> {
@@ -156,6 +157,21 @@ async function chargerValide<T>(fichier: string, schema: string, nom: string): P
 
 export async function chargerConfigScanner(fichier: string = FICHIER_CONFIG_SCANNER): Promise<ConfigScanner> {
   return chargerValide<ConfigScanner>(fichier, depuisRacine('config', 'scanner.schema.json'), 'config/scanner.json');
+}
+
+/** Déclenchement, bornes et calibration de l'auto-diagnostic (config/diagnostic.json). */
+export interface ConfigDiagnostic {
+  actif: boolean;
+  groupesMax: number;
+  extraitsMaxChars: number;
+  extraitsMaxParGroupe: number;
+  maxTokensReponse: number;
+  relancesMax: number;
+  facteurConfianceDecouverte: number;
+}
+
+export async function chargerConfigDiagnostic(fichier: string = FICHIER_CONFIG_DIAGNOSTIC): Promise<ConfigDiagnostic> {
+  return chargerValide<ConfigDiagnostic>(fichier, depuisRacine('config', 'diagnostic.schema.json'), 'config/diagnostic.json');
 }
 
 export async function chargerConfigProfilage(fichier: string = FICHIER_CONFIG_PROFILAGE): Promise<ConfigProfilage> {

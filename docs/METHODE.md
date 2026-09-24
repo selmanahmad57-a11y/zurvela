@@ -40,6 +40,35 @@ Le niveau est choisi **à l'ouverture** de la brique, et annoncé.
 | **Ciblé** | Modification d'un module existant, nouveau détecteur, nouveau bug du banc | Idem, plus une revue adversariale **sur la seule frontière touchée**, 1 sceptique par constat (3 seulement en cas de désaccord). |
 | **Complet** | Capacité nouvelle, contrat modifié, sécurité | Revue multi-lentilles, 3 sceptiques par constat, correction, validation. Avec deux optimisations : **déduplication des constats AVANT les sceptiques** (ne jamais faire voter trois fois le même défaut), et **budget plafond annoncé à l'ouverture** — dépassement : on s'arrête et on remonte au chat de conception. |
 
+### Graduation du MODÈLE, à côté de la graduation du nombre
+
+Le régime dit **combien** de sceptiques ; la graduation du modèle dit **sur
+quel modèle** chaque rôle tourne. Les sceptiques représentent 60 à 70 % du
+nombre d'agents d'un workflow : c'est là que vit le coût, et leur travail —
+réfuter un constat documenté, preuve à l'appui — est une tâche cadrée.
+
+| Rôle | Modèle | Pourquoi |
+| --- | --- | --- |
+| Flux d'implémentation, intégration, correction | le modèle de la session | ils écrivent le code, tranchent, et refusent les corrections régressives |
+| Lentilles de revue | le modèle de la session | c'est là que les défauts de fond apparaissent |
+| Sceptiques **sécurité / frontière** | le modèle de la session | inchangé : le coût d'un faux négatif y dépasse tout |
+| Sceptiques sur le reste | un modèle moins cher | mandat précis, constat fourni, décision binaire |
+| Déduplication des constats | un modèle moins cher | fusion de doublons, purement mécanique |
+
+Économie observée à l'échelle d'un workflow : 40 à 50 %, sans toucher à ce
+qui produit le code ni à ce qui garde la sécurité. C'est la doctrine de
+proportion au risque appliquée au modèle au lieu du nombre.
+
+### Le coût du BANC ne dépend pas de la brique
+
+Le temps d'exécution du banc croît avec le banc, jamais avec la taille de la
+brique. À 34 scénarios, un run prend ~6-7 minutes ; un critère qui exige
+trois runs par politique en coûte 40, et ce bloc est payé à l'intégration
+**et** à la validation. Près de deux heures d'horloge pour une brique dont le
+code neuf tient en trois fichiers. **Dimensionner une annonce sur le
+périmètre de code seul est une erreur** : le périmètre d'EXÉCUTION doit être
+compté à part, et il ne diminue jamais.
+
 Quel que soit le niveau, une garantie ne se déclare pas, elle s'éprouve :
 **si un compteur ne peut pas mentir, il faut que quelqu'un ait essayé de le
 faire mentir.** C'est la version opérationnelle du principe des métriques

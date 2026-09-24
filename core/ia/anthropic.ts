@@ -9,10 +9,13 @@
  * détecteurs techniques (constitution §4, mode dégradé obligatoire).
  */
 import Anthropic from '@anthropic-ai/sdk';
-import type { ConfigProfilage, ConfigScanner } from '../scanner/config.js';
+import type { ConfigDiagnostic, ConfigProfilage, ConfigScanner } from '../scanner/config.js';
 import type { EtatDecisionEnumere } from '../types.js';
 import type { ConfigNavigation } from './config-navigation.js';
 import { deciderBrutAvec, decisionDepuisReponse, type AppelDecision } from './decision.js';
+import { diagnosticDepuisReponse, diagnostiquerBrutAvec, type AppelDiagnostic } from './diagnostic.js';
+import { normaliserContexteDiagnostic, type ContexteDiagnosticNormalise } from './contexte-diagnostic.js';
+import { creerValidateurDiagnostic } from './schema-diagnostic.js';
 import { identifiantsEnumeres, normaliserEtatDecision, type EtatNormalise } from './etat-decision.js';
 import { creerValidateurDecision } from './schema-decision.js';
 import {
@@ -21,6 +24,7 @@ import {
   RAISON_APPEL_LIMITE,
   RAISON_APPEL_RESEAU,
   RAISON_CLE_ABSENTE,
+  RAISON_DIAGNOSTIC_INACTIF,
   RAISON_NON_IMPLEMENTE,
   RAISON_CONTEXTE_DEPASSE,
   RAISON_REFUS_MODELE,
@@ -28,8 +32,10 @@ import {
   RAISON_TARIF_ABSENT,
   creerClientSansCapacite,
   type ClientIaEnregistrable,
+  type ContexteDiagnostic,
   type ContexteProfilage,
   type DecisionEstampillee,
+  type DiagnosticEstampille,
   type ProfilPage,
   type ReponseBrute,
   type ResultatIa,
@@ -100,6 +106,13 @@ export interface OptionsClientAnthropic {
    * typecheck suit (APPRENTISSAGES n°7).
    */
   navigation: ConfigNavigation;
+  /**
+   * Réglages de l'auto-diagnostic. REQUIS, même raison qu'à la navigation : le
+   * contrat de la brique 4c est additif, donc rien n'aurait signalé un client
+   * concret incapable de diagnostiquer. Le rendre obligatoire crée le trou que
+   * le typecheck suit (APPRENTISSAGES n°7).
+   */
+  diagnostic: ConfigDiagnostic;
   tarifs: TarifsIa;
   env?: NodeJS.ProcessEnv;
   /** Doublure de SDK (tests). En production, le SDK est construit depuis la clé. */
@@ -189,6 +202,65 @@ export function creerClientAnthropic(options: OptionsClientAnthropic): ClientIaE
     });
   };
 
+  // ---------------------------------------------------------------------
+  // Auto-diagnostic (brique 4c)
+  // ---------------------------------------------------------------------
+  const { diagnostic } = options;
+  const modeleDiagnostic = config.modeles.diagnostic;
+  const tarifDiagnostic = tarifs[modeleDiagnostic];
+  const validateurDiagnostic = creerValidateurDiagnostic();
+
+  /**
+   * Le chemin qui DÉPENSE, et donc le chemin où la porte se referme une
+   * seconde fois.
+   *
+   * Le déclenchement est filtré en amont par le protocole — c'est là que la
+   * porte `actif` doit vivre, parce que c'est là qu'on sait quels groupes sont
+   * concernés. La serrure posée ici ne la remplace pas : elle garantit qu'une
+   * porte fermée ne peut pas laisser partir un appel réseau, même si un
+   * appelant oublie de la lire. Le cahier exige qu'un diagnostic coupé rende
+   * un comportement STRICTEMENT identique à la brique 4b, et une exigence de
+   * cette nature ne se garde pas à un seul endroit.
+   *
+   * Comme le tarif manquant, l'indisponibilité est PAR CAPACITÉ : un
+   * diagnostic éteint n'éteint ni le profilage ni la navigation.
+   */
+  const diagnostiquerBrut = (contexte: ContexteDiagnosticNormalise): Promise<ResultatIa<ReponseBrute>> => {
+    if (!diagnostic.actif) {
+      return Promise.resolve({
+        disponible: false,
+        raison: RAISON_DIAGNOSTIC_INACTIF,
+        message: 'diagnostic.actif est faux : aucun appel',
+      });
+    }
+    if (tarifDiagnostic === undefined) {
+      return Promise.resolve({
+        disponible: false,
+        raison: RAISON_TARIF_ABSENT,
+        message: `aucun tarif configuré pour le modèle ${modeleDiagnostic}`,
+      });
+    }
+    const appelerDiagnostic: AppelDiagnostic = (prompt, schemaContratModele) =>
+      appeler(
+        {
+          sdk,
+          modele: modeleDiagnostic,
+          tarif: tarifDiagnostic,
+          maxTokens: diagnostic.maxTokensReponse,
+          nomPlafond: 'diagnostic.maxTokensReponse',
+          detailEntree: `diagnostic.extraitsMaxChars ${diagnostic.extraitsMaxChars}`,
+        },
+        prompt,
+        schemaContratModele,
+      );
+    return diagnostiquerBrutAvec({
+      contexte,
+      config: diagnostic,
+      validateur: validateurDiagnostic,
+      appeler: appelerDiagnostic,
+    });
+  };
+
   const profilerBrut = (contexte: ContexteProfilage): Promise<ResultatIa<ReponseBrute>> =>
     profilerBrutAvec({ contexte, config: profilage, validateur, appeler: appelerProfilage });
 
@@ -202,6 +274,7 @@ export function creerClientAnthropic(options: OptionsClientAnthropic): ClientIaE
     raisonDegrade: null,
     profilerBrut,
     deciderBrut,
+    diagnostiquerBrut,
     async profiler(contexte): Promise<ResultatIa<ProfilPage>> {
       const brut = await profilerBrut(contexte);
       if (!brut.disponible) return brut;
@@ -235,8 +308,28 @@ export function creerClientAnthropic(options: OptionsClientAnthropic): ClientIaE
         coutApi: brut.valeur.coutApi,
       });
     },
-    // 4c implémentera ces deux fonctions ; elles ne touchent rien aujourd'hui.
-    diagnostiquer: nonImplemente,
+    /**
+     * Le modèle rend un AVIS sur le résidu que la mécanique n'a pas tranché.
+     * La normalisation du contexte a lieu ICI, une fois, et sert à la fois au
+     * prompt et à la clé de cassette — la discipline de l'appelant à borner
+     * son journal ne doit pas pouvoir changer ce que le modèle voit.
+     *
+     * Les trois avis sont traités à l'identique : `indetermine` remonte comme
+     * une valeur disponible, jamais comme une erreur.
+     */
+    async diagnostiquer(contexte: ContexteDiagnostic): Promise<ResultatIa<DiagnosticEstampille>> {
+      const brut = await diagnostiquerBrut(normaliserContexteDiagnostic(contexte, diagnostic));
+      if (!brut.disponible) return brut;
+      return diagnosticDepuisReponse({
+        texte: brut.valeur.texte,
+        validateur: validateurDiagnostic,
+        modeleDemande: modeleDiagnostic,
+        modeleServi: brut.valeur.modeleServi,
+        apresRelance: brut.valeur.apresRelance,
+        coutApi: brut.valeur.coutApi,
+      });
+    },
+    // La brique finale implémentera la rédaction ; elle ne touche rien aujourd'hui.
     rediger: nonImplemente,
   };
 }

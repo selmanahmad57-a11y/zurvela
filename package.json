@@ -13,6 +13,7 @@
     "banc:servir": "tsx banc/serveur.ts",
     "banc:generer": "tsx banc/scenarios/generer.ts",
     "banc:enregistrer-ia": "node --env-file-if-exists=.env --env-file-if-exists=.env.local --env-file-if-exists=docs/.env.local --import tsx banc/enregistrer-ia.ts",
+    "banc:enregistrer-diagnostic": "node --env-file-if-exists=.env --env-file-if-exists=.env.local --env-file-if-exists=docs/.env.local --import tsx banc/enregistrer-diagnostic.ts",
     "banc:variance-ia": "node --env-file-if-exists=.env --env-file-if-exists=.env.local --env-file-if-exists=docs/.env.local --import tsx banc/variance-ia.ts",
     "test": "vitest run",
     "test:watch": "vitest",

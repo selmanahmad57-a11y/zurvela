@@ -10,14 +10,13 @@
  * `schema-decision.ts`, le mode rejouable dans `cassettes.ts`.
  */
 import type {
-  AnomalieCandidate,
   Rapport,
   DecisionIa,
   EtatDecisionEnumere,
-  ProvenanceDecision,
-} from '../types.js';
+  ProvenanceDecision, ProvenanceSortieIa } from '../types.js';
 import type { ConfigScanner } from '../scanner/config.js';
 import type { EtatNormalise } from './etat-decision.js';
+import type { ContexteDiagnosticNormalise } from './contexte-diagnostic.js';
 
 export type ModeIa = 'actif' | 'degrade';
 
@@ -131,10 +130,51 @@ export interface DecisionEstampillee extends DecisionIa {
   provenance: ProvenanceDecision;
 }
 
+/**
+ * À qui la faute, selon le modèle.
+ *
+ * Vocabulaire DISTINCT de `VerdictConfirmation` : celui-ci qualifie une
+ * CAUSE, celui-là une DÉCISION du protocole. Les aligner serait une fausse
+ * symétrie ; le passage de l'un à l'autre est une table de traduction
+ * explicite, unique et testée cas par cas.
+ *
+ * Distinct aussi de `CauseEchecRejeu`, qui classe mécaniquement l'échec d'un
+ * rejeu : ici le modèle juge le RÉSIDU que la mécanique a renoncé à trancher.
+ *
+ * `indetermine` est une RÉPONSE ATTENDUE et légitime. Un diagnostic qui
+ * répond toujours `outil` ou `site` devant un journal indécidable fabrique de
+ * la certitude — exactement ce que le produit ne doit jamais faire devant un
+ * commerçant. L'aveu est la bonne réponse quand il n'y en a pas d'autre.
+ */
+export type AvisCause = 'outil' | 'site' | 'indetermine';
+
+/** Un diagnostic, plus sa provenance : toute sortie IA porte son estampille. */
+export interface DiagnosticEstampille extends Diagnostic {
+  provenance: ProvenanceSortieIa;
+}
+
 export interface Diagnostic {
-  /** « défaut du site » ou « limite de mon automatisation » (constitution §1). */
-  verdict: 'defaut-du-site' | 'limite-automatisation' | 'indetermine';
-  explication: string;
+  avis: AvisCause;
+  /** Prose du modèle, TERMINALE : journalisée, jamais lue par une logique (statut de `natureLibre`). */
+  justification: string;
+}
+
+/**
+ * Ce que le diagnostic reçoit : des extraits STRUCTURÉS du journal d'une
+ * tentative de rejeu, tronqués et balisés comme contenu.
+ *
+ * Le journal transporte des chaînes issues de la page (libellés, messages
+ * d'erreur, URL) : la chaîne de méfiance s'applique au journal comme à la
+ * page. Un journal n'est pas plus fiable parce que c'est nous qui l'avons
+ * écrit — nous y avons recopié ce que la page a dit.
+ */
+export interface ContexteDiagnostic {
+  /** Clé du groupe de cause racine concerné. */
+  groupe: string;
+  /** Description technique de l'anomalie (identifiant stable, jamais de prose). */
+  description: string;
+  /** Extraits du journal des tentatives, déjà tronqués. */
+  extraits: string[];
 }
 
 export interface ClientIa {
@@ -147,7 +187,7 @@ export interface ClientIa {
    * produit jamais d'action : il rend l'identifiant opaque de son choix.
    */
   decider(etat: EtatDecisionEnumere): Promise<ResultatIa<DecisionEstampillee>>;
-  diagnostiquer(candidate: AnomalieCandidate): Promise<ResultatIa<Diagnostic>>;
+  diagnostiquer(contexte: ContexteDiagnostic): Promise<ResultatIa<DiagnosticEstampille>>;
   rediger(rapport: Rapport, langue: string): Promise<ResultatIa<string>>;
 }
 
@@ -181,6 +221,12 @@ export interface ClientIaEnregistrable extends ClientIa {
    * du prompt qui a servi à calculer sa clé, pas celle d'un prompt voisin.
    */
   deciderBrut(etat: EtatNormalise): Promise<ResultatIa<ReponseBrute>>;
+  /**
+   * Même rôle, pour un diagnostic. Le contexte reçu est déjà NORMALISÉ par le
+   * décorateur rejouable, pour la même raison qu'à la navigation : la cassette
+   * doit figer la réponse du prompt qui a servi à calculer sa clé.
+   */
+  diagnostiquerBrut(contexte: ContexteDiagnosticNormalise): Promise<ResultatIa<ReponseBrute>>;
 }
 
 export const RAISON_CLE_ABSENTE = 'cle-absente';
@@ -215,7 +261,8 @@ export function creerClientSansCapacite(raison: string, message?: string): Clien
     profilerBrut: () => indisponible<ReponseBrute>(),
     decider: () => indisponible<DecisionEstampillee>(),
     deciderBrut: () => indisponible<ReponseBrute>(),
-    diagnostiquer: () => indisponible<Diagnostic>(),
+    diagnostiquer: () => indisponible<DiagnosticEstampille>(),
+    diagnostiquerBrut: () => indisponible<ReponseBrute>(),
     rediger: () => indisponible<string>(),
   };
 }
@@ -306,6 +353,37 @@ export const DIVERGENCE_PROMPT_SANS_INCREMENT = 'cassette-divergente:prompt-modi
 /** L'alias a changé d'instantané : ce n'est PAS un défaut de versionnement, il faut renouveler le parc. */
 export const DIVERGENCE_GLISSEMENT_ALIAS = 'cassette-divergente:glissement-alias';
 
+/**
+ * Raison technique stable : la réponse de diagnostic ne valide pas son contrat
+ * — avis hors des trois valeurs, champ manquant, JSON inanalysable,
+ * justification vide —, relances épuisées.
+ *
+ * UNE seule raison pour ces causes, là où la navigation en distingue deux, et
+ * c'est délibéré. En 4b, `RAISON_ACTION_INCONNUE` existe parce que l'élection
+ * hors menu porte une conséquence de SÉCURITÉ que l'autre branche n'a pas :
+ * les deux appellent des corrections différentes. Ici, les branches finissent
+ * toutes au même endroit — pas d'avis, donc le silence d'avant la brique — et
+ * aucune correction ne se déduit de l'une plutôt que de l'autre. Une garde qui
+ * invente une distinction dont le produit ne peut rien faire n'est pas plus
+ * précise, elle est décorative. Le détail STRUCTUREL reste lisible au journal,
+ * dans `message` (`avis:valeurHorsEnumeration`, `reponse:reponseNonJson`…).
+ *
+ * Et elle ne s'allume JAMAIS sur un avis `indetermine` valide : l'aveu est une
+ * réponse du contrat, pas un défaut de contrat.
+ */
+export const RAISON_DIAGNOSTIC_INVALIDE = 'diagnostic-invalide';
+/**
+ * Raison technique stable : la porte `diagnostic.actif` est fermée.
+ *
+ * Le déclenchement est filtré en amont, dans le protocole — c'est là que la
+ * porte doit vivre. Celle-ci est une SECONDE serrure, posée sur le seul chemin
+ * qui dépense : aucun appel réseau ne part quand la porte est fermée, même si
+ * un appelant oublie de la lire. Le cahier exige qu'un diagnostic coupé rende
+ * un comportement STRICTEMENT identique à la brique 4b ; une exigence de cette
+ * nature ne se garde pas à un seul endroit.
+ */
+export const RAISON_DIAGNOSTIC_INACTIF = 'diagnostic-inactif';
+
 /** Raison technique stable : aucun tarif connu pour le modèle — on ne sait pas ce qu'on dépense. */
 export const RAISON_TARIF_ABSENT = 'tarif-absent';
 /** Raison technique stable : le modèle a décliné la requête (`stop_reason: refusal`). */
@@ -381,11 +459,37 @@ export {
   creerClientAnthropic,
   enTetesWorkspace,
 } from './anthropic.js';
+export type { ContexteDiagnosticNormalise } from './contexte-diagnostic.js';
+export {
+  empreinteContratDiagnostic,
+  entreeCleDepuisContexteDiagnostic,
+  normaliserContexteDiagnostic,
+} from './contexte-diagnostic.js';
+export {
+  type DiagnosticDemande,
+  type ResultatValidationDiagnostic,
+  type ValidateurDiagnostic,
+  AVIS_ADMIS,
+  AVIS_AVEU,
+  DEFAUT_AVIS_HORS_ENUMERATION,
+  DEFAUT_JUSTIFICATION_VIDE,
+  creerValidateurDiagnostic,
+  schemaContratModeleDiagnostic,
+  schemaValidationDiagnostic,
+} from './schema-diagnostic.js';
+export {
+  type AppelDiagnostic,
+  type ParametresDiagnostic,
+  diagnosticDepuisReponse,
+  diagnostiquerBrutAvec,
+} from './diagnostic.js';
 export {
   type OptionsRejeu,
   COMMANDE_ENREGISTREMENT_IA,
+  type OptionsDiagnosticRejeu,
   cleCassette,
   cleCassetteDecision,
+  cleCassetteDiagnostic,
   clientRejouable,
   depotCassettesFichiers,
   diagnostiquerDivergence,

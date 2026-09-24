@@ -1,0 +1,424 @@
+{
+  "$commentaire": "Journal RÉEL d'un scan du banc, extrait SANS AUCUNE ÉDITION. C'est l'étalon de format du corpus : chaque cas en est dérivé par édition, et un test compare champ à champ les extraits du corpus aux entrées d'ici. Un corpus dont le format s'éloigne du réel mesurerait le diagnostic sur une langue qu'il ne parlera jamais en production.",
+  "provenance": {
+    "commande": "pnpm banc --sujet reel --sans-ia --politique deterministe --scenario formulaire-contact--<id>--fr (cinq scans réels ; journaux relus dans les scorecards de banc/resultats/)",
+    "scenarios": [
+      "formulaire-contact--f01--fr",
+      "formulaire-contact--m01--fr",
+      "formulaire-contact--l01--fr",
+      "formulaire-contact--t01--fr",
+      "formulaire-contact--v01--fr"
+    ],
+    "typesRetenus": [
+      "confirmation.groupe",
+      "confirmation.tentative",
+      "confirmation.contre-epreuve"
+    ],
+    "note": "Les horodatages sont ceux du scan. Aucune entrée n'a été modifiée, ajoutée ni réordonnée. Ce journal porte les `observations` de rejeu entrées avec la brique 4c — jusqu'où le rejeu est allé et ce qu'il a vu passer. Il remplace l'étalon antérieur, qui décrivait un journal que le moteur n'écrit plus."
+  },
+  "entrees": {
+    "formulaire-contact--f01--fr": [
+      {
+        "horodatage": "2026-09-23T23:44:55.257Z",
+        "type": "confirmation.groupe",
+        "details": {
+          "cle": "d-inerte:element:body > main > form > div:nth-of-type(4) > button[type=\"button\"]",
+          "confiance": 0.75,
+          "nbMembres": 1,
+          "viewports": [
+            "desktop",
+            "mobile"
+          ],
+          "detecteur": "d-inerte",
+          "viewportRejeu": "desktop",
+          "urlOuEtape": "http://127.0.0.1:4800/contact",
+          "description": "element-sans-effet",
+          "action": "soumettre",
+          "nbPrealables": 1,
+          "budgetChargementMs": 15000,
+          "budgetActionMs": 10000
+        }
+      },
+      {
+        "horodatage": "2026-09-23T23:44:57.416Z",
+        "type": "confirmation.tentative",
+        "details": {
+          "cle": "d-inerte:element:body > main > form > div:nth-of-type(4) > button[type=\"button\"]",
+          "numero": 1,
+          "viewport": "desktop",
+          "reproduite": true,
+          "echecOutillage": false,
+          "dureeMs": 1962,
+          "observations": {
+            "nbPages": 1,
+            "statutDocument": 200,
+            "nbActions": 3,
+            "nbActionsPrevues": 3,
+            "arreteA": null,
+            "nbSignaux": 9,
+            "statuts": [
+              200
+            ],
+            "reponsesHors2xx": [],
+            "echecsReseau": [],
+            "requetesEnAttente": []
+          }
+        }
+      },
+      {
+        "horodatage": "2026-09-23T23:44:59.281Z",
+        "type": "confirmation.tentative",
+        "details": {
+          "cle": "d-inerte:element:body > main > form > div:nth-of-type(4) > button[type=\"button\"]",
+          "numero": 2,
+          "viewport": "desktop",
+          "reproduite": true,
+          "echecOutillage": false,
+          "dureeMs": 1865,
+          "observations": {
+            "nbPages": 1,
+            "statutDocument": 200,
+            "nbActions": 3,
+            "nbActionsPrevues": 3,
+            "arreteA": null,
+            "nbSignaux": 9,
+            "statuts": [
+              200
+            ],
+            "reponsesHors2xx": [],
+            "echecsReseau": [],
+            "requetesEnAttente": []
+          }
+        }
+      }
+    ],
+    "formulaire-contact--m01--fr": [
+      {
+        "horodatage": "2026-09-23T23:45:07.870Z",
+        "type": "confirmation.groupe",
+        "details": {
+          "cle": "d-recouvrement:element:body > main > form > div:nth-of-type(4) > button[type=\"submit\"]:mobile",
+          "confiance": 0.95,
+          "nbMembres": 1,
+          "viewports": [
+            "mobile"
+          ],
+          "detecteur": "d-recouvrement",
+          "viewportRejeu": "mobile",
+          "urlOuEtape": "http://127.0.0.1:4800/contact",
+          "description": "clic-intercepte",
+          "action": null,
+          "nbPrealables": 0,
+          "budgetChargementMs": 15000,
+          "budgetActionMs": 10000
+        }
+      },
+      {
+        "horodatage": "2026-09-23T23:45:08.926Z",
+        "type": "confirmation.tentative",
+        "details": {
+          "cle": "d-recouvrement:element:body > main > form > div:nth-of-type(4) > button[type=\"submit\"]:mobile",
+          "numero": 1,
+          "viewport": "mobile",
+          "reproduite": true,
+          "echecOutillage": false,
+          "dureeMs": 893,
+          "observations": {
+            "nbPages": 1,
+            "statutDocument": 200,
+            "nbActions": 1,
+            "nbActionsPrevues": 1,
+            "arreteA": null,
+            "nbSignaux": 8,
+            "statuts": [
+              200
+            ],
+            "reponsesHors2xx": [],
+            "echecsReseau": [],
+            "requetesEnAttente": []
+          }
+        }
+      },
+      {
+        "horodatage": "2026-09-23T23:45:09.727Z",
+        "type": "confirmation.tentative",
+        "details": {
+          "cle": "d-recouvrement:element:body > main > form > div:nth-of-type(4) > button[type=\"submit\"]:mobile",
+          "numero": 2,
+          "viewport": "mobile",
+          "reproduite": true,
+          "echecOutillage": false,
+          "dureeMs": 800,
+          "observations": {
+            "nbPages": 1,
+            "statutDocument": 200,
+            "nbActions": 1,
+            "nbActionsPrevues": 1,
+            "arreteA": null,
+            "nbSignaux": 8,
+            "statuts": [
+              200
+            ],
+            "reponsesHors2xx": [],
+            "echecsReseau": [],
+            "requetesEnAttente": []
+          }
+        }
+      },
+      {
+        "horodatage": "2026-09-23T23:45:10.457Z",
+        "type": "confirmation.contre-epreuve",
+        "details": {
+          "cle": "d-recouvrement:element:body > main > form > div:nth-of-type(4) > button[type=\"submit\"]:mobile",
+          "viewport": "desktop",
+          "reproduite": false,
+          "echecOutillage": false,
+          "attendue": true,
+          "observations": {
+            "nbPages": 1,
+            "statutDocument": 200,
+            "nbActions": 1,
+            "nbActionsPrevues": 1,
+            "arreteA": null,
+            "nbSignaux": 7,
+            "statuts": [
+              200
+            ],
+            "reponsesHors2xx": [],
+            "echecsReseau": [],
+            "requetesEnAttente": []
+          }
+        }
+      }
+    ],
+    "formulaire-contact--l01--fr": [
+      {
+        "horodatage": "2026-09-23T23:45:22.742Z",
+        "type": "confirmation.groupe",
+        "details": {
+          "cle": "reseau:POST:/api/contact",
+          "confiance": 0.85,
+          "nbMembres": 1,
+          "viewports": [
+            "desktop"
+          ],
+          "detecteur": "d-lenteur",
+          "viewportRejeu": "desktop",
+          "urlOuEtape": "http://127.0.0.1:4800/contact",
+          "description": "reponse-lente",
+          "action": "soumettre",
+          "nbPrealables": 1,
+          "budgetChargementMs": 15000,
+          "budgetActionMs": 10000
+        }
+      },
+      {
+        "horodatage": "2026-09-23T23:45:24.833Z",
+        "type": "confirmation.tentative",
+        "details": {
+          "cle": "reseau:POST:/api/contact",
+          "numero": 1,
+          "viewport": "desktop",
+          "reproduite": false,
+          "echecOutillage": false,
+          "dureeMs": 1907,
+          "observations": {
+            "nbPages": 1,
+            "statutDocument": 200,
+            "nbActions": 3,
+            "nbActionsPrevues": 3,
+            "arreteA": null,
+            "nbSignaux": 14,
+            "statuts": [
+              200
+            ],
+            "reponsesHors2xx": [],
+            "echecsReseau": [],
+            "requetesEnAttente": []
+          }
+        }
+      },
+      {
+        "horodatage": "2026-09-23T23:45:26.697Z",
+        "type": "confirmation.tentative",
+        "details": {
+          "cle": "reseau:POST:/api/contact",
+          "numero": 2,
+          "viewport": "desktop",
+          "reproduite": false,
+          "echecOutillage": false,
+          "dureeMs": 1864,
+          "observations": {
+            "nbPages": 1,
+            "statutDocument": 200,
+            "nbActions": 3,
+            "nbActionsPrevues": 3,
+            "arreteA": null,
+            "nbSignaux": 14,
+            "statuts": [
+              200
+            ],
+            "reponsesHors2xx": [],
+            "echecsReseau": [],
+            "requetesEnAttente": []
+          }
+        }
+      }
+    ],
+    "formulaire-contact--t01--fr": [
+      {
+        "horodatage": "2026-09-23T23:45:34.883Z",
+        "type": "confirmation.groupe",
+        "details": {
+          "cle": "reseau:POST:/api/contact",
+          "confiance": 0.95,
+          "nbMembres": 1,
+          "viewports": [
+            "desktop"
+          ],
+          "detecteur": "d-http",
+          "viewportRejeu": "desktop",
+          "urlOuEtape": "http://127.0.0.1:4800/contact",
+          "description": "reponse-5xx",
+          "action": "soumettre",
+          "nbPrealables": 1,
+          "budgetChargementMs": 15000,
+          "budgetActionMs": 10000
+        }
+      },
+      {
+        "horodatage": "2026-09-23T23:45:37.450Z",
+        "type": "confirmation.tentative",
+        "details": {
+          "cle": "reseau:POST:/api/contact",
+          "numero": 1,
+          "viewport": "desktop",
+          "reproduite": false,
+          "echecOutillage": false,
+          "dureeMs": 2240,
+          "observations": {
+            "nbPages": 1,
+            "statutDocument": 200,
+            "nbActions": 3,
+            "nbActionsPrevues": 3,
+            "arreteA": null,
+            "nbSignaux": 14,
+            "statuts": [
+              200
+            ],
+            "reponsesHors2xx": [],
+            "echecsReseau": [],
+            "requetesEnAttente": []
+          }
+        }
+      },
+      {
+        "horodatage": "2026-09-23T23:45:39.345Z",
+        "type": "confirmation.tentative",
+        "details": {
+          "cle": "reseau:POST:/api/contact",
+          "numero": 2,
+          "viewport": "desktop",
+          "reproduite": false,
+          "echecOutillage": false,
+          "dureeMs": 1895,
+          "observations": {
+            "nbPages": 1,
+            "statutDocument": 200,
+            "nbActions": 3,
+            "nbActionsPrevues": 3,
+            "arreteA": null,
+            "nbSignaux": 14,
+            "statuts": [
+              200
+            ],
+            "reponsesHors2xx": [],
+            "echecsReseau": [],
+            "requetesEnAttente": []
+          }
+        }
+      }
+    ],
+    "formulaire-contact--v01--fr": [
+      {
+        "horodatage": "2026-09-23T23:45:47.475Z",
+        "type": "confirmation.groupe",
+        "details": {
+          "cle": "reseau:GET:/statique/images/logo-v2.svg",
+          "confiance": 0.95,
+          "nbMembres": 6,
+          "viewports": [
+            "desktop",
+            "mobile"
+          ],
+          "detecteur": "d-http",
+          "viewportRejeu": "desktop",
+          "urlOuEtape": "http://127.0.0.1:4800/",
+          "description": "ressource-interne-404",
+          "action": "naviguer",
+          "nbPrealables": 0,
+          "budgetChargementMs": 15000,
+          "budgetActionMs": 10000
+        }
+      },
+      {
+        "horodatage": "2026-09-23T23:45:49.060Z",
+        "type": "confirmation.tentative",
+        "details": {
+          "cle": "reseau:GET:/statique/images/logo-v2.svg",
+          "numero": 1,
+          "viewport": "desktop",
+          "reproduite": true,
+          "echecOutillage": false,
+          "dureeMs": 1384,
+          "observations": {
+            "nbPages": 1,
+            "statutDocument": 200,
+            "nbActions": 2,
+            "nbActionsPrevues": 2,
+            "arreteA": null,
+            "nbSignaux": 11,
+            "statuts": [
+              200,
+              404
+            ],
+            "reponsesHors2xx": [
+              "404 GET http://127.0.0.1:4800/statique/images/logo-v2.svg"
+            ],
+            "echecsReseau": [],
+            "requetesEnAttente": []
+          }
+        }
+      },
+      {
+        "horodatage": "2026-09-23T23:45:50.390Z",
+        "type": "confirmation.tentative",
+        "details": {
+          "cle": "reseau:GET:/statique/images/logo-v2.svg",
+          "numero": 2,
+          "viewport": "desktop",
+          "reproduite": true,
+          "echecOutillage": false,
+          "dureeMs": 1329,
+          "observations": {
+            "nbPages": 1,
+            "statutDocument": 200,
+            "nbActions": 2,
+            "nbActionsPrevues": 2,
+            "arreteA": null,
+            "nbSignaux": 11,
+            "statuts": [
+              200,
+              404
+            ],
+            "reponsesHors2xx": [
+              "404 GET http://127.0.0.1:4800/statique/images/logo-v2.svg"
+            ],
+            "echecsReseau": [],
+            "requetesEnAttente": []
+          }
+        }
+      }
+    ]
+  }
+}

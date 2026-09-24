@@ -1,0 +1,26 @@
+{
+  "id": "cas-01-outil-jamais-parvenu-au-site",
+  "avisAttendu": "outil",
+  "derive": {
+    "ecritDeZero": false,
+    "scenario": "formulaire-contact--m01--fr",
+    "groupeReel": "d-recouvrement:element:body > main > form > div:nth-of-type(4) > button[type=\"submit\"]:mobile",
+    "journalReel": "journal-reel.json",
+    "editions": [
+      "entrée `confirmation.groupe` : REPRISE TELLE QUELLE du journal réel",
+      "tentative 1 : `reproduite` passé de true à false, `echecOutillage` à true, ajout de `causeEchec: indetermine` et `erreur: page-inchargeable`, `dureeMs` porté de 893 à 15112 (le budget de chargement, 15 000 ms) ; observations : `nbPages` 1→0, `statutDocument` 200→null, `nbActions` 1→0, `arreteA` null→\"naviguer\", `nbSignaux` 8→0, `statuts` [200]→[]",
+      "tentative 2 : mêmes éditions, mais `causeEchec: outil` et `erreur: navigateur-perdu`, `dureeMs` porté de 800 à 2064",
+      "contre-épreuve : SUPPRIMÉE — aucune tentative n'étant exploitable, `reexecuterGroupe` n'en lance aucune"
+    ]
+  },
+  "pourquoiCetAvis": "Aucune des deux tentatives n'est jamais parvenue jusqu'au site : zéro page chargée, zéro action sur l'unique action prévue, zéro signal, aucun statut HTTP, aucune requête — ni en échec, ni en attente. Le recouvrement dont parle l'anomalie n'a donc jamais été remis à l'épreuve. Le moteur nomme lui-même la cause de la seconde : le navigateur a été perdu. Choisir « outil » ici ne dit rien du site — c'est dire qu'on n'a pas pu regarder.",
+  "contexte": {
+    "groupe": "d-recouvrement:element:body > main > form > div:nth-of-type(4) > button[type=\"submit\"]:mobile",
+    "description": "clic-intercepte",
+    "extraits": [
+      "confirmation.groupe {\"cle\":\"d-recouvrement:element:body > main > form > div:nth-of-type(4) > button[type=\\\"submit\\\"]:mobile\",\"confiance\":0.95,\"nbMembres\":1,\"viewports\":[\"mobile\"],\"detecteur\":\"d-recouvrement\",\"viewportRejeu\":\"mobile\",\"urlOuEtape\":\"http://127.0.0.1:4800/contact\",\"description\":\"clic-intercepte\",\"action\":null,\"nbPrealables\":0,\"budgetChargementMs\":15000,\"budgetActionMs\":10000}",
+      "confirmation.tentative {\"cle\":\"d-recouvrement:element:body > main > form > div:nth-of-type(4) > button[type=\\\"submit\\\"]:mobile\",\"numero\":1,\"viewport\":\"mobile\",\"reproduite\":false,\"echecOutillage\":true,\"causeEchec\":\"indetermine\",\"erreur\":\"page-inchargeable\",\"dureeMs\":15112,\"observations\":{\"nbPages\":0,\"statutDocument\":null,\"nbActions\":0,\"nbActionsPrevues\":1,\"arreteA\":\"naviguer\",\"nbSignaux\":0,\"statuts\":[],\"reponsesHors2xx\":[],\"echecsReseau\":[],\"requetesEnAttente\":[]}}",
+      "confirmation.tentative {\"cle\":\"d-recouvrement:element:body > main > form > div:nth-of-type(4) > button[type=\\\"submit\\\"]:mobile\",\"numero\":2,\"viewport\":\"mobile\",\"reproduite\":false,\"echecOutillage\":true,\"causeEchec\":\"outil\",\"erreur\":\"navigateur-perdu\",\"dureeMs\":2064,\"observations\":{\"nbPages\":0,\"statutDocument\":null,\"nbActions\":0,\"nbActionsPrevues\":1,\"arreteA\":\"naviguer\",\"nbSignaux\":0,\"statuts\":[],\"reponsesHors2xx\":[],\"echecsReseau\":[],\"requetesEnAttente\":[]}}"
+    ]
+  }
+}

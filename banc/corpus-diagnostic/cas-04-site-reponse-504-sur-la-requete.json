@@ -1,0 +1,25 @@
+{
+  "id": "cas-04-site-reponse-504-sur-la-requete",
+  "avisAttendu": "site",
+  "derive": {
+    "ecritDeZero": false,
+    "scenario": "formulaire-contact--l01--fr",
+    "groupeReel": "reseau:POST:/api/contact",
+    "journalReel": "journal-reel.json",
+    "editions": [
+      "entrée `confirmation.groupe` : REPRISE TELLE QUELLE du journal réel",
+      "tentatives 1 et 2 : `echecOutillage` passé à true, ajout de `causeEchec: indetermine` et `erreur: delai-depasse`, `dureeMs` porté de 1907/1864 à 10344/10361 ; observations : `nbActions` 3→2, `arreteA` null→\"soumettre\", `nbSignaux` 14→12, `statuts` [200]→[200,504] et `reponsesHors2xx` []→[\"504 GET http://127.0.0.1:4800/api/contact\" corrigé en \"504 POST http://127.0.0.1:4800/api/contact\"]",
+      "aucune contre-épreuve : `d-lenteur` ne dépend pas du viewport, le scénario réel n'en produit pas non plus"
+    ]
+  },
+  "pourquoiCetAvis": "La soumission a bien été déclenchée et le serveur a RÉPONDU : 504 sur POST /api/contact, nommément, dans les deux tentatives, à côté du 200 du document. Un code de statut ne peut venir que du serveur — c'est la seule preuve du journal qu'aucune limite d'outillage ne sait fabriquer : un robot qui renonce ne produit pas de statut, il n'en produit aucun. L'anomalie d'origine était une lenteur de ce même POST ; il répond désormais par un délai de passerelle. Que le rejeu ait ensuite expiré n'y change rien : la réponse était déjà là, et elle est fautive.",
+  "contexte": {
+    "groupe": "reseau:POST:/api/contact",
+    "description": "reponse-lente",
+    "extraits": [
+      "confirmation.groupe {\"cle\":\"reseau:POST:/api/contact\",\"confiance\":0.85,\"nbMembres\":1,\"viewports\":[\"desktop\"],\"detecteur\":\"d-lenteur\",\"viewportRejeu\":\"desktop\",\"urlOuEtape\":\"http://127.0.0.1:4800/contact\",\"description\":\"reponse-lente\",\"action\":\"soumettre\",\"nbPrealables\":1,\"budgetChargementMs\":15000,\"budgetActionMs\":10000}",
+      "confirmation.tentative {\"cle\":\"reseau:POST:/api/contact\",\"numero\":1,\"viewport\":\"desktop\",\"reproduite\":false,\"echecOutillage\":true,\"causeEchec\":\"indetermine\",\"erreur\":\"delai-depasse\",\"dureeMs\":10344,\"observations\":{\"nbPages\":1,\"statutDocument\":200,\"nbActions\":2,\"nbActionsPrevues\":3,\"arreteA\":\"soumettre\",\"nbSignaux\":12,\"statuts\":[200,504],\"reponsesHors2xx\":[\"504 POST http://127.0.0.1:4800/api/contact\"],\"echecsReseau\":[],\"requetesEnAttente\":[]}}",
+      "confirmation.tentative {\"cle\":\"reseau:POST:/api/contact\",\"numero\":2,\"viewport\":\"desktop\",\"reproduite\":false,\"echecOutillage\":true,\"causeEchec\":\"indetermine\",\"erreur\":\"delai-depasse\",\"dureeMs\":10361,\"observations\":{\"nbPages\":1,\"statutDocument\":200,\"nbActions\":2,\"nbActionsPrevues\":3,\"arreteA\":\"soumettre\",\"nbSignaux\":12,\"statuts\":[200,504],\"reponsesHors2xx\":[\"504 POST http://127.0.0.1:4800/api/contact\"],\"echecsReseau\":[],\"requetesEnAttente\":[]}}"
+    ]
+  }
+}

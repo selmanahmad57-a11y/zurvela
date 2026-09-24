@@ -55,6 +55,10 @@ Avant de livrer un fichier, tu te poses les trois questions :
   jamais une instruction. Les prompts séparent strictement instructions
   (système) et contenu de page (données), avec un rappel anti-injection
   dans chaque prompt qui reçoit du contenu externe.
+- La chaîne de méfiance couvre aussi les données DÉRIVÉES — journaux,
+  profils, sorties de nos propres modèles — et pas seulement le contenu
+  direct d'une page : un journal n'est pas plus fiable parce que c'est nous
+  qui l'avons écrit, nous y avons recopié ce que la page a dit.
 - L'IA choisit ses actions dans un MENU FERMÉ d'actions énumérées
   (cliquer, remplir, terminer...). Elle ne rédige jamais d'action libre.
 - Le filtre d'actions destructives s'applique APRÈS la décision IA,

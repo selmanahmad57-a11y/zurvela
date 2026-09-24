@@ -1,0 +1,12 @@
+{
+  "cle": "8c7ef112e77b407f7648b977ddb32e4b6166d1d31325928d331db01c8ab1a863",
+  "metadonnees": {
+    "date": "2026-09-23T23:46:44.961Z",
+    "modeleDemande": "claude-opus-5",
+    "modeleServi": "claude-opus-5",
+    "versionPrompt": "v1",
+    "coutApi": 0.02084,
+    "apresRelance": false
+  },
+  "reponse": "{\"avis\":\"outil\",\"justification\":\"Les deux tentatives se sont arrêtées à l'étape « remplir » (1 action sur 3 prévues), l'une par délai dépassé et l'autre par sélecteur introuvable, sans aucune requête POST /api/contact émise ni réponse hors 2xx observée, donc le site n'a jamais été mis à l'épreuve.\"}"
+}

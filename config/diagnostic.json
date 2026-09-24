@@ -1,0 +1,11 @@
+{
+  "$schema": "./diagnostic.schema.json",
+  "$commentaire": "Auto-diagnostic IA (brique 4c) : le modèle examine le RÉSIDU que les heuristiques mécaniques ont renoncé à trancher (tentatives de rejeu classées `indetermine`) et rend un avis de cause. Il existe pour réduire le SILENCE injustifié — jamais pour promouvoir une opinion en preuve. Un avis « site » n'a qu'un effet : le groupe reste écarté et une découverte est publiée, avec une confiance minorée.",
+  "actif": true,
+  "groupesMax": 3,
+  "extraitsMaxChars": 4000,
+  "extraitsMaxParGroupe": 12,
+  "maxTokensReponse": 2048,
+  "relancesMax": 1,
+  "facteurConfianceDecouverte": 0.6
+}

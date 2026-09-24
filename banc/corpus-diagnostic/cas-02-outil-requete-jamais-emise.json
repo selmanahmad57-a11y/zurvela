@@ -1,0 +1,26 @@
+{
+  "id": "cas-02-outil-requete-jamais-emise",
+  "avisAttendu": "outil",
+  "derive": {
+    "ecritDeZero": false,
+    "scenario": "formulaire-contact--t01--fr",
+    "groupeReel": "reseau:POST:/api/contact",
+    "journalReel": "journal-reel.json",
+    "editions": [
+      "entrée `confirmation.groupe` : REPRISE TELLE QUELLE du journal réel",
+      "tentative 1 : `echecOutillage` passé à true, ajout de `causeEchec: indetermine` et `erreur: delai-depasse`, `dureeMs` porté de 2240 à 10288 ; observations : `nbActions` 3→1, `arreteA` null→\"remplir\", `nbSignaux` 14→6",
+      "tentative 2 : mêmes éditions, mais `causeEchec: outil` et `erreur: selecteur-introuvable`, `dureeMs` porté de 1895 à 3127",
+      "aucune contre-épreuve : `d-http` ne dépend pas du viewport, le scénario réel n'en produit pas non plus"
+    ]
+  },
+  "pourquoiCetAvis": "L'anomalie porte sur la réponse du POST /api/contact. Les deux tentatives se sont arrêtées à l'action `remplir`, une action sur trois, donc AVANT la soumission : le POST n'a jamais été émis — rien en attente, rien en échec, et pour tout trafic le document de la page, servi 200 les deux fois. Le moteur nomme lui-même la cause de la seconde : le champ à remplir n'a pas été trouvé. Le serveur n'a donc pas répondu de travers, on ne lui a pas posé la question.",
+  "contexte": {
+    "groupe": "reseau:POST:/api/contact",
+    "description": "reponse-5xx",
+    "extraits": [
+      "confirmation.groupe {\"cle\":\"reseau:POST:/api/contact\",\"confiance\":0.95,\"nbMembres\":1,\"viewports\":[\"desktop\"],\"detecteur\":\"d-http\",\"viewportRejeu\":\"desktop\",\"urlOuEtape\":\"http://127.0.0.1:4800/contact\",\"description\":\"reponse-5xx\",\"action\":\"soumettre\",\"nbPrealables\":1,\"budgetChargementMs\":15000,\"budgetActionMs\":10000}",
+      "confirmation.tentative {\"cle\":\"reseau:POST:/api/contact\",\"numero\":1,\"viewport\":\"desktop\",\"reproduite\":false,\"echecOutillage\":true,\"causeEchec\":\"indetermine\",\"erreur\":\"delai-depasse\",\"dureeMs\":10288,\"observations\":{\"nbPages\":1,\"statutDocument\":200,\"nbActions\":1,\"nbActionsPrevues\":3,\"arreteA\":\"remplir\",\"nbSignaux\":6,\"statuts\":[200],\"reponsesHors2xx\":[],\"echecsReseau\":[],\"requetesEnAttente\":[]}}",
+      "confirmation.tentative {\"cle\":\"reseau:POST:/api/contact\",\"numero\":2,\"viewport\":\"desktop\",\"reproduite\":false,\"echecOutillage\":true,\"causeEchec\":\"outil\",\"erreur\":\"selecteur-introuvable\",\"dureeMs\":3127,\"observations\":{\"nbPages\":1,\"statutDocument\":200,\"nbActions\":1,\"nbActionsPrevues\":3,\"arreteA\":\"remplir\",\"nbSignaux\":6,\"statuts\":[200],\"reponsesHors2xx\":[],\"echecsReseau\":[],\"requetesEnAttente\":[]}}"
+    ]
+  }
+}

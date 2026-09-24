@@ -19,14 +19,23 @@ import type {
   AnomalieCandidate,
   CauseEchecRejeu,
   ContexteConfirmation,
+  ContexteReproduction,
   ContreEpreuve,
   Detecteur,
   GroupeCause,
+  ObservationsRejeu,
+  ResultatRejeu,
   TentativeReexecution,
   Viewport,
 } from '../../types.js';
 import type { ConfigConfirmation } from '../config.js';
 import { identiteCause, identiteHorsViewport } from './consolidation.js';
+import {
+  detailsContreEpreuve,
+  detailsTentative,
+  TYPE_JOURNAL_CONTRE_EPREUVE,
+  TYPE_JOURNAL_TENTATIVE,
+} from './extraits-journal.js';
 import { estExploitable } from './verdict.js';
 
 /** Le rejeu lui-même a levé : l'outillage a lâché, pas le site. */
@@ -54,11 +63,68 @@ export interface ResultatReexecution {
   candidates: AnomalieCandidate[];
 }
 
+/**
+ * Ce que le rejeu a observé, relevé sur son résultat BRUT — donc disponible
+ * même quand il a échoué, ce qui est précisément le cas où il sert.
+ *
+ * Rien n'est interprété ici : des comptes, des statuts HTTP et des codes
+ * d'erreur du navigateur. La seule construction est `arreteA`, et elle est
+ * mécanique : le rejeu mène toujours la même séquence — charger, refaire
+ * l'état, déclencher — et `parcours.actions` ne retient que les actions
+ * MENÉES À LEUR TERME. La première action du plan qui manque à l'appel est
+ * donc celle sur laquelle il s'est arrêté. C'est la réponse à la question que
+ * ni `erreur` ni `dureeMs` ne savent donner : jusqu'où est-on allé ?
+ *
+ * CHAÎNE DE MÉFIANCE (constitution §3, données DÉRIVÉES). Les deux listes de
+ * ressources portent des URL VENUES DE LA PAGE : elles sortent d'ici comme
+ * données non fiables, exactement comme `urlOuEtape` et la clé de groupe, et
+ * c'est le bloc d'extraits — borné et balisé — qui les encadre en aval.
+ */
+export function observerRejeu(rejeu: ResultatRejeu, reproduction: ContexteReproduction): ObservationsRejeu {
+  const plan: string[] = [
+    'naviguer',
+    ...reproduction.actionsPrealables.map((prealable) => prealable.action.type),
+    ...(reproduction.action === null ? [] : [reproduction.action.action.type]),
+  ];
+  const nbActions = rejeu.parcours.actions.length;
+  const statuts = new Set<number>();
+  const reponsesHors2xx = new Set<string>();
+  const echecsReseau = new Set<string>();
+  const requetesEnAttente = new Set<string>();
+  for (const signal of rejeu.signaux) {
+    if (signal.type === 'reponse-reseau') {
+      statuts.add(signal.statut);
+      // 2xx = classe « Successful » du standard HTTP. Le reste est NOMMÉ :
+      // un statut sans sa ressource n'impute rien.
+      if (signal.statut < 200 || signal.statut > 299) {
+        reponsesHors2xx.add(`${signal.statut} ${signal.methode} ${signal.urlRessource}`);
+      }
+    }
+    else if (signal.type === 'requete-echouee') echecsReseau.add(`${signal.erreur} ${signal.methode} ${signal.urlRessource}`);
+    else if (signal.type === 'requete-en-attente') requetesEnAttente.add(`${signal.methode} ${signal.urlRessource}`);
+  }
+  const derniere = rejeu.parcours.pages[rejeu.parcours.pages.length - 1];
+  return {
+    nbPages: rejeu.parcours.pages.length,
+    statutDocument: derniere?.statutHttp ?? null,
+    nbActions,
+    nbActionsPrevues: plan.length,
+    arreteA: plan[nbActions] ?? null,
+    nbSignaux: rejeu.signaux.length,
+    statuts: [...statuts].sort((a, b) => a - b),
+    reponsesHors2xx: [...reponsesHors2xx].sort(),
+    echecsReseau: [...echecsReseau].sort(),
+    requetesEnAttente: [...requetesEnAttente].sort(),
+  };
+}
+
 interface Constat {
   reproduite: boolean;
   /** Candidates relevées par les détecteurs sur les signaux de CE rejeu. */
   candidates: AnomalieCandidate[];
   mesureMs?: number;
+  /** Absente dans un seul cas : le `Reexecuteur` a LEVÉ, il n'a rien rendu à observer. */
+  observations?: ObservationsRejeu;
   echecOutillage: boolean;
   causeEchec?: CauseEchecRejeu;
   erreur?: string;
@@ -88,7 +154,9 @@ async function rejouerEtRelire(options: OptionsReexecution, viewport: Viewport, 
       dureeMs: Date.now() - debut,
     };
   }
+  const observations = observerRejeu(rejeu, groupe.representant.reproduction);
   const echec = {
+    observations,
     echecOutillage: rejeu.echecOutillage,
     ...(rejeu.causeEchec === undefined ? {} : { causeEchec: rejeu.causeEchec }),
     ...(rejeu.erreur === undefined ? {} : { erreur: rejeu.erreur }),
@@ -145,19 +213,10 @@ export async function reexecuterGroupe(options: OptionsReexecution): Promise<Res
       ...(constat.erreur === undefined ? {} : { erreur: constat.erreur }),
       ...(constat.mesureMs === undefined ? {} : { mesureMs: constat.mesureMs }),
       dureeMs: constat.dureeMs,
+      ...(constat.observations === undefined ? {} : { observations: constat.observations }),
     };
     tentatives.push(tentative);
-    contexte.journaliser('confirmation.tentative', {
-      cle: groupe.cle,
-      numero,
-      viewport: viewport.nom,
-      reproduite: tentative.reproduite,
-      echecOutillage: tentative.echecOutillage,
-      ...(tentative.causeEchec === undefined ? {} : { causeEchec: tentative.causeEchec }),
-      ...(tentative.erreur === undefined ? {} : { erreur: tentative.erreur }),
-      ...(tentative.mesureMs === undefined ? {} : { mesureMs: tentative.mesureMs }),
-      dureeMs: tentative.dureeMs,
-    });
+    contexte.journaliser(TYPE_JOURNAL_TENTATIVE, detailsTentative(groupe.cle, tentative));
   }
 
   const exploitable = tentatives.some(estExploitable);
@@ -173,7 +232,8 @@ export async function reexecuterGroupe(options: OptionsReexecution): Promise<Res
     echecOutillage: constat.echecOutillage,
     // L'ASYMÉTRIE est le résultat attendu : l'anomalie ne doit pas exister ailleurs.
     attendue: !constat.reproduite && !constat.echecOutillage,
+    ...(constat.observations === undefined ? {} : { observations: constat.observations }),
   };
-  contexte.journaliser('confirmation.contre-epreuve', { cle: groupe.cle, ...contreEpreuve });
+  contexte.journaliser(TYPE_JOURNAL_CONTRE_EPREUVE, detailsContreEpreuve(groupe.cle, contreEpreuve));
   return { tentatives, contreEpreuve, candidates };
 }

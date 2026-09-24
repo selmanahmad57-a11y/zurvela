@@ -1,0 +1,12 @@
+{
+  "cle": "113a8aeb215c569e0f2d92225c7e2d05735ecdc7250317015927b77e5d96afae",
+  "metadonnees": {
+    "date": "2026-09-23T23:46:58.804Z",
+    "modeleDemande": "claude-opus-5",
+    "modeleServi": "claude-opus-5",
+    "versionPrompt": "v1",
+    "coutApi": 0.03838,
+    "apresRelance": false
+  },
+  "reponse": "{\"avis\":\"site\",\"justification\":\"Sur les deux tentatives, la soumission a bien été émise et le serveur a répondu de façon reproductible « 503 POST /api/contact » sans requête en attente ni échec réseau, le dépassement de délai s'expliquant par l'absence d'effet consécutive à cette erreur serveur, ce qui rend l'observation imputable au site.\"}"
+}

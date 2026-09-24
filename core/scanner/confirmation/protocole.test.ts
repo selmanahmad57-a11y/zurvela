@@ -274,7 +274,11 @@ describe('creerProtocole — détecteur gradué et contre-épreuve', () => {
     const resultat = await protocole.confirmer([candidate], contexte);
 
     expect(rejeu.viewports).toEqual([MOBILE.nom, MOBILE.nom, DESKTOP.nom]);
-    expect(resultat.groupes?.[0]?.contreEpreuve).toEqual({ viewport: DESKTOP.nom, reproduite: false, echecOutillage: false, attendue: true });
+    expect(resultat.groupes?.[0]?.contreEpreuve).toMatchObject({ viewport: DESKTOP.nom, reproduite: false, echecOutillage: false, attendue: true });
+    // La contre-épreuve porte, elle aussi, CE QU'ELLE A OBSERVÉ : c'est
+    // souvent la pièce la plus parlante du dossier — un rejeu qui va au bout
+    // dans l'autre viewport, au même instant, prouve que le site répondait.
+    expect(resultat.groupes?.[0]?.contreEpreuve?.observations).toMatchObject({ nbActions: 0, nbSignaux: 0 });
     expect(details(journal, 'confirmation.contre-epreuve')).toMatchObject({ viewport: DESKTOP.nom, attendue: true });
     // Bonus de contre-épreuve appliqué en plus du facteur de verdict.
     const attendue =
