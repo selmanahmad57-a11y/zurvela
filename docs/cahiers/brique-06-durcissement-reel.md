@@ -52,6 +52,29 @@ développement — elle se gouverne comme un run, pas comme un flux.
    non-consommée avec renvoi au backlog — dormante DÉCLARÉE,
    plus dormante silencieuse.
 
+## 6a (2/2) — la mesure au banc
+
+Périmètre scellé, dans cet ordre : les CONTRATS d'abord (`Gabarit.robotsTxt`,
+seconde origine du serveur de scénario, nature « resté inerte » étendue à
+l'obéissance aux interdits), puis le gabarit seconde-origine (l'attendu
+« dépendance tierce » mesuré), le gabarit robots (`/prive` jamais visité —
+premier « resté inerte » non-IA), le scénario en mode `aucune` (le rapport dit
+ce qu'il n'a pas testé et pourquoi), la commande `pnpm scan`, puis
+l'enregistrement unique et les runs.
+
+8. `pnpm scan <url> --config production` — NON NÉGOCIABLE dans ce lot.
+   `config/production.json` n'est aujourd'hui exercé par rien : c'est la
+   config dormante de l'apprentissage n°5, et elle naîtra exercée ou restera
+   suspecte.
+
+   SON PREMIER TEST N'EST PAS « ELLE SCANNE ». C'est « elle lit BIEN
+   production.json », et il se prouve par l'EFFET, jamais par la lecture :
+   altérer une valeur de production — le timeout, le gate de soumission — et
+   vérifier que le scan la respecte. Un test qui constate que le fichier a été
+   ouvert ne prouve que l'ouverture ; un test qui change le gate à `aucune` et
+   voit disparaître les soumissions prouve que la valeur GOUVERNE. C'est
+   l'apprentissage n°5 sous sa forme exécutable.
+
 ## 6b — La campagne (20 scans réels)
 
 - CIBLES, dans l'ordre : (1) le site du projet lui-même dès
