@@ -47,6 +47,25 @@ export interface ConfigScanner {
     liensParPageMax: number;
   };
   remplissage: { regles: RegleRemplissage[]; valeurTexteParDefaut: string; typesIgnores: string[] };
+  /**
+   * Valeurs par défaut des appelants. FACULTATIF et absent de l'instrument :
+   * le banc impose son propre timeout depuis `config/banc.json`, et deux
+   * sources de vérité pour le même nombre en seraient une de trop.
+   */
+  scan?: { timeoutMs: number };
+  /** Ce que le robot a le droit de FAIRE, par opposition à ce qu'il regarde. */
+  interaction: {
+    /**
+     * `aucune` : l'action de soumettre n'est PAS énumérée, donc le robot ne
+     * peut pas la choisir — première couche, et non un filtre après coup.
+     * `site-possede` : elle l'est, et c'est une déclaration de propriété.
+     */
+    soumission: 'aucune' | 'site-possede';
+  };
+  /** Ce que le robot doit au site qu'il visite. Sans objet au banc, vital sur le réel. */
+  politesse: { delaiEntrePagesMs: number; respecterRobotsTxt: boolean };
+  /** Plafond de dépense d'un scan. `null` : aucun — l'état du banc, dont le coût est mesuré et non borné. */
+  budget: { maxUsdParScan: number | null };
   detecteurs: {
     http: {
       confiance5xx: number;
@@ -67,6 +86,18 @@ export interface ConfigScanner {
     lenteur: { seuilMs: number; paliers: PalierConfiance[]; gravite: Gravite };
     image: { confianceSignalSimple: number; confianceSignalDouble: number; gravite: Gravite };
     recouvrement: { confianceGeometrie: number; confianceGeometrieEtClic: number; gravite: Gravite };
+    /**
+     * Défaillance d'une DÉPENDANCE TIERCE — une ressource servie par une autre
+     * origine que le site inspecté.
+     *
+     * Partagé par tous les détecteurs, parce que la règle est la même pour
+     * tous : une panne tierce n'est JAMAIS imputée au site dans sa catégorie ni
+     * sa gravité d'origine. Un widget de chat qui rend 500 n'est pas une page
+     * bloquante ; le rapporter comme telle détruirait le différenciateur n°1 sur
+     * le premier site réel venu. Mais le propriétaire mérite de le savoir, donc
+     * la panne est signalée À PART.
+     */
+    tiers: { categorie: Categorie; gravite: Gravite; confiance: number };
   };
   confirmation: ConfigConfirmation;
   ia: ConfigIa;
@@ -157,6 +188,12 @@ export interface ConfigProfilage {
 }
 
 export const FICHIER_CONFIG_SCANNER = depuisRacine('config', 'scanner.json');
+/**
+ * Le moteur face au web réel. MÊME schéma que l'instrument, valeurs
+ * différentes : le banc ne le lit jamais, et `config/scanner.json` ne bouge
+ * jamais pour une raison de production (docs/INVENTAIRE-PRODUCTION.md).
+ */
+export const FICHIER_CONFIG_PRODUCTION = depuisRacine('config', 'production.json');
 export const FICHIER_CONFIG_PROFILAGE = depuisRacine('config', 'profilage.json');
 export const FICHIER_CONFIG_DIAGNOSTIC = depuisRacine('config', 'diagnostic.json');
 export const FICHIER_ACTIONS_INTERDITES = depuisRacine('config', 'actions-interdites.json');

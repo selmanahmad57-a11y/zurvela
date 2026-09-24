@@ -13,7 +13,10 @@
     "remplissage",
     "detecteurs",
     "ia",
-    "confirmation"
+    "confirmation",
+    "interaction",
+    "politesse",
+    "budget"
   ],
   "definitions": {
     "gravite": {
@@ -293,7 +296,8 @@
         "echecMuet",
         "lenteur",
         "image",
-        "recouvrement"
+        "recouvrement",
+        "tiers"
       ],
       "properties": {
         "http": {
@@ -486,6 +490,30 @@
             },
             "gravite": {
               "$ref": "#/definitions/gravite"
+            }
+          }
+        },
+        "tiers": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "categorie",
+            "gravite",
+            "confiance"
+          ],
+          "description": "Défaillance d'une DÉPENDANCE TIERCE : une ressource servie par une autre origine que le site inspecté. Partagé par tous les détecteurs, parce que la règle est la même pour tous — une panne tierce n'est jamais imputée au site dans sa catégorie ni sa gravité d'origine. Un chat mort n'est pas un site mort ; mais le propriétaire mérite de le savoir, donc elle est signalée à part.",
+          "properties": {
+            "categorie": {
+              "$ref": "#/definitions/categorie"
+            },
+            "gravite": {
+              "$ref": "#/definitions/gravite"
+            },
+            "confiance": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1,
+              "description": "Confiance d'un constat de dépendance tierce. Le signal est franc (la requête a bien échoué) mais son IMPUTATION ne l'est pas : un tiers peut échouer pour des raisons qui ne regardent ni le site ni son propriétaire."
             }
           }
         }
@@ -737,6 +765,80 @@
               "description": "Plafond de la confiance finale issu de la configuration. Le code applique en plus une BORNE DURE à 1 : une confiance supérieure à 1 est un invariant interdit, pas un réglage (constitution §2)."
             }
           }
+        }
+      }
+    },
+    "$commentaire": {
+      "type": "string",
+      "description": "Note libre sur ce fichier de configuration (destination, date, statut des valeurs)."
+    },
+    "scan": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "timeoutMs"
+      ],
+      "description": "Valeurs par défaut pour les appelants qui n'imposent pas les leurs. FACULTATIF, et ABSENT de la configuration de l'instrument : le banc impose son propre timeout depuis config/banc.json, et porter ici une seconde valeur créerait deux sources de vérité pour le même nombre. Seule config/production.json la renseigne, et c'est `pnpm scan` qui la lit.",
+      "properties": {
+        "timeoutMs": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Durée maximale d'un scan quand l'appelant n'en fournit pas. Le moteur doit rendre un rapport, éventuellement partiel, avant."
+        }
+      }
+    },
+    "interaction": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "soumission"
+      ],
+      "description": "Ce que le robot a le droit de FAIRE sur le site, par opposition à ce qu'il a le droit de regarder.",
+      "properties": {
+        "soumission": {
+          "enum": [
+            "aucune",
+            "site-possede"
+          ],
+          "description": "« aucune » : l'action de soumettre un formulaire n'est PAS énumérée — le robot ne peut pas la choisir, parce qu'elle ne lui est jamais proposée. « site-possede » : elle l'est, et c'est une déclaration de propriété. Sur un site réel, chaque soumission a une conséquence — un email au propriétaire, une entrée en base, une tentative de connexion échouée. Le défaut de production est « aucune » : un premier scan n'a pas besoin de soumettre pour être utile."
+        }
+      }
+    },
+    "politesse": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "delaiEntrePagesMs",
+        "respecterRobotsTxt"
+      ],
+      "description": "Ce que le robot doit au site qu'il visite. Sans objet au banc, qui se sert lui-même en local ; vital dès la première cible réelle.",
+      "properties": {
+        "delaiEntrePagesMs": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Attente imposée entre deux chargements de page. Zéro au banc (la politesse envers soi-même n'a pas de sens) ; sur le réel, un parcours en rafale depuis une IP est un profil d'attaque pour un pare-feu applicatif."
+        },
+        "respecterRobotsTxt": {
+          "type": "boolean",
+          "description": "Lire le robots.txt de l'origine et refuser les chemins qu'il nous interdit. Un site qui nous interdit est un site qu'on n'audite pas en douce. La lecture se fait HORS du contexte navigateur observé : passer par lui ferait du robots.txt absent un 404 interne, donc une anomalie, sur tout site qui n'en a pas."
+        }
+      }
+    },
+    "budget": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "maxUsdParScan"
+      ],
+      "description": "Plafond de dépense d'un scan. Le dépassement ne tue jamais le scan : il bascule les appels de modèle restants en repli dégradé, et le journalise comme une absence SUBIE.",
+      "properties": {
+        "maxUsdParScan": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "exclusiveMinimum": 0,
+          "description": "Plafond en dollars pour UN scan, toutes surfaces de modèle confondues. `null` : aucun plafond — c'est l'état du banc, dont le coût est mesuré et non borné. Sur une page publique où n'importe qui colle une URL, `null` est intenable."
         }
       }
     }

@@ -332,3 +332,40 @@ dette est levée (le commit qui la lève renvoie à ce fichier).
 - **Condition de levée** : le jour où un troisième statut naîtra. Trois paires
   à tenir d'accord à la main, ce n'est plus une relecture, c'est un oubli qui
   attend.
+
+## 16. `exceptionsSandbox` est dormante, désormais DÉCLARÉE (2026-09-24, brique 6a)
+
+- **Quoi** : `config/actions-interdites.json` porte `exceptionsSandbox:
+  ["paiement"]`. Le schéma la valide, `ConfigScanner` la type, et **aucune
+  ligne ne la lit** (`core/scanner/exploration/filtre-actions.ts` le dit dans
+  son en-tête). Elle décrit un futur mode bac à sable qui lèverait l'interdit
+  sur les catégories n'y figurant PAS.
+- **Pourquoi elle reste** : elle porte une décision de conception déjà prise —
+  quelles catégories d'interdits un bac à sable a le droit de lever. La
+  supprimer perdrait la décision ; la laisser silencieuse la ferait croire
+  active. C'est exactement l'angle mort de l'apprentissage n°5.
+- **Ce qui la garde en attendant** :
+  `core/scanner/exploration/filtre-actions.dormante.test.ts` atteste qu'AUCUN
+  code ne la consomme, et que chaque catégorie qu'elle cite existe bien dans
+  les motifs. **Le jour où elle sera consommée, ce test échouera** — c'est son
+  but : il force à l'écrire à l'envers, et à lever cette dette.
+- **Condition de levée** : le mode bac à sable lui-même. Son ouverture est un
+  événement de sécurité, puisqu'il lève un interdit : il aura son cahier, et
+  sa revue.
+
+## 17. Un scanner équipé d'un budget mène UN scan à la fois (2026-09-24, brique 6a)
+
+- **Quoi** : `creerBudgetScan` tient le compteur de dépense dans la fermeture
+  du scanner, et `creerScanner` le remet à zéro au début de chaque scan. Deux
+  scans **concurrents** sur le même scanner partageraient donc ce compteur et
+  se voleraient leur budget — le second remettrait à zéro celui du premier.
+- **Pourquoi ce n'est pas un défaut aujourd'hui** : le banc scanne
+  séquentiellement, et `pnpm scan` mène un scan à la fois. La contrainte
+  existait déjà ailleurs (l'explorateur tient un état par scan) : ce module ne
+  l'introduit pas, il l'hérite.
+- **Ce qui la lèvera** : la file d'attente de la page publique — explicitement
+  hors périmètre de la brique 6. Elle devra donner **un scanner par scan**, ce
+  qui referme le sujet sans toucher à ce module, ou porter la portée de budget
+  dans un contexte passé d'appel en appel.
+- **Ce qui la garde en attendant** : le contrat est écrit en toutes lettres
+  dans `core/ia/plafond.ts`, sur l'interface `PorteeBudget`.

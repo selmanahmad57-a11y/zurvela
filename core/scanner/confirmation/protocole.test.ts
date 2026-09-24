@@ -38,8 +38,8 @@ import {
 } from './verdict.js';
 
 const DETECTEURS = [
-  creerDetecteurHttp(CONFIG_TEST.http),
-  creerDetecteurLenteur(CONFIG_TEST.lenteur),
+  creerDetecteurHttp(CONFIG_TEST.http, CONFIG_TEST.tiers),
+  creerDetecteurLenteur(CONFIG_TEST.lenteur, CONFIG_TEST.tiers),
   creerDetecteurRecouvrement(CONFIG_TEST.recouvrement),
 ];
 

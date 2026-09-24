@@ -56,6 +56,7 @@ import {
 } from './couches.js';
 import { cheminDe, composerEtat, enumererActions, libelleBorne } from './enumeration.js';
 import { RAISON_LECTURE_IMPOSSIBLE, type FiltreActions, type VerdictFiltre } from './filtre-actions.js';
+import { ROBOTS_PERMISSIF, chargerRobots, recupererParReseau, type RecupererRobots } from '../politesse/robots.js';
 
 export interface DependancesExplorateur {
   config: ConfigScanner;
@@ -70,6 +71,18 @@ export interface DependancesExplorateur {
   secours: PolitiqueDecision;
   filtre: FiltreActions;
   navigateur: Browser;
+  /**
+   * Récupération du `robots.txt`, HORS du contexte navigateur observé. Absente :
+   * la récupération réseau réelle. Les tests en fournissent une, et aucun
+   * n'appelle le réseau.
+   */
+  recupererRobots?: RecupererRobots;
+  /**
+   * Temporisation de la politesse entre deux pages. Injectable pour que les
+   * tests OBSERVENT l'attente au lieu de la CHRONOMÉTRER : un seuil de durée
+   * sous contention n'est pas une assertion, c'est un pari.
+   */
+  attendre?: (delaiMs: number) => Promise<void>;
 }
 
 type Arret = Parcours['arret'];
@@ -194,7 +207,11 @@ export const PROFILAGE_PAGE_EXTERNE = 'page-externe';
 
 export function creerExplorateur(dependances: DependancesExplorateur): ExplorateurProfilant {
   const { config, politique, secours, filtre, navigateur } = dependances;
-  const { exploration } = config;
+  const { exploration, politesse } = config;
+  const recupererRobots =
+    dependances.recupererRobots ??
+    recupererParReseau(config.robot.userAgent, { nom: config.robot.enTete, valeur: config.robot.valeurEnTete }, exploration.chargementPageMs);
+  const attendre = dependances.attendre ?? ((delaiMs: number) => new Promise<void>((resoudre) => setTimeout(resoudre, delaiMs)));
 
   return {
     nom: 'explorateur-deterministe',
@@ -212,6 +229,48 @@ export function creerExplorateur(dependances: DependancesExplorateur): Explorate
         return parcours;
       }
       const depart: string = departNormalise;
+
+      // LA POLITESSE, AVANT LA PREMIÈRE PAGE. Un site qui nous interdit un
+      // chemin est un site qu'on n'audite pas en douce, et l'interdit vaut
+      // pour l'URL de départ comme pour les liens suivis.
+      const robots = politesse.respecterRobotsTxt
+        ? await chargerRobots(origine, config.robot.userAgent, recupererRobots, contexte.journaliser)
+        : ROBOTS_PERMISSIF;
+      /** Le chemin nu d'une URL : c'est sur lui que `robots.txt` se prononce. */
+      const cheminInterrogeable = (url: string): string => {
+        try {
+          const analysee = new URL(url);
+          return `${analysee.pathname}${analysee.search}`;
+        } catch {
+          return url;
+        }
+      };
+      const autorise = (url: string): boolean => robots.estAutorise(cheminInterrogeable(url));
+
+      /**
+       * UNE SORTIE DE PÉRIMÈTRE, TOUJOURS DITE DE LA MÊME FAÇON.
+       *
+       * Nous n'auditons pas l'autre site — mais qu'une page À NOUS renvoie
+       * ailleurs est un fait du site scanné, et le rapport doit pouvoir le
+       * dire un jour. Encore faut-il savoir LAQUELLE de nos pages en sort.
+       *
+       * Les trois chemins qui mènent hors origine — la redirection au
+       * chargement, la dérive APRÈS chargement, la navigation provoquée par
+       * une action — journalisaient le même événement sous trois formes
+       * différentes, où `url` désignait tantôt la source et tantôt la
+       * destination. Un consommateur du journal ne pouvait pas les distinguer,
+       * et un contrat faux est cru (APPRENTISSAGES n°6). Une seule fonction,
+       * deux champs qui ne se confondent pas.
+       */
+      function journaliserSortie(viewport: string, depuis: string, vers: string): void {
+        contexte.journaliser('exploration.page.externe', { viewport, depuis, vers });
+      }
+      if (!autorise(depart)) {
+        contexte.journaliser('exploration.robots.refus', { url: depart, depart: true });
+        parcours.arret = 'erreur';
+        contexte.journaliser('exploration.fin', { arret: parcours.arret, pages: 0, actions: 0 });
+        return parcours;
+      }
 
       let compteurActions = 0;
       const prochainId = (): string => {
@@ -286,6 +345,13 @@ export function creerExplorateur(dependances: DependancesExplorateur): Explorate
 
       async function visiter(etat: EtatViewport, urlDemandee: string, profondeur: number): Promise<PageVisitee> {
         const { page, viewport } = etat;
+        // LA POLITESSE ENTRE DEUX PAGES. Nulle au banc, qui se sert lui-même ;
+        // sur le réel, un parcours en rafale depuis une IP est un profil
+        // d'attaque pour un pare-feu applicatif — et le premier blocage que
+        // rencontrera le bestiaire.
+        if (politesse.delaiEntrePagesMs > 0) {
+          await attendre(politesse.delaiEntrePagesMs);
+        }
         let statutHttp: number | null = null;
         let chargee = false;
         try {
@@ -311,7 +377,7 @@ export function creerExplorateur(dependances: DependancesExplorateur): Explorate
         let liensInternes: string[] = [];
         let formulaires: PageVisitee['formulaires'] = [];
         if (chargee && urlInterne === null) {
-          contexte.journaliser('exploration.page.externe', { viewport: viewport.nom, url: urlFinale });
+          journaliserSortie(viewport.nom, urlDemandee, urlFinale);
         } else if (chargee) {
           oublierRemplissages(etat, urlFinale);
           const extraction = await extraireApresStabilite(etat, urlFinale);
@@ -350,10 +416,19 @@ export function creerExplorateur(dependances: DependancesExplorateur): Explorate
           return;
         }
         for (const lien of liensInternes) {
-          if (!etat.profondeurs.has(lien)) {
-            etat.profondeurs.set(lien, profondeur + 1);
-            etat.enAttente.push(lien);
+          if (etat.profondeurs.has(lien)) {
+            continue;
           }
+          // Le chemin interdit n'entre pas dans la file : il ne sera donc
+          // jamais énuméré, jamais proposé au modèle, jamais visité. Filtrer
+          // ici plutôt qu'au chargement évite d'avoir à refuser une action
+          // qu'on aurait soi-même offerte.
+          if (!autorise(lien)) {
+            contexte.journaliser('exploration.robots.refus', { url: lien, depart: false });
+            continue;
+          }
+          etat.profondeurs.set(lien, profondeur + 1);
+          etat.enAttente.push(lien);
         }
       }
 
@@ -375,7 +450,7 @@ export function creerExplorateur(dependances: DependancesExplorateur): Explorate
           await abandonnerNavigation(etat, url);
           const urlActuelle = normaliserUrl(page.url(), origine);
           if (urlActuelle === null) {
-            contexte.journaliser('exploration.page.externe', { viewport: viewport.nom, url, vers: page.url() });
+            journaliserSortie(viewport.nom, url, page.url());
             return { url: null, liensInternes: [], formulaires: [] };
           }
           if (urlActuelle !== url) {
@@ -438,7 +513,7 @@ export function creerExplorateur(dependances: DependancesExplorateur): Explorate
         let liensInternes: string[] = [];
         let formulaires: PageVisitee['formulaires'] = [];
         if (urlInterne === null) {
-          contexte.journaliser('exploration.page.externe', { viewport: etat.viewport.nom, url });
+          journaliserSortie(etat.viewport.nom, etat.pageCourante.url, url);
         } else {
           oublierRemplissages(etat, url);
           const extraction = await extraireApresStabilite(etat, url);
@@ -751,6 +826,7 @@ export function creerExplorateur(dependances: DependancesExplorateur): Explorate
             libelleMaxChars: exploration.libelleMaxChars,
             origine,
             libelles: etat.libelles,
+            soumission: config.interaction.soumission,
           }),
         );
         for (const ecartee of ecartees) {

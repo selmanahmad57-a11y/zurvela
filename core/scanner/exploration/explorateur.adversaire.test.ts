@@ -281,7 +281,12 @@ describe('périmètre du site scanné', () => {
       const formulaires = resultat.parcours.pages.flatMap((page) => page.formulaires);
       expect(formulaires).toEqual([]);
       expect(tiers.requetes.some((requete) => requete.methode === 'POST')).toBe(false);
-      expect(resultat.journal.some((entree) => entree.type === 'exploration.page.externe')).toBe(true);
+      // La sortie de périmètre est consignée AVEC SA SOURCE : « ce scan est
+      // sorti » ne suffit pas, il faut « c'est CETTE page qui en sort » pour
+      // que le rapport puisse un jour le dire au propriétaire.
+      const sortie = resultat.journal.find((entree) => entree.type === 'exploration.page.externe');
+      expect(sortie).toBeDefined();
+      expect(sortie?.details).toMatchObject({ depuis: expect.any(String), vers: expect.any(String) });
     } finally {
       await cible.arreter();
       await tiers.arreter();

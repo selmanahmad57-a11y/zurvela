@@ -485,7 +485,7 @@ describe('creerScanner', () => {
 describe('creerScanner — traçabilité du protocole dans le Rapport', () => {
   /** Le pipeline complet, avec les VRAIS détecteurs et le VRAI protocole (aucun navigateur). */
   async function scannerLogoMort() {
-    const detecteurs = [creerDetecteurHttp(config.detecteurs.http), creerDetecteurImage(config.detecteurs.image)];
+    const detecteurs = [creerDetecteurHttp(config.detecteurs.http, config.detecteurs.tiers), creerDetecteurImage(config.detecteurs.image)];
     const protocole = creerProtocole({ config: config.confirmation, autoDiagnostic: autoDiagnosticMecanique });
     const scanner = creerScanner(
       dependances({
@@ -826,7 +826,7 @@ describe('creerScanner — rapport business', () => {
    * comportement voulu, et il est éprouvé à part.
    */
   function scannerConfirmant(clientIa: ClientIa) {
-    const detecteurs = [creerDetecteurHttp(config.detecteurs.http), creerDetecteurImage(config.detecteurs.image)];
+    const detecteurs = [creerDetecteurHttp(config.detecteurs.http, config.detecteurs.tiers), creerDetecteurImage(config.detecteurs.image)];
     return creerScanner(
       dependances({
         explorateur: explorateurLogoMort('desktop'),

@@ -29,6 +29,13 @@ import { construireCandidate, declencheurDe, estSoumission, localiserRessource, 
 
 export const NOM_DETECTEUR_HTTP = 'd-http';
 export const DESCRIPTION_5XX = 'reponse-5xx';
+/**
+ * Une dépendance TIERCE a échoué : une ressource servie par une autre origine
+ * que le site inspecté. Description partagée par tous les détecteurs — la
+ * cause racine est la dépendance elle-même, pas le symptôme par lequel chacun
+ * l'a vue.
+ */
+export const DESCRIPTION_TIERCE_EN_ECHEC = 'dependance-tierce-en-echec';
 export const DESCRIPTION_404_INTERNE = 'ressource-interne-404';
 export const DESCRIPTION_DOCUMENT_INJOIGNABLE = 'document-injoignable';
 
@@ -39,7 +46,10 @@ const STATUT_INTROUVABLE = 404;
 type SignalReponse = Extract<Signal, { type: 'reponse-reseau' }>;
 type SignalRequeteEchouee = Extract<Signal, { type: 'requete-echouee' }>;
 
-export function creerDetecteurHttp(config: ConfigScanner['detecteurs']['http']): Detecteur {
+export function creerDetecteurHttp(
+  config: ConfigScanner['detecteurs']['http'],
+  configTiers: ConfigScanner['detecteurs']['tiers'],
+): Detecteur {
   return {
     nom: NOM_DETECTEUR_HTTP,
     dependDuViewport: false,
@@ -47,17 +57,42 @@ export function creerDetecteurHttp(config: ConfigScanner['detecteurs']['http']):
       const candidates: AnomalieCandidate[] = [];
       for (const signal of signaux) {
         if (signal.type === 'requete-echouee') {
-          if (signal.interne && signal.cadrePrincipal && !config.erreursReseauIgnorees.includes(signal.erreur)) {
+          if (config.erreursReseauIgnorees.includes(signal.erreur)) {
+            continue;
+          }
+          if (signal.interne && signal.cadrePrincipal) {
             candidates.push(candidateDocumentInjoignable(signal));
+          } else if (!signal.interne && !signal.cadrePrincipal) {
+            // Une SOUS-RESSOURCE tierce injoignable : la page a très bien pu
+            // s'afficher, c'est sa dépendance qui manque. Le cadre PRINCIPAL
+            // en est exclu — un document externe en cadre principal n'est pas
+            // une dépendance du site, c'est un autre site, et nous n'auditons
+            // pas les autres sites.
+            candidates.push(candidateTierce(signal));
           }
           continue;
         }
         if (signal.type !== 'reponse-reseau') {
           continue;
         }
+        // L'ORIGINE D'ABORD, LE STATUT ENSUITE. Le 404 vérifiait déjà
+        // `interne` ; le 5xx ne le faisait pas, et rien au banc ne pouvait le
+        // révéler puisque tout y est servi par une seule origine. Sur le web
+        // réel, un widget de chat ou une régie qui rend 500 devenait une
+        // anomalie BLOQUANTE imputée au client.
+        if (!signal.interne) {
+          if (signal.statut >= STATUT_ERREUR_SERVEUR) {
+            candidates.push(candidateTierce(signal));
+          }
+          // Un 404 TIERS n'est pas signalé : une ressource tierce absente est
+          // le bruit de fond du web (pixels de mesure, tests A/B retirés), et
+          // la signaler noierait les constats qui comptent. Le 5xx, lui, est
+          // une dépendance CASSÉE, pas une dépendance absente.
+          continue;
+        }
         if (signal.statut >= STATUT_ERREUR_SERVEUR) {
           candidates.push(candidate5xx(signal));
-        } else if (signal.statut === STATUT_INTROUVABLE && signal.interne) {
+        } else if (signal.statut === STATUT_INTROUVABLE) {
           candidates.push(candidate404(signal));
         }
       }
@@ -102,6 +137,31 @@ export function creerDetecteurHttp(config: ConfigScanner['detecteurs']['http']):
             // La localisation est l'URL DEMANDÉE, pas celle où le navigateur
             // est resté : c'est elle qui est inaccessible.
             page: signal.urlRessource,
+            viewport: signal.viewport,
+            dependDuViewport: false,
+            action: trouverAction(contexte.parcours, signal.actionId),
+            element: localiserRessource(signal),
+            preuves: [signal],
+          },
+          contexte,
+        );
+      }
+
+      /**
+       * Une dépendance tierce en échec, quel que soit le symptôme qui l'a
+       * révélée. Catégorie, gravité et confiance viennent de la section
+       * PARTAGÉE `detecteurs.tiers` : la règle ne dépend pas du détecteur qui
+       * a vu la panne, mais de l'origine de la ressource.
+       */
+      function candidateTierce(signal: SignalReponse | SignalRequeteEchouee): AnomalieCandidate {
+        return construireCandidate(
+          {
+            detecteur: NOM_DETECTEUR_HTTP,
+            description: DESCRIPTION_TIERCE_EN_ECHEC,
+            categorie: configTiers.categorie,
+            gravite: configTiers.gravite,
+            confiance: configTiers.confiance,
+            page: signal.page,
             viewport: signal.viewport,
             dependDuViewport: false,
             action: trouverAction(contexte.parcours, signal.actionId),

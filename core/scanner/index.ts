@@ -46,6 +46,14 @@ export interface DependancesScanner {
   ouvrirRejeu: (journaliser: (type: string, details?: unknown) => void, echeance: number) => SessionRejeu;
   ia: ClientIa;
   /**
+   * Ouvre la portée de BUDGET d'un scan : remet le compteur de dépense à zéro
+   * et donne au plafond le journal du scan qui commence.
+   *
+   * ABSENT : aucun plafond n'est opposé, et c'est l'état du banc, dont le coût
+   * est mesuré et non borné. Le client reçu est alors le client nu.
+   */
+  ouvrirBudget?: (journaliser: (type: string, details?: unknown) => void) => void;
+  /**
    * Réglages du profilage IA (brique 4a). ABSENTS : le scan tourne sans
    * profil et le journal le dit — le moteur ne dépend jamais de l'IA
    * (constitution §4).
@@ -99,7 +107,7 @@ function compterParDetecteur(detecteurs: Detecteur[], candidates: { detecteur: s
 export const RAISON_CONFIRMATION_EN_ERREUR = 'confirmation-en-erreur';
 
 export function creerScanner(dependances: DependancesScanner): Scanner {
-  const { config, explorateur, detecteurs, protocole, ouvrirRejeu, ia } = dependances;
+  const { config, explorateur, detecteurs, protocole, ouvrirRejeu, ia, ouvrirBudget } = dependances;
 
   return async function scanner(url, options): Promise<Rapport> {
     const debut = Date.now();
@@ -117,6 +125,12 @@ export function creerScanner(dependances: DependancesScanner): Scanner {
       protocole: protocole.nom,
     });
     journaliser('ia.mode', { mode: ia.mode, raison: ia.raisonDegrade });
+    // Le budget s'ouvre AVANT la première dépense possible, et il est propre à
+    // ce scan : le compteur d'un scan précédent ne doit pas amputer celui-ci.
+    ouvrirBudget?.(journaliser);
+    if (config.budget.maxUsdParScan !== null) {
+      journaliser('ia.budget', { maxUsdParScan: config.budget.maxUsdParScan });
+    }
 
     // 0. L'URL de départ doit être une URL web : un fichier local ou une URL de
     // données ne lancent pas de navigateur.

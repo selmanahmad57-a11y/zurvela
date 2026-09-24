@@ -28,6 +28,18 @@ const STATUT_ERREUR = 400;
 
 type SignalEchec = Extract<Signal, { type: 'reponse-reseau' | 'requete-echouee' }>;
 
+/**
+ * Un échec lié à l'action, ET IMPUTABLE AU SITE.
+ *
+ * L'origine entre ici comme partout ailleurs, mais sa conséquence y est
+ * différente : ce détecteur ne signale pas la dépendance tierce, il
+ * l'IGNORE. Deux raisons qui se cumulent. D'abord, une soumission dont seul un
+ * appel tiers échoue — un pixel de mesure, un antispam externe — n'est pas un
+ * échec muet du site : le formulaire a pu parfaitement aboutir. Ensuite, la
+ * panne tierce est déjà signalée par `d-http`, qui la voit à la source ; la
+ * reporter ici la compterait deux fois, sous deux symptômes, pour une seule
+ * cause racine.
+ */
 function estEchecLie(signal: Signal, actionId: string, typesRequete: string[]): signal is SignalEchec {
   if (signal.actionId !== actionId) {
     return false;
@@ -36,6 +48,9 @@ function estEchecLie(signal: Signal, actionId: string, typesRequete: string[]): 
     return false;
   }
   if (!typesRequete.includes(signal.typeRessource)) {
+    return false;
+  }
+  if (!signal.interne) {
     return false;
   }
   return signal.type === 'requete-echouee' || signal.statut >= STATUT_ERREUR;

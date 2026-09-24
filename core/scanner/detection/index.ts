@@ -111,10 +111,10 @@ export function detecter(signaux: Signal[], contexte: ContexteDetection, detecte
 /** Les six détecteurs de la brique, dans l'ordre du cahier des charges, réglés par la config. */
 export function creerDetecteurs(config: ConfigScanner['detecteurs']): Detecteur[] {
   return [
-    creerDetecteurHttp(config.http),
+    creerDetecteurHttp(config.http, config.tiers),
     creerDetecteurInerte(config.inerte),
     creerDetecteurEchecMuet(config.echecMuet),
-    creerDetecteurLenteur(config.lenteur),
+    creerDetecteurLenteur(config.lenteur, config.tiers),
     creerDetecteurImage(config.image),
     creerDetecteurRecouvrement(config.recouvrement),
   ];

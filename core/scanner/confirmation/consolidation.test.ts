@@ -31,7 +31,7 @@ import {
 import { candidateSimulee } from './fabriques-test.js';
 import { consolider, identiteCause, identiteHorsViewport } from './consolidation.js';
 
-const detecteurHttp = creerDetecteurHttp(CONFIG_TEST.http);
+const detecteurHttp = creerDetecteurHttp(CONFIG_TEST.http, CONFIG_TEST.tiers);
 const detecteurImage = creerDetecteurImage(CONFIG_TEST.image);
 const detecteurInerte = creerDetecteurInerte(CONFIG_TEST.inerte);
 const detecteurRecouvrement = creerDetecteurRecouvrement(CONFIG_TEST.recouvrement);

@@ -38,6 +38,7 @@ export const CONFIG_TEST: ConfigScanner['detecteurs'] = {
   },
   image: { confianceSignalSimple: 0.8, confianceSignalDouble: 0.95, gravite: 'mineur' },
   recouvrement: { confianceGeometrie: 0.8, confianceGeometrieEtClic: 0.95, gravite: 'bloquant' },
+  tiers: { categorie: 'fonctionnel', gravite: 'mineur', confiance: 0.7 },
 };
 
 export const DESKTOP: Viewport = { nom: 'desktop', largeur: 1280, hauteur: 800, mobile: false };

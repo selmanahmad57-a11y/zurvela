@@ -44,7 +44,14 @@ function contexte(surcharges: Partial<ContexteDecision> = {}): ContexteDecision 
   return { pageCourante, formulairesRemplis: [], formulairesSoumis: [], urlsEnAttente: [], nbPagesVisitees: 1, ...surcharges };
 }
 
-const OPTIONS = { remplissage, libelleMaxChars: 20, origine: ORIGINE, libelles: new Map<string, string>() };
+const OPTIONS = {
+  remplissage,
+  libelleMaxChars: 20,
+  origine: ORIGINE,
+  libelles: new Map<string, string>(),
+  // Le banc se sert lui-même : le site scanné nous appartient littéralement.
+  soumission: 'site-possede' as const,
+};
 
 describe('cheminDe', () => {
   it('rend le chemin et la requête du site, et jamais un hôte', () => {
@@ -61,6 +68,24 @@ describe('libelleBorne', () => {
     expect(libelleBorne('0123456789'.repeat(3), 12)).toBe('012345678901');
     expect(libelleBorne('   ', 10)).toBeNull();
     expect(libelleBorne(undefined, 10)).toBeNull();
+  });
+});
+
+describe('enumererActions — la SOUMISSION est gatée à l’énumération', () => {
+  it('en mode « aucune », l’action de soumettre n’existe pas : le modèle ne peut pas la choisir', () => {
+    // Première couche, et non un filtre après coup. La différence compte : un
+    // filtre laisse toujours la question « et si quelque chose le
+    // contournait ». Ici l'action n'est jamais construite.
+    const actions = enumererActions(contexte({ urlsEnAttente: [`${ORIGINE}/a`] }), { ...OPTIONS, soumission: 'aucune' });
+    expect(actions.map((a) => a.type)).not.toContain('soumettre');
+    // Tout le reste subsiste : un premier scan n'a pas besoin de soumettre
+    // pour être utile — navigation, remplissage, arrêt.
+    expect(actions.map((a) => a.type)).toEqual(['remplir', 'remplir', 'naviguer', 'terminer']);
+  });
+
+  it('en mode « site-possede », elle est énumérée : le contrôle précédent distingue, il n’éteint pas', () => {
+    const actions = enumererActions(contexte({ urlsEnAttente: [`${ORIGINE}/a`] }), { ...OPTIONS, soumission: 'site-possede' });
+    expect(actions.filter((a) => a.type === 'soumettre')).toHaveLength(2);
   });
 });
 

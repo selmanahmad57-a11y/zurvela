@@ -46,7 +46,7 @@ const contexte: ContexteDecision = {
   nbPagesVisitees: 3,
 };
 
-const actions = enumererActions(contexte, { remplissage, libelleMaxChars: 40, origine: ORIGINE, libelles: new Map() });
+const actions = enumererActions(contexte, { remplissage, libelleMaxChars: 40, origine: ORIGINE, libelles: new Map() , soumission: 'site-possede' as const });
 
 const etat: EtatDecisionEnumere = {
   page: '/catalogue',
@@ -187,7 +187,7 @@ describe('politiqueIa — le repli PAR DÉCISION', () => {
     const seul: ContexteDecision = { ...contexte, urlsEnAttente: [] };
     const etatSeul: EtatDecisionEnumere = {
       ...etat,
-      actions: enumererActions(seul, { remplissage, libelleMaxChars: 40, origine: ORIGINE, libelles: new Map() }),
+      actions: enumererActions(seul, { remplissage, libelleMaxChars: 40, origine: ORIGINE, libelles: new Map() , soumission: 'site-possede' as const }),
     };
     const { politique } = bancEssai(() => Promise.resolve({ disponible: false, raison: RAISON_CASSETTE_ABSENTE }));
 

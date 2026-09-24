@@ -1,6 +1,6 @@
 {
   "$schema": "./scanner.schema.json",
-  "$commentaire": "Configuration de L'INSTRUMENT : c'est celle que lit le banc, et elle est GELÉE pour toute raison de production. La faire dériver rendrait incomparables toutes les mesures passées. Les réglages destinés au web réel vivent dans config/production.json, que le banc ne lit jamais.",
+  "$commentaire": "CONFIGURATION DE PRODUCTION — le moteur face au web réel. Née le 2026-09-24, VIDE DE CERTITUDES : chaque valeur qui diffère de l'instrument est une HYPOTHÈSE datée, que le premier bestiaire (brique 6b) confirmera ou corrigera. Les écarts et leur justification sont inventoriés dans docs/INVENTAIRE-PRODUCTION.md ; ce fichier en est la mise en oeuvre, pas la source. Le banc ne lit JAMAIS ce fichier : il lit config/scanner.json, qui est gelé pour préserver la comparabilité de toutes les mesures passées.",
   "navigateur": {
     "canal": null,
     "sansTete": true
@@ -27,11 +27,11 @@
   "exploration": {
     "profondeurMax": 2,
     "pagesMax": 20,
-    "chargementPageMs": 15000,
-    "attenteEffetMaxMs": 8000,
-    "stabilisationMs": 500,
-    "clicMs": 2000,
-    "saisieMs": 2000,
+    "chargementPageMs": 30000,
+    "attenteEffetMaxMs": 12000,
+    "stabilisationMs": 1000,
+    "clicMs": 4000,
+    "saisieMs": 4000,
     "sondageMs": 50,
     "margeEcheanceMs": 5000,
     "evaluationMs": 15000,
@@ -159,7 +159,7 @@
       ]
     },
     "lenteur": {
-      "seuilMs": 3000,
+      "seuilMs": 8000,
       "gravite": "important",
       "paliers": [
         {
@@ -225,10 +225,10 @@
     "agregationMesures": "mediane",
     "seuilRetenue": 0.6,
     "rejeu": {
-      "chargementPageMs": 15000,
-      "actionMs": 10000,
+      "chargementPageMs": 30000,
+      "actionMs": 20000,
       "margeEcheanceMs": 3000,
-      "budgetMinimalMs": 8000
+      "budgetMinimalMs": 20000
     },
     "calibration": {
       "facteurVerdict": {
@@ -243,13 +243,16 @@
     }
   },
   "interaction": {
-    "soumission": "site-possede"
+    "soumission": "aucune"
   },
   "politesse": {
-    "delaiEntrePagesMs": 0,
+    "delaiEntrePagesMs": 1000,
     "respecterRobotsTxt": true
   },
   "budget": {
-    "maxUsdParScan": null
+    "maxUsdParScan": 0.5
+  },
+  "scan": {
+    "timeoutMs": 300000
   }
 }

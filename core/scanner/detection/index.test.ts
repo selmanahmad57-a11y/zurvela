@@ -69,7 +69,7 @@ describe('detecter (pipeline de détection)', () => {
     const lentDesktop = reponse({ actionId: 'a1', viewport: DESKTOP.nom, dureeMs: seuilMs * 1.6 });
     const lentMobile = reponse({ actionId: 'a2', viewport: MOBILE.nom, dureeMs: seuilMs * 10 });
     const ctx = contexte([soumission('a1'), soumission('a2', { viewport: MOBILE.nom })]);
-    const detecteurs = [creerDetecteurLenteur(CONFIG_TEST.lenteur)];
+    const detecteurs = [creerDetecteurLenteur(CONFIG_TEST.lenteur, CONFIG_TEST.tiers)];
 
     // Les deux signaux portent bien des paliers différents avant fusion.
     expect(detecter([lentDesktop], ctx, detecteurs)[0]?.confiance).toBeLessThan(confianceHaute);

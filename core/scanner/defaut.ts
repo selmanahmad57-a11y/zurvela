@@ -10,6 +10,7 @@
  * (navigateur, exploration, observation, détection, re-exécution).
  */
 import { creerClientIa, RAISON_REPLI_DETERMINISTE, type ClientIa } from '../ia/index.js';
+import { creerBudgetScan } from '../ia/plafond.js';
 import type { Browser } from 'playwright';
 import type { ContexteExploration, PolitiqueDecision, Scanner } from '../types.js';
 import {
@@ -205,8 +206,14 @@ export async function creerScannerParDefaut(options: OptionsAssemblage = {}): Pr
     chargerConfigRapport(),
   ]);
   const config = appliquerSurcharges(configChargee, options.exploration);
-  const ia = options.ia ?? creerClientIa(config.ia);
+  // LE PLAFOND ENVELOPPE LE CLIENT AVANT TOUT LE RESTE. Les quatre surfaces —
+  // profilage, navigation, diagnostic, rédaction — reçoivent le client
+  // plafonné, donc le budget porte sur leur somme et non sur chacune : quatre
+  // plafonds séparés feraient quatre fois le budget.
+  const budget = creerBudgetScan(options.ia ?? creerClientIa(config.ia), config.budget.maxUsdParScan);
+  const ia = budget.client;
   return creerScanner({
+    ouvrirBudget: budget.ouvrirScan,
     config,
     explorateur: explorateurAvecNavigateur(config, actionsInterdites, ia),
     observateur: creerObservateur,

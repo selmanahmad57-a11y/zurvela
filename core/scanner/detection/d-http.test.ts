@@ -23,7 +23,7 @@ import {
   URL_CONTACT,
 } from './fabriques-test.js';
 
-const detecteur = creerDetecteurHttp(CONFIG_TEST.http);
+const detecteur = creerDetecteurHttp(CONFIG_TEST.http, CONFIG_TEST.tiers);
 
 describe('D-HTTP', () => {
   it('site sain → aucune candidate', () => {
@@ -166,7 +166,7 @@ describe('D-HTTP', () => {
   });
 
   it('les seuils de gravité et de confiance viennent de la config reçue', () => {
-    const autre = creerDetecteurHttp({ ...CONFIG_TEST.http, confiance5xx: 0.42, gravite5xx: 'mineur', categorieParDefaut: 'securite' });
+    const autre = creerDetecteurHttp({ ...CONFIG_TEST.http, confiance5xx: 0.42, gravite5xx: 'mineur', categorieParDefaut: 'securite' }, CONFIG_TEST.tiers);
     const [candidate] = autre.detecter([reponse({ statut: 500 })], contexte());
     expect(candidate).toMatchObject({ confiance: 0.42, graviteEstimee: 'mineur', categorie: 'securite' });
   });

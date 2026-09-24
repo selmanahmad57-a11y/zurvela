@@ -78,6 +78,23 @@ export interface OptionsEnumeration {
   origine: string;
   /** Libellés visibles des liens, par URL normalisée. CONTENU DE PAGE, donc donnée non fiable. */
   libelles: ReadonlyMap<string, string>;
+  /**
+   * Ce que le robot a le droit de FAIRE sur ce site (`interaction.soumission`).
+   *
+   * En mode `aucune`, l'action de soumettre n'est PAS ÉNUMÉRÉE : elle n'existe
+   * pas, donc aucune couche en aval n'a à la refuser, et le modèle ne peut pas
+   * la choisir puisqu'elle ne lui est jamais montrée. C'est une première
+   * couche, pas un filtre après coup — la différence compte, parce qu'un filtre
+   * après coup laisse toujours la question « et si quelque chose le
+   * contournait ».
+   *
+   * Ce que cela protège : sur un site réel, chaque soumission a une
+   * conséquence — un email au propriétaire, une entrée en base, une tentative
+   * de connexion échouée qui verrouille un compte. Le mode par défaut de la
+   * production est donc `aucune`, et `site-possede` est une DÉCLARATION de
+   * propriété, pas une option de confort.
+   */
+  soumission: ConfigScanner['interaction']['soumission'];
 }
 
 /** Repères techniques d'un formulaire : des comptes et des jetons HTML, jamais un sélecteur. */
@@ -100,7 +117,7 @@ function reperesFormulaire(formulaire: DescriptionFormulaire, origine: string): 
  */
 export function enumererActions(contexte: ContexteDecision, options: OptionsEnumeration): ActionProposee[] {
   const { pageCourante, formulairesRemplis, formulairesSoumis, urlsEnAttente } = contexte;
-  const { remplissage, libelleMaxChars, origine, libelles } = options;
+  const { remplissage, libelleMaxChars, origine, libelles, soumission } = options;
   const proposees: ActionProposee[] = [];
   const ajouter = (type: TypeAction, action: Action, reperes: Record<string, string>, libelle: string | null): void => {
     proposees.push({ id: `${PREFIXE_ACTION_PROPOSEE}${proposees.length + 1}`, type, action, reperes, libelle });
@@ -112,7 +129,7 @@ export function enumererActions(contexte: ContexteDecision, options: OptionsEnum
       ajouter('remplir', action, reperesFormulaire(formulaire, origine), null);
     }
   }
-  for (const formulaire of pageCourante.formulaires) {
+  for (const formulaire of soumission === 'aucune' ? [] : pageCourante.formulaires) {
     if (!formulairesSoumis.includes(formulaire.localisation.selecteur)) {
       const action: Action = { type: 'soumettre', formulaire: formulaire.localisation, declencheur: formulaire.declencheur };
       const reperes = {

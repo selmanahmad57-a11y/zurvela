@@ -15,6 +15,7 @@
 import type { AnomalieCandidate, Detecteur, Signal } from '../../types.js';
 import type { ConfigScanner, PalierConfiance } from '../config.js';
 import { construireCandidate, declencheurDe, localiserRessource, trouverAction } from './commun.js';
+import { DESCRIPTION_TIERCE_EN_ECHEC } from './d-http.js';
 
 export const NOM_DETECTEUR_LENTEUR = 'd-lenteur';
 export const DESCRIPTION_LENTE = 'reponse-lente';
@@ -63,7 +64,10 @@ function dureeMax(candidate: AnomalieCandidate): number | undefined {
   return mesure;
 }
 
-export function creerDetecteurLenteur(config: ConfigScanner['detecteurs']['lenteur']): Detecteur {
+export function creerDetecteurLenteur(
+  config: ConfigScanner['detecteurs']['lenteur'],
+  configTiers: ConfigScanner['detecteurs']['tiers'],
+): Detecteur {
   const paliersTries = [...config.paliers].sort((a, b) => a.ratioMin - b.ratioMin);
   return {
     nom: NOM_DETECTEUR_LENTEUR,
@@ -90,14 +94,20 @@ export function creerDetecteurLenteur(config: ConfigScanner['detecteurs']['lente
           continue;
         }
         const action = trouverAction(contexte.parcours, requete.actionId);
+        // UNE LENTEUR TIERCE N'EST PAS LA LENTEUR DU SITE. Le propriétaire ne
+        // peut pas accélérer le serveur d'un tiers ; lui présenter cela comme
+        // une performance « importante » de SON site l'envoie corriger ce
+        // qu'il ne contrôle pas. Il peut en revanche retirer le widget, donc
+        // il mérite de le savoir — à part, et en mineur.
+        const tierce = !requete.interne;
         candidates.push(
           construireCandidate(
             {
               detecteur: NOM_DETECTEUR_LENTEUR,
-              description: DESCRIPTION_LENTE,
-              categorie: 'performance',
-              gravite: config.gravite,
-              confiance: palier.confiance,
+              description: tierce ? DESCRIPTION_TIERCE_EN_ECHEC : DESCRIPTION_LENTE,
+              categorie: tierce ? configTiers.categorie : 'performance',
+              gravite: tierce ? configTiers.gravite : config.gravite,
+              confiance: tierce ? configTiers.confiance : palier.confiance,
               page: requete.page,
               viewport: requete.viewport,
               dependDuViewport: false,

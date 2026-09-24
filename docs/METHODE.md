@@ -244,3 +244,29 @@ n'est mécanisable :
 
 Aucun contrôle ne distingue une déduction d'une emphase. Une langue dont la
 prose n'a pas été relue sur ces deux points n'est pas livrable.
+
+## 10. Une garde nouvelle prouve qu'elle mord, par MUTATION
+
+« Un contrôle qui ne peut pas échouer ne vérifie rien » est la doctrine ; voici
+le geste qui la rend vérifiable, et il est désormais obligatoire pour **toute
+garde nouvelle** :
+
+1. retirer la garde — la condition, le filtre, la ligne qui protège ;
+2. relancer ses contrôles ;
+3. vérifier que **ses** contrôles tombent, et que **les autres survivent** ;
+4. remettre la garde, et relancer pour confirmer le retour au vert.
+
+Les deux moitiés comptent autant. Si rien ne tombe, le contrôle ne mesurait pas
+la garde — il passait pour d'autres raisons. Si TOUT tombe, le contrôle ne
+distingue pas la garde de son détecteur : il ne saurait pas dire si le moteur
+s'est mis à bien juger ou s'il a simplement cessé de voir.
+
+Exemple de référence, brique 6a : les trois détecteurs qui ont appris
+l'origine. Chaque garde retirée tue exactement ses cas tiers et laisse vivre
+ses jumeaux internes — c'est cela qui prouve que le détecteur DISTINGUE
+l'origine au lieu de s'être éteint.
+
+Le coût est de quelques minutes. Il a déjà évité une correction fantôme en
+brique 5, où un sceptique a supprimé deux appels fraîchement ajoutés et relancé
+369 tests sans en tuer un seul : les bornes ajoutées étaient des no-op, et la
+suite entière le taisait.
