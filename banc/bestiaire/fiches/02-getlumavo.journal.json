@@ -1,0 +1,6953 @@
+{
+ "url": "https://www.getlumavo.com",
+ "anomalies": [
+  {
+   "categorie": "fonctionnel",
+   "description": "dependance-tierce-en-echec",
+   "urlOuEtape": "https://www.getlumavo.com/login",
+   "graviteEstimee": "mineur",
+   "confiance": 0.735,
+   "detecteur": "d-http",
+   "reproduction": {
+    "url": "https://www.getlumavo.com/login",
+    "viewport": {
+     "nom": "desktop",
+     "largeur": 1280,
+     "hauteur": 800,
+     "mobile": false
+    },
+    "action": {
+     "id": "a8",
+     "action": {
+      "type": "naviguer",
+      "url": "https://www.getlumavo.com/login"
+     },
+     "page": "https://www.getlumavo.com/verify",
+     "viewport": "desktop",
+     "debut": "2026-09-25T10:39:13.934Z",
+     "fin": "2026-09-25T10:39:17.462Z",
+     "resultat": "ok",
+     "decision": {
+      "politique": "deterministe"
+     }
+    },
+    "actionsPrealables": []
+   },
+   "preuves": [
+    {
+     "viewport": "desktop",
+     "page": "https://www.getlumavo.com/login",
+     "actionId": "a8",
+     "type": "requete-echouee",
+     "horodatage": "2026-09-25T10:39:16.379Z",
+     "urlRessource": "https://accounts.google.com/gsi/client",
+     "methode": "GET",
+     "typeRessource": "script",
+     "erreur": "net::ERR_BLOCKED_BY_ORB",
+     "cadrePrincipal": false,
+     "interne": false
+    },
+    {
+     "viewport": "mobile",
+     "page": "https://www.getlumavo.com/login",
+     "actionId": "a29",
+     "type": "requete-echouee",
+     "horodatage": "2026-09-25T10:40:33.501Z",
+     "urlRessource": "https://accounts.google.com/gsi/client",
+     "methode": "GET",
+     "typeRessource": "script",
+     "erreur": "net::ERR_BLOCKED_BY_ORB",
+     "cadrePrincipal": false,
+     "interne": false
+    }
+   ],
+   "element": {
+    "balise": "script",
+    "selecteur": "/gsi/client",
+    "attributs": {
+     "src": "https://accounts.google.com/gsi/client"
+    }
+   },
+   "observations": [
+    {
+     "viewport": "desktop"
+    },
+    {
+     "viewport": "mobile"
+    }
+   ],
+   "verdict": "confirmee",
+   "motif": "reproduite",
+   "groupe": "reseau:GET:/gsi/client",
+   "localisations": [
+    {
+     "urlOuEtape": "https://www.getlumavo.com/login",
+     "element": {
+      "balise": "script",
+      "selecteur": "/gsi/client",
+      "attributs": {
+       "src": "https://accounts.google.com/gsi/client"
+      }
+     }
+    }
+   ]
+  },
+  {
+   "categorie": "performance",
+   "description": "reponse-lente",
+   "urlOuEtape": "https://www.getlumavo.com/",
+   "graviteEstimee": "important",
+   "confiance": 0.7,
+   "detecteur": "d-lenteur",
+   "reproduction": {
+    "url": "https://www.getlumavo.com/",
+    "viewport": {
+     "nom": "mobile",
+     "largeur": 390,
+     "hauteur": 844,
+     "mobile": true
+    },
+    "action": {
+     "id": "r2",
+     "action": {
+      "type": "naviguer",
+      "url": "https://www.getlumavo.com/"
+     },
+     "page": "https://www.getlumavo.com/",
+     "viewport": "mobile",
+     "debut": "2026-09-25T10:41:47.821Z",
+     "fin": "2026-09-25T10:42:00.722Z",
+     "resultat": "ok"
+    },
+    "actionsPrealables": []
+   },
+   "preuves": [
+    {
+     "viewport": "mobile",
+     "page": "https://www.getlumavo.com/",
+     "actionId": "r2",
+     "type": "reponse-reseau",
+     "horodatage": "2026-09-25T10:41:58.942Z",
+     "urlRessource": "https://www.getlumavo.com/",
+     "methode": "GET",
+     "statut": 200,
+     "typeRessource": "document",
+     "dureeMs": 11110.414,
+     "interne": true
+    }
+   ],
+   "element": {
+    "balise": "document",
+    "selecteur": "/",
+    "attributs": {
+     "src": "https://www.getlumavo.com/"
+    }
+   },
+   "observations": [
+    {
+     "viewport": "mobile"
+    }
+   ],
+   "verdict": "confirmee",
+   "motif": "constatee-au-rejeu",
+   "groupe": "reseau:GET:/",
+   "localisations": [
+    {
+     "urlOuEtape": "https://www.getlumavo.com/",
+     "element": {
+      "balise": "document",
+      "selecteur": "/",
+      "attributs": {
+       "src": "https://www.getlumavo.com/"
+      }
+     }
+    }
+   ]
+  }
+ ],
+ "coutApi": 0,
+ "dureeMs": 229188,
+ "journal": [
+  {
+   "horodatage": "2026-09-25T10:38:34.045Z",
+   "type": "scan.debut",
+   "details": {
+    "url": "https://www.getlumavo.com",
+    "timeoutMs": 300000,
+    "explorateur": "explorateur-navigateur",
+    "detecteurs": [
+     "d-http",
+     "d-inerte",
+     "d-echec-muet",
+     "d-lenteur",
+     "d-image",
+     "d-recouvrement"
+    ],
+    "protocole": "protocole-anti-faux-positifs"
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:38:34.047Z",
+   "type": "ia.mode",
+   "details": {
+    "mode": "degrade",
+    "raison": "non-implemente"
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:38:34.047Z",
+   "type": "ia.budget",
+   "details": {
+    "maxUsdParScan": 0.5
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:38:34.047Z",
+   "type": "exploration.politique",
+   "details": {
+    "demandee": "deterministe",
+    "appliquee": "deterministe"
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:38:35.337Z",
+   "type": "politesse.robots",
+   "details": {
+    "url": "https://www.getlumavo.com/robots.txt",
+    "issue": "lu",
+    "octets": 108
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:38:35.337Z",
+   "type": "exploration.viewport",
+   "details": {
+    "viewport": "desktop"
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:38:47.395Z",
+   "type": "exploration.page",
+   "details": {
+    "viewport": "desktop",
+    "url": "https://www.getlumavo.com/",
+    "statutHttp": 200,
+    "liens": 7,
+    "formulaires": 0
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:38:47.398Z",
+   "type": "action",
+   "details": {
+    "id": "a1",
+    "type": "naviguer",
+    "resultat": "ok",
+    "page": "https://www.getlumavo.com/",
+    "viewport": "desktop"
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:38:47.406Z",
+   "type": "profilage.debut",
+   "details": {
+    "url": "https://www.getlumavo.com/",
+    "nbChars": 2365,
+    "langueDeclaree": "en",
+    "modele": "claude-haiku-4-5"
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:38:47.406Z",
+   "type": "profilage.indisponible",
+   "details": {
+    "raison": "non-implemente",
+    "coutApi": 0
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:38:47.406Z",
+   "type": "profilage.extraction",
+   "details": {
+    "viewport": "desktop",
+    "url": "https://www.getlumavo.com/",
+    "nbChars": 2365,
+    "tronque": false,
+    "corpsRaccourci": false,
+    "langueDeclaree": "en",
+    "metadonnees": [
+     "description",
+     "og:type",
+     "og:site_name",
+     "og:title",
+     "og:description"
+    ]
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:38:47.408Z",
+   "type": "decision.enumeration",
+   "details": {
+    "viewport": "desktop",
+    "page": "/",
+    "politique": "deterministe",
+    "nbActions": 7,
+    "types": [
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "terminer"
+    ],
+    "pagesRestantes": 19,
+    "profil": null
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:38:47.408Z",
+   "type": "decision",
+   "details": {
+    "viewport": "desktop",
+    "page": "/",
+    "politiqueDemandee": "deterministe",
+    "politique": "deterministe",
+    "actionId": "c1",
+    "type": "naviguer"
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:39:00.519Z",
+   "type": "exploration.page",
+   "details": {
+    "viewport": "desktop",
+    "url": "https://www.getlumavo.com/pricing",
+    "statutHttp": 200,
+    "liens": 2,
+    "formulaires": 0
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:39:00.521Z",
+   "type": "action",
+   "details": {
+    "id": "a2",
+    "type": "naviguer",
+    "resultat": "ok",
+    "page": "https://www.getlumavo.com/",
+    "viewport": "desktop",
+    "decision": {
+     "politique": "deterministe"
+    }
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:39:00.521Z",
+   "type": "decision.enumeration",
+   "details": {
+    "viewport": "desktop",
+    "page": "/pricing",
+    "politique": "deterministe",
+    "nbActions": 7,
+    "types": [
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "terminer"
+    ],
+    "pagesRestantes": 18,
+    "profil": null
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:39:00.521Z",
+   "type": "decision",
+   "details": {
+    "viewport": "desktop",
+    "page": "/pricing",
+    "politiqueDemandee": "deterministe",
+    "politique": "deterministe",
+    "actionId": "c1",
+    "type": "naviguer"
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:39:03.317Z",
+   "type": "exploration.page",
+   "details": {
+    "viewport": "desktop",
+    "url": "https://www.getlumavo.com/docs/api",
+    "statutHttp": 200,
+    "liens": 12,
+    "formulaires": 0
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:39:03.319Z",
+   "type": "action",
+   "details": {
+    "id": "a3",
+    "type": "naviguer",
+    "resultat": "ok",
+    "page": "https://www.getlumavo.com/pricing",
+    "viewport": "desktop",
+    "decision": {
+     "politique": "deterministe"
+    }
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:39:03.319Z",
+   "type": "decision.enumeration",
+   "details": {
+    "viewport": "desktop",
+    "page": "/docs/api",
+    "politique": "deterministe",
+    "nbActions": 16,
+    "types": [
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "terminer"
+    ],
+    "pagesRestantes": 17,
+    "profil": null
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:39:03.319Z",
+   "type": "decision",
+   "details": {
+    "viewport": "desktop",
+    "page": "/docs/api",
+    "politiqueDemandee": "deterministe",
+    "politique": "deterministe",
+    "actionId": "c1",
+    "type": "naviguer"
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:39:06.033Z",
+   "type": "exploration.page",
+   "details": {
+    "viewport": "desktop",
+    "url": "https://www.getlumavo.com/legal/terms",
+    "statutHttp": 200,
+    "liens": 12,
+    "formulaires": 0
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:39:06.036Z",
+   "type": "action",
+   "details": {
+    "id": "a4",
+    "type": "naviguer",
+    "resultat": "ok",
+    "page": "https://www.getlumavo.com/docs/api",
+    "viewport": "desktop",
+    "decision": {
+     "politique": "deterministe"
+    }
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:39:06.036Z",
+   "type": "decision.enumeration",
+   "details": {
+    "viewport": "desktop",
+    "page": "/legal/terms",
+    "politique": "deterministe",
+    "nbActions": 23,
+    "types": [
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "terminer"
+    ],
+    "pagesRestantes": 16,
+    "profil": null
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:39:06.036Z",
+   "type": "decision",
+   "details": {
+    "viewport": "desktop",
+    "page": "/legal/terms",
+    "politiqueDemandee": "deterministe",
+    "politique": "deterministe",
+    "actionId": "c1",
+    "type": "naviguer"
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:39:08.679Z",
+   "type": "exploration.page",
+   "details": {
+    "viewport": "desktop",
+    "url": "https://www.getlumavo.com/legal/privacy-policy",
+    "statutHttp": 200,
+    "liens": 12,
+    "formulaires": 0
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:39:08.682Z",
+   "type": "action",
+   "details": {
+    "id": "a5",
+    "type": "naviguer",
+    "resultat": "ok",
+    "page": "https://www.getlumavo.com/legal/terms",
+    "viewport": "desktop",
+    "decision": {
+     "politique": "deterministe"
+    }
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:39:08.683Z",
+   "type": "decision.enumeration",
+   "details": {
+    "viewport": "desktop",
+    "page": "/legal/privacy-policy",
+    "politique": "deterministe",
+    "nbActions": 22,
+    "types": [
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "terminer"
+    ],
+    "pagesRestantes": 15,
+    "profil": null
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:39:08.683Z",
+   "type": "decision",
+   "details": {
+    "viewport": "desktop",
+    "page": "/legal/privacy-policy",
+    "politiqueDemandee": "deterministe",
+    "politique": "deterministe",
+    "actionId": "c1",
+    "type": "naviguer"
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:39:11.327Z",
+   "type": "exploration.page",
+   "details": {
+    "viewport": "desktop",
+    "url": "https://www.getlumavo.com/legal",
+    "statutHttp": 200,
+    "liens": 13,
+    "formulaires": 0
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:39:11.330Z",
+   "type": "action",
+   "details": {
+    "id": "a6",
+    "type": "naviguer",
+    "resultat": "ok",
+    "page": "https://www.getlumavo.com/legal/privacy-policy",
+    "viewport": "desktop",
+    "decision": {
+     "politique": "deterministe"
+    }
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:39:11.330Z",
+   "type": "decision.enumeration",
+   "details": {
+    "viewport": "desktop",
+    "page": "/legal",
+    "politique": "deterministe",
+    "nbActions": 22,
+    "types": [
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "terminer"
+    ],
+    "pagesRestantes": 14,
+    "profil": null
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:39:11.330Z",
+   "type": "decision",
+   "details": {
+    "viewport": "desktop",
+    "page": "/legal",
+    "politiqueDemandee": "deterministe",
+    "politique": "deterministe",
+    "actionId": "c1",
+    "type": "naviguer"
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:39:13.930Z",
+   "type": "exploration.page",
+   "details": {
+    "viewport": "desktop",
+    "url": "https://www.getlumavo.com/verify",
+    "statutHttp": 200,
+    "liens": 1,
+    "formulaires": 0
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:39:13.933Z",
+   "type": "action",
+   "details": {
+    "id": "a7",
+    "type": "naviguer",
+    "resultat": "ok",
+    "page": "https://www.getlumavo.com/legal",
+    "viewport": "desktop",
+    "decision": {
+     "politique": "deterministe"
+    }
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:39:13.934Z",
+   "type": "decision.enumeration",
+   "details": {
+    "viewport": "desktop",
+    "page": "/verify",
+    "politique": "deterministe",
+    "nbActions": 21,
+    "types": [
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "terminer"
+    ],
+    "pagesRestantes": 13,
+    "profil": null
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:39:13.934Z",
+   "type": "decision",
+   "details": {
+    "viewport": "desktop",
+    "page": "/verify",
+    "politiqueDemandee": "deterministe",
+    "politique": "deterministe",
+    "actionId": "c1",
+    "type": "naviguer"
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:39:17.459Z",
+   "type": "exploration.page",
+   "details": {
+    "viewport": "desktop",
+    "url": "https://www.getlumavo.com/login",
+    "statutHttp": 200,
+    "liens": 5,
+    "formulaires": 1
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:39:17.462Z",
+   "type": "action",
+   "details": {
+    "id": "a8",
+    "type": "naviguer",
+    "resultat": "ok",
+    "page": "https://www.getlumavo.com/verify",
+    "viewport": "desktop",
+    "decision": {
+     "politique": "deterministe"
+    }
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:39:17.462Z",
+   "type": "decision.enumeration",
+   "details": {
+    "viewport": "desktop",
+    "page": "/login",
+    "politique": "deterministe",
+    "nbActions": 21,
+    "types": [
+     "remplir",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "terminer"
+    ],
+    "pagesRestantes": 12,
+    "profil": null
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:39:17.463Z",
+   "type": "decision",
+   "details": {
+    "viewport": "desktop",
+    "page": "/login",
+    "politiqueDemandee": "deterministe",
+    "politique": "deterministe",
+    "actionId": "c1",
+    "type": "remplir"
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:39:18.753Z",
+   "type": "action",
+   "details": {
+    "id": "a9",
+    "type": "remplir",
+    "resultat": "ok",
+    "page": "https://www.getlumavo.com/login",
+    "viewport": "desktop",
+    "decision": {
+     "politique": "deterministe"
+    }
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:39:18.753Z",
+   "type": "decision.enumeration",
+   "details": {
+    "viewport": "desktop",
+    "page": "/login",
+    "politique": "deterministe",
+    "nbActions": 20,
+    "types": [
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "terminer"
+    ],
+    "pagesRestantes": 12,
+    "profil": null
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:39:18.753Z",
+   "type": "decision",
+   "details": {
+    "viewport": "desktop",
+    "page": "/login",
+    "politiqueDemandee": "deterministe",
+    "politique": "deterministe",
+    "actionId": "c1",
+    "type": "naviguer"
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:39:21.698Z",
+   "type": "exploration.page",
+   "details": {
+    "viewport": "desktop",
+    "url": "https://www.getlumavo.com/guides",
+    "statutHttp": 200,
+    "liens": 10,
+    "formulaires": 0
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:39:21.701Z",
+   "type": "action",
+   "details": {
+    "id": "a10",
+    "type": "naviguer",
+    "resultat": "ok",
+    "page": "https://www.getlumavo.com/login",
+    "viewport": "desktop",
+    "decision": {
+     "politique": "deterministe"
+    }
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:39:21.702Z",
+   "type": "decision.enumeration",
+   "details": {
+    "viewport": "desktop",
+    "page": "/guides",
+    "politique": "deterministe",
+    "nbActions": 19,
+    "types": [
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "terminer"
+    ],
+    "pagesRestantes": 11,
+    "profil": null
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:39:21.702Z",
+   "type": "decision",
+   "details": {
+    "viewport": "desktop",
+    "page": "/guides",
+    "politiqueDemandee": "deterministe",
+    "politique": "deterministe",
+    "actionId": "c1",
+    "type": "naviguer"
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:39:24.348Z",
+   "type": "exploration.page",
+   "details": {
+    "viewport": "desktop",
+    "url": "https://www.getlumavo.com/docs",
+    "statutHttp": 200,
+    "liens": 13,
+    "formulaires": 0
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:39:24.350Z",
+   "type": "action",
+   "details": {
+    "id": "a11",
+    "type": "naviguer",
+    "resultat": "ok",
+    "page": "https://www.getlumavo.com/guides",
+    "viewport": "desktop",
+    "decision": {
+     "politique": "deterministe"
+    }
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:39:24.350Z",
+   "type": "decision.enumeration",
+   "details": {
+    "viewport": "desktop",
+    "page": "/docs",
+    "politique": "deterministe",
+    "nbActions": 18,
+    "types": [
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "terminer"
+    ],
+    "pagesRestantes": 10,
+    "profil": null
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:39:24.351Z",
+   "type": "decision",
+   "details": {
+    "viewport": "desktop",
+    "page": "/docs",
+    "politiqueDemandee": "deterministe",
+    "politique": "deterministe",
+    "actionId": "c1",
+    "type": "naviguer"
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:39:26.990Z",
+   "type": "exploration.page",
+   "details": {
+    "viewport": "desktop",
+    "url": "https://www.getlumavo.com/docs/how-it-works",
+    "statutHttp": 200,
+    "liens": 13,
+    "formulaires": 0
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:39:26.992Z",
+   "type": "action",
+   "details": {
+    "id": "a12",
+    "type": "naviguer",
+    "resultat": "ok",
+    "page": "https://www.getlumavo.com/docs",
+    "viewport": "desktop",
+    "decision": {
+     "politique": "deterministe"
+    }
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:39:26.992Z",
+   "type": "decision.enumeration",
+   "details": {
+    "viewport": "desktop",
+    "page": "/docs/how-it-works",
+    "politique": "deterministe",
+    "nbActions": 17,
+    "types": [
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "terminer"
+    ],
+    "pagesRestantes": 9,
+    "profil": null
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:39:26.992Z",
+   "type": "decision",
+   "details": {
+    "viewport": "desktop",
+    "page": "/docs/how-it-works",
+    "politiqueDemandee": "deterministe",
+    "politique": "deterministe",
+    "actionId": "c1",
+    "type": "naviguer"
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:39:29.703Z",
+   "type": "exploration.page",
+   "details": {
+    "viewport": "desktop",
+    "url": "https://www.getlumavo.com/docs/support",
+    "statutHttp": 200,
+    "liens": 15,
+    "formulaires": 0
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:39:29.705Z",
+   "type": "action",
+   "details": {
+    "id": "a13",
+    "type": "naviguer",
+    "resultat": "ok",
+    "page": "https://www.getlumavo.com/docs/how-it-works",
+    "viewport": "desktop",
+    "decision": {
+     "politique": "deterministe"
+    }
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:39:29.705Z",
+   "type": "decision.enumeration",
+   "details": {
+    "viewport": "desktop",
+    "page": "/docs/support",
+    "politique": "deterministe",
+    "nbActions": 16,
+    "types": [
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "terminer"
+    ],
+    "pagesRestantes": 8,
+    "profil": null
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:39:29.705Z",
+   "type": "decision",
+   "details": {
+    "viewport": "desktop",
+    "page": "/docs/support",
+    "politiqueDemandee": "deterministe",
+    "politique": "deterministe",
+    "actionId": "c1",
+    "type": "naviguer"
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:39:32.318Z",
+   "type": "exploration.page",
+   "details": {
+    "viewport": "desktop",
+    "url": "https://www.getlumavo.com/docs/formats-exports",
+    "statutHttp": 200,
+    "liens": 13,
+    "formulaires": 0
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:39:32.321Z",
+   "type": "action",
+   "details": {
+    "id": "a14",
+    "type": "naviguer",
+    "resultat": "ok",
+    "page": "https://www.getlumavo.com/docs/support",
+    "viewport": "desktop",
+    "decision": {
+     "politique": "deterministe"
+    }
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:39:32.321Z",
+   "type": "decision.enumeration",
+   "details": {
+    "viewport": "desktop",
+    "page": "/docs/formats-exports",
+    "politique": "deterministe",
+    "nbActions": 15,
+    "types": [
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "terminer"
+    ],
+    "pagesRestantes": 7,
+    "profil": null
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:39:32.321Z",
+   "type": "decision",
+   "details": {
+    "viewport": "desktop",
+    "page": "/docs/formats-exports",
+    "politiqueDemandee": "deterministe",
+    "politique": "deterministe",
+    "actionId": "c1",
+    "type": "naviguer"
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:39:35.002Z",
+   "type": "exploration.page",
+   "details": {
+    "viewport": "desktop",
+    "url": "https://www.getlumavo.com/docs/privacy",
+    "statutHttp": 200,
+    "liens": 12,
+    "formulaires": 0
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:39:35.004Z",
+   "type": "action",
+   "details": {
+    "id": "a15",
+    "type": "naviguer",
+    "resultat": "ok",
+    "page": "https://www.getlumavo.com/docs/formats-exports",
+    "viewport": "desktop",
+    "decision": {
+     "politique": "deterministe"
+    }
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:39:35.004Z",
+   "type": "decision.enumeration",
+   "details": {
+    "viewport": "desktop",
+    "page": "/docs/privacy",
+    "politique": "deterministe",
+    "nbActions": 14,
+    "types": [
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "terminer"
+    ],
+    "pagesRestantes": 6,
+    "profil": null
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:39:35.004Z",
+   "type": "decision",
+   "details": {
+    "viewport": "desktop",
+    "page": "/docs/privacy",
+    "politiqueDemandee": "deterministe",
+    "politique": "deterministe",
+    "actionId": "c1",
+    "type": "naviguer"
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:39:37.939Z",
+   "type": "exploration.page",
+   "details": {
+    "viewport": "desktop",
+    "url": "https://www.getlumavo.com/docs/credits",
+    "statutHttp": 200,
+    "liens": 13,
+    "formulaires": 0
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:39:37.943Z",
+   "type": "action",
+   "details": {
+    "id": "a16",
+    "type": "naviguer",
+    "resultat": "ok",
+    "page": "https://www.getlumavo.com/docs/privacy",
+    "viewport": "desktop",
+    "decision": {
+     "politique": "deterministe"
+    }
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:39:37.943Z",
+   "type": "decision.enumeration",
+   "details": {
+    "viewport": "desktop",
+    "page": "/docs/credits",
+    "politique": "deterministe",
+    "nbActions": 13,
+    "types": [
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "terminer"
+    ],
+    "pagesRestantes": 5,
+    "profil": null
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:39:37.943Z",
+   "type": "decision",
+   "details": {
+    "viewport": "desktop",
+    "page": "/docs/credits",
+    "politiqueDemandee": "deterministe",
+    "politique": "deterministe",
+    "actionId": "c1",
+    "type": "naviguer"
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:39:40.611Z",
+   "type": "exploration.page",
+   "details": {
+    "viewport": "desktop",
+    "url": "https://www.getlumavo.com/docs/account",
+    "statutHttp": 200,
+    "liens": 13,
+    "formulaires": 0
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:39:40.614Z",
+   "type": "action",
+   "details": {
+    "id": "a17",
+    "type": "naviguer",
+    "resultat": "ok",
+    "page": "https://www.getlumavo.com/docs/credits",
+    "viewport": "desktop",
+    "decision": {
+     "politique": "deterministe"
+    }
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:39:40.614Z",
+   "type": "decision.enumeration",
+   "details": {
+    "viewport": "desktop",
+    "page": "/docs/account",
+    "politique": "deterministe",
+    "nbActions": 12,
+    "types": [
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "terminer"
+    ],
+    "pagesRestantes": 4,
+    "profil": null
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:39:40.614Z",
+   "type": "decision",
+   "details": {
+    "viewport": "desktop",
+    "page": "/docs/account",
+    "politiqueDemandee": "deterministe",
+    "politique": "deterministe",
+    "actionId": "c1",
+    "type": "naviguer"
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:39:43.240Z",
+   "type": "exploration.page",
+   "details": {
+    "viewport": "desktop",
+    "url": "https://www.getlumavo.com/docs/availability",
+    "statutHttp": 200,
+    "liens": 12,
+    "formulaires": 0
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:39:43.243Z",
+   "type": "action",
+   "details": {
+    "id": "a18",
+    "type": "naviguer",
+    "resultat": "ok",
+    "page": "https://www.getlumavo.com/docs/account",
+    "viewport": "desktop",
+    "decision": {
+     "politique": "deterministe"
+    }
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:39:43.243Z",
+   "type": "decision.enumeration",
+   "details": {
+    "viewport": "desktop",
+    "page": "/docs/availability",
+    "politique": "deterministe",
+    "nbActions": 11,
+    "types": [
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "terminer"
+    ],
+    "pagesRestantes": 3,
+    "profil": null
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:39:43.243Z",
+   "type": "decision",
+   "details": {
+    "viewport": "desktop",
+    "page": "/docs/availability",
+    "politiqueDemandee": "deterministe",
+    "politique": "deterministe",
+    "actionId": "c1",
+    "type": "naviguer"
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:39:45.864Z",
+   "type": "exploration.page",
+   "details": {
+    "viewport": "desktop",
+    "url": "https://www.getlumavo.com/docs/faq",
+    "statutHttp": 200,
+    "liens": 14,
+    "formulaires": 0
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:39:45.867Z",
+   "type": "action",
+   "details": {
+    "id": "a19",
+    "type": "naviguer",
+    "resultat": "ok",
+    "page": "https://www.getlumavo.com/docs/availability",
+    "viewport": "desktop",
+    "decision": {
+     "politique": "deterministe"
+    }
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:39:45.867Z",
+   "type": "decision.enumeration",
+   "details": {
+    "viewport": "desktop",
+    "page": "/docs/faq",
+    "politique": "deterministe",
+    "nbActions": 10,
+    "types": [
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "terminer"
+    ],
+    "pagesRestantes": 2,
+    "profil": null
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:39:45.867Z",
+   "type": "decision",
+   "details": {
+    "viewport": "desktop",
+    "page": "/docs/faq",
+    "politiqueDemandee": "deterministe",
+    "politique": "deterministe",
+    "actionId": "c1",
+    "type": "naviguer"
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:39:48.481Z",
+   "type": "exploration.page",
+   "details": {
+    "viewport": "desktop",
+    "url": "https://www.getlumavo.com/legal/about",
+    "statutHttp": 200,
+    "liens": 13,
+    "formulaires": 0
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:39:48.483Z",
+   "type": "action",
+   "details": {
+    "id": "a20",
+    "type": "naviguer",
+    "resultat": "ok",
+    "page": "https://www.getlumavo.com/docs/faq",
+    "viewport": "desktop",
+    "decision": {
+     "politique": "deterministe"
+    }
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:39:48.483Z",
+   "type": "decision.enumeration",
+   "details": {
+    "viewport": "desktop",
+    "page": "/legal/about",
+    "politique": "deterministe",
+    "nbActions": 9,
+    "types": [
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "terminer"
+    ],
+    "pagesRestantes": 1,
+    "profil": null
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:39:48.483Z",
+   "type": "decision",
+   "details": {
+    "viewport": "desktop",
+    "page": "/legal/about",
+    "politiqueDemandee": "deterministe",
+    "politique": "deterministe",
+    "actionId": "c1",
+    "type": "naviguer"
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:39:51.129Z",
+   "type": "exploration.page",
+   "details": {
+    "viewport": "desktop",
+    "url": "https://www.getlumavo.com/legal/acceptable-use",
+    "statutHttp": 200,
+    "liens": 11,
+    "formulaires": 0
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:39:51.145Z",
+   "type": "action",
+   "details": {
+    "id": "a21",
+    "type": "naviguer",
+    "resultat": "ok",
+    "page": "https://www.getlumavo.com/legal/about",
+    "viewport": "desktop",
+    "decision": {
+     "politique": "deterministe"
+    }
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:39:51.145Z",
+   "type": "decision.enumeration",
+   "details": {
+    "viewport": "desktop",
+    "page": "/legal/acceptable-use",
+    "politique": "deterministe",
+    "nbActions": 1,
+    "types": [
+     "terminer"
+    ],
+    "pagesRestantes": 0,
+    "profil": null
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:39:51.145Z",
+   "type": "decision",
+   "details": {
+    "viewport": "desktop",
+    "page": "/legal/acceptable-use",
+    "politiqueDemandee": "deterministe",
+    "politique": "deterministe",
+    "actionId": "c1",
+    "type": "terminer"
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:39:51.145Z",
+   "type": "action",
+   "details": {
+    "type": "terminer",
+    "raison": "plus-rien-a-faire",
+    "viewport": "desktop",
+    "enAttente": 7,
+    "pagesRestantes": 0,
+    "decision": {
+     "politique": "deterministe"
+    }
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:39:51.183Z",
+   "type": "exploration.viewport",
+   "details": {
+    "viewport": "mobile"
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:40:07.544Z",
+   "type": "exploration.page",
+   "details": {
+    "viewport": "mobile",
+    "url": "https://www.getlumavo.com/",
+    "statutHttp": 200,
+    "liens": 7,
+    "formulaires": 0
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:40:07.982Z",
+   "type": "action",
+   "details": {
+    "id": "a22",
+    "type": "naviguer",
+    "resultat": "ok",
+    "page": "https://www.getlumavo.com/",
+    "viewport": "mobile"
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:40:07.982Z",
+   "type": "decision.enumeration",
+   "details": {
+    "viewport": "mobile",
+    "page": "/",
+    "politique": "deterministe",
+    "nbActions": 7,
+    "types": [
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "terminer"
+    ],
+    "pagesRestantes": 19,
+    "profil": null
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:40:07.982Z",
+   "type": "decision",
+   "details": {
+    "viewport": "mobile",
+    "page": "/",
+    "politiqueDemandee": "deterministe",
+    "politique": "deterministe",
+    "actionId": "c1",
+    "type": "naviguer"
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:40:18.013Z",
+   "type": "exploration.page",
+   "details": {
+    "viewport": "mobile",
+    "url": "https://www.getlumavo.com/pricing",
+    "statutHttp": 200,
+    "liens": 2,
+    "formulaires": 0
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:40:18.016Z",
+   "type": "action",
+   "details": {
+    "id": "a23",
+    "type": "naviguer",
+    "resultat": "ok",
+    "page": "https://www.getlumavo.com/",
+    "viewport": "mobile",
+    "decision": {
+     "politique": "deterministe"
+    }
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:40:18.016Z",
+   "type": "decision.enumeration",
+   "details": {
+    "viewport": "mobile",
+    "page": "/pricing",
+    "politique": "deterministe",
+    "nbActions": 7,
+    "types": [
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "terminer"
+    ],
+    "pagesRestantes": 18,
+    "profil": null
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:40:18.016Z",
+   "type": "decision",
+   "details": {
+    "viewport": "mobile",
+    "page": "/pricing",
+    "politiqueDemandee": "deterministe",
+    "politique": "deterministe",
+    "actionId": "c1",
+    "type": "naviguer"
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:40:20.730Z",
+   "type": "exploration.page",
+   "details": {
+    "viewport": "mobile",
+    "url": "https://www.getlumavo.com/docs/api",
+    "statutHttp": 200,
+    "liens": 12,
+    "formulaires": 0
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:40:20.732Z",
+   "type": "action",
+   "details": {
+    "id": "a24",
+    "type": "naviguer",
+    "resultat": "ok",
+    "page": "https://www.getlumavo.com/pricing",
+    "viewport": "mobile",
+    "decision": {
+     "politique": "deterministe"
+    }
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:40:20.732Z",
+   "type": "decision.enumeration",
+   "details": {
+    "viewport": "mobile",
+    "page": "/docs/api",
+    "politique": "deterministe",
+    "nbActions": 16,
+    "types": [
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "terminer"
+    ],
+    "pagesRestantes": 17,
+    "profil": null
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:40:20.732Z",
+   "type": "decision",
+   "details": {
+    "viewport": "mobile",
+    "page": "/docs/api",
+    "politiqueDemandee": "deterministe",
+    "politique": "deterministe",
+    "actionId": "c1",
+    "type": "naviguer"
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:40:23.520Z",
+   "type": "exploration.page",
+   "details": {
+    "viewport": "mobile",
+    "url": "https://www.getlumavo.com/legal/terms",
+    "statutHttp": 200,
+    "liens": 12,
+    "formulaires": 0
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:40:23.523Z",
+   "type": "action",
+   "details": {
+    "id": "a25",
+    "type": "naviguer",
+    "resultat": "ok",
+    "page": "https://www.getlumavo.com/docs/api",
+    "viewport": "mobile",
+    "decision": {
+     "politique": "deterministe"
+    }
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:40:23.523Z",
+   "type": "decision.enumeration",
+   "details": {
+    "viewport": "mobile",
+    "page": "/legal/terms",
+    "politique": "deterministe",
+    "nbActions": 23,
+    "types": [
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "terminer"
+    ],
+    "pagesRestantes": 16,
+    "profil": null
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:40:23.523Z",
+   "type": "decision",
+   "details": {
+    "viewport": "mobile",
+    "page": "/legal/terms",
+    "politiqueDemandee": "deterministe",
+    "politique": "deterministe",
+    "actionId": "c1",
+    "type": "naviguer"
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:40:26.165Z",
+   "type": "exploration.page",
+   "details": {
+    "viewport": "mobile",
+    "url": "https://www.getlumavo.com/legal/privacy-policy",
+    "statutHttp": 200,
+    "liens": 12,
+    "formulaires": 0
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:40:26.167Z",
+   "type": "action",
+   "details": {
+    "id": "a26",
+    "type": "naviguer",
+    "resultat": "ok",
+    "page": "https://www.getlumavo.com/legal/terms",
+    "viewport": "mobile",
+    "decision": {
+     "politique": "deterministe"
+    }
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:40:26.167Z",
+   "type": "decision.enumeration",
+   "details": {
+    "viewport": "mobile",
+    "page": "/legal/privacy-policy",
+    "politique": "deterministe",
+    "nbActions": 22,
+    "types": [
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "terminer"
+    ],
+    "pagesRestantes": 15,
+    "profil": null
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:40:26.167Z",
+   "type": "decision",
+   "details": {
+    "viewport": "mobile",
+    "page": "/legal/privacy-policy",
+    "politiqueDemandee": "deterministe",
+    "politique": "deterministe",
+    "actionId": "c1",
+    "type": "naviguer"
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:40:28.708Z",
+   "type": "exploration.page",
+   "details": {
+    "viewport": "mobile",
+    "url": "https://www.getlumavo.com/legal",
+    "statutHttp": 200,
+    "liens": 13,
+    "formulaires": 0
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:40:28.710Z",
+   "type": "action",
+   "details": {
+    "id": "a27",
+    "type": "naviguer",
+    "resultat": "ok",
+    "page": "https://www.getlumavo.com/legal/privacy-policy",
+    "viewport": "mobile",
+    "decision": {
+     "politique": "deterministe"
+    }
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:40:28.710Z",
+   "type": "decision.enumeration",
+   "details": {
+    "viewport": "mobile",
+    "page": "/legal",
+    "politique": "deterministe",
+    "nbActions": 22,
+    "types": [
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "terminer"
+    ],
+    "pagesRestantes": 14,
+    "profil": null
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:40:28.710Z",
+   "type": "decision",
+   "details": {
+    "viewport": "mobile",
+    "page": "/legal",
+    "politiqueDemandee": "deterministe",
+    "politique": "deterministe",
+    "actionId": "c1",
+    "type": "naviguer"
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:40:31.353Z",
+   "type": "exploration.page",
+   "details": {
+    "viewport": "mobile",
+    "url": "https://www.getlumavo.com/verify",
+    "statutHttp": 200,
+    "liens": 1,
+    "formulaires": 0
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:40:31.356Z",
+   "type": "action",
+   "details": {
+    "id": "a28",
+    "type": "naviguer",
+    "resultat": "ok",
+    "page": "https://www.getlumavo.com/legal",
+    "viewport": "mobile",
+    "decision": {
+     "politique": "deterministe"
+    }
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:40:31.356Z",
+   "type": "decision.enumeration",
+   "details": {
+    "viewport": "mobile",
+    "page": "/verify",
+    "politique": "deterministe",
+    "nbActions": 21,
+    "types": [
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "terminer"
+    ],
+    "pagesRestantes": 13,
+    "profil": null
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:40:31.356Z",
+   "type": "decision",
+   "details": {
+    "viewport": "mobile",
+    "page": "/verify",
+    "politiqueDemandee": "deterministe",
+    "politique": "deterministe",
+    "actionId": "c1",
+    "type": "naviguer"
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:40:34.593Z",
+   "type": "exploration.page",
+   "details": {
+    "viewport": "mobile",
+    "url": "https://www.getlumavo.com/login",
+    "statutHttp": 200,
+    "liens": 5,
+    "formulaires": 1
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:40:34.595Z",
+   "type": "action",
+   "details": {
+    "id": "a29",
+    "type": "naviguer",
+    "resultat": "ok",
+    "page": "https://www.getlumavo.com/verify",
+    "viewport": "mobile",
+    "decision": {
+     "politique": "deterministe"
+    }
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:40:34.596Z",
+   "type": "decision.enumeration",
+   "details": {
+    "viewport": "mobile",
+    "page": "/login",
+    "politique": "deterministe",
+    "nbActions": 21,
+    "types": [
+     "remplir",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "terminer"
+    ],
+    "pagesRestantes": 12,
+    "profil": null
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:40:34.596Z",
+   "type": "decision",
+   "details": {
+    "viewport": "mobile",
+    "page": "/login",
+    "politiqueDemandee": "deterministe",
+    "politique": "deterministe",
+    "actionId": "c1",
+    "type": "remplir"
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:40:36.061Z",
+   "type": "action",
+   "details": {
+    "id": "a30",
+    "type": "remplir",
+    "resultat": "ok",
+    "page": "https://www.getlumavo.com/login",
+    "viewport": "mobile",
+    "decision": {
+     "politique": "deterministe"
+    }
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:40:36.061Z",
+   "type": "decision.enumeration",
+   "details": {
+    "viewport": "mobile",
+    "page": "/login",
+    "politique": "deterministe",
+    "nbActions": 20,
+    "types": [
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "terminer"
+    ],
+    "pagesRestantes": 12,
+    "profil": null
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:40:36.061Z",
+   "type": "decision",
+   "details": {
+    "viewport": "mobile",
+    "page": "/login",
+    "politiqueDemandee": "deterministe",
+    "politique": "deterministe",
+    "actionId": "c1",
+    "type": "naviguer"
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:40:38.619Z",
+   "type": "exploration.page",
+   "details": {
+    "viewport": "mobile",
+    "url": "https://www.getlumavo.com/guides",
+    "statutHttp": 200,
+    "liens": 10,
+    "formulaires": 0
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:40:38.621Z",
+   "type": "action",
+   "details": {
+    "id": "a31",
+    "type": "naviguer",
+    "resultat": "ok",
+    "page": "https://www.getlumavo.com/login",
+    "viewport": "mobile",
+    "decision": {
+     "politique": "deterministe"
+    }
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:40:38.621Z",
+   "type": "decision.enumeration",
+   "details": {
+    "viewport": "mobile",
+    "page": "/guides",
+    "politique": "deterministe",
+    "nbActions": 19,
+    "types": [
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "terminer"
+    ],
+    "pagesRestantes": 11,
+    "profil": null
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:40:38.621Z",
+   "type": "decision",
+   "details": {
+    "viewport": "mobile",
+    "page": "/guides",
+    "politiqueDemandee": "deterministe",
+    "politique": "deterministe",
+    "actionId": "c1",
+    "type": "naviguer"
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:40:41.248Z",
+   "type": "exploration.page",
+   "details": {
+    "viewport": "mobile",
+    "url": "https://www.getlumavo.com/docs",
+    "statutHttp": 200,
+    "liens": 13,
+    "formulaires": 0
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:40:41.251Z",
+   "type": "action",
+   "details": {
+    "id": "a32",
+    "type": "naviguer",
+    "resultat": "ok",
+    "page": "https://www.getlumavo.com/guides",
+    "viewport": "mobile",
+    "decision": {
+     "politique": "deterministe"
+    }
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:40:41.251Z",
+   "type": "decision.enumeration",
+   "details": {
+    "viewport": "mobile",
+    "page": "/docs",
+    "politique": "deterministe",
+    "nbActions": 18,
+    "types": [
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "terminer"
+    ],
+    "pagesRestantes": 10,
+    "profil": null
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:40:41.251Z",
+   "type": "decision",
+   "details": {
+    "viewport": "mobile",
+    "page": "/docs",
+    "politiqueDemandee": "deterministe",
+    "politique": "deterministe",
+    "actionId": "c1",
+    "type": "naviguer"
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:40:43.844Z",
+   "type": "exploration.page",
+   "details": {
+    "viewport": "mobile",
+    "url": "https://www.getlumavo.com/docs/how-it-works",
+    "statutHttp": 200,
+    "liens": 13,
+    "formulaires": 0
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:40:43.846Z",
+   "type": "action",
+   "details": {
+    "id": "a33",
+    "type": "naviguer",
+    "resultat": "ok",
+    "page": "https://www.getlumavo.com/docs",
+    "viewport": "mobile",
+    "decision": {
+     "politique": "deterministe"
+    }
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:40:43.846Z",
+   "type": "decision.enumeration",
+   "details": {
+    "viewport": "mobile",
+    "page": "/docs/how-it-works",
+    "politique": "deterministe",
+    "nbActions": 17,
+    "types": [
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "terminer"
+    ],
+    "pagesRestantes": 9,
+    "profil": null
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:40:43.846Z",
+   "type": "decision",
+   "details": {
+    "viewport": "mobile",
+    "page": "/docs/how-it-works",
+    "politiqueDemandee": "deterministe",
+    "politique": "deterministe",
+    "actionId": "c1",
+    "type": "naviguer"
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:40:46.395Z",
+   "type": "exploration.page",
+   "details": {
+    "viewport": "mobile",
+    "url": "https://www.getlumavo.com/docs/support",
+    "statutHttp": 200,
+    "liens": 15,
+    "formulaires": 0
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:40:46.397Z",
+   "type": "action",
+   "details": {
+    "id": "a34",
+    "type": "naviguer",
+    "resultat": "ok",
+    "page": "https://www.getlumavo.com/docs/how-it-works",
+    "viewport": "mobile",
+    "decision": {
+     "politique": "deterministe"
+    }
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:40:46.397Z",
+   "type": "decision.enumeration",
+   "details": {
+    "viewport": "mobile",
+    "page": "/docs/support",
+    "politique": "deterministe",
+    "nbActions": 16,
+    "types": [
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "terminer"
+    ],
+    "pagesRestantes": 8,
+    "profil": null
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:40:46.397Z",
+   "type": "decision",
+   "details": {
+    "viewport": "mobile",
+    "page": "/docs/support",
+    "politiqueDemandee": "deterministe",
+    "politique": "deterministe",
+    "actionId": "c1",
+    "type": "naviguer"
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:40:48.920Z",
+   "type": "exploration.page",
+   "details": {
+    "viewport": "mobile",
+    "url": "https://www.getlumavo.com/docs/formats-exports",
+    "statutHttp": 200,
+    "liens": 13,
+    "formulaires": 0
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:40:48.922Z",
+   "type": "action",
+   "details": {
+    "id": "a35",
+    "type": "naviguer",
+    "resultat": "ok",
+    "page": "https://www.getlumavo.com/docs/support",
+    "viewport": "mobile",
+    "decision": {
+     "politique": "deterministe"
+    }
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:40:48.922Z",
+   "type": "decision.enumeration",
+   "details": {
+    "viewport": "mobile",
+    "page": "/docs/formats-exports",
+    "politique": "deterministe",
+    "nbActions": 15,
+    "types": [
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "terminer"
+    ],
+    "pagesRestantes": 7,
+    "profil": null
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:40:48.922Z",
+   "type": "decision",
+   "details": {
+    "viewport": "mobile",
+    "page": "/docs/formats-exports",
+    "politiqueDemandee": "deterministe",
+    "politique": "deterministe",
+    "actionId": "c1",
+    "type": "naviguer"
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:40:51.769Z",
+   "type": "exploration.page",
+   "details": {
+    "viewport": "mobile",
+    "url": "https://www.getlumavo.com/docs/privacy",
+    "statutHttp": 200,
+    "liens": 12,
+    "formulaires": 0
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:40:51.771Z",
+   "type": "action",
+   "details": {
+    "id": "a36",
+    "type": "naviguer",
+    "resultat": "ok",
+    "page": "https://www.getlumavo.com/docs/formats-exports",
+    "viewport": "mobile",
+    "decision": {
+     "politique": "deterministe"
+    }
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:40:51.771Z",
+   "type": "decision.enumeration",
+   "details": {
+    "viewport": "mobile",
+    "page": "/docs/privacy",
+    "politique": "deterministe",
+    "nbActions": 14,
+    "types": [
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "terminer"
+    ],
+    "pagesRestantes": 6,
+    "profil": null
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:40:51.771Z",
+   "type": "decision",
+   "details": {
+    "viewport": "mobile",
+    "page": "/docs/privacy",
+    "politiqueDemandee": "deterministe",
+    "politique": "deterministe",
+    "actionId": "c1",
+    "type": "naviguer"
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:40:54.342Z",
+   "type": "exploration.page",
+   "details": {
+    "viewport": "mobile",
+    "url": "https://www.getlumavo.com/docs/credits",
+    "statutHttp": 200,
+    "liens": 13,
+    "formulaires": 0
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:40:54.345Z",
+   "type": "action",
+   "details": {
+    "id": "a37",
+    "type": "naviguer",
+    "resultat": "ok",
+    "page": "https://www.getlumavo.com/docs/privacy",
+    "viewport": "mobile",
+    "decision": {
+     "politique": "deterministe"
+    }
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:40:54.345Z",
+   "type": "decision.enumeration",
+   "details": {
+    "viewport": "mobile",
+    "page": "/docs/credits",
+    "politique": "deterministe",
+    "nbActions": 13,
+    "types": [
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "terminer"
+    ],
+    "pagesRestantes": 5,
+    "profil": null
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:40:54.345Z",
+   "type": "decision",
+   "details": {
+    "viewport": "mobile",
+    "page": "/docs/credits",
+    "politiqueDemandee": "deterministe",
+    "politique": "deterministe",
+    "actionId": "c1",
+    "type": "naviguer"
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:40:56.978Z",
+   "type": "exploration.page",
+   "details": {
+    "viewport": "mobile",
+    "url": "https://www.getlumavo.com/docs/account",
+    "statutHttp": 200,
+    "liens": 13,
+    "formulaires": 0
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:40:56.981Z",
+   "type": "action",
+   "details": {
+    "id": "a38",
+    "type": "naviguer",
+    "resultat": "ok",
+    "page": "https://www.getlumavo.com/docs/credits",
+    "viewport": "mobile",
+    "decision": {
+     "politique": "deterministe"
+    }
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:40:56.981Z",
+   "type": "decision.enumeration",
+   "details": {
+    "viewport": "mobile",
+    "page": "/docs/account",
+    "politique": "deterministe",
+    "nbActions": 12,
+    "types": [
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "terminer"
+    ],
+    "pagesRestantes": 4,
+    "profil": null
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:40:56.981Z",
+   "type": "decision",
+   "details": {
+    "viewport": "mobile",
+    "page": "/docs/account",
+    "politiqueDemandee": "deterministe",
+    "politique": "deterministe",
+    "actionId": "c1",
+    "type": "naviguer"
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:40:59.603Z",
+   "type": "exploration.page",
+   "details": {
+    "viewport": "mobile",
+    "url": "https://www.getlumavo.com/docs/availability",
+    "statutHttp": 200,
+    "liens": 12,
+    "formulaires": 0
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:40:59.605Z",
+   "type": "action",
+   "details": {
+    "id": "a39",
+    "type": "naviguer",
+    "resultat": "ok",
+    "page": "https://www.getlumavo.com/docs/account",
+    "viewport": "mobile",
+    "decision": {
+     "politique": "deterministe"
+    }
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:40:59.605Z",
+   "type": "decision.enumeration",
+   "details": {
+    "viewport": "mobile",
+    "page": "/docs/availability",
+    "politique": "deterministe",
+    "nbActions": 11,
+    "types": [
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "terminer"
+    ],
+    "pagesRestantes": 3,
+    "profil": null
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:40:59.605Z",
+   "type": "decision",
+   "details": {
+    "viewport": "mobile",
+    "page": "/docs/availability",
+    "politiqueDemandee": "deterministe",
+    "politique": "deterministe",
+    "actionId": "c1",
+    "type": "naviguer"
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:41:02.185Z",
+   "type": "exploration.page",
+   "details": {
+    "viewport": "mobile",
+    "url": "https://www.getlumavo.com/docs/faq",
+    "statutHttp": 200,
+    "liens": 14,
+    "formulaires": 0
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:41:02.187Z",
+   "type": "action",
+   "details": {
+    "id": "a40",
+    "type": "naviguer",
+    "resultat": "ok",
+    "page": "https://www.getlumavo.com/docs/availability",
+    "viewport": "mobile",
+    "decision": {
+     "politique": "deterministe"
+    }
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:41:02.187Z",
+   "type": "decision.enumeration",
+   "details": {
+    "viewport": "mobile",
+    "page": "/docs/faq",
+    "politique": "deterministe",
+    "nbActions": 10,
+    "types": [
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "terminer"
+    ],
+    "pagesRestantes": 2,
+    "profil": null
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:41:02.187Z",
+   "type": "decision",
+   "details": {
+    "viewport": "mobile",
+    "page": "/docs/faq",
+    "politiqueDemandee": "deterministe",
+    "politique": "deterministe",
+    "actionId": "c1",
+    "type": "naviguer"
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:41:04.810Z",
+   "type": "exploration.page",
+   "details": {
+    "viewport": "mobile",
+    "url": "https://www.getlumavo.com/legal/about",
+    "statutHttp": 200,
+    "liens": 13,
+    "formulaires": 0
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:41:04.813Z",
+   "type": "action",
+   "details": {
+    "id": "a41",
+    "type": "naviguer",
+    "resultat": "ok",
+    "page": "https://www.getlumavo.com/docs/faq",
+    "viewport": "mobile",
+    "decision": {
+     "politique": "deterministe"
+    }
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:41:04.813Z",
+   "type": "decision.enumeration",
+   "details": {
+    "viewport": "mobile",
+    "page": "/legal/about",
+    "politique": "deterministe",
+    "nbActions": 9,
+    "types": [
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "naviguer",
+     "terminer"
+    ],
+    "pagesRestantes": 1,
+    "profil": null
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:41:04.813Z",
+   "type": "decision",
+   "details": {
+    "viewport": "mobile",
+    "page": "/legal/about",
+    "politiqueDemandee": "deterministe",
+    "politique": "deterministe",
+    "actionId": "c1",
+    "type": "naviguer"
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:41:07.451Z",
+   "type": "exploration.page",
+   "details": {
+    "viewport": "mobile",
+    "url": "https://www.getlumavo.com/legal/acceptable-use",
+    "statutHttp": 200,
+    "liens": 11,
+    "formulaires": 0
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:41:07.453Z",
+   "type": "action",
+   "details": {
+    "id": "a42",
+    "type": "naviguer",
+    "resultat": "ok",
+    "page": "https://www.getlumavo.com/legal/about",
+    "viewport": "mobile",
+    "decision": {
+     "politique": "deterministe"
+    }
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:41:07.453Z",
+   "type": "decision.enumeration",
+   "details": {
+    "viewport": "mobile",
+    "page": "/legal/acceptable-use",
+    "politique": "deterministe",
+    "nbActions": 1,
+    "types": [
+     "terminer"
+    ],
+    "pagesRestantes": 0,
+    "profil": null
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:41:07.453Z",
+   "type": "decision",
+   "details": {
+    "viewport": "mobile",
+    "page": "/legal/acceptable-use",
+    "politiqueDemandee": "deterministe",
+    "politique": "deterministe",
+    "actionId": "c1",
+    "type": "terminer"
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:41:07.453Z",
+   "type": "action",
+   "details": {
+    "type": "terminer",
+    "raison": "plus-rien-a-faire",
+    "viewport": "mobile",
+    "enAttente": 7,
+    "pagesRestantes": 0,
+    "decision": {
+     "politique": "deterministe"
+    }
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:41:07.471Z",
+   "type": "exploration.fin",
+   "details": {
+    "arret": "limite-pages",
+    "pages": 40,
+    "actions": 42
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:41:07.555Z",
+   "type": "exploration.cout",
+   "details": {
+    "coutApi": 0
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:41:07.559Z",
+   "type": "detection.fin",
+   "details": {
+    "nbSignaux": 730,
+    "nbCandidates": 3,
+    "parDetecteur": {
+     "d-http": 1,
+     "d-inerte": 0,
+     "d-echec-muet": 0,
+     "d-lenteur": 2,
+     "d-image": 0,
+     "d-recouvrement": 0
+    }
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:41:07.560Z",
+   "type": "confirmation.debut",
+   "details": {
+    "nbCandidates": 3,
+    "nbGroupes": 3,
+    "politique": "complet",
+    "reExecutions": 2,
+    "variations": [
+     "contexte-neuf"
+    ]
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:41:07.560Z",
+   "type": "confirmation.groupe",
+   "details": {
+    "cle": "reseau:GET:/gsi/client",
+    "confiance": 0.7,
+    "nbMembres": 1,
+    "viewports": [
+     "desktop",
+     "mobile"
+    ],
+    "detecteur": "d-http",
+    "viewportRejeu": "desktop",
+    "urlOuEtape": "https://www.getlumavo.com/login",
+    "description": "dependance-tierce-en-echec",
+    "action": "naviguer",
+    "nbPrealables": 0,
+    "budgetChargementMs": 30000,
+    "budgetActionMs": 20000
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:41:07.820Z",
+   "type": "rejeu.debut",
+   "details": {
+    "url": "https://www.getlumavo.com/login",
+    "viewport": "desktop",
+    "nbPrealables": 0,
+    "action": "naviguer"
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:41:12.578Z",
+   "type": "rejeu.action",
+   "details": {
+    "id": "r1",
+    "type": "naviguer",
+    "prealable": false,
+    "resultat": "ok",
+    "page": "https://www.getlumavo.com/login",
+    "viewport": "desktop"
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:41:14.408Z",
+   "type": "rejeu.action",
+   "details": {
+    "id": "r2",
+    "type": "naviguer",
+    "prealable": false,
+    "resultat": "ok",
+    "page": "https://www.getlumavo.com/login",
+    "viewport": "desktop"
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:41:14.429Z",
+   "type": "rejeu.fin",
+   "details": {
+    "viewport": "desktop",
+    "echecOutillage": false,
+    "nbActions": 2,
+    "nbSignaux": 43,
+    "dureeMs": 6609
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:41:14.430Z",
+   "type": "confirmation.tentative",
+   "details": {
+    "cle": "reseau:GET:/gsi/client",
+    "numero": 1,
+    "viewport": "desktop",
+    "reproduite": true,
+    "echecOutillage": false,
+    "dureeMs": 6609,
+    "observations": {
+     "nbPages": 1,
+     "statutDocument": 200,
+     "nbActions": 2,
+     "nbActionsPrevues": 2,
+     "arreteA": null,
+     "nbSignaux": 43,
+     "statuts": [
+      200
+     ],
+     "reponsesHors2xx": [],
+     "echecsReseau": [
+      "net::ERR_BLOCKED_BY_ORB GET https://accounts.google.com/gsi/client"
+     ],
+     "requetesEnAttente": []
+    }
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:41:14.430Z",
+   "type": "rejeu.debut",
+   "details": {
+    "url": "https://www.getlumavo.com/login",
+    "viewport": "desktop",
+    "nbPrealables": 0,
+    "action": "naviguer"
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:41:21.148Z",
+   "type": "rejeu.action",
+   "details": {
+    "id": "r1",
+    "type": "naviguer",
+    "prealable": false,
+    "resultat": "ok",
+    "page": "https://www.getlumavo.com/login",
+    "viewport": "desktop"
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:41:22.912Z",
+   "type": "rejeu.action",
+   "details": {
+    "id": "r2",
+    "type": "naviguer",
+    "prealable": false,
+    "resultat": "ok",
+    "page": "https://www.getlumavo.com/login",
+    "viewport": "desktop"
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:41:22.932Z",
+   "type": "rejeu.fin",
+   "details": {
+    "viewport": "desktop",
+    "echecOutillage": false,
+    "nbActions": 2,
+    "nbSignaux": 43,
+    "dureeMs": 8502
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:41:22.932Z",
+   "type": "confirmation.tentative",
+   "details": {
+    "cle": "reseau:GET:/gsi/client",
+    "numero": 2,
+    "viewport": "desktop",
+    "reproduite": true,
+    "echecOutillage": false,
+    "dureeMs": 8502,
+    "observations": {
+     "nbPages": 1,
+     "statutDocument": 200,
+     "nbActions": 2,
+     "nbActionsPrevues": 2,
+     "arreteA": null,
+     "nbSignaux": 43,
+     "statuts": [
+      200
+     ],
+     "reponsesHors2xx": [],
+     "echecsReseau": [
+      "net::ERR_BLOCKED_BY_ORB GET https://accounts.google.com/gsi/client"
+     ],
+     "requetesEnAttente": []
+    }
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:41:22.933Z",
+   "type": "confirmation.verdict",
+   "details": {
+    "cle": "reseau:GET:/gsi/client",
+    "verdict": "confirmee",
+    "motif": "reproduite",
+    "taux": 1,
+    "confianceInitiale": 0.7,
+    "confianceFinale": 0.735,
+    "nbTentatives": 2
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:41:22.933Z",
+   "type": "confirmation.groupe",
+   "details": {
+    "cle": "reseau:GET:/pricing",
+    "confiance": 0.7,
+    "nbMembres": 1,
+    "viewports": [
+     "desktop"
+    ],
+    "detecteur": "d-lenteur",
+    "viewportRejeu": "desktop",
+    "urlOuEtape": "https://www.getlumavo.com/pricing",
+    "description": "reponse-lente",
+    "action": "naviguer",
+    "nbPrealables": 0,
+    "budgetChargementMs": 30000,
+    "budgetActionMs": 20000
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:41:22.933Z",
+   "type": "rejeu.debut",
+   "details": {
+    "url": "https://www.getlumavo.com/pricing",
+    "viewport": "desktop",
+    "nbPrealables": 0,
+    "action": "naviguer"
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:41:28.314Z",
+   "type": "rejeu.action",
+   "details": {
+    "id": "r1",
+    "type": "naviguer",
+    "prealable": false,
+    "resultat": "ok",
+    "page": "https://www.getlumavo.com/pricing",
+    "viewport": "desktop"
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:41:29.948Z",
+   "type": "rejeu.action",
+   "details": {
+    "id": "r2",
+    "type": "naviguer",
+    "prealable": false,
+    "resultat": "ok",
+    "page": "https://www.getlumavo.com/pricing",
+    "viewport": "desktop"
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:41:29.971Z",
+   "type": "rejeu.fin",
+   "details": {
+    "viewport": "desktop",
+    "echecOutillage": false,
+    "nbActions": 2,
+    "nbSignaux": 33,
+    "dureeMs": 7038
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:41:29.971Z",
+   "type": "confirmation.tentative",
+   "details": {
+    "cle": "reseau:GET:/pricing",
+    "numero": 1,
+    "viewport": "desktop",
+    "reproduite": false,
+    "echecOutillage": false,
+    "dureeMs": 7038,
+    "observations": {
+     "nbPages": 1,
+     "statutDocument": 200,
+     "nbActions": 2,
+     "nbActionsPrevues": 2,
+     "arreteA": null,
+     "nbSignaux": 33,
+     "statuts": [
+      200
+     ],
+     "reponsesHors2xx": [],
+     "echecsReseau": [],
+     "requetesEnAttente": []
+    }
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:41:29.971Z",
+   "type": "rejeu.debut",
+   "details": {
+    "url": "https://www.getlumavo.com/pricing",
+    "viewport": "desktop",
+    "nbPrealables": 0,
+    "action": "naviguer"
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:41:35.246Z",
+   "type": "rejeu.action",
+   "details": {
+    "id": "r1",
+    "type": "naviguer",
+    "prealable": false,
+    "resultat": "ok",
+    "page": "https://www.getlumavo.com/pricing",
+    "viewport": "desktop"
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:41:36.894Z",
+   "type": "rejeu.action",
+   "details": {
+    "id": "r2",
+    "type": "naviguer",
+    "prealable": false,
+    "resultat": "ok",
+    "page": "https://www.getlumavo.com/pricing",
+    "viewport": "desktop"
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:41:36.913Z",
+   "type": "rejeu.fin",
+   "details": {
+    "viewport": "desktop",
+    "echecOutillage": false,
+    "nbActions": 2,
+    "nbSignaux": 33,
+    "dureeMs": 6942
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:41:36.913Z",
+   "type": "confirmation.tentative",
+   "details": {
+    "cle": "reseau:GET:/pricing",
+    "numero": 2,
+    "viewport": "desktop",
+    "reproduite": false,
+    "echecOutillage": false,
+    "dureeMs": 6942,
+    "observations": {
+     "nbPages": 1,
+     "statutDocument": 200,
+     "nbActions": 2,
+     "nbActionsPrevues": 2,
+     "arreteA": null,
+     "nbSignaux": 33,
+     "statuts": [
+      200
+     ],
+     "reponsesHors2xx": [],
+     "echecsReseau": [],
+     "requetesEnAttente": []
+    }
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:41:36.913Z",
+   "type": "confirmation.verdict",
+   "details": {
+    "cle": "reseau:GET:/pricing",
+    "verdict": "non-reproduite",
+    "motif": "jamais-reproduite",
+    "taux": 0,
+    "confianceInitiale": 0.7,
+    "confianceFinale": 0.63,
+    "nbTentatives": 2
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:41:36.913Z",
+   "type": "confirmation.groupe",
+   "details": {
+    "cle": "reseau:GET:/demo/showcase-2.mp4",
+    "confiance": 0.7,
+    "nbMembres": 1,
+    "viewports": [
+     "mobile"
+    ],
+    "detecteur": "d-lenteur",
+    "viewportRejeu": "mobile",
+    "urlOuEtape": "https://www.getlumavo.com/",
+    "description": "reponse-lente",
+    "action": "naviguer",
+    "nbPrealables": 0,
+    "budgetChargementMs": 30000,
+    "budgetActionMs": 20000
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:41:36.913Z",
+   "type": "rejeu.debut",
+   "details": {
+    "url": "https://www.getlumavo.com/",
+    "viewport": "mobile",
+    "nbPrealables": 0,
+    "action": "naviguer"
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:41:47.807Z",
+   "type": "rejeu.action",
+   "details": {
+    "id": "r1",
+    "type": "naviguer",
+    "prealable": false,
+    "resultat": "ok",
+    "page": "https://www.getlumavo.com/",
+    "viewport": "mobile"
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:42:00.722Z",
+   "type": "rejeu.action",
+   "details": {
+    "id": "r2",
+    "type": "naviguer",
+    "prealable": false,
+    "resultat": "ok",
+    "page": "https://www.getlumavo.com/",
+    "viewport": "mobile"
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:42:00.747Z",
+   "type": "rejeu.fin",
+   "details": {
+    "viewport": "mobile",
+    "echecOutillage": false,
+    "nbActions": 2,
+    "nbSignaux": 48,
+    "dureeMs": 23834
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:42:00.747Z",
+   "type": "confirmation.tentative",
+   "details": {
+    "cle": "reseau:GET:/demo/showcase-2.mp4",
+    "numero": 1,
+    "viewport": "mobile",
+    "reproduite": false,
+    "echecOutillage": false,
+    "dureeMs": 23834,
+    "observations": {
+     "nbPages": 1,
+     "statutDocument": 200,
+     "nbActions": 2,
+     "nbActionsPrevues": 2,
+     "arreteA": null,
+     "nbSignaux": 48,
+     "statuts": [
+      200,
+      206
+     ],
+     "reponsesHors2xx": [],
+     "echecsReseau": [],
+     "requetesEnAttente": []
+    }
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:42:00.747Z",
+   "type": "rejeu.debut",
+   "details": {
+    "url": "https://www.getlumavo.com/",
+    "viewport": "mobile",
+    "nbPrealables": 0,
+    "action": "naviguer"
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:42:09.502Z",
+   "type": "rejeu.action",
+   "details": {
+    "id": "r1",
+    "type": "naviguer",
+    "prealable": false,
+    "resultat": "ok",
+    "page": "https://www.getlumavo.com/",
+    "viewport": "mobile"
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:42:23.147Z",
+   "type": "rejeu.action",
+   "details": {
+    "id": "r2",
+    "type": "naviguer",
+    "prealable": false,
+    "resultat": "ok",
+    "page": "https://www.getlumavo.com/",
+    "viewport": "mobile"
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:42:23.162Z",
+   "type": "rejeu.fin",
+   "details": {
+    "viewport": "mobile",
+    "echecOutillage": false,
+    "nbActions": 2,
+    "nbSignaux": 48,
+    "dureeMs": 22415
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:42:23.162Z",
+   "type": "confirmation.tentative",
+   "details": {
+    "cle": "reseau:GET:/demo/showcase-2.mp4",
+    "numero": 2,
+    "viewport": "mobile",
+    "reproduite": false,
+    "echecOutillage": false,
+    "dureeMs": 22415,
+    "observations": {
+     "nbPages": 1,
+     "statutDocument": 200,
+     "nbActions": 2,
+     "nbActionsPrevues": 2,
+     "arreteA": null,
+     "nbSignaux": 48,
+     "statuts": [
+      200,
+      206
+     ],
+     "reponsesHors2xx": [],
+     "echecsReseau": [],
+     "requetesEnAttente": []
+    }
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:42:23.163Z",
+   "type": "confirmation.verdict",
+   "details": {
+    "cle": "reseau:GET:/demo/showcase-2.mp4",
+    "verdict": "non-reproduite",
+    "motif": "jamais-reproduite",
+    "taux": 0,
+    "confianceInitiale": 0.7,
+    "confianceFinale": 0.63,
+    "nbTentatives": 2
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:42:23.164Z",
+   "type": "confirmation.decouverte",
+   "details": {
+    "cle": "reseau:GET:/",
+    "detecteur": "d-lenteur",
+    "description": "reponse-lente",
+    "urlOuEtape": "https://www.getlumavo.com/",
+    "motif": "constatee-au-rejeu",
+    "confiance": 0.7,
+    "nbMembres": 2
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:42:23.166Z",
+   "type": "confirmation.fin",
+   "details": {
+    "nbRetenues": 2,
+    "nbEcartees": 2,
+    "nbDecouvertes": 1,
+    "coutApi": 0,
+    "dureeMs": 75607
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:42:23.233Z",
+   "type": "rapport.sans-prose",
+   "details": {
+    "langue": "fr",
+    "raison": "non-implemente",
+    "coutApi": 0,
+    "nbSections": 2
+   }
+  },
+  {
+   "horodatage": "2026-09-25T10:42:23.233Z",
+   "type": "scan.fin",
+   "details": {
+    "dureeMs": 229188,
+    "coutApi": 0,
+    "nbAnomalies": 2,
+    "arret": "limite-pages"
+   }
+  }
+ ],
+ "parcours": {
+  "urlDepart": "https://www.getlumavo.com",
+  "pages": [
+   {
+    "url": "https://www.getlumavo.com/",
+    "viewport": "desktop",
+    "statutHttp": 200,
+    "liensInternes": [
+     "https://www.getlumavo.com/",
+     "https://www.getlumavo.com/pricing",
+     "https://www.getlumavo.com/docs/api",
+     "https://www.getlumavo.com/legal/terms",
+     "https://www.getlumavo.com/legal/privacy-policy",
+     "https://www.getlumavo.com/legal",
+     "https://www.getlumavo.com/verify"
+    ],
+    "formulaires": [],
+    "horodatage": "2026-09-25T10:38:47.395Z"
+   },
+   {
+    "url": "https://www.getlumavo.com/pricing",
+    "viewport": "desktop",
+    "statutHttp": 200,
+    "liensInternes": [
+     "https://www.getlumavo.com/",
+     "https://www.getlumavo.com/login"
+    ],
+    "formulaires": [],
+    "horodatage": "2026-09-25T10:39:00.519Z"
+   },
+   {
+    "url": "https://www.getlumavo.com/docs/api",
+    "viewport": "desktop",
+    "statutHttp": 200,
+    "liensInternes": [
+     "https://www.getlumavo.com/",
+     "https://www.getlumavo.com/guides",
+     "https://www.getlumavo.com/docs",
+     "https://www.getlumavo.com/docs/how-it-works",
+     "https://www.getlumavo.com/docs/support",
+     "https://www.getlumavo.com/docs/formats-exports",
+     "https://www.getlumavo.com/docs/privacy",
+     "https://www.getlumavo.com/docs/credits",
+     "https://www.getlumavo.com/docs/account",
+     "https://www.getlumavo.com/docs/availability",
+     "https://www.getlumavo.com/docs/faq",
+     "https://www.getlumavo.com/docs/api"
+    ],
+    "formulaires": [],
+    "horodatage": "2026-09-25T10:39:03.317Z"
+   },
+   {
+    "url": "https://www.getlumavo.com/legal/terms",
+    "viewport": "desktop",
+    "statutHttp": 200,
+    "liensInternes": [
+     "https://www.getlumavo.com/login",
+     "https://www.getlumavo.com/legal/about",
+     "https://www.getlumavo.com/legal/terms",
+     "https://www.getlumavo.com/legal/acceptable-use",
+     "https://www.getlumavo.com/legal/cgv",
+     "https://www.getlumavo.com/legal/privacy-policy",
+     "https://www.getlumavo.com/legal/cookies",
+     "https://www.getlumavo.com/legal/accessibility",
+     "https://www.getlumavo.com/legal/contact",
+     "https://www.getlumavo.com/legal/legal-notice",
+     "https://www.getlumavo.com/legal/account-deletion",
+     "https://www.getlumavo.com/docs/availability"
+    ],
+    "formulaires": [],
+    "horodatage": "2026-09-25T10:39:06.033Z"
+   },
+   {
+    "url": "https://www.getlumavo.com/legal/privacy-policy",
+    "viewport": "desktop",
+    "statutHttp": 200,
+    "liensInternes": [
+     "https://www.getlumavo.com/login",
+     "https://www.getlumavo.com/legal/about",
+     "https://www.getlumavo.com/legal/terms",
+     "https://www.getlumavo.com/legal/acceptable-use",
+     "https://www.getlumavo.com/legal/cgv",
+     "https://www.getlumavo.com/legal/privacy-policy",
+     "https://www.getlumavo.com/legal/cookies",
+     "https://www.getlumavo.com/legal/accessibility",
+     "https://www.getlumavo.com/legal/contact",
+     "https://www.getlumavo.com/legal/legal-notice",
+     "https://www.getlumavo.com/legal/account-deletion",
+     "https://www.getlumavo.com/docs/privacy"
+    ],
+    "formulaires": [],
+    "horodatage": "2026-09-25T10:39:08.679Z"
+   },
+   {
+    "url": "https://www.getlumavo.com/legal",
+    "viewport": "desktop",
+    "statutHttp": 200,
+    "liensInternes": [
+     "https://www.getlumavo.com/login",
+     "https://www.getlumavo.com/legal/about",
+     "https://www.getlumavo.com/legal/terms",
+     "https://www.getlumavo.com/legal/acceptable-use",
+     "https://www.getlumavo.com/legal/cgv",
+     "https://www.getlumavo.com/legal/privacy-policy",
+     "https://www.getlumavo.com/legal/cookies",
+     "https://www.getlumavo.com/legal/accessibility",
+     "https://www.getlumavo.com/legal/contact",
+     "https://www.getlumavo.com/legal/legal-notice",
+     "https://www.getlumavo.com/legal/account-deletion",
+     "https://www.getlumavo.com/docs/how-it-works",
+     "https://www.getlumavo.com/guides/getting-started"
+    ],
+    "formulaires": [],
+    "horodatage": "2026-09-25T10:39:11.327Z"
+   },
+   {
+    "url": "https://www.getlumavo.com/verify",
+    "viewport": "desktop",
+    "statutHttp": 200,
+    "liensInternes": [
+     "https://www.getlumavo.com/"
+    ],
+    "formulaires": [],
+    "horodatage": "2026-09-25T10:39:13.930Z"
+   },
+   {
+    "url": "https://www.getlumavo.com/login",
+    "viewport": "desktop",
+    "statutHttp": 200,
+    "liensInternes": [
+     "https://www.getlumavo.com/",
+     "https://www.getlumavo.com/legal/terms",
+     "https://www.getlumavo.com/legal/privacy-policy",
+     "https://www.getlumavo.com/legal/legal-notice",
+     "https://www.getlumavo.com/legal/contact"
+    ],
+    "formulaires": [
+     {
+      "localisation": {
+       "balise": "form",
+       "selecteur": "#root > div > main > div:nth-of-type(2) > form",
+       "attributs": {}
+      },
+      "methode": "get",
+      "action": "https://www.getlumavo.com/login",
+      "champs": [
+       {
+        "localisation": {
+         "balise": "input",
+         "selecteur": "#auth-email",
+         "attributs": {
+          "id": "auth-email",
+          "name": "email",
+          "type": "email",
+          "aria-label": "Email",
+          "aria-invalid": "false",
+          "autocomplete": "email"
+         }
+        },
+        "type": "email",
+        "autocomplete": "email",
+        "requis": true
+       },
+       {
+        "localisation": {
+         "balise": "input",
+         "selecteur": "#auth-password",
+         "attributs": {
+          "id": "auth-password",
+          "name": "password",
+          "type": "password",
+          "aria-label": "Password",
+          "aria-invalid": "false",
+          "autocomplete": "current-password"
+         }
+        },
+        "type": "password",
+        "autocomplete": "current-password",
+        "requis": true
+       }
+      ],
+      "declencheur": {
+       "balise": "button",
+       "selecteur": "#root > div > main > div:nth-of-type(2) > form > button[type=\"submit\"]",
+       "attributs": {
+        "type": "submit"
+       }
+      }
+     }
+    ],
+    "horodatage": "2026-09-25T10:39:17.459Z"
+   },
+   {
+    "url": "https://www.getlumavo.com/guides",
+    "viewport": "desktop",
+    "statutHttp": 200,
+    "liensInternes": [
+     "https://www.getlumavo.com/",
+     "https://www.getlumavo.com/guides",
+     "https://www.getlumavo.com/docs",
+     "https://www.getlumavo.com/guides/getting-started",
+     "https://www.getlumavo.com/guides/voice",
+     "https://www.getlumavo.com/guides/lipsync",
+     "https://www.getlumavo.com/guides/video",
+     "https://www.getlumavo.com/guides/image",
+     "https://www.getlumavo.com/guides/studio",
+     "https://www.getlumavo.com/docs/how-it-works"
+    ],
+    "formulaires": [],
+    "horodatage": "2026-09-25T10:39:21.698Z"
+   },
+   {
+    "url": "https://www.getlumavo.com/docs",
+    "viewport": "desktop",
+    "statutHttp": 200,
+    "liensInternes": [
+     "https://www.getlumavo.com/",
+     "https://www.getlumavo.com/guides",
+     "https://www.getlumavo.com/docs",
+     "https://www.getlumavo.com/docs/how-it-works",
+     "https://www.getlumavo.com/docs/support",
+     "https://www.getlumavo.com/docs/formats-exports",
+     "https://www.getlumavo.com/docs/privacy",
+     "https://www.getlumavo.com/docs/credits",
+     "https://www.getlumavo.com/docs/account",
+     "https://www.getlumavo.com/docs/availability",
+     "https://www.getlumavo.com/docs/faq",
+     "https://www.getlumavo.com/docs/api",
+     "https://www.getlumavo.com/guides/getting-started"
+    ],
+    "formulaires": [],
+    "horodatage": "2026-09-25T10:39:24.348Z"
+   },
+   {
+    "url": "https://www.getlumavo.com/docs/how-it-works",
+    "viewport": "desktop",
+    "statutHttp": 200,
+    "liensInternes": [
+     "https://www.getlumavo.com/",
+     "https://www.getlumavo.com/guides",
+     "https://www.getlumavo.com/docs",
+     "https://www.getlumavo.com/docs/how-it-works",
+     "https://www.getlumavo.com/docs/support",
+     "https://www.getlumavo.com/docs/formats-exports",
+     "https://www.getlumavo.com/docs/privacy",
+     "https://www.getlumavo.com/docs/credits",
+     "https://www.getlumavo.com/docs/account",
+     "https://www.getlumavo.com/docs/availability",
+     "https://www.getlumavo.com/docs/faq",
+     "https://www.getlumavo.com/docs/api",
+     "https://www.getlumavo.com/guides/getting-started"
+    ],
+    "formulaires": [],
+    "horodatage": "2026-09-25T10:39:26.990Z"
+   },
+   {
+    "url": "https://www.getlumavo.com/docs/support",
+    "viewport": "desktop",
+    "statutHttp": 200,
+    "liensInternes": [
+     "https://www.getlumavo.com/",
+     "https://www.getlumavo.com/guides",
+     "https://www.getlumavo.com/docs",
+     "https://www.getlumavo.com/docs/how-it-works",
+     "https://www.getlumavo.com/docs/support",
+     "https://www.getlumavo.com/docs/formats-exports",
+     "https://www.getlumavo.com/docs/privacy",
+     "https://www.getlumavo.com/docs/credits",
+     "https://www.getlumavo.com/docs/account",
+     "https://www.getlumavo.com/docs/availability",
+     "https://www.getlumavo.com/docs/faq",
+     "https://www.getlumavo.com/docs/api",
+     "https://www.getlumavo.com/guides/getting-started",
+     "https://www.getlumavo.com/legal/contact",
+     "https://www.getlumavo.com/legal/privacy-policy"
+    ],
+    "formulaires": [],
+    "horodatage": "2026-09-25T10:39:29.703Z"
+   },
+   {
+    "url": "https://www.getlumavo.com/docs/formats-exports",
+    "viewport": "desktop",
+    "statutHttp": 200,
+    "liensInternes": [
+     "https://www.getlumavo.com/",
+     "https://www.getlumavo.com/guides",
+     "https://www.getlumavo.com/docs",
+     "https://www.getlumavo.com/docs/how-it-works",
+     "https://www.getlumavo.com/docs/support",
+     "https://www.getlumavo.com/docs/formats-exports",
+     "https://www.getlumavo.com/docs/privacy",
+     "https://www.getlumavo.com/docs/credits",
+     "https://www.getlumavo.com/docs/account",
+     "https://www.getlumavo.com/docs/availability",
+     "https://www.getlumavo.com/docs/faq",
+     "https://www.getlumavo.com/docs/api",
+     "https://www.getlumavo.com/guides/video"
+    ],
+    "formulaires": [],
+    "horodatage": "2026-09-25T10:39:32.318Z"
+   },
+   {
+    "url": "https://www.getlumavo.com/docs/privacy",
+    "viewport": "desktop",
+    "statutHttp": 200,
+    "liensInternes": [
+     "https://www.getlumavo.com/",
+     "https://www.getlumavo.com/guides",
+     "https://www.getlumavo.com/docs",
+     "https://www.getlumavo.com/docs/how-it-works",
+     "https://www.getlumavo.com/docs/support",
+     "https://www.getlumavo.com/docs/formats-exports",
+     "https://www.getlumavo.com/docs/privacy",
+     "https://www.getlumavo.com/docs/credits",
+     "https://www.getlumavo.com/docs/account",
+     "https://www.getlumavo.com/docs/availability",
+     "https://www.getlumavo.com/docs/faq",
+     "https://www.getlumavo.com/docs/api"
+    ],
+    "formulaires": [],
+    "horodatage": "2026-09-25T10:39:35.002Z"
+   },
+   {
+    "url": "https://www.getlumavo.com/docs/credits",
+    "viewport": "desktop",
+    "statutHttp": 200,
+    "liensInternes": [
+     "https://www.getlumavo.com/",
+     "https://www.getlumavo.com/guides",
+     "https://www.getlumavo.com/docs",
+     "https://www.getlumavo.com/docs/how-it-works",
+     "https://www.getlumavo.com/docs/support",
+     "https://www.getlumavo.com/docs/formats-exports",
+     "https://www.getlumavo.com/docs/privacy",
+     "https://www.getlumavo.com/docs/credits",
+     "https://www.getlumavo.com/docs/account",
+     "https://www.getlumavo.com/docs/availability",
+     "https://www.getlumavo.com/docs/faq",
+     "https://www.getlumavo.com/docs/api",
+     "https://www.getlumavo.com/guides/getting-started"
+    ],
+    "formulaires": [],
+    "horodatage": "2026-09-25T10:39:37.939Z"
+   },
+   {
+    "url": "https://www.getlumavo.com/docs/account",
+    "viewport": "desktop",
+    "statutHttp": 200,
+    "liensInternes": [
+     "https://www.getlumavo.com/",
+     "https://www.getlumavo.com/guides",
+     "https://www.getlumavo.com/docs",
+     "https://www.getlumavo.com/docs/how-it-works",
+     "https://www.getlumavo.com/docs/support",
+     "https://www.getlumavo.com/docs/formats-exports",
+     "https://www.getlumavo.com/docs/privacy",
+     "https://www.getlumavo.com/docs/credits",
+     "https://www.getlumavo.com/docs/account",
+     "https://www.getlumavo.com/docs/availability",
+     "https://www.getlumavo.com/docs/faq",
+     "https://www.getlumavo.com/docs/api",
+     "https://www.getlumavo.com/legal/privacy-policy"
+    ],
+    "formulaires": [],
+    "horodatage": "2026-09-25T10:39:40.611Z"
+   },
+   {
+    "url": "https://www.getlumavo.com/docs/availability",
+    "viewport": "desktop",
+    "statutHttp": 200,
+    "liensInternes": [
+     "https://www.getlumavo.com/",
+     "https://www.getlumavo.com/guides",
+     "https://www.getlumavo.com/docs",
+     "https://www.getlumavo.com/docs/how-it-works",
+     "https://www.getlumavo.com/docs/support",
+     "https://www.getlumavo.com/docs/formats-exports",
+     "https://www.getlumavo.com/docs/privacy",
+     "https://www.getlumavo.com/docs/credits",
+     "https://www.getlumavo.com/docs/account",
+     "https://www.getlumavo.com/docs/availability",
+     "https://www.getlumavo.com/docs/faq",
+     "https://www.getlumavo.com/docs/api"
+    ],
+    "formulaires": [],
+    "horodatage": "2026-09-25T10:39:43.240Z"
+   },
+   {
+    "url": "https://www.getlumavo.com/docs/faq",
+    "viewport": "desktop",
+    "statutHttp": 200,
+    "liensInternes": [
+     "https://www.getlumavo.com/",
+     "https://www.getlumavo.com/guides",
+     "https://www.getlumavo.com/docs",
+     "https://www.getlumavo.com/docs/how-it-works",
+     "https://www.getlumavo.com/docs/support",
+     "https://www.getlumavo.com/docs/formats-exports",
+     "https://www.getlumavo.com/docs/privacy",
+     "https://www.getlumavo.com/docs/credits",
+     "https://www.getlumavo.com/docs/account",
+     "https://www.getlumavo.com/docs/availability",
+     "https://www.getlumavo.com/docs/faq",
+     "https://www.getlumavo.com/docs/api",
+     "https://www.getlumavo.com/legal/privacy-policy",
+     "https://www.getlumavo.com/guides/getting-started"
+    ],
+    "formulaires": [],
+    "horodatage": "2026-09-25T10:39:45.864Z"
+   },
+   {
+    "url": "https://www.getlumavo.com/legal/about",
+    "viewport": "desktop",
+    "statutHttp": 200,
+    "liensInternes": [
+     "https://www.getlumavo.com/login",
+     "https://www.getlumavo.com/legal/about",
+     "https://www.getlumavo.com/legal/terms",
+     "https://www.getlumavo.com/legal/acceptable-use",
+     "https://www.getlumavo.com/legal/cgv",
+     "https://www.getlumavo.com/legal/privacy-policy",
+     "https://www.getlumavo.com/legal/cookies",
+     "https://www.getlumavo.com/legal/accessibility",
+     "https://www.getlumavo.com/legal/contact",
+     "https://www.getlumavo.com/legal/legal-notice",
+     "https://www.getlumavo.com/legal/account-deletion",
+     "https://www.getlumavo.com/docs/how-it-works",
+     "https://www.getlumavo.com/guides/getting-started"
+    ],
+    "formulaires": [],
+    "horodatage": "2026-09-25T10:39:48.481Z"
+   },
+   {
+    "url": "https://www.getlumavo.com/legal/acceptable-use",
+    "viewport": "desktop",
+    "statutHttp": 200,
+    "liensInternes": [
+     "https://www.getlumavo.com/login",
+     "https://www.getlumavo.com/legal/about",
+     "https://www.getlumavo.com/legal/terms",
+     "https://www.getlumavo.com/legal/acceptable-use",
+     "https://www.getlumavo.com/legal/cgv",
+     "https://www.getlumavo.com/legal/privacy-policy",
+     "https://www.getlumavo.com/legal/cookies",
+     "https://www.getlumavo.com/legal/accessibility",
+     "https://www.getlumavo.com/legal/contact",
+     "https://www.getlumavo.com/legal/legal-notice",
+     "https://www.getlumavo.com/legal/account-deletion"
+    ],
+    "formulaires": [],
+    "horodatage": "2026-09-25T10:39:51.129Z"
+   },
+   {
+    "url": "https://www.getlumavo.com/",
+    "viewport": "mobile",
+    "statutHttp": 200,
+    "liensInternes": [
+     "https://www.getlumavo.com/",
+     "https://www.getlumavo.com/pricing",
+     "https://www.getlumavo.com/docs/api",
+     "https://www.getlumavo.com/legal/terms",
+     "https://www.getlumavo.com/legal/privacy-policy",
+     "https://www.getlumavo.com/legal",
+     "https://www.getlumavo.com/verify"
+    ],
+    "formulaires": [],
+    "horodatage": "2026-09-25T10:40:07.544Z"
+   },
+   {
+    "url": "https://www.getlumavo.com/pricing",
+    "viewport": "mobile",
+    "statutHttp": 200,
+    "liensInternes": [
+     "https://www.getlumavo.com/",
+     "https://www.getlumavo.com/login"
+    ],
+    "formulaires": [],
+    "horodatage": "2026-09-25T10:40:18.013Z"
+   },
+   {
+    "url": "https://www.getlumavo.com/docs/api",
+    "viewport": "mobile",
+    "statutHttp": 200,
+    "liensInternes": [
+     "https://www.getlumavo.com/",
+     "https://www.getlumavo.com/guides",
+     "https://www.getlumavo.com/docs",
+     "https://www.getlumavo.com/docs/how-it-works",
+     "https://www.getlumavo.com/docs/support",
+     "https://www.getlumavo.com/docs/formats-exports",
+     "https://www.getlumavo.com/docs/privacy",
+     "https://www.getlumavo.com/docs/credits",
+     "https://www.getlumavo.com/docs/account",
+     "https://www.getlumavo.com/docs/availability",
+     "https://www.getlumavo.com/docs/faq",
+     "https://www.getlumavo.com/docs/api"
+    ],
+    "formulaires": [],
+    "horodatage": "2026-09-25T10:40:20.730Z"
+   },
+   {
+    "url": "https://www.getlumavo.com/legal/terms",
+    "viewport": "mobile",
+    "statutHttp": 200,
+    "liensInternes": [
+     "https://www.getlumavo.com/login",
+     "https://www.getlumavo.com/legal/about",
+     "https://www.getlumavo.com/legal/terms",
+     "https://www.getlumavo.com/legal/acceptable-use",
+     "https://www.getlumavo.com/legal/cgv",
+     "https://www.getlumavo.com/legal/privacy-policy",
+     "https://www.getlumavo.com/legal/cookies",
+     "https://www.getlumavo.com/legal/accessibility",
+     "https://www.getlumavo.com/legal/contact",
+     "https://www.getlumavo.com/legal/legal-notice",
+     "https://www.getlumavo.com/legal/account-deletion",
+     "https://www.getlumavo.com/docs/availability"
+    ],
+    "formulaires": [],
+    "horodatage": "2026-09-25T10:40:23.520Z"
+   },
+   {
+    "url": "https://www.getlumavo.com/legal/privacy-policy",
+    "viewport": "mobile",
+    "statutHttp": 200,
+    "liensInternes": [
+     "https://www.getlumavo.com/login",
+     "https://www.getlumavo.com/legal/about",
+     "https://www.getlumavo.com/legal/terms",
+     "https://www.getlumavo.com/legal/acceptable-use",
+     "https://www.getlumavo.com/legal/cgv",
+     "https://www.getlumavo.com/legal/privacy-policy",
+     "https://www.getlumavo.com/legal/cookies",
+     "https://www.getlumavo.com/legal/accessibility",
+     "https://www.getlumavo.com/legal/contact",
+     "https://www.getlumavo.com/legal/legal-notice",
+     "https://www.getlumavo.com/legal/account-deletion",
+     "https://www.getlumavo.com/docs/privacy"
+    ],
+    "formulaires": [],
+    "horodatage": "2026-09-25T10:40:26.165Z"
+   },
+   {
+    "url": "https://www.getlumavo.com/legal",
+    "viewport": "mobile",
+    "statutHttp": 200,
+    "liensInternes": [
+     "https://www.getlumavo.com/login",
+     "https://www.getlumavo.com/legal/about",
+     "https://www.getlumavo.com/legal/terms",
+     "https://www.getlumavo.com/legal/acceptable-use",
+     "https://www.getlumavo.com/legal/cgv",
+     "https://www.getlumavo.com/legal/privacy-policy",
+     "https://www.getlumavo.com/legal/cookies",
+     "https://www.getlumavo.com/legal/accessibility",
+     "https://www.getlumavo.com/legal/contact",
+     "https://www.getlumavo.com/legal/legal-notice",
+     "https://www.getlumavo.com/legal/account-deletion",
+     "https://www.getlumavo.com/docs/how-it-works",
+     "https://www.getlumavo.com/guides/getting-started"
+    ],
+    "formulaires": [],
+    "horodatage": "2026-09-25T10:40:28.708Z"
+   },
+   {
+    "url": "https://www.getlumavo.com/verify",
+    "viewport": "mobile",
+    "statutHttp": 200,
+    "liensInternes": [
+     "https://www.getlumavo.com/"
+    ],
+    "formulaires": [],
+    "horodatage": "2026-09-25T10:40:31.353Z"
+   },
+   {
+    "url": "https://www.getlumavo.com/login",
+    "viewport": "mobile",
+    "statutHttp": 200,
+    "liensInternes": [
+     "https://www.getlumavo.com/",
+     "https://www.getlumavo.com/legal/terms",
+     "https://www.getlumavo.com/legal/privacy-policy",
+     "https://www.getlumavo.com/legal/legal-notice",
+     "https://www.getlumavo.com/legal/contact"
+    ],
+    "formulaires": [
+     {
+      "localisation": {
+       "balise": "form",
+       "selecteur": "#root > div > main > div:nth-of-type(2) > form",
+       "attributs": {}
+      },
+      "methode": "get",
+      "action": "https://www.getlumavo.com/login",
+      "champs": [
+       {
+        "localisation": {
+         "balise": "input",
+         "selecteur": "#auth-email",
+         "attributs": {
+          "id": "auth-email",
+          "name": "email",
+          "type": "email",
+          "aria-label": "Email",
+          "aria-invalid": "false",
+          "autocomplete": "email"
+         }
+        },
+        "type": "email",
+        "autocomplete": "email",
+        "requis": true
+       },
+       {
+        "localisation": {
+         "balise": "input",
+         "selecteur": "#auth-password",
+         "attributs": {
+          "id": "auth-password",
+          "name": "password",
+          "type": "password",
+          "aria-label": "Password",
+          "aria-invalid": "false",
+          "autocomplete": "current-password"
+         }
+        },
+        "type": "password",
+        "autocomplete": "current-password",
+        "requis": true
+       }
+      ],
+      "declencheur": {
+       "balise": "button",
+       "selecteur": "#root > div > main > div:nth-of-type(2) > form > button[type=\"submit\"]",
+       "attributs": {
+        "type": "submit"
+       }
+      }
+     }
+    ],
+    "horodatage": "2026-09-25T10:40:34.593Z"
+   },
+   {
+    "url": "https://www.getlumavo.com/guides",
+    "viewport": "mobile",
+    "statutHttp": 200,
+    "liensInternes": [
+     "https://www.getlumavo.com/",
+     "https://www.getlumavo.com/guides",
+     "https://www.getlumavo.com/docs",
+     "https://www.getlumavo.com/guides/getting-started",
+     "https://www.getlumavo.com/guides/voice",
+     "https://www.getlumavo.com/guides/lipsync",
+     "https://www.getlumavo.com/guides/video",
+     "https://www.getlumavo.com/guides/image",
+     "https://www.getlumavo.com/guides/studio",
+     "https://www.getlumavo.com/docs/how-it-works"
+    ],
+    "formulaires": [],
+    "horodatage": "2026-09-25T10:40:38.619Z"
+   },
+   {
+    "url": "https://www.getlumavo.com/docs",
+    "viewport": "mobile",
+    "statutHttp": 200,
+    "liensInternes": [
+     "https://www.getlumavo.com/",
+     "https://www.getlumavo.com/guides",
+     "https://www.getlumavo.com/docs",
+     "https://www.getlumavo.com/docs/how-it-works",
+     "https://www.getlumavo.com/docs/support",
+     "https://www.getlumavo.com/docs/formats-exports",
+     "https://www.getlumavo.com/docs/privacy",
+     "https://www.getlumavo.com/docs/credits",
+     "https://www.getlumavo.com/docs/account",
+     "https://www.getlumavo.com/docs/availability",
+     "https://www.getlumavo.com/docs/faq",
+     "https://www.getlumavo.com/docs/api",
+     "https://www.getlumavo.com/guides/getting-started"
+    ],
+    "formulaires": [],
+    "horodatage": "2026-09-25T10:40:41.248Z"
+   },
+   {
+    "url": "https://www.getlumavo.com/docs/how-it-works",
+    "viewport": "mobile",
+    "statutHttp": 200,
+    "liensInternes": [
+     "https://www.getlumavo.com/",
+     "https://www.getlumavo.com/guides",
+     "https://www.getlumavo.com/docs",
+     "https://www.getlumavo.com/docs/how-it-works",
+     "https://www.getlumavo.com/docs/support",
+     "https://www.getlumavo.com/docs/formats-exports",
+     "https://www.getlumavo.com/docs/privacy",
+     "https://www.getlumavo.com/docs/credits",
+     "https://www.getlumavo.com/docs/account",
+     "https://www.getlumavo.com/docs/availability",
+     "https://www.getlumavo.com/docs/faq",
+     "https://www.getlumavo.com/docs/api",
+     "https://www.getlumavo.com/guides/getting-started"
+    ],
+    "formulaires": [],
+    "horodatage": "2026-09-25T10:40:43.844Z"
+   },
+   {
+    "url": "https://www.getlumavo.com/docs/support",
+    "viewport": "mobile",
+    "statutHttp": 200,
+    "liensInternes": [
+     "https://www.getlumavo.com/",
+     "https://www.getlumavo.com/guides",
+     "https://www.getlumavo.com/docs",
+     "https://www.getlumavo.com/docs/how-it-works",
+     "https://www.getlumavo.com/docs/support",
+     "https://www.getlumavo.com/docs/formats-exports",
+     "https://www.getlumavo.com/docs/privacy",
+     "https://www.getlumavo.com/docs/credits",
+     "https://www.getlumavo.com/docs/account",
+     "https://www.getlumavo.com/docs/availability",
+     "https://www.getlumavo.com/docs/faq",
+     "https://www.getlumavo.com/docs/api",
+     "https://www.getlumavo.com/guides/getting-started",
+     "https://www.getlumavo.com/legal/contact",
+     "https://www.getlumavo.com/legal/privacy-policy"
+    ],
+    "formulaires": [],
+    "horodatage": "2026-09-25T10:40:46.395Z"
+   },
+   {
+    "url": "https://www.getlumavo.com/docs/formats-exports",
+    "viewport": "mobile",
+    "statutHttp": 200,
+    "liensInternes": [
+     "https://www.getlumavo.com/",
+     "https://www.getlumavo.com/guides",
+     "https://www.getlumavo.com/docs",
+     "https://www.getlumavo.com/docs/how-it-works",
+     "https://www.getlumavo.com/docs/support",
+     "https://www.getlumavo.com/docs/formats-exports",
+     "https://www.getlumavo.com/docs/privacy",
+     "https://www.getlumavo.com/docs/credits",
+     "https://www.getlumavo.com/docs/account",
+     "https://www.getlumavo.com/docs/availability",
+     "https://www.getlumavo.com/docs/faq",
+     "https://www.getlumavo.com/docs/api",
+     "https://www.getlumavo.com/guides/video"
+    ],
+    "formulaires": [],
+    "horodatage": "2026-09-25T10:40:48.920Z"
+   },
+   {
+    "url": "https://www.getlumavo.com/docs/privacy",
+    "viewport": "mobile",
+    "statutHttp": 200,
+    "liensInternes": [
+     "https://www.getlumavo.com/",
+     "https://www.getlumavo.com/guides",
+     "https://www.getlumavo.com/docs",
+     "https://www.getlumavo.com/docs/how-it-works",
+     "https://www.getlumavo.com/docs/support",
+     "https://www.getlumavo.com/docs/formats-exports",
+     "https://www.getlumavo.com/docs/privacy",
+     "https://www.getlumavo.com/docs/credits",
+     "https://www.getlumavo.com/docs/account",
+     "https://www.getlumavo.com/docs/availability",
+     "https://www.getlumavo.com/docs/faq",
+     "https://www.getlumavo.com/docs/api"
+    ],
+    "formulaires": [],
+    "horodatage": "2026-09-25T10:40:51.769Z"
+   },
+   {
+    "url": "https://www.getlumavo.com/docs/credits",
+    "viewport": "mobile",
+    "statutHttp": 200,
+    "liensInternes": [
+     "https://www.getlumavo.com/",
+     "https://www.getlumavo.com/guides",
+     "https://www.getlumavo.com/docs",
+     "https://www.getlumavo.com/docs/how-it-works",
+     "https://www.getlumavo.com/docs/support",
+     "https://www.getlumavo.com/docs/formats-exports",
+     "https://www.getlumavo.com/docs/privacy",
+     "https://www.getlumavo.com/docs/credits",
+     "https://www.getlumavo.com/docs/account",
+     "https://www.getlumavo.com/docs/availability",
+     "https://www.getlumavo.com/docs/faq",
+     "https://www.getlumavo.com/docs/api",
+     "https://www.getlumavo.com/guides/getting-started"
+    ],
+    "formulaires": [],
+    "horodatage": "2026-09-25T10:40:54.342Z"
+   },
+   {
+    "url": "https://www.getlumavo.com/docs/account",
+    "viewport": "mobile",
+    "statutHttp": 200,
+    "liensInternes": [
+     "https://www.getlumavo.com/",
+     "https://www.getlumavo.com/guides",
+     "https://www.getlumavo.com/docs",
+     "https://www.getlumavo.com/docs/how-it-works",
+     "https://www.getlumavo.com/docs/support",
+     "https://www.getlumavo.com/docs/formats-exports",
+     "https://www.getlumavo.com/docs/privacy",
+     "https://www.getlumavo.com/docs/credits",
+     "https://www.getlumavo.com/docs/account",
+     "https://www.getlumavo.com/docs/availability",
+     "https://www.getlumavo.com/docs/faq",
+     "https://www.getlumavo.com/docs/api",
+     "https://www.getlumavo.com/legal/privacy-policy"
+    ],
+    "formulaires": [],
+    "horodatage": "2026-09-25T10:40:56.978Z"
+   },
+   {
+    "url": "https://www.getlumavo.com/docs/availability",
+    "viewport": "mobile",
+    "statutHttp": 200,
+    "liensInternes": [
+     "https://www.getlumavo.com/",
+     "https://www.getlumavo.com/guides",
+     "https://www.getlumavo.com/docs",
+     "https://www.getlumavo.com/docs/how-it-works",
+     "https://www.getlumavo.com/docs/support",
+     "https://www.getlumavo.com/docs/formats-exports",
+     "https://www.getlumavo.com/docs/privacy",
+     "https://www.getlumavo.com/docs/credits",
+     "https://www.getlumavo.com/docs/account",
+     "https://www.getlumavo.com/docs/availability",
+     "https://www.getlumavo.com/docs/faq",
+     "https://www.getlumavo.com/docs/api"
+    ],
+    "formulaires": [],
+    "horodatage": "2026-09-25T10:40:59.603Z"
+   },
+   {
+    "url": "https://www.getlumavo.com/docs/faq",
+    "viewport": "mobile",
+    "statutHttp": 200,
+    "liensInternes": [
+     "https://www.getlumavo.com/",
+     "https://www.getlumavo.com/guides",
+     "https://www.getlumavo.com/docs",
+     "https://www.getlumavo.com/docs/how-it-works",
+     "https://www.getlumavo.com/docs/support",
+     "https://www.getlumavo.com/docs/formats-exports",
+     "https://www.getlumavo.com/docs/privacy",
+     "https://www.getlumavo.com/docs/credits",
+     "https://www.getlumavo.com/docs/account",
+     "https://www.getlumavo.com/docs/availability",
+     "https://www.getlumavo.com/docs/faq",
+     "https://www.getlumavo.com/docs/api",
+     "https://www.getlumavo.com/legal/privacy-policy",
+     "https://www.getlumavo.com/guides/getting-started"
+    ],
+    "formulaires": [],
+    "horodatage": "2026-09-25T10:41:02.185Z"
+   },
+   {
+    "url": "https://www.getlumavo.com/legal/about",
+    "viewport": "mobile",
+    "statutHttp": 200,
+    "liensInternes": [
+     "https://www.getlumavo.com/login",
+     "https://www.getlumavo.com/legal/about",
+     "https://www.getlumavo.com/legal/terms",
+     "https://www.getlumavo.com/legal/acceptable-use",
+     "https://www.getlumavo.com/legal/cgv",
+     "https://www.getlumavo.com/legal/privacy-policy",
+     "https://www.getlumavo.com/legal/cookies",
+     "https://www.getlumavo.com/legal/accessibility",
+     "https://www.getlumavo.com/legal/contact",
+     "https://www.getlumavo.com/legal/legal-notice",
+     "https://www.getlumavo.com/legal/account-deletion",
+     "https://www.getlumavo.com/docs/how-it-works",
+     "https://www.getlumavo.com/guides/getting-started"
+    ],
+    "formulaires": [],
+    "horodatage": "2026-09-25T10:41:04.810Z"
+   },
+   {
+    "url": "https://www.getlumavo.com/legal/acceptable-use",
+    "viewport": "mobile",
+    "statutHttp": 200,
+    "liensInternes": [
+     "https://www.getlumavo.com/login",
+     "https://www.getlumavo.com/legal/about",
+     "https://www.getlumavo.com/legal/terms",
+     "https://www.getlumavo.com/legal/acceptable-use",
+     "https://www.getlumavo.com/legal/cgv",
+     "https://www.getlumavo.com/legal/privacy-policy",
+     "https://www.getlumavo.com/legal/cookies",
+     "https://www.getlumavo.com/legal/accessibility",
+     "https://www.getlumavo.com/legal/contact",
+     "https://www.getlumavo.com/legal/legal-notice",
+     "https://www.getlumavo.com/legal/account-deletion"
+    ],
+    "formulaires": [],
+    "horodatage": "2026-09-25T10:41:07.451Z"
+   }
+  ],
+  "actions": [
+   {
+    "id": "a1",
+    "action": {
+     "type": "naviguer",
+     "url": "https://www.getlumavo.com/"
+    },
+    "page": "https://www.getlumavo.com/",
+    "viewport": "desktop",
+    "debut": "2026-09-25T10:38:35.717Z",
+    "fin": "2026-09-25T10:38:47.398Z",
+    "resultat": "ok"
+   },
+   {
+    "id": "a2",
+    "action": {
+     "type": "naviguer",
+     "url": "https://www.getlumavo.com/pricing"
+    },
+    "page": "https://www.getlumavo.com/",
+    "viewport": "desktop",
+    "debut": "2026-09-25T10:38:47.408Z",
+    "fin": "2026-09-25T10:39:00.521Z",
+    "resultat": "ok",
+    "decision": {
+     "politique": "deterministe"
+    }
+   },
+   {
+    "id": "a3",
+    "action": {
+     "type": "naviguer",
+     "url": "https://www.getlumavo.com/docs/api"
+    },
+    "page": "https://www.getlumavo.com/pricing",
+    "viewport": "desktop",
+    "debut": "2026-09-25T10:39:00.521Z",
+    "fin": "2026-09-25T10:39:03.319Z",
+    "resultat": "ok",
+    "decision": {
+     "politique": "deterministe"
+    }
+   },
+   {
+    "id": "a4",
+    "action": {
+     "type": "naviguer",
+     "url": "https://www.getlumavo.com/legal/terms"
+    },
+    "page": "https://www.getlumavo.com/docs/api",
+    "viewport": "desktop",
+    "debut": "2026-09-25T10:39:03.319Z",
+    "fin": "2026-09-25T10:39:06.036Z",
+    "resultat": "ok",
+    "decision": {
+     "politique": "deterministe"
+    }
+   },
+   {
+    "id": "a5",
+    "action": {
+     "type": "naviguer",
+     "url": "https://www.getlumavo.com/legal/privacy-policy"
+    },
+    "page": "https://www.getlumavo.com/legal/terms",
+    "viewport": "desktop",
+    "debut": "2026-09-25T10:39:06.036Z",
+    "fin": "2026-09-25T10:39:08.682Z",
+    "resultat": "ok",
+    "decision": {
+     "politique": "deterministe"
+    }
+   },
+   {
+    "id": "a6",
+    "action": {
+     "type": "naviguer",
+     "url": "https://www.getlumavo.com/legal"
+    },
+    "page": "https://www.getlumavo.com/legal/privacy-policy",
+    "viewport": "desktop",
+    "debut": "2026-09-25T10:39:08.683Z",
+    "fin": "2026-09-25T10:39:11.330Z",
+    "resultat": "ok",
+    "decision": {
+     "politique": "deterministe"
+    }
+   },
+   {
+    "id": "a7",
+    "action": {
+     "type": "naviguer",
+     "url": "https://www.getlumavo.com/verify"
+    },
+    "page": "https://www.getlumavo.com/legal",
+    "viewport": "desktop",
+    "debut": "2026-09-25T10:39:11.330Z",
+    "fin": "2026-09-25T10:39:13.933Z",
+    "resultat": "ok",
+    "decision": {
+     "politique": "deterministe"
+    }
+   },
+   {
+    "id": "a8",
+    "action": {
+     "type": "naviguer",
+     "url": "https://www.getlumavo.com/login"
+    },
+    "page": "https://www.getlumavo.com/verify",
+    "viewport": "desktop",
+    "debut": "2026-09-25T10:39:13.934Z",
+    "fin": "2026-09-25T10:39:17.462Z",
+    "resultat": "ok",
+    "decision": {
+     "politique": "deterministe"
+    }
+   },
+   {
+    "id": "a9",
+    "action": {
+     "type": "remplir",
+     "formulaire": {
+      "balise": "form",
+      "selecteur": "#root > div > main > div:nth-of-type(2) > form",
+      "attributs": {}
+     },
+     "valeurs": [
+      {
+       "champ": {
+        "balise": "input",
+        "selecteur": "#auth-email",
+        "attributs": {
+         "id": "auth-email",
+         "name": "email",
+         "type": "email",
+         "aria-label": "Email",
+         "aria-invalid": "false",
+         "autocomplete": "email"
+        }
+       },
+       "valeur": "test@zurvela-scan.invalid"
+      },
+      {
+       "champ": {
+        "balise": "input",
+        "selecteur": "#auth-password",
+        "attributs": {
+         "id": "auth-password",
+         "name": "password",
+         "type": "password",
+         "aria-label": "Password",
+         "aria-invalid": "false",
+         "autocomplete": "current-password"
+        }
+       },
+       "valeur": "Zurvela-scan-test-1!"
+      }
+     ]
+    },
+    "page": "https://www.getlumavo.com/login",
+    "viewport": "desktop",
+    "debut": "2026-09-25T10:39:17.463Z",
+    "fin": "2026-09-25T10:39:18.753Z",
+    "resultat": "ok",
+    "decision": {
+     "politique": "deterministe"
+    }
+   },
+   {
+    "id": "a10",
+    "action": {
+     "type": "naviguer",
+     "url": "https://www.getlumavo.com/guides"
+    },
+    "page": "https://www.getlumavo.com/login",
+    "viewport": "desktop",
+    "debut": "2026-09-25T10:39:18.753Z",
+    "fin": "2026-09-25T10:39:21.701Z",
+    "resultat": "ok",
+    "decision": {
+     "politique": "deterministe"
+    }
+   },
+   {
+    "id": "a11",
+    "action": {
+     "type": "naviguer",
+     "url": "https://www.getlumavo.com/docs"
+    },
+    "page": "https://www.getlumavo.com/guides",
+    "viewport": "desktop",
+    "debut": "2026-09-25T10:39:21.702Z",
+    "fin": "2026-09-25T10:39:24.350Z",
+    "resultat": "ok",
+    "decision": {
+     "politique": "deterministe"
+    }
+   },
+   {
+    "id": "a12",
+    "action": {
+     "type": "naviguer",
+     "url": "https://www.getlumavo.com/docs/how-it-works"
+    },
+    "page": "https://www.getlumavo.com/docs",
+    "viewport": "desktop",
+    "debut": "2026-09-25T10:39:24.351Z",
+    "fin": "2026-09-25T10:39:26.992Z",
+    "resultat": "ok",
+    "decision": {
+     "politique": "deterministe"
+    }
+   },
+   {
+    "id": "a13",
+    "action": {
+     "type": "naviguer",
+     "url": "https://www.getlumavo.com/docs/support"
+    },
+    "page": "https://www.getlumavo.com/docs/how-it-works",
+    "viewport": "desktop",
+    "debut": "2026-09-25T10:39:26.992Z",
+    "fin": "2026-09-25T10:39:29.705Z",
+    "resultat": "ok",
+    "decision": {
+     "politique": "deterministe"
+    }
+   },
+   {
+    "id": "a14",
+    "action": {
+     "type": "naviguer",
+     "url": "https://www.getlumavo.com/docs/formats-exports"
+    },
+    "page": "https://www.getlumavo.com/docs/support",
+    "viewport": "desktop",
+    "debut": "2026-09-25T10:39:29.705Z",
+    "fin": "2026-09-25T10:39:32.321Z",
+    "resultat": "ok",
+    "decision": {
+     "politique": "deterministe"
+    }
+   },
+   {
+    "id": "a15",
+    "action": {
+     "type": "naviguer",
+     "url": "https://www.getlumavo.com/docs/privacy"
+    },
+    "page": "https://www.getlumavo.com/docs/formats-exports",
+    "viewport": "desktop",
+    "debut": "2026-09-25T10:39:32.321Z",
+    "fin": "2026-09-25T10:39:35.004Z",
+    "resultat": "ok",
+    "decision": {
+     "politique": "deterministe"
+    }
+   },
+   {
+    "id": "a16",
+    "action": {
+     "type": "naviguer",
+     "url": "https://www.getlumavo.com/docs/credits"
+    },
+    "page": "https://www.getlumavo.com/docs/privacy",
+    "viewport": "desktop",
+    "debut": "2026-09-25T10:39:35.004Z",
+    "fin": "2026-09-25T10:39:37.943Z",
+    "resultat": "ok",
+    "decision": {
+     "politique": "deterministe"
+    }
+   },
+   {
+    "id": "a17",
+    "action": {
+     "type": "naviguer",
+     "url": "https://www.getlumavo.com/docs/account"
+    },
+    "page": "https://www.getlumavo.com/docs/credits",
+    "viewport": "desktop",
+    "debut": "2026-09-25T10:39:37.943Z",
+    "fin": "2026-09-25T10:39:40.614Z",
+    "resultat": "ok",
+    "decision": {
+     "politique": "deterministe"
+    }
+   },
+   {
+    "id": "a18",
+    "action": {
+     "type": "naviguer",
+     "url": "https://www.getlumavo.com/docs/availability"
+    },
+    "page": "https://www.getlumavo.com/docs/account",
+    "viewport": "desktop",
+    "debut": "2026-09-25T10:39:40.614Z",
+    "fin": "2026-09-25T10:39:43.243Z",
+    "resultat": "ok",
+    "decision": {
+     "politique": "deterministe"
+    }
+   },
+   {
+    "id": "a19",
+    "action": {
+     "type": "naviguer",
+     "url": "https://www.getlumavo.com/docs/faq"
+    },
+    "page": "https://www.getlumavo.com/docs/availability",
+    "viewport": "desktop",
+    "debut": "2026-09-25T10:39:43.243Z",
+    "fin": "2026-09-25T10:39:45.867Z",
+    "resultat": "ok",
+    "decision": {
+     "politique": "deterministe"
+    }
+   },
+   {
+    "id": "a20",
+    "action": {
+     "type": "naviguer",
+     "url": "https://www.getlumavo.com/legal/about"
+    },
+    "page": "https://www.getlumavo.com/docs/faq",
+    "viewport": "desktop",
+    "debut": "2026-09-25T10:39:45.867Z",
+    "fin": "2026-09-25T10:39:48.483Z",
+    "resultat": "ok",
+    "decision": {
+     "politique": "deterministe"
+    }
+   },
+   {
+    "id": "a21",
+    "action": {
+     "type": "naviguer",
+     "url": "https://www.getlumavo.com/legal/acceptable-use"
+    },
+    "page": "https://www.getlumavo.com/legal/about",
+    "viewport": "desktop",
+    "debut": "2026-09-25T10:39:48.483Z",
+    "fin": "2026-09-25T10:39:51.145Z",
+    "resultat": "ok",
+    "decision": {
+     "politique": "deterministe"
+    }
+   },
+   {
+    "id": "a22",
+    "action": {
+     "type": "naviguer",
+     "url": "https://www.getlumavo.com/"
+    },
+    "page": "https://www.getlumavo.com/",
+    "viewport": "mobile",
+    "debut": "2026-09-25T10:39:51.384Z",
+    "fin": "2026-09-25T10:40:07.982Z",
+    "resultat": "ok"
+   },
+   {
+    "id": "a23",
+    "action": {
+     "type": "naviguer",
+     "url": "https://www.getlumavo.com/pricing"
+    },
+    "page": "https://www.getlumavo.com/",
+    "viewport": "mobile",
+    "debut": "2026-09-25T10:40:07.982Z",
+    "fin": "2026-09-25T10:40:18.016Z",
+    "resultat": "ok",
+    "decision": {
+     "politique": "deterministe"
+    }
+   },
+   {
+    "id": "a24",
+    "action": {
+     "type": "naviguer",
+     "url": "https://www.getlumavo.com/docs/api"
+    },
+    "page": "https://www.getlumavo.com/pricing",
+    "viewport": "mobile",
+    "debut": "2026-09-25T10:40:18.016Z",
+    "fin": "2026-09-25T10:40:20.732Z",
+    "resultat": "ok",
+    "decision": {
+     "politique": "deterministe"
+    }
+   },
+   {
+    "id": "a25",
+    "action": {
+     "type": "naviguer",
+     "url": "https://www.getlumavo.com/legal/terms"
+    },
+    "page": "https://www.getlumavo.com/docs/api",
+    "viewport": "mobile",
+    "debut": "2026-09-25T10:40:20.732Z",
+    "fin": "2026-09-25T10:40:23.523Z",
+    "resultat": "ok",
+    "decision": {
+     "politique": "deterministe"
+    }
+   },
+   {
+    "id": "a26",
+    "action": {
+     "type": "naviguer",
+     "url": "https://www.getlumavo.com/legal/privacy-policy"
+    },
+    "page": "https://www.getlumavo.com/legal/terms",
+    "viewport": "mobile",
+    "debut": "2026-09-25T10:40:23.523Z",
+    "fin": "2026-09-25T10:40:26.167Z",
+    "resultat": "ok",
+    "decision": {
+     "politique": "deterministe"
+    }
+   },
+   {
+    "id": "a27",
+    "action": {
+     "type": "naviguer",
+     "url": "https://www.getlumavo.com/legal"
+    },
+    "page": "https://www.getlumavo.com/legal/privacy-policy",
+    "viewport": "mobile",
+    "debut": "2026-09-25T10:40:26.167Z",
+    "fin": "2026-09-25T10:40:28.710Z",
+    "resultat": "ok",
+    "decision": {
+     "politique": "deterministe"
+    }
+   },
+   {
+    "id": "a28",
+    "action": {
+     "type": "naviguer",
+     "url": "https://www.getlumavo.com/verify"
+    },
+    "page": "https://www.getlumavo.com/legal",
+    "viewport": "mobile",
+    "debut": "2026-09-25T10:40:28.710Z",
+    "fin": "2026-09-25T10:40:31.356Z",
+    "resultat": "ok",
+    "decision": {
+     "politique": "deterministe"
+    }
+   },
+   {
+    "id": "a29",
+    "action": {
+     "type": "naviguer",
+     "url": "https://www.getlumavo.com/login"
+    },
+    "page": "https://www.getlumavo.com/verify",
+    "viewport": "mobile",
+    "debut": "2026-09-25T10:40:31.356Z",
+    "fin": "2026-09-25T10:40:34.595Z",
+    "resultat": "ok",
+    "decision": {
+     "politique": "deterministe"
+    }
+   },
+   {
+    "id": "a30",
+    "action": {
+     "type": "remplir",
+     "formulaire": {
+      "balise": "form",
+      "selecteur": "#root > div > main > div:nth-of-type(2) > form",
+      "attributs": {}
+     },
+     "valeurs": [
+      {
+       "champ": {
+        "balise": "input",
+        "selecteur": "#auth-email",
+        "attributs": {
+         "id": "auth-email",
+         "name": "email",
+         "type": "email",
+         "aria-label": "Email",
+         "aria-invalid": "false",
+         "autocomplete": "email"
+        }
+       },
+       "valeur": "test@zurvela-scan.invalid"
+      },
+      {
+       "champ": {
+        "balise": "input",
+        "selecteur": "#auth-password",
+        "attributs": {
+         "id": "auth-password",
+         "name": "password",
+         "type": "password",
+         "aria-label": "Password",
+         "aria-invalid": "false",
+         "autocomplete": "current-password"
+        }
+       },
+       "valeur": "Zurvela-scan-test-1!"
+      }
+     ]
+    },
+    "page": "https://www.getlumavo.com/login",
+    "viewport": "mobile",
+    "debut": "2026-09-25T10:40:34.596Z",
+    "fin": "2026-09-25T10:40:36.061Z",
+    "resultat": "ok",
+    "decision": {
+     "politique": "deterministe"
+    }
+   },
+   {
+    "id": "a31",
+    "action": {
+     "type": "naviguer",
+     "url": "https://www.getlumavo.com/guides"
+    },
+    "page": "https://www.getlumavo.com/login",
+    "viewport": "mobile",
+    "debut": "2026-09-25T10:40:36.061Z",
+    "fin": "2026-09-25T10:40:38.621Z",
+    "resultat": "ok",
+    "decision": {
+     "politique": "deterministe"
+    }
+   },
+   {
+    "id": "a32",
+    "action": {
+     "type": "naviguer",
+     "url": "https://www.getlumavo.com/docs"
+    },
+    "page": "https://www.getlumavo.com/guides",
+    "viewport": "mobile",
+    "debut": "2026-09-25T10:40:38.621Z",
+    "fin": "2026-09-25T10:40:41.251Z",
+    "resultat": "ok",
+    "decision": {
+     "politique": "deterministe"
+    }
+   },
+   {
+    "id": "a33",
+    "action": {
+     "type": "naviguer",
+     "url": "https://www.getlumavo.com/docs/how-it-works"
+    },
+    "page": "https://www.getlumavo.com/docs",
+    "viewport": "mobile",
+    "debut": "2026-09-25T10:40:41.251Z",
+    "fin": "2026-09-25T10:40:43.846Z",
+    "resultat": "ok",
+    "decision": {
+     "politique": "deterministe"
+    }
+   },
+   {
+    "id": "a34",
+    "action": {
+     "type": "naviguer",
+     "url": "https://www.getlumavo.com/docs/support"
+    },
+    "page": "https://www.getlumavo.com/docs/how-it-works",
+    "viewport": "mobile",
+    "debut": "2026-09-25T10:40:43.846Z",
+    "fin": "2026-09-25T10:40:46.397Z",
+    "resultat": "ok",
+    "decision": {
+     "politique": "deterministe"
+    }
+   },
+   {
+    "id": "a35",
+    "action": {
+     "type": "naviguer",
+     "url": "https://www.getlumavo.com/docs/formats-exports"
+    },
+    "page": "https://www.getlumavo.com/docs/support",
+    "viewport": "mobile",
+    "debut": "2026-09-25T10:40:46.397Z",
+    "fin": "2026-09-25T10:40:48.922Z",
+    "resultat": "ok",
+    "decision": {
+     "politique": "deterministe"
+    }
+   },
+   {
+    "id": "a36",
+    "action": {
+     "type": "naviguer",
+     "url": "https://www.getlumavo.com/docs/privacy"
+    },
+    "page": "https://www.getlumavo.com/docs/formats-exports",
+    "viewport": "mobile",
+    "debut": "2026-09-25T10:40:48.922Z",
+    "fin": "2026-09-25T10:40:51.771Z",
+    "resultat": "ok",
+    "decision": {
+     "politique": "deterministe"
+    }
+   },
+   {
+    "id": "a37",
+    "action": {
+     "type": "naviguer",
+     "url": "https://www.getlumavo.com/docs/credits"
+    },
+    "page": "https://www.getlumavo.com/docs/privacy",
+    "viewport": "mobile",
+    "debut": "2026-09-25T10:40:51.771Z",
+    "fin": "2026-09-25T10:40:54.345Z",
+    "resultat": "ok",
+    "decision": {
+     "politique": "deterministe"
+    }
+   },
+   {
+    "id": "a38",
+    "action": {
+     "type": "naviguer",
+     "url": "https://www.getlumavo.com/docs/account"
+    },
+    "page": "https://www.getlumavo.com/docs/credits",
+    "viewport": "mobile",
+    "debut": "2026-09-25T10:40:54.345Z",
+    "fin": "2026-09-25T10:40:56.981Z",
+    "resultat": "ok",
+    "decision": {
+     "politique": "deterministe"
+    }
+   },
+   {
+    "id": "a39",
+    "action": {
+     "type": "naviguer",
+     "url": "https://www.getlumavo.com/docs/availability"
+    },
+    "page": "https://www.getlumavo.com/docs/account",
+    "viewport": "mobile",
+    "debut": "2026-09-25T10:40:56.981Z",
+    "fin": "2026-09-25T10:40:59.605Z",
+    "resultat": "ok",
+    "decision": {
+     "politique": "deterministe"
+    }
+   },
+   {
+    "id": "a40",
+    "action": {
+     "type": "naviguer",
+     "url": "https://www.getlumavo.com/docs/faq"
+    },
+    "page": "https://www.getlumavo.com/docs/availability",
+    "viewport": "mobile",
+    "debut": "2026-09-25T10:40:59.605Z",
+    "fin": "2026-09-25T10:41:02.187Z",
+    "resultat": "ok",
+    "decision": {
+     "politique": "deterministe"
+    }
+   },
+   {
+    "id": "a41",
+    "action": {
+     "type": "naviguer",
+     "url": "https://www.getlumavo.com/legal/about"
+    },
+    "page": "https://www.getlumavo.com/docs/faq",
+    "viewport": "mobile",
+    "debut": "2026-09-25T10:41:02.187Z",
+    "fin": "2026-09-25T10:41:04.813Z",
+    "resultat": "ok",
+    "decision": {
+     "politique": "deterministe"
+    }
+   },
+   {
+    "id": "a42",
+    "action": {
+     "type": "naviguer",
+     "url": "https://www.getlumavo.com/legal/acceptable-use"
+    },
+    "page": "https://www.getlumavo.com/legal/about",
+    "viewport": "mobile",
+    "debut": "2026-09-25T10:41:04.813Z",
+    "fin": "2026-09-25T10:41:07.453Z",
+    "resultat": "ok",
+    "decision": {
+     "politique": "deterministe"
+    }
+   }
+  ],
+  "arret": "limite-pages",
+  "enAttenteALArret": 14,
+  "pagesRestantesALArret": 0
+ },
+ "candidates": [
+  {
+   "categorie": "fonctionnel",
+   "description": "dependance-tierce-en-echec",
+   "urlOuEtape": "https://www.getlumavo.com/login",
+   "graviteEstimee": "mineur",
+   "confiance": 0.7,
+   "detecteur": "d-http",
+   "reproduction": {
+    "url": "https://www.getlumavo.com/login",
+    "viewport": {
+     "nom": "desktop",
+     "largeur": 1280,
+     "hauteur": 800,
+     "mobile": false
+    },
+    "action": {
+     "id": "a8",
+     "action": {
+      "type": "naviguer",
+      "url": "https://www.getlumavo.com/login"
+     },
+     "page": "https://www.getlumavo.com/verify",
+     "viewport": "desktop",
+     "debut": "2026-09-25T10:39:13.934Z",
+     "fin": "2026-09-25T10:39:17.462Z",
+     "resultat": "ok",
+     "decision": {
+      "politique": "deterministe"
+     }
+    },
+    "actionsPrealables": []
+   },
+   "preuves": [
+    {
+     "viewport": "desktop",
+     "page": "https://www.getlumavo.com/login",
+     "actionId": "a8",
+     "type": "requete-echouee",
+     "horodatage": "2026-09-25T10:39:16.379Z",
+     "urlRessource": "https://accounts.google.com/gsi/client",
+     "methode": "GET",
+     "typeRessource": "script",
+     "erreur": "net::ERR_BLOCKED_BY_ORB",
+     "cadrePrincipal": false,
+     "interne": false
+    },
+    {
+     "viewport": "mobile",
+     "page": "https://www.getlumavo.com/login",
+     "actionId": "a29",
+     "type": "requete-echouee",
+     "horodatage": "2026-09-25T10:40:33.501Z",
+     "urlRessource": "https://accounts.google.com/gsi/client",
+     "methode": "GET",
+     "typeRessource": "script",
+     "erreur": "net::ERR_BLOCKED_BY_ORB",
+     "cadrePrincipal": false,
+     "interne": false
+    }
+   ],
+   "element": {
+    "balise": "script",
+    "selecteur": "/gsi/client",
+    "attributs": {
+     "src": "https://accounts.google.com/gsi/client"
+    }
+   },
+   "observations": [
+    {
+     "viewport": "desktop"
+    },
+    {
+     "viewport": "mobile"
+    }
+   ]
+  },
+  {
+   "categorie": "performance",
+   "description": "reponse-lente",
+   "urlOuEtape": "https://www.getlumavo.com/pricing",
+   "graviteEstimee": "important",
+   "confiance": 0.7,
+   "detecteur": "d-lenteur",
+   "reproduction": {
+    "url": "https://www.getlumavo.com/pricing",
+    "viewport": {
+     "nom": "desktop",
+     "largeur": 1280,
+     "hauteur": 800,
+     "mobile": false
+    },
+    "action": {
+     "id": "a2",
+     "action": {
+      "type": "naviguer",
+      "url": "https://www.getlumavo.com/pricing"
+     },
+     "page": "https://www.getlumavo.com/",
+     "viewport": "desktop",
+     "debut": "2026-09-25T10:38:47.408Z",
+     "fin": "2026-09-25T10:39:00.521Z",
+     "resultat": "ok",
+     "decision": {
+      "politique": "deterministe"
+     }
+    },
+    "actionsPrealables": []
+   },
+   "preuves": [
+    {
+     "viewport": "desktop",
+     "page": "https://www.getlumavo.com/pricing",
+     "actionId": "a2",
+     "type": "reponse-reseau",
+     "horodatage": "2026-09-25T10:38:58.919Z",
+     "urlRessource": "https://www.getlumavo.com/pricing",
+     "methode": "GET",
+     "statut": 200,
+     "typeRessource": "document",
+     "dureeMs": 10499.224,
+     "interne": true
+    }
+   ],
+   "element": {
+    "balise": "document",
+    "selecteur": "/pricing",
+    "attributs": {
+     "src": "https://www.getlumavo.com/pricing"
+    }
+   },
+   "observations": [
+    {
+     "viewport": "desktop"
+    }
+   ]
+  },
+  {
+   "categorie": "performance",
+   "description": "reponse-lente",
+   "urlOuEtape": "https://www.getlumavo.com/",
+   "graviteEstimee": "important",
+   "confiance": 0.7,
+   "detecteur": "d-lenteur",
+   "reproduction": {
+    "url": "https://www.getlumavo.com/",
+    "viewport": {
+     "nom": "mobile",
+     "largeur": 390,
+     "hauteur": 844,
+     "mobile": true
+    },
+    "action": {
+     "id": "a22",
+     "action": {
+      "type": "naviguer",
+      "url": "https://www.getlumavo.com/"
+     },
+     "page": "https://www.getlumavo.com/",
+     "viewport": "mobile",
+     "debut": "2026-09-25T10:39:51.384Z",
+     "fin": "2026-09-25T10:40:07.982Z",
+     "resultat": "ok"
+    },
+    "actionsPrealables": []
+   },
+   "preuves": [
+    {
+     "viewport": "mobile",
+     "page": "https://www.getlumavo.com/",
+     "actionId": "a22",
+     "type": "reponse-reseau",
+     "horodatage": "2026-09-25T10:40:06.950Z",
+     "urlRessource": "https://www.getlumavo.com/demo/showcase-2.mp4",
+     "methode": "GET",
+     "statut": 206,
+     "typeRessource": "media",
+     "dureeMs": 10355.467,
+     "interne": true
+    }
+   ],
+   "element": {
+    "balise": "media",
+    "selecteur": "/demo/showcase-2.mp4",
+    "attributs": {
+     "src": "https://www.getlumavo.com/demo/showcase-2.mp4"
+    }
+   },
+   "observations": [
+    {
+     "viewport": "mobile"
+    }
+   ]
+  }
+ ],
+ "ecartees": [
+  {
+   "candidate": {
+    "categorie": "performance",
+    "description": "reponse-lente",
+    "urlOuEtape": "https://www.getlumavo.com/pricing",
+    "graviteEstimee": "important",
+    "confiance": 0.7,
+    "detecteur": "d-lenteur",
+    "reproduction": {
+     "url": "https://www.getlumavo.com/pricing",
+     "viewport": {
+      "nom": "desktop",
+      "largeur": 1280,
+      "hauteur": 800,
+      "mobile": false
+     },
+     "action": {
+      "id": "a2",
+      "action": {
+       "type": "naviguer",
+       "url": "https://www.getlumavo.com/pricing"
+      },
+      "page": "https://www.getlumavo.com/",
+      "viewport": "desktop",
+      "debut": "2026-09-25T10:38:47.408Z",
+      "fin": "2026-09-25T10:39:00.521Z",
+      "resultat": "ok",
+      "decision": {
+       "politique": "deterministe"
+      }
+     },
+     "actionsPrealables": []
+    },
+    "preuves": [
+     {
+      "viewport": "desktop",
+      "page": "https://www.getlumavo.com/pricing",
+      "actionId": "a2",
+      "type": "reponse-reseau",
+      "horodatage": "2026-09-25T10:38:58.919Z",
+      "urlRessource": "https://www.getlumavo.com/pricing",
+      "methode": "GET",
+      "statut": 200,
+      "typeRessource": "document",
+      "dureeMs": 10499.224,
+      "interne": true
+     }
+    ],
+    "element": {
+     "balise": "document",
+     "selecteur": "/pricing",
+     "attributs": {
+      "src": "https://www.getlumavo.com/pricing"
+     }
+    },
+    "observations": [
+     {
+      "viewport": "desktop"
+     }
+    ]
+   },
+   "raison": "jamais-reproduite",
+   "verdict": "non-reproduite",
+   "resultat": {
+    "groupe": {
+     "cle": "reseau:GET:/pricing",
+     "representant": {
+      "categorie": "performance",
+      "description": "reponse-lente",
+      "urlOuEtape": "https://www.getlumavo.com/pricing",
+      "graviteEstimee": "important",
+      "confiance": 0.7,
+      "detecteur": "d-lenteur",
+      "reproduction": {
+       "url": "https://www.getlumavo.com/pricing",
+       "viewport": {
+        "nom": "desktop",
+        "largeur": 1280,
+        "hauteur": 800,
+        "mobile": false
+       },
+       "action": {
+        "id": "a2",
+        "action": {
+         "type": "naviguer",
+         "url": "https://www.getlumavo.com/pricing"
+        },
+        "page": "https://www.getlumavo.com/",
+        "viewport": "desktop",
+        "debut": "2026-09-25T10:38:47.408Z",
+        "fin": "2026-09-25T10:39:00.521Z",
+        "resultat": "ok",
+        "decision": {
+         "politique": "deterministe"
+        }
+       },
+       "actionsPrealables": []
+      },
+      "preuves": [
+       {
+        "viewport": "desktop",
+        "page": "https://www.getlumavo.com/pricing",
+        "actionId": "a2",
+        "type": "reponse-reseau",
+        "horodatage": "2026-09-25T10:38:58.919Z",
+        "urlRessource": "https://www.getlumavo.com/pricing",
+        "methode": "GET",
+        "statut": 200,
+        "typeRessource": "document",
+        "dureeMs": 10499.224,
+        "interne": true
+       }
+      ],
+      "element": {
+       "balise": "document",
+       "selecteur": "/pricing",
+       "attributs": {
+        "src": "https://www.getlumavo.com/pricing"
+       }
+      },
+      "observations": [
+       {
+        "viewport": "desktop"
+       }
+      ]
+     },
+     "membres": [
+      {
+       "categorie": "performance",
+       "description": "reponse-lente",
+       "urlOuEtape": "https://www.getlumavo.com/pricing",
+       "graviteEstimee": "important",
+       "confiance": 0.7,
+       "detecteur": "d-lenteur",
+       "reproduction": {
+        "url": "https://www.getlumavo.com/pricing",
+        "viewport": {
+         "nom": "desktop",
+         "largeur": 1280,
+         "hauteur": 800,
+         "mobile": false
+        },
+        "action": {
+         "id": "a2",
+         "action": {
+          "type": "naviguer",
+          "url": "https://www.getlumavo.com/pricing"
+         },
+         "page": "https://www.getlumavo.com/",
+         "viewport": "desktop",
+         "debut": "2026-09-25T10:38:47.408Z",
+         "fin": "2026-09-25T10:39:00.521Z",
+         "resultat": "ok",
+         "decision": {
+          "politique": "deterministe"
+         }
+        },
+        "actionsPrealables": []
+       },
+       "preuves": [
+        {
+         "viewport": "desktop",
+         "page": "https://www.getlumavo.com/pricing",
+         "actionId": "a2",
+         "type": "reponse-reseau",
+         "horodatage": "2026-09-25T10:38:58.919Z",
+         "urlRessource": "https://www.getlumavo.com/pricing",
+         "methode": "GET",
+         "statut": 200,
+         "typeRessource": "document",
+         "dureeMs": 10499.224,
+         "interne": true
+        }
+       ],
+       "element": {
+        "balise": "document",
+        "selecteur": "/pricing",
+        "attributs": {
+         "src": "https://www.getlumavo.com/pricing"
+        }
+       },
+       "observations": [
+        {
+         "viewport": "desktop"
+        }
+       ]
+      }
+     ],
+     "localisations": [
+      {
+       "urlOuEtape": "https://www.getlumavo.com/pricing",
+       "element": {
+        "balise": "document",
+        "selecteur": "/pricing",
+        "attributs": {
+         "src": "https://www.getlumavo.com/pricing"
+        }
+       }
+      }
+     ],
+     "observations": [
+      {
+       "viewport": "desktop"
+      }
+     ],
+     "confiance": 0.7,
+     "descriptions": [
+      "reponse-lente"
+     ]
+    },
+    "verdict": "non-reproduite",
+    "motif": "jamais-reproduite",
+    "tentatives": [
+     {
+      "numero": 1,
+      "viewport": "desktop",
+      "reproduite": false,
+      "echecOutillage": false,
+      "dureeMs": 7038,
+      "observations": {
+       "nbPages": 1,
+       "statutDocument": 200,
+       "nbActions": 2,
+       "nbActionsPrevues": 2,
+       "arreteA": null,
+       "nbSignaux": 33,
+       "statuts": [
+        200
+       ],
+       "reponsesHors2xx": [],
+       "echecsReseau": [],
+       "requetesEnAttente": []
+      }
+     },
+     {
+      "numero": 2,
+      "viewport": "desktop",
+      "reproduite": false,
+      "echecOutillage": false,
+      "dureeMs": 6942,
+      "observations": {
+       "nbPages": 1,
+       "statutDocument": 200,
+       "nbActions": 2,
+       "nbActionsPrevues": 2,
+       "arreteA": null,
+       "nbSignaux": 33,
+       "statuts": [
+        200
+       ],
+       "reponsesHors2xx": [],
+       "echecsReseau": [],
+       "requetesEnAttente": []
+      }
+     }
+    ],
+    "tauxReproduction": 0,
+    "confianceInitiale": 0.7,
+    "confianceFinale": 0.63,
+    "coutApi": 0
+   }
+  },
+  {
+   "candidate": {
+    "categorie": "performance",
+    "description": "reponse-lente",
+    "urlOuEtape": "https://www.getlumavo.com/",
+    "graviteEstimee": "important",
+    "confiance": 0.7,
+    "detecteur": "d-lenteur",
+    "reproduction": {
+     "url": "https://www.getlumavo.com/",
+     "viewport": {
+      "nom": "mobile",
+      "largeur": 390,
+      "hauteur": 844,
+      "mobile": true
+     },
+     "action": {
+      "id": "a22",
+      "action": {
+       "type": "naviguer",
+       "url": "https://www.getlumavo.com/"
+      },
+      "page": "https://www.getlumavo.com/",
+      "viewport": "mobile",
+      "debut": "2026-09-25T10:39:51.384Z",
+      "fin": "2026-09-25T10:40:07.982Z",
+      "resultat": "ok"
+     },
+     "actionsPrealables": []
+    },
+    "preuves": [
+     {
+      "viewport": "mobile",
+      "page": "https://www.getlumavo.com/",
+      "actionId": "a22",
+      "type": "reponse-reseau",
+      "horodatage": "2026-09-25T10:40:06.950Z",
+      "urlRessource": "https://www.getlumavo.com/demo/showcase-2.mp4",
+      "methode": "GET",
+      "statut": 206,
+      "typeRessource": "media",
+      "dureeMs": 10355.467,
+      "interne": true
+     }
+    ],
+    "element": {
+     "balise": "media",
+     "selecteur": "/demo/showcase-2.mp4",
+     "attributs": {
+      "src": "https://www.getlumavo.com/demo/showcase-2.mp4"
+     }
+    },
+    "observations": [
+     {
+      "viewport": "mobile"
+     }
+    ]
+   },
+   "raison": "jamais-reproduite",
+   "verdict": "non-reproduite",
+   "resultat": {
+    "groupe": {
+     "cle": "reseau:GET:/demo/showcase-2.mp4",
+     "representant": {
+      "categorie": "performance",
+      "description": "reponse-lente",
+      "urlOuEtape": "https://www.getlumavo.com/",
+      "graviteEstimee": "important",
+      "confiance": 0.7,
+      "detecteur": "d-lenteur",
+      "reproduction": {
+       "url": "https://www.getlumavo.com/",
+       "viewport": {
+        "nom": "mobile",
+        "largeur": 390,
+        "hauteur": 844,
+        "mobile": true
+       },
+       "action": {
+        "id": "a22",
+        "action": {
+         "type": "naviguer",
+         "url": "https://www.getlumavo.com/"
+        },
+        "page": "https://www.getlumavo.com/",
+        "viewport": "mobile",
+        "debut": "2026-09-25T10:39:51.384Z",
+        "fin": "2026-09-25T10:40:07.982Z",
+        "resultat": "ok"
+       },
+       "actionsPrealables": []
+      },
+      "preuves": [
+       {
+        "viewport": "mobile",
+        "page": "https://www.getlumavo.com/",
+        "actionId": "a22",
+        "type": "reponse-reseau",
+        "horodatage": "2026-09-25T10:40:06.950Z",
+        "urlRessource": "https://www.getlumavo.com/demo/showcase-2.mp4",
+        "methode": "GET",
+        "statut": 206,
+        "typeRessource": "media",
+        "dureeMs": 10355.467,
+        "interne": true
+       }
+      ],
+      "element": {
+       "balise": "media",
+       "selecteur": "/demo/showcase-2.mp4",
+       "attributs": {
+        "src": "https://www.getlumavo.com/demo/showcase-2.mp4"
+       }
+      },
+      "observations": [
+       {
+        "viewport": "mobile"
+       }
+      ]
+     },
+     "membres": [
+      {
+       "categorie": "performance",
+       "description": "reponse-lente",
+       "urlOuEtape": "https://www.getlumavo.com/",
+       "graviteEstimee": "important",
+       "confiance": 0.7,
+       "detecteur": "d-lenteur",
+       "reproduction": {
+        "url": "https://www.getlumavo.com/",
+        "viewport": {
+         "nom": "mobile",
+         "largeur": 390,
+         "hauteur": 844,
+         "mobile": true
+        },
+        "action": {
+         "id": "a22",
+         "action": {
+          "type": "naviguer",
+          "url": "https://www.getlumavo.com/"
+         },
+         "page": "https://www.getlumavo.com/",
+         "viewport": "mobile",
+         "debut": "2026-09-25T10:39:51.384Z",
+         "fin": "2026-09-25T10:40:07.982Z",
+         "resultat": "ok"
+        },
+        "actionsPrealables": []
+       },
+       "preuves": [
+        {
+         "viewport": "mobile",
+         "page": "https://www.getlumavo.com/",
+         "actionId": "a22",
+         "type": "reponse-reseau",
+         "horodatage": "2026-09-25T10:40:06.950Z",
+         "urlRessource": "https://www.getlumavo.com/demo/showcase-2.mp4",
+         "methode": "GET",
+         "statut": 206,
+         "typeRessource": "media",
+         "dureeMs": 10355.467,
+         "interne": true
+        }
+       ],
+       "element": {
+        "balise": "media",
+        "selecteur": "/demo/showcase-2.mp4",
+        "attributs": {
+         "src": "https://www.getlumavo.com/demo/showcase-2.mp4"
+        }
+       },
+       "observations": [
+        {
+         "viewport": "mobile"
+        }
+       ]
+      }
+     ],
+     "localisations": [
+      {
+       "urlOuEtape": "https://www.getlumavo.com/",
+       "element": {
+        "balise": "media",
+        "selecteur": "/demo/showcase-2.mp4",
+        "attributs": {
+         "src": "https://www.getlumavo.com/demo/showcase-2.mp4"
+        }
+       }
+      }
+     ],
+     "observations": [
+      {
+       "viewport": "mobile"
+      }
+     ],
+     "confiance": 0.7,
+     "descriptions": [
+      "reponse-lente"
+     ]
+    },
+    "verdict": "non-reproduite",
+    "motif": "jamais-reproduite",
+    "tentatives": [
+     {
+      "numero": 1,
+      "viewport": "mobile",
+      "reproduite": false,
+      "echecOutillage": false,
+      "dureeMs": 23834,
+      "observations": {
+       "nbPages": 1,
+       "statutDocument": 200,
+       "nbActions": 2,
+       "nbActionsPrevues": 2,
+       "arreteA": null,
+       "nbSignaux": 48,
+       "statuts": [
+        200,
+        206
+       ],
+       "reponsesHors2xx": [],
+       "echecsReseau": [],
+       "requetesEnAttente": []
+      }
+     },
+     {
+      "numero": 2,
+      "viewport": "mobile",
+      "reproduite": false,
+      "echecOutillage": false,
+      "dureeMs": 22415,
+      "observations": {
+       "nbPages": 1,
+       "statutDocument": 200,
+       "nbActions": 2,
+       "nbActionsPrevues": 2,
+       "arreteA": null,
+       "nbSignaux": 48,
+       "statuts": [
+        200,
+        206
+       ],
+       "reponsesHors2xx": [],
+       "echecsReseau": [],
+       "requetesEnAttente": []
+      }
+     }
+    ],
+    "tauxReproduction": 0,
+    "confianceInitiale": 0.7,
+    "confianceFinale": 0.63,
+    "coutApi": 0
+   }
+  }
+ ],
+ "groupes": [
+  {
+   "groupe": {
+    "cle": "reseau:GET:/gsi/client",
+    "representant": {
+     "categorie": "fonctionnel",
+     "description": "dependance-tierce-en-echec",
+     "urlOuEtape": "https://www.getlumavo.com/login",
+     "graviteEstimee": "mineur",
+     "confiance": 0.7,
+     "detecteur": "d-http",
+     "reproduction": {
+      "url": "https://www.getlumavo.com/login",
+      "viewport": {
+       "nom": "desktop",
+       "largeur": 1280,
+       "hauteur": 800,
+       "mobile": false
+      },
+      "action": {
+       "id": "a8",
+       "action": {
+        "type": "naviguer",
+        "url": "https://www.getlumavo.com/login"
+       },
+       "page": "https://www.getlumavo.com/verify",
+       "viewport": "desktop",
+       "debut": "2026-09-25T10:39:13.934Z",
+       "fin": "2026-09-25T10:39:17.462Z",
+       "resultat": "ok",
+       "decision": {
+        "politique": "deterministe"
+       }
+      },
+      "actionsPrealables": []
+     },
+     "preuves": [
+      {
+       "viewport": "desktop",
+       "page": "https://www.getlumavo.com/login",
+       "actionId": "a8",
+       "type": "requete-echouee",
+       "horodatage": "2026-09-25T10:39:16.379Z",
+       "urlRessource": "https://accounts.google.com/gsi/client",
+       "methode": "GET",
+       "typeRessource": "script",
+       "erreur": "net::ERR_BLOCKED_BY_ORB",
+       "cadrePrincipal": false,
+       "interne": false
+      },
+      {
+       "viewport": "mobile",
+       "page": "https://www.getlumavo.com/login",
+       "actionId": "a29",
+       "type": "requete-echouee",
+       "horodatage": "2026-09-25T10:40:33.501Z",
+       "urlRessource": "https://accounts.google.com/gsi/client",
+       "methode": "GET",
+       "typeRessource": "script",
+       "erreur": "net::ERR_BLOCKED_BY_ORB",
+       "cadrePrincipal": false,
+       "interne": false
+      }
+     ],
+     "element": {
+      "balise": "script",
+      "selecteur": "/gsi/client",
+      "attributs": {
+       "src": "https://accounts.google.com/gsi/client"
+      }
+     },
+     "observations": [
+      {
+       "viewport": "desktop"
+      },
+      {
+       "viewport": "mobile"
+      }
+     ]
+    },
+    "membres": [
+     {
+      "categorie": "fonctionnel",
+      "description": "dependance-tierce-en-echec",
+      "urlOuEtape": "https://www.getlumavo.com/login",
+      "graviteEstimee": "mineur",
+      "confiance": 0.7,
+      "detecteur": "d-http",
+      "reproduction": {
+       "url": "https://www.getlumavo.com/login",
+       "viewport": {
+        "nom": "desktop",
+        "largeur": 1280,
+        "hauteur": 800,
+        "mobile": false
+       },
+       "action": {
+        "id": "a8",
+        "action": {
+         "type": "naviguer",
+         "url": "https://www.getlumavo.com/login"
+        },
+        "page": "https://www.getlumavo.com/verify",
+        "viewport": "desktop",
+        "debut": "2026-09-25T10:39:13.934Z",
+        "fin": "2026-09-25T10:39:17.462Z",
+        "resultat": "ok",
+        "decision": {
+         "politique": "deterministe"
+        }
+       },
+       "actionsPrealables": []
+      },
+      "preuves": [
+       {
+        "viewport": "desktop",
+        "page": "https://www.getlumavo.com/login",
+        "actionId": "a8",
+        "type": "requete-echouee",
+        "horodatage": "2026-09-25T10:39:16.379Z",
+        "urlRessource": "https://accounts.google.com/gsi/client",
+        "methode": "GET",
+        "typeRessource": "script",
+        "erreur": "net::ERR_BLOCKED_BY_ORB",
+        "cadrePrincipal": false,
+        "interne": false
+       },
+       {
+        "viewport": "mobile",
+        "page": "https://www.getlumavo.com/login",
+        "actionId": "a29",
+        "type": "requete-echouee",
+        "horodatage": "2026-09-25T10:40:33.501Z",
+        "urlRessource": "https://accounts.google.com/gsi/client",
+        "methode": "GET",
+        "typeRessource": "script",
+        "erreur": "net::ERR_BLOCKED_BY_ORB",
+        "cadrePrincipal": false,
+        "interne": false
+       }
+      ],
+      "element": {
+       "balise": "script",
+       "selecteur": "/gsi/client",
+       "attributs": {
+        "src": "https://accounts.google.com/gsi/client"
+       }
+      },
+      "observations": [
+       {
+        "viewport": "desktop"
+       },
+       {
+        "viewport": "mobile"
+       }
+      ]
+     }
+    ],
+    "localisations": [
+     {
+      "urlOuEtape": "https://www.getlumavo.com/login",
+      "element": {
+       "balise": "script",
+       "selecteur": "/gsi/client",
+       "attributs": {
+        "src": "https://accounts.google.com/gsi/client"
+       }
+      }
+     }
+    ],
+    "observations": [
+     {
+      "viewport": "desktop"
+     },
+     {
+      "viewport": "mobile"
+     }
+    ],
+    "confiance": 0.7,
+    "descriptions": [
+     "dependance-tierce-en-echec"
+    ]
+   },
+   "verdict": "confirmee",
+   "motif": "reproduite",
+   "tentatives": [
+    {
+     "numero": 1,
+     "viewport": "desktop",
+     "reproduite": true,
+     "echecOutillage": false,
+     "dureeMs": 6609,
+     "observations": {
+      "nbPages": 1,
+      "statutDocument": 200,
+      "nbActions": 2,
+      "nbActionsPrevues": 2,
+      "arreteA": null,
+      "nbSignaux": 43,
+      "statuts": [
+       200
+      ],
+      "reponsesHors2xx": [],
+      "echecsReseau": [
+       "net::ERR_BLOCKED_BY_ORB GET https://accounts.google.com/gsi/client"
+      ],
+      "requetesEnAttente": []
+     }
+    },
+    {
+     "numero": 2,
+     "viewport": "desktop",
+     "reproduite": true,
+     "echecOutillage": false,
+     "dureeMs": 8502,
+     "observations": {
+      "nbPages": 1,
+      "statutDocument": 200,
+      "nbActions": 2,
+      "nbActionsPrevues": 2,
+      "arreteA": null,
+      "nbSignaux": 43,
+      "statuts": [
+       200
+      ],
+      "reponsesHors2xx": [],
+      "echecsReseau": [
+       "net::ERR_BLOCKED_BY_ORB GET https://accounts.google.com/gsi/client"
+      ],
+      "requetesEnAttente": []
+     }
+    }
+   ],
+   "tauxReproduction": 1,
+   "confianceInitiale": 0.7,
+   "confianceFinale": 0.735,
+   "coutApi": 0
+  },
+  {
+   "groupe": {
+    "cle": "reseau:GET:/pricing",
+    "representant": {
+     "categorie": "performance",
+     "description": "reponse-lente",
+     "urlOuEtape": "https://www.getlumavo.com/pricing",
+     "graviteEstimee": "important",
+     "confiance": 0.7,
+     "detecteur": "d-lenteur",
+     "reproduction": {
+      "url": "https://www.getlumavo.com/pricing",
+      "viewport": {
+       "nom": "desktop",
+       "largeur": 1280,
+       "hauteur": 800,
+       "mobile": false
+      },
+      "action": {
+       "id": "a2",
+       "action": {
+        "type": "naviguer",
+        "url": "https://www.getlumavo.com/pricing"
+       },
+       "page": "https://www.getlumavo.com/",
+       "viewport": "desktop",
+       "debut": "2026-09-25T10:38:47.408Z",
+       "fin": "2026-09-25T10:39:00.521Z",
+       "resultat": "ok",
+       "decision": {
+        "politique": "deterministe"
+       }
+      },
+      "actionsPrealables": []
+     },
+     "preuves": [
+      {
+       "viewport": "desktop",
+       "page": "https://www.getlumavo.com/pricing",
+       "actionId": "a2",
+       "type": "reponse-reseau",
+       "horodatage": "2026-09-25T10:38:58.919Z",
+       "urlRessource": "https://www.getlumavo.com/pricing",
+       "methode": "GET",
+       "statut": 200,
+       "typeRessource": "document",
+       "dureeMs": 10499.224,
+       "interne": true
+      }
+     ],
+     "element": {
+      "balise": "document",
+      "selecteur": "/pricing",
+      "attributs": {
+       "src": "https://www.getlumavo.com/pricing"
+      }
+     },
+     "observations": [
+      {
+       "viewport": "desktop"
+      }
+     ]
+    },
+    "membres": [
+     {
+      "categorie": "performance",
+      "description": "reponse-lente",
+      "urlOuEtape": "https://www.getlumavo.com/pricing",
+      "graviteEstimee": "important",
+      "confiance": 0.7,
+      "detecteur": "d-lenteur",
+      "reproduction": {
+       "url": "https://www.getlumavo.com/pricing",
+       "viewport": {
+        "nom": "desktop",
+        "largeur": 1280,
+        "hauteur": 800,
+        "mobile": false
+       },
+       "action": {
+        "id": "a2",
+        "action": {
+         "type": "naviguer",
+         "url": "https://www.getlumavo.com/pricing"
+        },
+        "page": "https://www.getlumavo.com/",
+        "viewport": "desktop",
+        "debut": "2026-09-25T10:38:47.408Z",
+        "fin": "2026-09-25T10:39:00.521Z",
+        "resultat": "ok",
+        "decision": {
+         "politique": "deterministe"
+        }
+       },
+       "actionsPrealables": []
+      },
+      "preuves": [
+       {
+        "viewport": "desktop",
+        "page": "https://www.getlumavo.com/pricing",
+        "actionId": "a2",
+        "type": "reponse-reseau",
+        "horodatage": "2026-09-25T10:38:58.919Z",
+        "urlRessource": "https://www.getlumavo.com/pricing",
+        "methode": "GET",
+        "statut": 200,
+        "typeRessource": "document",
+        "dureeMs": 10499.224,
+        "interne": true
+       }
+      ],
+      "element": {
+       "balise": "document",
+       "selecteur": "/pricing",
+       "attributs": {
+        "src": "https://www.getlumavo.com/pricing"
+       }
+      },
+      "observations": [
+       {
+        "viewport": "desktop"
+       }
+      ]
+     }
+    ],
+    "localisations": [
+     {
+      "urlOuEtape": "https://www.getlumavo.com/pricing",
+      "element": {
+       "balise": "document",
+       "selecteur": "/pricing",
+       "attributs": {
+        "src": "https://www.getlumavo.com/pricing"
+       }
+      }
+     }
+    ],
+    "observations": [
+     {
+      "viewport": "desktop"
+     }
+    ],
+    "confiance": 0.7,
+    "descriptions": [
+     "reponse-lente"
+    ]
+   },
+   "verdict": "non-reproduite",
+   "motif": "jamais-reproduite",
+   "tentatives": [
+    {
+     "numero": 1,
+     "viewport": "desktop",
+     "reproduite": false,
+     "echecOutillage": false,
+     "dureeMs": 7038,
+     "observations": {
+      "nbPages": 1,
+      "statutDocument": 200,
+      "nbActions": 2,
+      "nbActionsPrevues": 2,
+      "arreteA": null,
+      "nbSignaux": 33,
+      "statuts": [
+       200
+      ],
+      "reponsesHors2xx": [],
+      "echecsReseau": [],
+      "requetesEnAttente": []
+     }
+    },
+    {
+     "numero": 2,
+     "viewport": "desktop",
+     "reproduite": false,
+     "echecOutillage": false,
+     "dureeMs": 6942,
+     "observations": {
+      "nbPages": 1,
+      "statutDocument": 200,
+      "nbActions": 2,
+      "nbActionsPrevues": 2,
+      "arreteA": null,
+      "nbSignaux": 33,
+      "statuts": [
+       200
+      ],
+      "reponsesHors2xx": [],
+      "echecsReseau": [],
+      "requetesEnAttente": []
+     }
+    }
+   ],
+   "tauxReproduction": 0,
+   "confianceInitiale": 0.7,
+   "confianceFinale": 0.63,
+   "coutApi": 0
+  },
+  {
+   "groupe": {
+    "cle": "reseau:GET:/demo/showcase-2.mp4",
+    "representant": {
+     "categorie": "performance",
+     "description": "reponse-lente",
+     "urlOuEtape": "https://www.getlumavo.com/",
+     "graviteEstimee": "important",
+     "confiance": 0.7,
+     "detecteur": "d-lenteur",
+     "reproduction": {
+      "url": "https://www.getlumavo.com/",
+      "viewport": {
+       "nom": "mobile",
+       "largeur": 390,
+       "hauteur": 844,
+       "mobile": true
+      },
+      "action": {
+       "id": "a22",
+       "action": {
+        "type": "naviguer",
+        "url": "https://www.getlumavo.com/"
+       },
+       "page": "https://www.getlumavo.com/",
+       "viewport": "mobile",
+       "debut": "2026-09-25T10:39:51.384Z",
+       "fin": "2026-09-25T10:40:07.982Z",
+       "resultat": "ok"
+      },
+      "actionsPrealables": []
+     },
+     "preuves": [
+      {
+       "viewport": "mobile",
+       "page": "https://www.getlumavo.com/",
+       "actionId": "a22",
+       "type": "reponse-reseau",
+       "horodatage": "2026-09-25T10:40:06.950Z",
+       "urlRessource": "https://www.getlumavo.com/demo/showcase-2.mp4",
+       "methode": "GET",
+       "statut": 206,
+       "typeRessource": "media",
+       "dureeMs": 10355.467,
+       "interne": true
+      }
+     ],
+     "element": {
+      "balise": "media",
+      "selecteur": "/demo/showcase-2.mp4",
+      "attributs": {
+       "src": "https://www.getlumavo.com/demo/showcase-2.mp4"
+      }
+     },
+     "observations": [
+      {
+       "viewport": "mobile"
+      }
+     ]
+    },
+    "membres": [
+     {
+      "categorie": "performance",
+      "description": "reponse-lente",
+      "urlOuEtape": "https://www.getlumavo.com/",
+      "graviteEstimee": "important",
+      "confiance": 0.7,
+      "detecteur": "d-lenteur",
+      "reproduction": {
+       "url": "https://www.getlumavo.com/",
+       "viewport": {
+        "nom": "mobile",
+        "largeur": 390,
+        "hauteur": 844,
+        "mobile": true
+       },
+       "action": {
+        "id": "a22",
+        "action": {
+         "type": "naviguer",
+         "url": "https://www.getlumavo.com/"
+        },
+        "page": "https://www.getlumavo.com/",
+        "viewport": "mobile",
+        "debut": "2026-09-25T10:39:51.384Z",
+        "fin": "2026-09-25T10:40:07.982Z",
+        "resultat": "ok"
+       },
+       "actionsPrealables": []
+      },
+      "preuves": [
+       {
+        "viewport": "mobile",
+        "page": "https://www.getlumavo.com/",
+        "actionId": "a22",
+        "type": "reponse-reseau",
+        "horodatage": "2026-09-25T10:40:06.950Z",
+        "urlRessource": "https://www.getlumavo.com/demo/showcase-2.mp4",
+        "methode": "GET",
+        "statut": 206,
+        "typeRessource": "media",
+        "dureeMs": 10355.467,
+        "interne": true
+       }
+      ],
+      "element": {
+       "balise": "media",
+       "selecteur": "/demo/showcase-2.mp4",
+       "attributs": {
+        "src": "https://www.getlumavo.com/demo/showcase-2.mp4"
+       }
+      },
+      "observations": [
+       {
+        "viewport": "mobile"
+       }
+      ]
+     }
+    ],
+    "localisations": [
+     {
+      "urlOuEtape": "https://www.getlumavo.com/",
+      "element": {
+       "balise": "media",
+       "selecteur": "/demo/showcase-2.mp4",
+       "attributs": {
+        "src": "https://www.getlumavo.com/demo/showcase-2.mp4"
+       }
+      }
+     }
+    ],
+    "observations": [
+     {
+      "viewport": "mobile"
+     }
+    ],
+    "confiance": 0.7,
+    "descriptions": [
+     "reponse-lente"
+    ]
+   },
+   "verdict": "non-reproduite",
+   "motif": "jamais-reproduite",
+   "tentatives": [
+    {
+     "numero": 1,
+     "viewport": "mobile",
+     "reproduite": false,
+     "echecOutillage": false,
+     "dureeMs": 23834,
+     "observations": {
+      "nbPages": 1,
+      "statutDocument": 200,
+      "nbActions": 2,
+      "nbActionsPrevues": 2,
+      "arreteA": null,
+      "nbSignaux": 48,
+      "statuts": [
+       200,
+       206
+      ],
+      "reponsesHors2xx": [],
+      "echecsReseau": [],
+      "requetesEnAttente": []
+     }
+    },
+    {
+     "numero": 2,
+     "viewport": "mobile",
+     "reproduite": false,
+     "echecOutillage": false,
+     "dureeMs": 22415,
+     "observations": {
+      "nbPages": 1,
+      "statutDocument": 200,
+      "nbActions": 2,
+      "nbActionsPrevues": 2,
+      "arreteA": null,
+      "nbSignaux": 48,
+      "statuts": [
+       200,
+       206
+      ],
+      "reponsesHors2xx": [],
+      "echecsReseau": [],
+      "requetesEnAttente": []
+     }
+    }
+   ],
+   "tauxReproduction": 0,
+   "confianceInitiale": 0.7,
+   "confianceFinale": 0.63,
+   "coutApi": 0
+  },
+  {
+   "groupe": {
+    "cle": "reseau:GET:/",
+    "representant": {
+     "categorie": "performance",
+     "description": "reponse-lente",
+     "urlOuEtape": "https://www.getlumavo.com/",
+     "graviteEstimee": "important",
+     "confiance": 0.7,
+     "detecteur": "d-lenteur",
+     "reproduction": {
+      "url": "https://www.getlumavo.com/",
+      "viewport": {
+       "nom": "mobile",
+       "largeur": 390,
+       "hauteur": 844,
+       "mobile": true
+      },
+      "action": {
+       "id": "r2",
+       "action": {
+        "type": "naviguer",
+        "url": "https://www.getlumavo.com/"
+       },
+       "page": "https://www.getlumavo.com/",
+       "viewport": "mobile",
+       "debut": "2026-09-25T10:41:47.821Z",
+       "fin": "2026-09-25T10:42:00.722Z",
+       "resultat": "ok"
+      },
+      "actionsPrealables": []
+     },
+     "preuves": [
+      {
+       "viewport": "mobile",
+       "page": "https://www.getlumavo.com/",
+       "actionId": "r2",
+       "type": "reponse-reseau",
+       "horodatage": "2026-09-25T10:41:58.942Z",
+       "urlRessource": "https://www.getlumavo.com/",
+       "methode": "GET",
+       "statut": 200,
+       "typeRessource": "document",
+       "dureeMs": 11110.414,
+       "interne": true
+      }
+     ],
+     "element": {
+      "balise": "document",
+      "selecteur": "/",
+      "attributs": {
+       "src": "https://www.getlumavo.com/"
+      }
+     },
+     "observations": [
+      {
+       "viewport": "mobile"
+      }
+     ]
+    },
+    "membres": [
+     {
+      "categorie": "performance",
+      "description": "reponse-lente",
+      "urlOuEtape": "https://www.getlumavo.com/",
+      "graviteEstimee": "important",
+      "confiance": 0.7,
+      "detecteur": "d-lenteur",
+      "reproduction": {
+       "url": "https://www.getlumavo.com/",
+       "viewport": {
+        "nom": "mobile",
+        "largeur": 390,
+        "hauteur": 844,
+        "mobile": true
+       },
+       "action": {
+        "id": "r2",
+        "action": {
+         "type": "naviguer",
+         "url": "https://www.getlumavo.com/"
+        },
+        "page": "https://www.getlumavo.com/",
+        "viewport": "mobile",
+        "debut": "2026-09-25T10:41:47.821Z",
+        "fin": "2026-09-25T10:42:00.722Z",
+        "resultat": "ok"
+       },
+       "actionsPrealables": []
+      },
+      "preuves": [
+       {
+        "viewport": "mobile",
+        "page": "https://www.getlumavo.com/",
+        "actionId": "r2",
+        "type": "reponse-reseau",
+        "horodatage": "2026-09-25T10:41:58.942Z",
+        "urlRessource": "https://www.getlumavo.com/",
+        "methode": "GET",
+        "statut": 200,
+        "typeRessource": "document",
+        "dureeMs": 11110.414,
+        "interne": true
+       }
+      ],
+      "element": {
+       "balise": "document",
+       "selecteur": "/",
+       "attributs": {
+        "src": "https://www.getlumavo.com/"
+       }
+      },
+      "observations": [
+       {
+        "viewport": "mobile"
+       }
+      ]
+     },
+     {
+      "categorie": "performance",
+      "description": "reponse-lente",
+      "urlOuEtape": "https://www.getlumavo.com/",
+      "graviteEstimee": "important",
+      "confiance": 0.7,
+      "detecteur": "d-lenteur",
+      "reproduction": {
+       "url": "https://www.getlumavo.com/",
+       "viewport": {
+        "nom": "mobile",
+        "largeur": 390,
+        "hauteur": 844,
+        "mobile": true
+       },
+       "action": {
+        "id": "r2",
+        "action": {
+         "type": "naviguer",
+         "url": "https://www.getlumavo.com/"
+        },
+        "page": "https://www.getlumavo.com/",
+        "viewport": "mobile",
+        "debut": "2026-09-25T10:42:09.515Z",
+        "fin": "2026-09-25T10:42:23.147Z",
+        "resultat": "ok"
+       },
+       "actionsPrealables": []
+      },
+      "preuves": [
+       {
+        "viewport": "mobile",
+        "page": "https://www.getlumavo.com/",
+        "actionId": "r2",
+        "type": "reponse-reseau",
+        "horodatage": "2026-09-25T10:42:21.406Z",
+        "urlRessource": "https://www.getlumavo.com/",
+        "methode": "GET",
+        "statut": 200,
+        "typeRessource": "document",
+        "dureeMs": 11881.785,
+        "interne": true
+       }
+      ],
+      "element": {
+       "balise": "document",
+       "selecteur": "/",
+       "attributs": {
+        "src": "https://www.getlumavo.com/"
+       }
+      },
+      "observations": [
+       {
+        "viewport": "mobile"
+       }
+      ]
+     }
+    ],
+    "localisations": [
+     {
+      "urlOuEtape": "https://www.getlumavo.com/",
+      "element": {
+       "balise": "document",
+       "selecteur": "/",
+       "attributs": {
+        "src": "https://www.getlumavo.com/"
+       }
+      }
+     }
+    ],
+    "observations": [
+     {
+      "viewport": "mobile"
+     }
+    ],
+    "confiance": 0.7,
+    "descriptions": [
+     "reponse-lente"
+    ]
+   },
+   "verdict": "confirmee",
+   "motif": "constatee-au-rejeu",
+   "tentatives": [],
+   "tauxReproduction": null,
+   "confianceInitiale": 0.7,
+   "confianceFinale": 0.7,
+   "coutApi": 0
+  }
+ ],
+ "decouvertes": [
+  {
+   "categorie": "performance",
+   "description": "reponse-lente",
+   "urlOuEtape": "https://www.getlumavo.com/",
+   "graviteEstimee": "important",
+   "confiance": 0.7,
+   "detecteur": "d-lenteur",
+   "reproduction": {
+    "url": "https://www.getlumavo.com/",
+    "viewport": {
+     "nom": "mobile",
+     "largeur": 390,
+     "hauteur": 844,
+     "mobile": true
+    },
+    "action": {
+     "id": "r2",
+     "action": {
+      "type": "naviguer",
+      "url": "https://www.getlumavo.com/"
+     },
+     "page": "https://www.getlumavo.com/",
+     "viewport": "mobile",
+     "debut": "2026-09-25T10:41:47.821Z",
+     "fin": "2026-09-25T10:42:00.722Z",
+     "resultat": "ok"
+    },
+    "actionsPrealables": []
+   },
+   "preuves": [
+    {
+     "viewport": "mobile",
+     "page": "https://www.getlumavo.com/",
+     "actionId": "r2",
+     "type": "reponse-reseau",
+     "horodatage": "2026-09-25T10:41:58.942Z",
+     "urlRessource": "https://www.getlumavo.com/",
+     "methode": "GET",
+     "statut": 200,
+     "typeRessource": "document",
+     "dureeMs": 11110.414,
+     "interne": true
+    }
+   ],
+   "element": {
+    "balise": "document",
+    "selecteur": "/",
+    "attributs": {
+     "src": "https://www.getlumavo.com/"
+    }
+   },
+   "observations": [
+    {
+     "viewport": "mobile"
+    }
+   ],
+   "verdict": "confirmee",
+   "motif": "constatee-au-rejeu",
+   "groupe": "reseau:GET:/",
+   "localisations": [
+    {
+     "urlOuEtape": "https://www.getlumavo.com/",
+     "element": {
+      "balise": "document",
+      "selecteur": "/",
+      "attributs": {
+       "src": "https://www.getlumavo.com/"
+      }
+     }
+    }
+   ]
+  }
+ ],
+ "coutApiParFamille": {
+  "exploration": 0,
+  "profilage": 0,
+  "confirmation": 0,
+  "redaction": 0
+ },
+ "rapportBusiness": {
+  "langue": "fr",
+  "synthese": "",
+  "sections": [
+   {
+    "id": "s1",
+    "groupe": "reseau:GET:/",
+    "categorie": "performance",
+    "gravite": "important",
+    "statut": "constatee-au-rejeu",
+    "statutFormule": "Détecté pendant nos vérifications ; non re-testé.",
+    "localisations": [
+     {
+      "page": "/",
+      "viewports": [
+       "mobile"
+      ]
+     }
+    ],
+    "titre": "",
+    "constat": "",
+    "impact": "",
+    "actionSuggeree": ""
+   },
+   {
+    "id": "s2",
+    "groupe": "reseau:GET:/gsi/client",
+    "categorie": "fonctionnel",
+    "gravite": "mineur",
+    "statut": "confirmee",
+    "statutFormule": "Constaté, puis reproduit lors de nos 2 vérifications indépendantes.",
+    "localisations": [
+     {
+      "page": "/login",
+      "viewports": [
+       "desktop",
+       "mobile"
+      ]
+     }
+    ],
+    "titre": "",
+    "constat": "",
+    "impact": "",
+    "actionSuggeree": ""
+   }
+  ],
+  "nbEcartes": 2,
+  "nbNonVerifies": 0,
+  "ligneMethode": "",
+  "nbSectionsRedigees": 0,
+  "nbLocalisationsMasquees": null,
+  "soumissionsTestees": false,
+  "sansProse": true
+ }
+}
