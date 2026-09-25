@@ -27,6 +27,7 @@
       "scenarios": "Scénarios",
       "detection": "Détection",
       "verdictsCorrects": "Verdicts corrects",
+      "gravitesConformes": "Gravités conformes",
       "detectes": "Détectés/attendus",
       "fauxPositifs": "Faux positifs",
       "rates": "Ratés",

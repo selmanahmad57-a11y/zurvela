@@ -369,3 +369,31 @@ dette est levée (le commit qui la lève renvoie à ce fichier).
   dans un contexte passé d'appel en appel.
 - **Ce qui la garde en attendant** : le contrat est écrit en toutes lettres
   dans `core/ia/plafond.ts`, sur l'interface `PorteeBudget`.
+
+## 18. La politique déterministe ne choisit pas dans le menu énuméré (2026-09-25, brique 6a)
+
+- **Quoi** : `politiqueDeterministe` fabrique son action depuis l'état de la
+  page et **ne lit pas l'énumération** — « c'est délibéré », dit son en-tête,
+  au nom de la gratuité. Tant que le menu énuméré et l'état de la page
+  coïncidaient, c'était sans effet. Le gate de soumission (`interaction.soumission:
+  'aucune'`) les fait diverger : le menu ne propose plus `soumettre`, la
+  déterministe le propose quand même.
+- **Ce qui se passe alors, mesuré** : la couche 1 (`COUCHE_ENUMERATION`)
+  refuse l'action, appelle la politique de secours — qui est la même
+  déterministe, qui propose la même chose — et refuse encore. Rien n'est
+  exécuté, le scan continue. Sur le scénario
+  `formulaire-contact--f01-v01--fr-sans-soumission` : **2 « replis par
+  décision subis »** (un par viewport), dans une colonne qui ne mesurait
+  jusqu'ici que les replis de l'IA.
+- **Pourquoi ce n'est pas corrigé ici** : la propriété de SÉCURITÉ tient — la
+  couche 1 fait exactement ce pour quoi elle existe, et le compteur l'a dit.
+  Mais la correction naturelle (prendre la PREMIÈRE action énumérée, qui est
+  déjà triée dans l'ordre de priorité déterministe) renverse une décision de
+  conception écrite et justifiée. Elle est petite, et elle se vérifie par
+  trois runs identiques ; elle n'est pas la mienne à prendre en fin de brique.
+- **Ce que cela coûte en attendant** : deux cycles de décision perdus par page
+  à formulaire sous interaction restreinte, et une colonne « replis » dont la
+  cause n'est plus univoque. Rien pour le client.
+- **Condition de levée** : arbitrage sur l'en-tête de `politique.ts`. Si la
+  déterministe lit l'énumération, sa gratuité est intacte (l'énumération est
+  déjà calculée) et tout gate futur la gouverne par construction.

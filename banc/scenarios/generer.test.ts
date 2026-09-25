@@ -64,7 +64,7 @@ describe('genererScenarios (gabarit factice)', () => {
 
   it('suit l’ordre du registre du gabarit et l’ordre déclaré des combinaisons', () => {
     const inverse = gabaritFactice('g', [...BUGS_FACTICES].reverse());
-    const ids = genererScenarios(inverse, configFactice({ langues: ['fr'], scenarios: { dossier: 'x', jetonSain: 'ok', combinaisons: { g: [['V01', 'F02'], ['M01', 'F01']] }, contraintes: {}, croises: [] } })).map((scenario) => scenario.id);
+    const ids = genererScenarios(inverse, configFactice({ langues: ['fr'], scenarios: { dossier: 'x', jetonSain: 'ok', combinaisons: { g: [['V01', 'F02'], ['M01', 'F01']] }, contraintes: {}, croises: [], sansSoumission: [] } })).map((scenario) => scenario.id);
     expect(ids).toEqual([
       'g--ok--fr',
       'g--l01--fr',
@@ -81,12 +81,12 @@ describe('genererScenarios (gabarit factice)', () => {
   });
 
   it('lève si une combinaison cite un bug inconnu du gabarit', () => {
-    const config = configFactice({ scenarios: { dossier: 'x', jetonSain: 'sain', combinaisons: { 'gabarit-factice': [['F01', 'X99']] }, contraintes: {}, croises: [] } });
+    const config = configFactice({ scenarios: { dossier: 'x', jetonSain: 'sain', combinaisons: { 'gabarit-factice': [['F01', 'X99']] }, contraintes: {}, croises: [], sansSoumission: [] } });
     expect(() => genererScenarios(gabarit, config)).toThrow(/X99/);
   });
 
   it('lève si deux combinaisons donnent le même identifiant', () => {
-    const config = configFactice({ scenarios: { dossier: 'x', jetonSain: 'sain', combinaisons: { 'gabarit-factice': [['F01', 'M01'], ['F01', 'M01']] }, contraintes: {}, croises: [] } });
+    const config = configFactice({ scenarios: { dossier: 'x', jetonSain: 'sain', combinaisons: { 'gabarit-factice': [['F01', 'M01'], ['F01', 'M01']] }, contraintes: {}, croises: [], sansSoumission: [] } });
     expect(() => genererScenarios(gabarit, config)).toThrow(/double/);
   });
 });
@@ -140,7 +140,11 @@ describe('genererScenarios (registre réel)', () => {
     // langues à eux seuls, et c'est ce qui les rend non dérivables de la
     // grille. Ils sont donc comptés à part, jamais absorbés dans le produit.
     const croises = config.scenarios.croises.filter((croise) => croise.gabarit === gabarit.nom).length;
-    expect(scenarios).toHaveLength(attendusParLangue * config.langues.length + croises);
+    // Les scénarios à INTERACTION RESTREINTE s'ajoutent de la même façon :
+    // leur langue est déclarée une par une, parce que ce qu'ils mesurent — un
+    // mode du moteur — ne dépend pas de la langue du site.
+    const restreints = config.scenarios.sansSoumission.filter((restreint) => restreint.gabarit === gabarit.nom).length;
+    expect(scenarios).toHaveLength(attendusParLangue * config.langues.length + croises + restreints);
     expect(scenarios.map((scenario) => scenario.id)).toContain('formulaire-contact--f01-m01--fr');
     expect(scenarios.map((scenario) => scenario.id)).toContain('formulaire-contact--sain--en');
   });
@@ -170,7 +174,7 @@ describe('genererScenarios — scénarios croisés', () => {
   function configCroisee(croises = [croise]): ConfigBanc {
     return configFactice({
       langues: ['fr'],
-      scenarios: { dossier: 'banc/scenarios', jetonSain: 'sain', combinaisons: {}, contraintes: {}, croises },
+      scenarios: { dossier: 'banc/scenarios', jetonSain: 'sain', combinaisons: {}, contraintes: {}, croises, sansSoumission: [] },
     });
   }
 

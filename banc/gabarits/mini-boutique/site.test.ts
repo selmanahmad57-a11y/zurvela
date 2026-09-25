@@ -28,6 +28,7 @@ import {
   PAGE_DEVIS,
   PAGE_LIVRAISON,
   PAGE_PIEGE,
+  PAGE_PRIVEE,
   SELECTEUR_BOUTON_DEVIS,
 } from './structure.js';
 
@@ -95,10 +96,13 @@ describe('mini-boutique — déclaration du gabarit', () => {
     expect(miniBoutique.profilAttendu?.typeSite).not.toBe(profilage.valeurEchappement);
   });
 
-  it('déclare ses DEUX cibles, dans les deux sens, et chacune est une page réellement servie', () => {
+  it('déclare ses TROIS cibles, dans les deux sens, et chacune est une page réellement servie', () => {
     expect(miniBoutique.cibles).toEqual([
       { page: PAGE_DEVIS, atteinteAttendue: { [POLITIQUE_DETERMINISTE]: false, [POLITIQUE_IA]: true } },
       { page: PAGE_PIEGE, atteinteAttendue: { [POLITIQUE_DETERMINISTE]: false, [POLITIQUE_IA]: false } },
+      // La troisième nomme le bug qui lui donne son MOYEN : sans R02, aucun
+      // lien ne mène à `/prive`, et « jamais visitée » ne mesurerait rien.
+      { page: PAGE_PRIVEE, atteinteAttendue: { [POLITIQUE_DETERMINISTE]: false, [POLITIQUE_IA]: false }, moyenParBug: 'R02' },
     ]);
     for (const cible of miniBoutique.cibles ?? []) {
       expect(Object.keys(miniBoutique.routesPages)).toContain(cible.page);
@@ -109,8 +113,9 @@ describe('mini-boutique — déclaration du gabarit', () => {
     expect(budget()).toBeGreaterThan(0);
   });
 
-  it('porte F01 sur le formulaire critique, S03 sur l’accueil et S04 sur une fiche produit', () => {
-    expect(miniBoutique.bugs.map((bug) => bug.id)).toEqual(['F01', 'S03', 'S04']);
+  it('porte F01 sur le formulaire critique, R02 et S03 sur l’accueil, S04 sur une fiche produit', () => {
+    expect(miniBoutique.bugs.map((bug) => bug.id)).toEqual(['F01', 'R02', 'S03', 'S04']);
+    expect(miniBoutique.bugs.find((bug) => bug.id === 'R02')?.pages).toEqual([PAGE_ACCUEIL]);
     expect(miniBoutique.bugs.find((bug) => bug.id === 'F01')?.pages).toEqual([PAGE_DEVIS]);
     expect(miniBoutique.bugs.find((bug) => bug.id === 'S03')?.pages).toEqual([PAGE_ACCUEIL]);
     expect(miniBoutique.bugs.find((bug) => bug.id === 'S04')?.pages).toEqual([PAGE_CHARGE_MAINTENANCE]);

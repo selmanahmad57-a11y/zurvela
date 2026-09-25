@@ -66,6 +66,8 @@ function resoudreBugsActifs(
   gabarit: Gabarit,
   config: ConfigBanc,
   attendre: (delaiMs: number) => Promise<void>,
+  /** Origine du serveur tiers, déjà démarré ; `null` si aucun bug actif n'en demandait. */
+  origineTierce: string | null,
 ): BugActif[] {
   return scenario.bugsActifs.map((id) => {
     const bug = gabarit.bugs.find((candidat) => candidat.id === id);
@@ -74,8 +76,38 @@ function resoudreBugsActifs(
     }
     const parametres = { ...config.bugs[id], ...scenario.parametres?.[id] };
     bug.validerParametres?.(parametres);
-    return { bug, contexte: { parametres, langue: scenario.langue, etat: {}, attendre } };
+    return { bug, contexte: { parametres, langue: scenario.langue, etat: {}, attendre, origineTierce } };
   });
+}
+
+/**
+ * Les bugs du scénario qui réclament une SECONDE ORIGINE.
+ *
+ * Résolu AVANT les contextes, et c'est un ordre contraint : le port du serveur
+ * tiers n'existe qu'une fois celui-ci démarré, et un bug doit connaître cette
+ * origine au moment où il transforme la page. On lit donc la déclaration des
+ * bugs d'abord, on démarre ensuite, on construit les contextes en dernier.
+ */
+function demandeUneOrigineTierce(scenario: Scenario, gabarit: Gabarit): boolean {
+  return scenario.bugsActifs.some((id) => gabarit.bugs.find((bug) => bug.id === id)?.besoinOrigineTierce === true);
+}
+
+/**
+ * Le serveur TIERS : une seconde origine, délibérément pauvre.
+ *
+ * Il ne sert aucune page et ne rend qu'une seule chose — l'échec que le
+ * scénario a choisi. Son rôle n'est pas de simuler un site, c'est d'être
+ * AILLEURS : ce que le moteur doit distinguer, c'est l'origine d'une requête,
+ * pas la richesse de ce qu'elle renvoie.
+ */
+const STATUT_TIERS_EN_PANNE = 503;
+
+function gestionnaireTiers() {
+  return (req: IncomingMessage, res: ServerResponse): void => {
+    // Toute ressource de ce serveur est en panne, quelle qu'elle soit : c'est
+    // la dépendance tierce cassée que le gabarit vient chercher ici.
+    envoyer(res, STATUT_TIERS_EN_PANNE, { 'content-type': 'text/plain; charset=utf-8' }, 'tiers en panne', req.method === 'HEAD');
+  };
 }
 
 function envoyer(
@@ -267,6 +299,25 @@ function construireGestionnaire(gabarit: Gabarit, pipelines: Pipelines) {
       return;
     }
 
+    // `/robots.txt` : servi comme n'importe quelle route, et c'est tout ce que
+    // le banc en sait. Il ignore qui le lit ; le moteur, de son côté, le lit
+    // HORS de son contexte navigateur observé. Les deux chemins ne se croisent
+    // que sur le réseau — c'est ce qui garantit qu'un robots.txt absent reste
+    // un 404 que personne n'observe, et non une anomalie fabriquée par le
+    // moteur sur tout site qui n'en a pas.
+    if (chemin === '/robots.txt') {
+      if (!METHODES_LECTURE.includes(methode)) {
+        envoyer(res, 405, { allow: METHODES_LECTURE.join(', ') });
+        return;
+      }
+      if (gabarit.robotsTxt === undefined) {
+        envoyer(res, 404, {});
+        return;
+      }
+      envoyer(res, 200, { 'content-type': 'text/plain; charset=utf-8' }, gabarit.robotsTxt, sansCorps);
+      return;
+    }
+
     if (chemin.startsWith(`${gabarit.prefixeStatique}/`)) {
       if (!METHODES_LECTURE.includes(methode)) {
         envoyer(res, 405, { allow: METHODES_LECTURE.join(', ') });
@@ -324,12 +375,37 @@ export async function demarrerServeur(
   /** Temporisation des bugs de lenteur ; les tests l'injectent pour observer l'attente au lieu de la chronométrer. */
   options: { attendre?: (delaiMs: number) => Promise<void> } = {},
 ): Promise<ServeurScenario> {
-  const bugsActifs = resoudreBugsActifs(scenario, gabarit, config, options.attendre ?? attendreReellement);
+  // L'ORDRE EST CONTRAINT : le tiers d'abord (son port n'existe qu'une fois
+  // écouté), les contextes de bug ensuite (ils ont besoin de son origine).
+  const tiers = demandeUneOrigineTierce(scenario, gabarit) ? await ecouterSurUnPortLibre(gestionnaireTiers(), config) : null;
+  const bugsActifs = resoudreBugsActifs(scenario, gabarit, config, options.attendre ?? attendreReellement, tiers?.url ?? null);
   const dicoSite = await chargerDictionnaire(path.join(gabarit.dossierSite, gabarit.dossierLocales), scenario.langue);
   const pipelines = construirePipelines(scenario, gabarit, config, dicoSite, bugsActifs);
   await pipelines.verifier();
   const gestionnaire = construireGestionnaire(gabarit, pipelines);
 
+  const site = await ecouterSurUnPortLibre(gestionnaire, config).catch(async (erreur: unknown) => {
+    // Le tiers est déjà en écoute : le laisser derrière soi fuiterait un port
+    // à chaque scénario qui échoue à démarrer.
+    await tiers?.arreter();
+    throw erreur;
+  });
+
+  return {
+    url: site.url,
+    port: site.port,
+    origineTierce: tiers?.url ?? null,
+    async arreter() {
+      await Promise.all([site.arreter(), tiers?.arreter() ?? Promise.resolve()]);
+    },
+  };
+}
+
+/** Écoute sur le premier port libre de la plage configurée, ou lève. */
+async function ecouterSurUnPortLibre(
+  gestionnaire: (req: IncomingMessage, res: ServerResponse) => void,
+  config: ConfigBanc,
+): Promise<{ url: string; port: number; arreter(): Promise<void> }> {
   const premier = config.serveur.portDeBase;
   const dernier = premier + config.serveur.nombrePortsEssayes - 1;
   for (let port = premier; port <= dernier; port += 1) {

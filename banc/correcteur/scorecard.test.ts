@@ -151,6 +151,12 @@ describe('calculerScorecard', () => {
       nbSignalements: 5,
       nbFauxPositifs: 1,
       nbVerdictsCorrects: 2,
+      // Les doublures de ce test ne portent aucune anomalie appariée, donc
+      // aucune gravité n'y est PUBLIÉE : le dénominateur est nul, et le taux
+      // est `null` — « aucune gravité à juger » n'est pas « 0 % de gravités
+      // justes ».
+      nbGravitesConformes: 0,
+      nbGravitesMesurees: 0,
       nbCandidates: 10,
       nbGroupes: 8,
       nbGroupesRetenus: 4,
@@ -165,6 +171,7 @@ describe('calculerScorecard', () => {
       nbProfilsNonMesures: 0,
       tauxDetection: 60,
       tauxVerdictsCorrects: 40,
+      tauxGravitesConformes: null,
       tauxFauxPositifs: 20,
       tauxProfilsCorrects: null,
       tauxInertiesTenues: null,

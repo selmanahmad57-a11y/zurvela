@@ -17,6 +17,9 @@ export const F01: BugInjectable = {
   categorie: 'fonctionnel',
   gravite: 'bloquant',
   pages,
+  // Constatable UNIQUEMENT en soumettant le formulaire : sous interaction
+  // restreinte, ce bug est hors de portée et n'a pas d'attendu.
+  exigeSoumission: true,
   transformerHtml(html, chemin) {
     if (!pages.includes(chemin)) {
       return html;

@@ -126,6 +126,15 @@ export function apparier(rapport: Rapport, manifeste: Manifeste): { attendus: Re
       anomaliesAppariees,
       verdictRendu,
       bienJuge: verdictRendu === attendu.verdictAttendu,
+      // TOUTES les anomalies publiées pour cet attendu doivent porter la
+      // gravité annoncée, pas seulement l'une d'elles : le client les lit
+      // toutes, et une seule mal graduée suffit à l'envoyer au mauvais endroit.
+      ...(anomaliesAppariees.length === 0
+        ? {}
+        : {
+            graviteConforme: anomaliesAppariees.every((anomalie) => anomalie.graviteEstimee === attendu.gravite),
+            gravitesRendues: anomaliesAppariees.map((anomalie) => anomalie.graviteEstimee),
+          }),
     };
   });
   return { attendus, fauxPositifs };

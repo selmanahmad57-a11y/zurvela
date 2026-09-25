@@ -285,6 +285,10 @@ export function construireStructure(rapport: Rapport, langue: LangueRapport): St
       nbSectionsRedigees: 0,
       // Rien n'a encore été montré à personne : `null`, et non zéro.
       nbLocalisationsMasquees: null,
+      // Le cas ORDINAIRE : le scan a soumis ce qu'il pouvait soumettre. Le
+      // scanner l'écrase quand son mode d'interaction le lui interdit — c'est
+      // lui qui connaît ce réglage, pas la structure du rapport.
+      soumissionsTestees: true,
       sansProse: true,
     },
     nonSituees,

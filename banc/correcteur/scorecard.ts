@@ -226,6 +226,10 @@ function agreger(tranche: Tranche): Agregat {
   const nbAttendus = tranche.attendus.length;
   const nbDetectes = tranche.attendus.filter((resultat) => resultat.verdict === 'detecte').length;
   const nbVerdictsCorrects = tranche.attendus.filter((resultat) => resultat.bienJuge === true).length;
+  // La gravité ne se juge que sur ce qui a été PUBLIÉ : un attendu détecté
+  // parmi les seules candidates écartées n'a rien mis sous les yeux du client.
+  const gradees = tranche.attendus.filter((resultat) => resultat.graviteConforme !== undefined);
+  const nbGravitesConformes = gradees.filter((resultat) => resultat.graviteConforme === true).length;
   const nbFauxPositifs = tranche.fauxPositifs.length;
   const nbSignalements = somme(tranche.attendus.map((resultat) => resultat.anomaliesAppariees.length)) + nbFauxPositifs;
   const profils = agregerProfils(tranche.profils);
@@ -251,10 +255,13 @@ function agreger(tranche: Tranche): Agregat {
     nbSignalements,
     nbFauxPositifs,
     nbVerdictsCorrects,
+    nbGravitesConformes,
+    nbGravitesMesurees: gradees.length,
     ...agregerProtocole(tranche.scenarios),
     ...profils,
     tauxDetection: taux(nbDetectes, nbAttendus),
     tauxVerdictsCorrects: taux(nbVerdictsCorrects, nbAttendus),
+    tauxGravitesConformes: taux(nbGravitesConformes, gradees.length),
     tauxFauxPositifs: taux(nbFauxPositifs, nbSignalements),
     tauxProfilsCorrects: taux(profils.nbProfilsCorrects, profils.nbProfilsMesures),
     tauxInertiesTenues: taux(profils.nbInertiesTenues, profils.nbInertiesMesurees),
@@ -447,6 +454,7 @@ const COLONNES = [
   'scenarios',
   'detection',
   'verdictsCorrects',
+  'gravitesConformes',
   'detectes',
   'fauxPositifs',
   'rates',
@@ -616,6 +624,7 @@ function ligneAgregat(
     parScenario(formateurs.entier.format(agregat.nbScenarios)),
     formaterTaux(agregat.tauxDetection),
     formaterTaux(agregat.tauxVerdictsCorrects),
+    `${formaterTaux(agregat.tauxGravitesConformes)} (${formateurs.entier.format(agregat.nbGravitesConformes)}/${formateurs.entier.format(agregat.nbGravitesMesurees)})`,
     `${formateurs.entier.format(agregat.nbDetectes)}/${formateurs.entier.format(agregat.nbAttendus)}`,
     `${formateurs.entier.format(agregat.nbFauxPositifs)} (${formaterTaux(agregat.tauxFauxPositifs)})`,
     formateurs.entier.format(agregat.nbRates),

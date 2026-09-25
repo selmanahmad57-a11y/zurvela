@@ -57,6 +57,16 @@
         "langue": "fr",
         "langueRapport": "en"
       }
+    ],
+    "sansSoumission": [
+      {
+        "gabarit": "formulaire-contact",
+        "bugsActifs": [
+          "F01",
+          "V01"
+        ],
+        "langue": "fr"
+      }
     ]
   },
   "site": {

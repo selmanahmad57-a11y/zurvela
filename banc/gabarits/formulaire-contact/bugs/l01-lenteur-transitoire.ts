@@ -33,6 +33,9 @@ export const L01: BugInjectable = {
   categorie: 'performance',
   gravite: 'important',
   pages: [PAGE_CONTACT],
+  // Constatable UNIQUEMENT en soumettant le formulaire : sous interaction
+  // restreinte, ce bug est hors de portée et n'a pas d'attendu.
+  exigeSoumission: true,
   verdictAttendu: 'non-reproduite',
   validerParametres(parametres) {
     lireParametres(parametres);

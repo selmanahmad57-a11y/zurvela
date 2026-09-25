@@ -191,6 +191,12 @@ export const LIBELLES_RAPPORT: Readonly<
       partiellementRedige: (nbMuettes: number, nbSections: number) => string;
       /** Marque, sur la section elle-même, celle que la rédaction n'a pas couverte. */
       sectionNonRedigee: string;
+      /**
+       * Ce que le scan n'a PAS essayé : aucun formulaire n'a été soumis. Le
+       * taire laisserait lire « aucune anomalie » comme « votre formulaire
+       * fonctionne », alors que personne ne l'a essayé.
+       */
+      soumissionsNonTestees: string;
       methodeIndisponible: string;
       ligneEcartes: (nbEcartes: number) => string;
       ligneNonVerifies: (nbNonVerifies: number) => string;
@@ -210,6 +216,8 @@ export const LIBELLES_RAPPORT: Readonly<
     sansProse:
       'Ce rapport est présenté sous sa forme structurée : la rédaction n’a pas pu être produite. Les constats, leurs statuts et leurs localisations sont complets.',
     sectionNonRedigee: 'Ce constat n’a pas été rédigé : les faits ci-dessus sont complets, l’explication manque.',
+    soumissionsNonTestees:
+      'Nous n’avons envoyé aucun formulaire de ce site : nos robots consultent vos pages sans rien y soumettre. Ce qui ne se constate qu’en envoyant un message — la réception d’une demande, la confirmation affichée — n’a donc pas été vérifié.',
     partiellementRedige: (nbMuettes, nbSections) =>
       nbMuettes === 1
         ? `Sur les ${nbSections} constats de ce rapport, 1 n’a pas été rédigé : il est signalé ci-dessous et présenté sous sa forme structurée, et la synthèse ci-dessus ne le prend pas en compte.`
@@ -252,6 +260,8 @@ export const LIBELLES_RAPPORT: Readonly<
     sansProse:
       'This report is shown in its structured form: the written narrative could not be produced. The findings, their statuses and their locations are complete.',
     sectionNonRedigee: 'This finding was not written up: the facts above are complete, the explanation is missing.',
+    soumissionsNonTestees:
+      'We did not send any of this site’s forms: our robots read your pages without submitting anything. Whatever can only be observed by sending a message — a request being received, a confirmation being shown — was therefore not checked.',
     partiellementRedige: (nbMuettes, nbSections) =>
       nbMuettes === 1
         ? `Of the ${nbSections} findings in this report, 1 was not written up: it is flagged below and shown in its structured form, and the summary above does not take it into account.`

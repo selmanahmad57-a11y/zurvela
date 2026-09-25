@@ -1,0 +1,12 @@
+{
+  "cle": "976b0fc866a016bf0ed0840815f3e2eed19332859ca1aa7792ec2872ca237f7c",
+  "metadonnees": {
+    "date": "2026-09-24T23:11:10.531Z",
+    "modeleDemande": "claude-haiku-4-5",
+    "modeleServi": "claude-haiku-4-5-20251001",
+    "versionPrompt": "v2",
+    "coutApi": 0.0020080000000000002,
+    "apresRelance": false
+  },
+  "reponse": "{\"actionId\": \"c1\", \"raison\": \"La page de contact propose un formulaire avec 3 champs requis destiné à être soumis. C'est une interaction réelle qu'un visiteur effectuerait pour contacter le site. Le budget de pages permet cette exploration et c'est l'une des pages principales d'intérêt sur un site vitrine-contact.\"}"
+}

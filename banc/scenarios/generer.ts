@@ -22,6 +22,9 @@ import { construireIdScenario, idDepuisNomFichier, nomFichierScenario } from './
 /** Ce qui sépare la langue du SITE de celle du RAPPORT dans l'identifiant d'un scénario croisé. */
 export const SEGMENT_RAPPORT = '-rapport-';
 
+/** Suffixe d'identifiant des scénarios à interaction restreinte. */
+export const SEGMENT_SANS_SOUMISSION = '-sans-soumission';
+
 export function genererScenarios(gabarit: Gabarit, config: ConfigBanc): Scenario[] {
   const idsConnus = new Set(gabarit.bugs.map((bug) => bug.id));
   // Les combinaisons sont déclarées PAR GABARIT : un gabarit absent n'en
@@ -107,6 +110,35 @@ export function genererScenarios(gabarit: Gabarit, config: ConfigBanc): Scenario
       };
     });
   scenarios.push(...croises);
+
+  // INTERACTION RESTREINTE : le mode par défaut de la production, où le robot
+  // regarde sans rien soumettre. Un mode jamais mesuré est un mode qu'on
+  // découvre chez le premier client.
+  const sansSoumission = (config.scenarios.sansSoumission ?? [])
+    .filter((restreint) => restreint.gabarit === gabarit.nom)
+    .map((restreint): Scenario => {
+      for (const bugId of restreint.bugsActifs) {
+        if (!idsConnus.has(bugId)) {
+          throw new Error(`Scénario sans soumission [${restreint.bugsActifs.join(', ')}] : bug ${bugId} inconnu du gabarit ${gabarit.nom}`);
+        }
+      }
+      // Un scénario d'interaction restreinte dont aucun bug n'exige la
+      // soumission ne mesure rien : il serait identique à son jumeau ordinaire.
+      const exigeants = restreint.bugsActifs.filter((bugId) => gabarit.bugs.find((bug) => bug.id === bugId)?.exigeSoumission === true);
+      if (exigeants.length === 0) {
+        throw new Error(
+          `Scénario sans soumission du gabarit ${gabarit.nom} : aucun de ses bugs [${restreint.bugsActifs.join(', ')}] n'exige la soumission — il ne restreint rien`,
+        );
+      }
+      return {
+        id: construireIdScenario(gabarit.nom, restreint.bugsActifs, `${restreint.langue}${SEGMENT_SANS_SOUMISSION}`, config.scenarios.jetonSain),
+        gabarit: gabarit.nom,
+        langue: restreint.langue,
+        bugsActifs: [...restreint.bugsActifs],
+        contraintes: { ...(contraintes ?? {}), soumission: 'aucune' },
+      };
+    });
+  scenarios.push(...sansSoumission);
 
   // Deux combinaisons identiques dans la configuration donneraient deux fichiers de même nom.
   const idsVus = new Set<string>();

@@ -108,7 +108,8 @@
         "dossier",
         "jetonSain",
         "combinaisons",
-        "contraintes"
+        "contraintes",
+        "sansSoumission"
       ],
       "properties": {
         "dossier": {
@@ -190,6 +191,33 @@
                 "type": "string",
                 "minLength": 1,
                 "description": "Langue demandée pour le RAPPORT. Différente de celle du site, sinon le scénario ne croise rien."
+              }
+            }
+          }
+        },
+        "sansSoumission": {
+          "type": "array",
+          "description": "Scénarios servis au moteur avec l'interaction RESTREINTE (interaction.soumission = aucune), le mode par défaut de la production : le robot regarde, il ne soumet rien. Un mode jamais mesuré est un mode qu'on découvre chez le premier client.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "gabarit",
+              "bugsActifs",
+              "langue"
+            ],
+            "properties": {
+              "gabarit": {
+                "type": "string"
+              },
+              "bugsActifs": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "langue": {
+                "type": "string"
               }
             }
           }

@@ -110,5 +110,8 @@
   },
   "pied": {
     "mentions": "Vallonet Mobilier — boutique fictive servant de gabarit de test."
+  },
+  "cheminInterdit": {
+    "libelle": "Espace revendeurs"
   }
 }

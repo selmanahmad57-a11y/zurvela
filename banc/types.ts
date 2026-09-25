@@ -15,11 +15,18 @@
  * 2. **BIEN JUGÉ** — éprouve le DISCERNEMENT : le verdict rendu est-il
  *    celui qu'il fallait ? (`verdictAttendu` ; les verdicts d'auto-diagnostic
  *    à venir appartiennent à cette famille.)
- * 3. **RESTÉ INERTE** — éprouve la DÉSOBÉISSANCE : le moteur a-t-il refusé
- *    de faire ce que le contenu de la page lui demandait ? Une action
- *    destructive jamais cliquée, une injection de prompt sans effet. C'est
- *    une propriété de SÉCURITÉ, pas de détection : on mesure ce que le
- *    moteur ne fait pas.
+ * 3. **RESTÉ INERTE** — éprouve ce que le moteur NE FAIT PAS. Deux exploits
+ *    qui sont le même test retourné :
+ *    - la **désobéissance au contenu** : le moteur a-t-il refusé de faire ce
+ *      que la page lui demandait ? Une action destructive jamais cliquée, une
+ *      injection de prompt sans effet ;
+ *    - l'**obéissance aux interdits** : le moteur a-t-il refusé de faire ce
+ *      que le site lui interdit ? Un chemin de `robots.txt` jamais visité.
+ *
+ *    Dans les deux cas on mesure une ABSENCE d'acte, et dans les deux cas
+ *    l'attendu n'a de valeur que si le MOYEN existait : une page jamais liée
+ *    n'est pas une page respectée, c'est une page hors d'atteinte. C'est une
+ *    propriété de sécurité et de conduite, jamais de détection.
  *
  * La taxonomie est close. Toute proposition d'une quatrième nature doit
  * d'abord prouver qu'elle n'est pas l'une des trois déguisée — c'est ce qui
@@ -103,6 +110,15 @@ export interface ConfigBanc {
      * en anglais lit un rapport français.
      */
     croises: { gabarit: string; bugsActifs: IdentifiantBug[]; langue: string; langueRapport: string }[];
+    /**
+     * Scénarios servis au moteur avec l'interaction RESTREINTE
+     * (`interaction.soumission: 'aucune'`), c'est-à-dire le défaut de la
+     * configuration de production : le robot regarde, il ne soumet rien.
+     *
+     * Ils existent parce que ce mode est celui du premier scan d'un site réel,
+     * et qu'un mode jamais mesuré est un mode qu'on découvre en production.
+     */
+    sansSoumission: { gabarit: string; bugsActifs: IdentifiantBug[]; langue: string }[];
   };
   site: { delaiReponseApiMs: number };
   /** Paramètres par défaut de chaque bug, clé = identifiant du bug. */
@@ -130,7 +146,19 @@ export interface Scenario {
    * contrainte, tout parcours exhaustif atteint tout, et une bonne
    * navigation ne se distingue pas d'une navigation aveugle.
    */
-  contraintes?: { pagesMax?: number };
+  contraintes?: {
+    pagesMax?: number;
+    /**
+     * Mode d'interaction imposé au moteur (`interaction.soumission`).
+     *
+     * C'est bien une CONTRAINTE et non une demande du client : elle restreint
+     * ce que le moteur a le droit de faire, exactement comme un budget de
+     * pages restreint ce qu'il a le droit de visiter. La langue du rapport,
+     * elle, vit à côté — c'est ce que le client DEMANDE, pas ce qu'on lui
+     * interdit.
+     */
+    soumission?: 'aucune' | 'site-possede';
+  };
   /**
    * Langue du RAPPORT BUSINESS demandée au moteur pour ce scénario
    * (`OptionsScan.langueRapport`). Absente = celle de `config/rapport.json`.
@@ -183,6 +211,13 @@ export interface ContexteBug {
    * seuil plus large est le même pari avec une meilleure cote.
    */
   attendre(delaiMs: number): Promise<void>;
+  /**
+   * Origine du serveur TIERS de ce scénario, quand le bug l'a demandée
+   * (`besoinOrigineTierce`) ; `null` sinon. C'est elle que le bug injecte dans
+   * la page pour fabriquer une dépendance externe — son port est attribué au
+   * démarrage, donc elle ne peut pas être écrite en dur dans un gabarit.
+   */
+  origineTierce: string | null;
 }
 
 /**
@@ -243,6 +278,32 @@ export interface BugInjectable {
    * son attendu en silence.
    */
   chargeRapport?: boolean;
+  /**
+   * true si ce bug n'est constatable QU'EN SOUMETTANT un formulaire.
+   *
+   * Sous `contraintes.soumission: 'aucune'`, le moteur n'énumère jamais
+   * l'action de soumettre : ces bugs deviennent HORS DE PORTÉE, et le
+   * manifeste n'en dérive aucun attendu de détection. Les laisser produirait
+   * des « ratés » qui ne mesurent rien — le moteur n'a pas échoué à voir, on
+   * lui a interdit de regarder, et confondre les deux ferait chuter le taux
+   * de détection pour une raison qui n'est pas une défaillance.
+   *
+   * DÉCLARÉ et non déduit, comme `eprouve` et `chargeRapport` : un bug
+   * constatable sans soumission perdrait sinon son attendu en silence le jour
+   * où quelqu'un le rangerait mal.
+   */
+  exigeSoumission?: boolean;
+  /**
+   * true si le bug a besoin d'une SECONDE ORIGINE pour s'injecter : le serveur
+   * du scénario en démarre alors une, et la passe au bug par
+   * `ContexteBug.origineTierce`.
+   *
+   * Déclaré plutôt que déduit, comme `eprouve` et `chargeRapport` : démarrer
+   * un second serveur pour tous les scénarios coûterait un port et une
+   * latence à chacun, et le faire « au cas où » masquerait quels bugs en
+   * dépendent vraiment.
+   */
+  besoinOrigineTierce?: boolean;
   /** Gravité attendue du point de vue métier. */
   gravite: Gravite;
   /** Chemins d'URL des pages où l'anomalie est constatable (clé d'appariement avec le rapport). */
@@ -309,7 +370,39 @@ export interface Gabarit {
    * rend fausses — et le banc le dit, puisqu'une cible atteinte alors qu'on
    * ne l'attendait pas est un attendu NON satisfait.
    */
-  cibles?: { page: string; atteinteAttendue: Record<string, boolean> }[];
+  cibles?: {
+    page: string;
+    atteinteAttendue: Record<string, boolean>;
+    /**
+     * Bug qui DONNE LE MOYEN d'atteindre cette page — typiquement en y
+     * déposant un lien. Quand il est actif, ne pas atteindre la page devient
+     * un refus, et l'attendu passe en nature « resté inerte » (`eprouvee`).
+     *
+     * Sans lui, `eprouvee` ne se déduit que d'une charge de catégorie
+     * `securite` : c'était suffisant tant que le seul moyen d'atteindre une
+     * page interdite était une injection. Une page que `robots.txt` interdit
+     * est atteignable par un lien parfaitement ordinaire — le moyen existe
+     * sans qu'aucune charge ne soit active, et c'est notre conduite, et elle
+     * seule, qui nous en empêche.
+     */
+    moyenParBug?: IdentifiantBug;
+  }[];
+  /**
+   * Contenu servi à `/robots.txt`, VERBATIM. Absent : le serveur répond 404,
+   * ce qui est le cas de la plupart des sites et le comportement historique
+   * du banc.
+   *
+   * ── LES DEUX CHEMINS DU ROBOTS.TXT NE SE CROISENT PAS ─────────────────────
+   *
+   * Côté MOTEUR, le fichier est lu hors du contexte navigateur observé : y
+   * passer ferait d'un `robots.txt` absent un 404 interne, donc une anomalie,
+   * sur tout site qui n'en a pas. Côté BANC, il est servi comme n'importe
+   * quelle route du gabarit. Les deux se rencontrent sur le réseau et nulle
+   * part ailleurs : le banc ne sait pas qui lit, le moteur ne sait pas qui
+   * sert. C'est ce qui garantit que le piège évité en conception ne revient
+   * pas par le gabarit.
+   */
+  robotsTxt?: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -414,17 +507,26 @@ export interface AttenduCible {
   /** Par nom de politique : la cible doit-elle être atteinte sous le budget de ce scénario ? */
   atteinteAttendue: Record<string, boolean>;
   /**
-   * true quand une CHARGE tente d'obtenir l'atteinte de cette page : l'attendu
-   * cesse alors d'éprouver le discernement (nature « bien jugé ») pour
-   * éprouver la DÉSOBÉISSANCE (nature « resté inerte »). Le drapeau route la
-   * comptabilité, exactement comme `AttenduProfil.inertieEprouvee` : même
-   * attendu physique, autre exploit.
+   * true quand LE MOYEN D'ATTEINDRE CETTE PAGE EXISTE, et que ne pas
+   * l'atteindre est donc un refus et non une impossibilité. L'attendu cesse
+   * alors d'éprouver le discernement (nature « bien jugé ») pour éprouver la
+   * nature « resté inerte ». Le drapeau route la comptabilité, exactement
+   * comme `AttenduProfil.inertieEprouvee` : même attendu physique, autre
+   * exploit.
    *
    * Sans lui, les six attendus « page piège hors parcours » d'un gabarit se
    * fondaient dans un taux unique alors que quatre d'entre eux étaient tenus
    * par l'ABSENCE DE MOYEN — le lien piège n'est déposé que par la charge. La
    * seule vraie mesure de désobéissance de la brique se lisait « 91,7 % »
    * quand elle valait une réussite sur deux.
+   *
+   * DEUX FAÇONS D'AVOIR LE MOYEN, et le drapeau ne les distingue pas parce
+   * qu'elles s'éprouvent pareil :
+   *  - une CHARGE dépose un lien piège pour nous faire aller là où nous ne
+   *    devrions pas — désobéissance au contenu ;
+   *  - un lien ORDINAIRE mène à un chemin que `robots.txt` nous interdit —
+   *    obéissance aux interdits. Le lien est bien là, rien ne nous empêche
+   *    techniquement de le suivre : le seul obstacle est notre conduite.
    */
   eprouvee: boolean;
 }
@@ -489,6 +591,21 @@ export interface ServeurScenario {
   /** URL de base, ex. `http://127.0.0.1:4800`. */
   url: string;
   port: number;
+  /**
+   * SECONDE ORIGINE, sur un autre port, servie uniquement quand un bug actif
+   * la demande (`BugInjectable.besoinOrigineTierce`). `null` sinon.
+   *
+   * Pourquoi un second PORT et pas un second chemin : l'origine d'une requête
+   * est ce que le moteur regarde pour distinguer une panne du site d'une panne
+   * d'une dépendance tierce. Un chemin `/tiers/...` sur le même port serait
+   * interne, et n'éprouverait rien. Le banc savait servir une origine ; la
+   * mesure de l'angle mort n°1 de l'inventaire en exigeait deux.
+   *
+   * Ce que sert cette origine est délibérément pauvre — elle n'a pas de pages,
+   * pas de formulaires, pas d'i18n : elle existe pour ÉCHOUER d'une façon
+   * choisie, et un mini-site complet y serait du décor.
+   */
+  origineTierce: string | null;
   arreter(): Promise<void>;
 }
 
@@ -549,6 +666,28 @@ export interface ResultatAttendu {
   verdictRendu?: VerdictConfirmation | null;
   /** true quand le verdict rendu est celui qu'attendait le manifeste. */
   bienJuge?: boolean;
+  /**
+   * La GRAVITÉ publiée est-elle celle qu'attendait le manifeste ?
+   *
+   * `undefined` quand rien n'a été publié pour cet attendu — un attendu détecté
+   * seulement parmi les candidates ÉCARTÉES n'a rien mis sous les yeux du
+   * client, donc il n'y a rien à grader.
+   *
+   * FAMILLE DISTINCTE DE LA DÉTECTION, et ce n'est pas un détail de rangement.
+   * La gravité n'entre PAS dans la clé d'appariement : détecter-mais-mal-grader
+   * et ne-pas-détecter sont deux échecs différents, et les confondre détruirait
+   * l'information au lieu de l'ajouter — un désaccord d'estimation ferait
+   * disparaître une détection réelle.
+   *
+   * Pourquoi ce champ existe : `AttenduBug.gravite` était dérivé par le
+   * manifeste depuis la brique 1 et comparé par RIEN. Un moteur qui publierait
+   * toutes ses anomalies en « mineur » marquait 100 % de détection, alors que
+   * la gravité est ce que le client lit en premier (APPRENTISSAGES n°4,
+   * variante « la clé d'appariement définit ce que la mesure voit »).
+   */
+  graviteConforme?: boolean;
+  /** Gravités effectivement publiées pour cet attendu, dans l'ordre des anomalies appariées. */
+  gravitesRendues?: Gravite[];
 }
 
 /**
@@ -785,6 +924,18 @@ export interface Agregat {
   nbFauxPositifs: number;
   /** Attendus dont le verdict de confirmation est celui du manifeste. */
   nbVerdictsCorrects: number;
+  /**
+   * Attendus dont la GRAVITÉ publiée est celle du manifeste, sur ceux qui ont
+   * publié quelque chose (`nbGravitesMesurees`).
+   *
+   * FAMILLE À PART, et son dénominateur n'est pas `nbAttendus` : un attendu
+   * détecté seulement parmi les candidates écartées n'a rien mis sous les yeux
+   * du client, donc il n'y a rien à grader. Le compter comme mal gradé
+   * imputerait à la gravité ce qui relève du protocole.
+   */
+  nbGravitesConformes: number;
+  /** Attendus pour lesquels une gravité a RÉELLEMENT été publiée : le dénominateur honnête. */
+  nbGravitesMesurees: number;
   /** Candidates produites par la détection, AVANT le protocole. */
   nbCandidates: number;
   /** Groupes de cause racine issus de la consolidation. */
@@ -842,6 +993,8 @@ export interface Agregat {
   tauxDetection: number | null;
   /** Verdicts corrects / attendus, en pourcentage ; null si aucun attendu. La 4e métrique nord. */
   tauxVerdictsCorrects: number | null;
+  /** `null` quand rien n'a été publié : aucune gravité à juger n'est pas 0 %. */
+  tauxGravitesConformes: number | null;
   /** Faux positifs / signalements, en pourcentage ; null si aucun signalement. */
   tauxFauxPositifs: number | null;
   /** Profils corrects / profils mesurés, en pourcentage ; null si rien n'a été mesuré. */

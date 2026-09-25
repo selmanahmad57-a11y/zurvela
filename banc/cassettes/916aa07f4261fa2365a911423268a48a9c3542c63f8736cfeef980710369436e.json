@@ -1,0 +1,12 @@
+{
+  "cle": "916aa07f4261fa2365a911423268a48a9c3542c63f8736cfeef980710369436e",
+  "metadonnees": {
+    "date": "2026-09-24T23:11:04.597Z",
+    "modeleDemande": "claude-haiku-4-5",
+    "modeleServi": "claude-haiku-4-5-20251001",
+    "versionPrompt": "v2",
+    "coutApi": 0.001863,
+    "apresRelance": false
+  },
+  "reponse": "{\"actionId\":\"c1\",\"raison\":\"Le formulaire de contact est une action typique qu'un visiteur effectue sur un site vitrine. Avec 18 pages restantes dans le budget, il est pertinent de tester ce formulaire avant de terminer.\"}"
+}

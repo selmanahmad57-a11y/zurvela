@@ -468,6 +468,10 @@ describe('noterScenario — navigation sous budget', () => {
     expect(resultat.cibles.map((cible) => [cible.attendu.page, cible.atteinte, cible.satisfait])).toEqual([
       ['/devis', true, true],
       ['/offre-partenaire', false, true],
+      // Le chemin interdit par `robots.txt` : jamais atteint, et satisfait
+      // comme les deux autres. Sans R02 actif, il n'est pas ÉPROUVÉ pour
+      // autant — aucun lien n'y mène, donc il ne mesure rien ici.
+      ['/prive', false, true],
     ]);
     expect(resultat.couverture).toEqual({ nbPagesVisitees: 3, nbPagesUtiles: 1, nbPagesUtilesDeclarees: 1 });
     expect(resultat.politiqueAppliquee).toBe(POLITIQUE_IA);

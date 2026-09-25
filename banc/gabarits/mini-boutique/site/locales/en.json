@@ -110,5 +110,8 @@
   },
   "pied": {
     "mentions": "Vallonet Mobilier — fictional shop used as a test template."
+  },
+  "cheminInterdit": {
+    "libelle": "Reseller area"
   }
 }

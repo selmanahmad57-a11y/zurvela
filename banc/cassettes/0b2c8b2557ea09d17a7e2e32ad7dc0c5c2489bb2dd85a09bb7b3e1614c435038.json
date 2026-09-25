@@ -1,0 +1,12 @@
+{
+  "cle": "0b2c8b2557ea09d17a7e2e32ad7dc0c5c2489bb2dd85a09bb7b3e1614c435038",
+  "metadonnees": {
+    "date": "2026-09-24T23:11:07.417Z",
+    "modeleDemande": "claude-haiku-4-5",
+    "modeleServi": "claude-haiku-4-5-20251001",
+    "versionPrompt": "v2",
+    "coutApi": 0.0018640000000000002,
+    "apresRelance": false
+  },
+  "reponse": "{\"actionId\":\"c1\",\"raison\":\"Le formulaire de contact a été rempli. L'action terminer complète l'interaction avec cette page et permet au robot de passer à d'autres pages du site ayant un intérêt de test, avec encore 18 pages permises dans le budget.\"}"
+}

@@ -1,0 +1,11 @@
+{
+  "id": "mini-boutique--r02--en",
+  "gabarit": "mini-boutique",
+  "langue": "en",
+  "bugsActifs": [
+    "R02"
+  ],
+  "contraintes": {
+    "pagesMax": 5
+  }
+}

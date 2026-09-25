@@ -38,6 +38,7 @@ function rapport(surcharges: Partial<RapportBusiness> = {}): RapportBusiness {
     ],
     nbSectionsRedigees: 0,
     nbLocalisationsMasquees: 0,
+    soumissionsTestees: true,
     ...surcharges,
   };
   return {
@@ -333,5 +334,25 @@ describe('le balisage est neutralisé sur TOUS les canaux, pas seulement le prem
     expect(structurel).toContain('sous sa forme structurée');
     expect(structurel).not.toContain('Sur les 1 constats');
     expect(structurel).not.toContain('Ce constat n’a pas été rédigé');
+  });
+});
+
+describe('ce que le scan n’a PAS essayé', () => {
+  it('sous interaction restreinte, le rapport DIT qu’aucun formulaire n’a été envoyé', () => {
+    // Sans cette phrase, « aucune anomalie retenue » se lirait « votre
+    // formulaire fonctionne », alors que personne ne l'a essayé. C'est une
+    // limite de ce que NOUS avons fait, donc sa place est dans la méthode.
+    const texte = rendreRapport(rapport({ soumissionsTestees: false }));
+    expect(texte).toContain('Nous n’avons envoyé aucun formulaire');
+    expect(texte.indexOf('Nous n’avons envoyé aucun formulaire')).toBeGreaterThan(texte.indexOf('Notre méthode'));
+  });
+
+  it('quand ils ONT été envoyés, le rapport se tait : le contrôle peut échouer', () => {
+    expect(rendreRapport(rapport({ soumissionsTestees: true }))).not.toContain('Nous n’avons envoyé aucun formulaire');
+  });
+
+  it('en anglais aussi : une limite tue par traduction serait une limite tue', () => {
+    const texte = rendreRapport(rapport({ langue: 'en', soumissionsTestees: false }));
+    expect(texte).toContain('We did not send any of this site’s forms');
   });
 });

@@ -57,6 +57,36 @@ export const PAGE_LIVRAISON = '/livraison';
  */
 export const PAGE_PIEGE = '/offre-partenaire';
 
+/**
+ * Page que le `robots.txt` du gabarit INTERDIT.
+ *
+ * Elle existe, elle répond, et elle est parfaitement atteignable : rien ne
+ * nous empêche techniquement de la charger. Le seul obstacle est notre
+ * conduite — et c'est exactement ce que l'attendu mesure. Comme la page piège,
+ * elle n'est liée par aucune page du site sain : seul le bug R02 y dépose un
+ * lien, sans quoi « jamais visitée » serait tenu par l'absence de moyen.
+ */
+export const PAGE_PRIVEE = '/prive';
+
+/**
+ * Le `robots.txt` servi par ce gabarit, VERBATIM.
+ *
+ * Il nomme notre agent par son jeton produit. Un groupe générique n'aurait pas
+ * éprouvé la même chose : la norme veut que le groupe qui nous NOMME éteigne
+ * le groupe `*`, et c'est la règle que le moteur doit appliquer.
+ */
+export const ROBOTS_TXT = ['User-agent: ZurvelaBot', `Disallow: ${PAGE_PRIVEE}`, ''].join('\n');
+
+export const ROLE_LIEN_PRIVE = 'lien-prive';
+
+export const SELECTEUR_LIEN_PRIVE: SelecteurBalise = {
+  balise: 'a',
+  attribut: 'data-role',
+  valeur: ROLE_LIEN_PRIVE,
+};
+
+export const CLE_LIEN_PRIVE = 'cheminInterdit.libelle';
+
 /** Champs que le backend de devis exige non vides. */
 export const CHAMPS_DEVIS = ['nom', 'email', 'adresse', 'article'] as const;
 

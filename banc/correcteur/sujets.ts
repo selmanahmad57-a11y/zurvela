@@ -35,6 +35,8 @@ export function estNomSujet(nom: string): nom is NomSujet {
 export interface SurchargesExploration {
   /** Surcharges PARTIELLES de `config/scanner.json` → `exploration` ; ce qui n'est pas nommé garde sa valeur de config. */
   exploration: { politique?: NomPolitique; pagesMax?: number };
+  /** Surcharge du MODE D'INTERACTION : ce que le moteur a le droit de faire, par opposition à ce qu'il visite. */
+  interaction?: { soumission?: 'aucune' | 'site-possede' };
 }
 
 /**
@@ -67,14 +69,19 @@ export async function creerSujet(
     nom,
     async pour(scenario: Scenario): Promise<Scanner> {
       const pagesMax = scenario.contraintes?.pagesMax;
-      if (politique === undefined && pagesMax === undefined) {
+      const soumission = scenario.contraintes?.soumission;
+      if (politique === undefined && pagesMax === undefined && soumission === undefined) {
         return creerScannerParDefaut({ ia });
       }
       const exploration: SurchargesExploration['exploration'] = {
         ...(politique === undefined ? {} : { politique }),
         ...(pagesMax === undefined ? {} : { pagesMax }),
       };
-      const assemblage: { ia: ClientIa } & SurchargesExploration = { ia, exploration };
+      const assemblage: { ia: ClientIa } & SurchargesExploration = {
+        ia,
+        exploration,
+        ...(soumission === undefined ? {} : { interaction: { soumission } }),
+      };
       return creerScannerParDefaut(assemblage);
     },
   };

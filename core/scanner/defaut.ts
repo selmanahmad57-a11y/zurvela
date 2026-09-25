@@ -166,6 +166,18 @@ export interface OptionsAssemblage {
    */
   ia?: ClientIa;
   /**
+   * Surcharge du mode d'interaction (`interaction.soumission`). Le banc s'en
+   * sert pour mesurer le mode par défaut de la production ; `pnpm scan` le
+   * laisse absent et lit la configuration telle quelle.
+   */
+  interaction?: { soumission?: 'aucune' | 'site-possede' };
+  /**
+   * Fichier de configuration du moteur. Absent : `config/scanner.json`, celui
+   * de l'INSTRUMENT. `pnpm scan` passe `config/production.json` — c'est ce qui
+   * fait de la configuration de production autre chose qu'un fichier dormant.
+   */
+  fichierConfig?: string;
+  /**
    * Surcharges PARTIELLES de `config/scanner.json` → `exploration`, pour un
    * appelant qui pilote le scan plutôt que de le subir : le banc mesure UNE
    * politique par run, et c'est le scénario — lui seul — qui sait sous quel
@@ -185,12 +197,18 @@ export interface OptionsAssemblage {
  * portant des clés `undefined` ÉCRASERAIT la valeur de config par `undefined` :
  * une surcharge absente doit laisser la config intacte, pas la trouer.
  */
-function appliquerSurcharges(config: ConfigScanner, surcharges: OptionsAssemblage['exploration']): ConfigScanner {
-  if (surcharges === undefined) return config;
+function appliquerSurcharges(
+  config: ConfigScanner,
+  surcharges: OptionsAssemblage['exploration'],
+  interaction: OptionsAssemblage['interaction'],
+): ConfigScanner {
+  const avecInteraction: ConfigScanner =
+    interaction?.soumission === undefined ? config : { ...config, interaction: { soumission: interaction.soumission } };
+  if (surcharges === undefined) return avecInteraction;
   return {
-    ...config,
+    ...avecInteraction,
     exploration: {
-      ...config.exploration,
+      ...avecInteraction.exploration,
       ...(surcharges.politique === undefined ? {} : { politique: surcharges.politique }),
       ...(surcharges.pagesMax === undefined ? {} : { pagesMax: surcharges.pagesMax }),
     },
@@ -199,13 +217,13 @@ function appliquerSurcharges(config: ConfigScanner, surcharges: OptionsAssemblag
 
 export async function creerScannerParDefaut(options: OptionsAssemblage = {}): Promise<Scanner> {
   const [configChargee, actionsInterdites, configProfilage, configDiagnostic, configRapport] = await Promise.all([
-    chargerConfigScanner(),
+    chargerConfigScanner(options.fichierConfig),
     chargerActionsInterdites(),
     chargerConfigProfilage(),
     chargerConfigDiagnostic(),
     chargerConfigRapport(),
   ]);
-  const config = appliquerSurcharges(configChargee, options.exploration);
+  const config = appliquerSurcharges(configChargee, options.exploration, options.interaction);
   // LE PLAFOND ENVELOPPE LE CLIENT AVANT TOUT LE RESTE. Les quatre surfaces —
   // profilage, navigation, diagnostic, rédaction — reçoivent le client
   // plafonné, donc le budget porte sur leur somme et non sur chacune : quatre

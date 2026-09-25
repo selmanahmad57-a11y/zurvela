@@ -1063,6 +1063,21 @@ export interface RapportBusiness {
   nbLocalisationsMasquees: number | null;
   /** Provenance de la rédaction. Absente quand le rapport est produit en mode dégradé. */
   provenance?: ProvenanceSortieIa;
+  /**
+   * Les formulaires du site ont-ils été SOUMIS pendant le scan ?
+   *
+   * `false` sous `interaction.soumission: 'aucune'` — le mode par défaut de la
+   * production, où le robot regarde sans rien envoyer. Une part du site n'est
+   * alors PAS TESTÉE : ce qui ne se constate qu'en soumettant un formulaire
+   * n'a pas pu l'être.
+   *
+   * Le rapport doit le DIRE. Un rapport muet sur ce point laisserait croire à
+   * une couverture qu'il n'a pas eue — et « aucune anomalie retenue » se
+   * lirait « votre formulaire fonctionne » alors que personne ne l'a essayé.
+   * C'est le même principe que le compte des signalements non re-vérifiés :
+   * ce que nous n'avons pas éprouvé se dit, il ne se tait pas.
+   */
+  soumissionsTestees: boolean;
   /** true si aucune prose n'a pu être rédigée : le rapport est STRUCTUREL, et il reste lisible. */
   sansProse: boolean;
 }

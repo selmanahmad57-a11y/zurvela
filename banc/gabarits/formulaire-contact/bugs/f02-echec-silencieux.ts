@@ -16,6 +16,9 @@ export const F02: BugInjectable = {
   categorie: 'fonctionnel',
   gravite: 'bloquant',
   pages: [PAGE_CONTACT],
+  // Constatable UNIQUEMENT en soumettant le formulaire : sous interaction
+  // restreinte, ce bug est hors de portée et n'a pas d'attendu.
+  exigeSoumission: true,
   async transformerReponseApi(reponse) {
     return { ...reponse, statut: 500, corps: JSON.stringify({ ok: false }) };
   },

@@ -667,3 +667,49 @@ describe('noterProfils', () => {
     expect(noterProfils(rapportFaux, manifesteMixte)[0]?.satisfait).toBe(false);
   });
 });
+
+describe('la GRAVITÉ publiée, famille à part de la détection', () => {
+  // Ce contrôle n'existait pas jusqu'à la brique 6a : `AttenduBug.gravite`
+  // était dérivé par le manifeste depuis la brique 1 et comparé par RIEN. Un
+  // moteur qui publiait tout en « mineur » marquait 100 % de détection.
+  /** Manifeste à un seul attendu, dont on choisit la gravité annoncée. */
+  const attenduSeul = (gravite: AttenduBug['gravite']): Manifeste => ({
+    ...manifeste,
+    attendus: [{ nature: 'bug', bugId: 'F01', nom: 'bouton-mort', categorie: 'fonctionnel', pages: ['/contact'], gravite, verdictAttendu: 'confirmee' }],
+  });
+
+  it('conforme quand la gravité publiée est celle du manifeste', () => {
+    const { attendus } = apparier(rapport([anomalie({ graviteEstimee: 'bloquant' })]), attenduSeul('bloquant'));
+    expect(attendus[0]).toMatchObject({ verdict: 'detecte', graviteConforme: true, gravitesRendues: ['bloquant'] });
+  });
+
+  it('NON conforme quand elle diffère — et la DÉTECTION reste acquise', () => {
+    // Détecter-mais-mal-grader et ne-pas-détecter sont deux échecs différents.
+    // Les confondre ferait disparaître une détection réelle derrière un simple
+    // désaccord d'estimation, et c'est pourquoi la gravité n'entre pas dans la
+    // clé d'appariement.
+    const { attendus } = apparier(rapport([anomalie({ graviteEstimee: 'mineur' })]), attenduSeul('bloquant'));
+    expect(attendus[0]).toMatchObject({ verdict: 'detecte', graviteConforme: false, gravitesRendues: ['mineur'] });
+  });
+
+  it('UNE SEULE anomalie mal graduée suffit : le client les lit toutes', () => {
+    const deux = rapport([anomalie({ graviteEstimee: 'bloquant' }), anomalie({ graviteEstimee: 'mineur' })]);
+    expect(apparier(deux, attenduSeul('bloquant')).attendus[0]?.graviteConforme).toBe(false);
+  });
+
+  it('NON MESURÉE quand rien n’a été publié : il n’y a alors aucune gravité à juger', () => {
+    const { attendus } = apparier(rapport([]), attenduSeul('bloquant'));
+    expect(attendus[0]?.verdict).toBe('rate');
+    expect(attendus[0]?.graviteConforme).toBeUndefined();
+  });
+
+  it('NON MESURÉE aussi quand l’attendu n’est détecté que parmi les ÉCARTÉES', () => {
+    // Rien n'a été mis sous les yeux du client : imputer une gravité fausse
+    // là où rien n'a été publié accuserait la gradation de ce qui relève du
+    // protocole.
+    const ecarte = rapport([], [ecartee({}, 'non-reproduite')]);
+    const { attendus } = apparier(ecarte, attenduSeul('mineur'));
+    expect(attendus[0]?.verdict).toBe('detecte');
+    expect(attendus[0]?.graviteConforme).toBeUndefined();
+  });
+});

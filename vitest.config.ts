@@ -2,7 +2,7 @@ import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
   test: {
-    include: ['core/**/*.test.ts', 'banc/**/*.test.ts'],
+    include: ['core/**/*.test.ts', 'banc/**/*.test.ts', 'scripts/**/*.test.ts'],
     /**
      * Sept suites pilotent un vrai Chromium (exploration, re-exécution,
      * filtre d'actions) et démarrent chacune un serveur de banc. Vitest

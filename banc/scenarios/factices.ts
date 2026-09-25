@@ -41,7 +41,8 @@ export function configFactice(surcharges: Partial<ConfigBanc> = {}): ConfigBanc 
       jetonSain: 'sain',
       combinaisons: { 'gabarit-factice': [['F01', 'M01']] },
       contraintes: {},
-      croises: [],
+      croises: [],      sansSoumission: [],
+
     },
     site: { delaiReponseApiMs: 0 },
     bugs: {},

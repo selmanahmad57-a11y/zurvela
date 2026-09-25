@@ -231,6 +231,13 @@ export function rendreRapport(rapportBusiness: RapportBusiness, options: Options
   if (rapportBusiness.nbNonVerifies !== null && rapportBusiness.nbNonVerifies > 0) {
     methode.push(libelles.ligneNonVerifies(rapportBusiness.nbNonVerifies));
   }
+  // CE QUE NOUS N'AVONS PAS ESSAYÉ. Sans cette phrase, « aucune anomalie
+  // retenue » se lirait « votre formulaire fonctionne » — alors que personne
+  // ne l'a envoyé. Elle a sa place dans la méthode : c'est une limite de ce
+  // que nous avons fait, pas un constat sur le site.
+  if (!rapportBusiness.soumissionsTestees) {
+    methode.push(libelles.soumissionsNonTestees);
+  }
   if (rapportBusiness.ligneMethode !== '') {
     methode.push(echapper(rapportBusiness.ligneMethode));
   }

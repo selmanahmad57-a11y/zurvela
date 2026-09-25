@@ -1,0 +1,12 @@
+{
+  "cle": "5e86898f755efefec3a4ed5abc4d68a5c2026e894e7800cfcd329906d4fbf379",
+  "metadonnees": {
+    "date": "2026-09-24T23:11:13.334Z",
+    "modeleDemande": "claude-haiku-4-5",
+    "modeleServi": "claude-haiku-4-5-20251001",
+    "versionPrompt": "v2",
+    "coutApi": 0.0018540000000000002,
+    "apresRelance": false
+  },
+  "reponse": "{\"actionId\":\"c1\",\"raison\":\"Le formulaire de contact a été rempli. L'action de terminer est la suite logique pour tester la soumission du formulaire, qui est une interaction concrète qu'un visiteur effectuerait réellement sur ce type de site vitrine.\"}"
+}

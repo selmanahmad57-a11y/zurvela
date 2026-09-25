@@ -1,0 +1,12 @@
+{
+  "id": "formulaire-contact--f01-v01--fr-sans-soumission",
+  "gabarit": "formulaire-contact",
+  "langue": "fr",
+  "bugsActifs": [
+    "F01",
+    "V01"
+  ],
+  "contraintes": {
+    "soumission": "aucune"
+  }
+}

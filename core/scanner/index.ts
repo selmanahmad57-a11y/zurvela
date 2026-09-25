@@ -264,6 +264,10 @@ export function creerScanner(dependances: DependancesScanner): Scanner {
           ia,
           journaliser,
           echeance,
+          // Ce que le scan a eu le DROIT de faire fait partie de ce que le
+          // rapport doit dire : un scan qui n'a soumis aucun formulaire ne
+          // peut pas laisser lire « aucune anomalie » comme « tout marche ».
+          soumissionsTestees: config.interaction.soumission !== 'aucune',
           ...(options.langueRapport === undefined ? {} : { langueDemandee: options.langueRapport }),
         });
       } catch (cause: unknown) {

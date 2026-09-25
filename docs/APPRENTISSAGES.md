@@ -105,6 +105,44 @@ contournable, et deux étaient atteignables sans rien saboter.
   dans la même unité (ici des groupes de cause racine, pas des anomalies).
   Le mélange d'unités est ce qui rendait l'incohérence invisible.
 
+### Variante : la clé d'appariement définit ce que la mesure VOIT (2026-09-25, brique 6a)
+
+`AttenduBug.gravite` est dérivé par le manifeste depuis la brique 1. **Aucune
+ligne du correcteur ne l'a jamais lu.** L'appariement se fait sur `categorie`
+et `page`, et sur rien d'autre.
+
+Conséquence, énoncée telle quelle : **un moteur qui publierait TOUTES ses
+anomalies en « mineur » marquerait 100 % de détection.** Or la gravité est ce
+que le client lit en premier — « Bloquant » ou « Mineur » décide s'il appelle
+son prestataire ce soir. C'était la seule chose du rapport que l'instrument ne
+vérifiait pas.
+
+**C'est le sabotage de la brique 3, à l'identique, quatre briques plus tard.**
+« Un protocole qui écarte tout affiche 100 % de fausses alertes évitées » et
+« un moteur qui grade tout en mineur affiche 100 % de détection » sont la même
+phrase. Le n°3 avait donné la parade — la jumelle —, le n°4 avait montré que la
+jumelle se contourne par sa règle d'appariement. Il manquait le pas suivant :
+la règle d'appariement décide aussi de ce qui n'est JAMAIS regardé.
+
+**Règle** : tout champ qu'un manifeste dérive mais que la comparaison ignore
+est une **promesse non tenue de l'instrument** — il a l'air mesuré, il est
+seulement écrit. L'inventaire des champs effectivement comparés vaut audit, et
+il se refait à chaque extension du manifeste.
+
+**Ce qui l'a trouvé, et ce qui ne l'a pas trouvé** : ni la revue, ni les
+sceptiques, ni cinq briques de scorecards vertes. La **mutation-kill** de
+METHODE §10, appliquée à un attendu tout neuf : garde retirée, la dépendance
+tierce redevenue un 5xx bloquant imputé au site, et le banc toujours à
+« 100 %, 1/1, 0 faux positif ». Un contrôle qui ne tue pas sa mutation ne
+mesure pas ce qu'il prétend — et il désigne du doigt ce que l'instrument ne
+regarde pas.
+
+**Corollaire de traitement** : une gravité fausse et une anomalie manquée sont
+deux échecs DIFFÉRENTS. Détecter-mais-mal-grader ne doit pas se compter comme
+ne-pas-détecter : la gravité ne rejoint donc pas la clé d'appariement, elle
+devient une famille de mesure à part. Confondre les deux détruirait
+l'information au lieu de l'ajouter.
+
 ## 5. Une configuration que rien n'exécute n'est pas vérifiée (2026-09-23, ouverture de la brique 4a)
 
 - **Symptôme** : `config/scanner.json` portait l'identifiant de modèle
@@ -201,6 +239,35 @@ distinguer un prompt modifié d'un alias qui a glissé.
 Ce que cela a coûté : 76 cassettes non committées, définitivement perdues et
 réenregistrées en appels réels. Les deux règles qui en sortent sont dans
 METHODE §7 et §8.
+
+### Variante : un contrat faux dans les DONNÉES, cru des mois avant d'être lu (2026-09-24, brique 6a)
+
+Une vérification demandée pour une ligne de journalisation — « la sortie de
+périmètre consigne-t-elle sa source ? » — a trouvé autre chose. L'événement
+`exploration.page.externe` était émis depuis **trois endroits** (redirection au
+chargement, dérive après chargement, navigation provoquée par une action) sous
+**trois formes différentes**, où le champ `url` désignait tantôt la SOURCE,
+tantôt la DESTINATION.
+
+Rien n'était en panne. Aucun test ne pouvait rougir : chaque site d'émission
+était cohérent avec lui-même, et personne ne lisait encore ce champ.
+
+**C'est le n°6 déplacé du message vers les DONNÉES.** Une garde qui accuse le
+mauvais coupable envoie corriger ce qui fonctionne ; un journal qui ne
+distingue pas deux sens **fabrique** le diagnostic qui accusera le mauvais
+bout — et il le fabrique en silence, des mois avant que quiconque l'ouvre. Le
+jour où le rapport dira « votre page /contact renvoie ailleurs », il le dira
+faux une fois sur trois, et la trace qui devait servir de preuve sera la source
+de l'erreur.
+
+**Règle** : un champ de journal a UN sens, et le même partout. Quand plusieurs
+sites émettent le même type d'événement, ils passent par une seule fonction —
+c'est elle qui tient le contrat, et c'est le seul endroit où il peut être lu.
+Deux sens dans un nom (`url` pour ce dont on vient et pour où l'on va) se
+séparent en deux noms qui ne se confondent pas (`depuis`, `vers`).
+
+**Portée** : tout événement de journal émis depuis plus d'un endroit — et le
+journal est la matière première du bestiaire, des métriques et des rapports.
 
 ## 7. Le silence du compilateur signale l'absence de conflit, pas l'absence de travail (2026-09-23, ouverture de la brique 4b)
 

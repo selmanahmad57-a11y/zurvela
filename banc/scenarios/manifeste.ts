@@ -140,13 +140,20 @@ function deriverAttendusCible(
   // injection cherche à faire ouvrir, et la marquer « éprouvée » sous S03
   // remplacerait une dilution par une autre.
   const sousCharge = bugsActifs.some((bug) => bug.categorie === CATEGORIE_CHARGE_SECURITE);
+  const actifs = new Set(bugsActifs.map((bug) => bug.id));
   return cibles.map((cible): AttenduCible => {
     const jamaisAttendue = Object.values(cible.atteinteAttendue).every((attendue) => attendue === false);
+    // DEUX FAÇONS D'AVOIR LE MOYEN. Une charge de sécurité dépose un lien
+    // piège — désobéissance au contenu. Un bug nommé par la cible dépose un
+    // lien ORDINAIRE vers un chemin que `robots.txt` interdit — obéissance
+    // aux interdits. Dans les deux cas le lien est là, rien ne nous empêche
+    // techniquement de le suivre, et c'est ce qui rend l'attendu mesurable.
+    const moyenDepose = cible.moyenParBug !== undefined && actifs.has(cible.moyenParBug);
     return {
       nature: 'cible',
       page: cible.page,
       atteinteAttendue: { ...cible.atteinteAttendue },
-      eprouvee: sousCharge && jamaisAttendue,
+      eprouvee: (sousCharge || moyenDepose) && jamaisAttendue,
     };
   });
 }
@@ -204,8 +211,16 @@ export function deriverManifeste(scenario: Scenario, gabarit: Gabarit): Manifest
   // Un bug qui éprouve l'INERTIE n'introduit aucune anomalie à percevoir : il
   // ne produit pas d'attendu de détection, sans quoi le taux de détection
   // compterait comme « raté » ce que le moteur avait raison de ne pas voir.
+  // HORS DE PORTÉE DÉCLARÉE. Sous interaction restreinte, le moteur n'énumère
+  // jamais l'action de soumettre : un bug qui n'est constatable qu'en
+  // soumettant devient inatteignable, et lui garder un attendu produirait un
+  // « raté » qui ne mesure rien. Le moteur n'a pas échoué à voir — on lui a
+  // interdit de regarder, et confondre les deux ferait chuter le taux de
+  // détection pour une raison qui n'est pas une défaillance.
+  const soumissionInterdite = scenario.contraintes?.soumission === 'aucune';
   const attendusBug = bugsActifs
     .filter((bug) => bug.eprouve !== 'inertie')
+    .filter((bug) => !(soumissionInterdite && bug.exigeSoumission === true))
     .map((bug): AttenduBug => ({
       nature: 'bug',
       bugId: bug.id,

@@ -80,6 +80,12 @@ export interface ParametresRapportBusiness {
   echeance: number | null;
   /** Horloge injectable : une échéance ne se teste pas en attendant vraiment. */
   maintenant?: () => number;
+  /**
+   * Le scan a-t-il eu le droit de SOUMETTRE les formulaires ? Le rapport le
+   * publie pour pouvoir dire au lecteur ce qui n'a pas été essayé.
+   * Absent = oui, le cas ordinaire.
+   */
+  soumissionsTestees?: boolean;
 }
 
 export interface ResultatRapportBusiness {
@@ -128,6 +134,7 @@ export async function redigerRapportBusiness(
   const { rapport, config, ia, journaliser } = parametres;
   const langue = resoudreLangue(parametres.langueDemandee, config, journaliser);
   const { rapportBusiness, nonSituees } = construireStructure(rapport, langue);
+  rapportBusiness.soumissionsTestees = parametres.soumissionsTestees ?? true;
 
   // Une anomalie retenue sans statut publiable est une incohérence du
   // protocole. Elle n'est ni publiée sous une formulation fausse, ni perdue en
