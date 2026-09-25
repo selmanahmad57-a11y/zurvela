@@ -407,3 +407,41 @@ dette est levée (le commit qui la lève renvoie à ce fichier).
   divergence est voulue et tenue par `politique.test.ts` ; les **2 replis** du
   scénario mode « aucune » sont tombés à **0** ; et le paramètre `remplissage`
   de la fabrique, devenu mort, a été retiré plutôt que masqué.
+
+## 19. L'historique montré à l'IA ne porte pas l'ISSUE des actions — PROMUE cahier correctif n°2 (2026-09-25)
+
+- **Le fait** : `etat.historique` (`core/scanner/exploration/explorateur.ts`)
+  n'enregistre que `{ type, page }` — une action bloquée y entre exactement
+  comme une action réussie, et le prompt de navigation v2 la montre ainsi :
+  « soumettre sur /contact ». Au run d'équivalence (réseau réel, politique
+  IA), l'IA a soumis avant de remplir dans 46 passes sur 86 ; la validation
+  native a bloqué (trois champs requis vides — bon comportement) ; au tour
+  suivant, l'IA a lu « soumettre sur /contact » comme une soumission faite,
+  conclu « déjà soumis » et élu `terminer` 30 fois sur 38. Trois scénarios
+  ont manqué les deux passes : 32/35 au lieu de 35/35.
+- **Pourquoi ce n'est pas corrigé ici** : le cahier correctif n°1 câble le
+  client de production ; il ne touche ni au prompt ni à l'état normalisé. La
+  correction change ce que l'IA VOIT (l'issue de chaque action dans
+  l'historique — `ok`, `bloquee` et sa raison structurelle), donc le prompt
+  de navigation : c'est une v3, avec sa variance mesurée AVANT sa première
+  cassette (APPRENTISSAGES n°14 et n°16). Rien de spécifique à coder en dur :
+  l'issue d'une action est une donnée du moteur, pas du monde.
+- **Ce que cela coûte en attendant** : en politique IA, environ un scénario à
+  formulaire sur six manque son bug quand les deux viewports tirent la
+  soumission prématurée ; deux appels de décision perdus par passe bloquée.
+  En politique `deterministe` (celle de `config/production.json`), rien :
+  elle remplit avant de soumettre par construction.
+- **Levée, et par quoi** : un cahier « prompt navigation v3 — l'historique
+  porte l'issue », clos par (1) `banc:variance-ia --mesure decision` sur la
+  décision `/contact` avant/après, (2) un run d'équivalence où aucune paire
+  soumettre→soumettre ne survit à un blocage, (3) les 35/35 retrouvés sur
+  cassettes ré-enregistrées sous v3.
+- **Requalifiée le 2026-09-25 (arbitrage)** : ce n’est pas un défaut
+  d’affichage, c’est la cause racine des trois ratés du run d’équivalence et,
+  vraisemblablement, d’une classe entière d’échecs à venir en navigation
+  réelle — une IA qui ne voit pas qu’une action a échoué conclut « déjà
+  fait » et abandonne. Elle devient le **cahier correctif n°2**, prochain gros
+  morceau, à ouvrir avant la reprise pleine de la campagne. Chiffre de
+  dimensionnement, à tirages indépendants (run d’équivalence, 33 scénarios) :
+  soumettre avant remplir 45 % des passes desktop, 27 % des passes mobile,
+  12 % des scénarios sur les deux viewports.

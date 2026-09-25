@@ -516,3 +516,76 @@ regardé.
 - **Corollaire** : un dossier de code hors du périmètre du `typecheck` est un
   dossier où un fichier peut pourrir sans bruit. Le périmètre du mur doit être
   le périmètre du code, et un mur se vérifie en le faisant mordre exprès.
+
+## 15. Ce qui fournit la dépendance pour tester ne peut pas révéler son absence en production (2026-09-25, campagne 6b, scan n°2)
+
+- **Le fait** : le deuxième scan réel de la campagne — le premier site que nous
+  n'avions pas écrit — a rendu `ia.mode : degrade, raison : non-implemente`
+  avec la clé chargée et le budget posé. `creerClientIa` (`core/ia/index.ts`)
+  rendait **toujours** le client sans capacité ; le seul constructeur du vrai
+  client Anthropic vivait dans `banc/ia.ts`. **Le moteur de production n'a
+  jamais eu de client IA.**
+- **Ce que cela dit** : pendant quatre briques, chaque mesure d'IA —
+  profilage, navigation, diagnostic, rédaction, les 100 % de détection, les
+  inerties, les rapports lus et salués — est passée par le client que le BANC
+  injectait. Le banc mesurait fidèlement un moteur, et ce moteur n'était pas
+  celui qui tournerait en production. C'est le fantôme de troisième espèce à
+  l'échelle du produit entier : la bonne réponse, du mauvais assemblage.
+- **Pourquoi rien ne l'a vu** : l'inventaire de production décrivait des
+  valeurs calibrées pour le banc — *un inventaire de configuration ne voit pas
+  ce qu'aucune configuration ne gouverne*. Le banc ne pouvait pas le voir non
+  plus : il **fournissait lui-même la pièce manquante**. Seul un scan lancé
+  depuis l'assemblage de production, par un chemin qui n'injecte rien, pouvait
+  faire apparaître le silence — et c'est exactement ce que la campagne
+  existait pour attraper. Elle l'a fait au deuxième scan.
+- **Règle** : ce qui fournit une dépendance pour tester ne peut pas révéler
+  l'absence de cette dépendance en production. **L'assemblage réel doit être
+  exercé par un chemin qui ne l'injecte pas** — un test qui monte le produit
+  tel qu'il sera livré, et une mesure du banc à travers cet assemblage-là.
+  C'est le pendant, côté assemblage, de l'apprentissage n°5 : là-bas une
+  configuration que rien n'exécute, ici un assemblage que rien n'exerce.
+- **Conséquence assumée** : le bilan de Phase 1 porte un astérisque
+  (`docs/ROADMAP.md`) — *mesuré via le client du banc ; équivalence production
+  à confirmer* — jusqu'à la re-mesure du cahier correctif n°1.
+
+## 16. Une cassette réutilisée n'est pas N échantillons (2026-09-25, cahier correctif n°1, run d'équivalence)
+
+- **Le fait** : le banc re-mesuré à travers l'assemblage de production (vrai
+  client, vrai réseau) rend 32/35 en politique IA là où le rejeu rendait
+  35/35 — mêmes profils, mêmes cibles, mêmes gravités, mêmes rapports, même
+  coût. Les trois ratés ont la même séquence : `soumettre` avant `remplir`,
+  blocage par la validation native, puis « déjà soumis » → `terminer`. Cette
+  séquence est AUSSI dans la référence, 49 fois sur 86 passes ; la référence
+  ne ratait pourtant jamais.
+- **Ce que cela dit** : les cassettes sont indexées sur l'entrée normalisée.
+  Sur `/contact`, quatorze scénarios présentent la même entrée : la première
+  décision desktop de la référence n'a que 8 raisons distinctes sur 33
+  passes, contre 33 sur 33 en production. Et les deux viewports d'un scénario
+  sont verrouillés par l'historique : « desktop prématuré » entraîne « mobile
+  remplit », et inversement — zéro scénario ne pouvait manquer les deux
+  passes (0 paire soumettre→soumettre en référence, 4 en production, dont les
+  3 ratés). Le 100 % tenait sur deux cassettes, pas sur trente-cinq tirages.
+- **Pourquoi rien ne l'a vu** : le rejeu est FAIT pour ça — figer la réponse
+  d'une politique non déterministe afin que l'instrument soit stable. Ce qui
+  le rend stable le rend aveugle à la variance : un instrument qui rejoue ne
+  peut pas voir ce que le produit tire au sort. Le n°15 disait « ce qui
+  fournit la pièce ne peut pas révéler son absence » ; ici, ce qui fige la
+  réponse ne peut pas révéler sa dispersion.
+- **Règle** : un taux mesuré sur cassettes est une propriété du PARC, pas de
+  la politique. Il n'a de valeur de produit qu'accompagné (a) d'une mesure de
+  variance sur les décisions qui portent la détection (`banc:variance-ia`,
+  existant, sous-employé) et (b) d'un run non injecté, à réseau réel,
+  étiqueté comme tel (`assemblage: production`) et jamais moyenné avec le
+  parc. Le chiffre de Phase 1 en politique IA se lit désormais « 100 % au
+  banc, 91,4 % en une passe réelle ».
+- **Conséquence** : le ROADMAP porte les deux chiffres, côte à côte. Dette
+  n°19 ouverte : l'historique montré à l'IA ne porte pas l'issue des actions
+  (une soumission bloquée y figure comme une soumission) — c'est la cause
+  directe du « déjà soumis », et un prompt v3 la traitera au banc, avec sa
+  variance mesurée AVANT sa cassette.
+- **Ce que cela dit de la méthode** : le déterminisme de l’instrument, notre
+  fierté, cachait un angle mort. Trois runs bit à bit prouvent la
+  REPRODUCTIBILITÉ, pas la ROBUSTESSE — deux choses que nous avions
+  confondues. Et c’est encore le réel qui l’a montré, comme pour le client
+  manquant : *le réel est le seul juge qui ne partage aucun angle mort avec
+  l’instrument*.

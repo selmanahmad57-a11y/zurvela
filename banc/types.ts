@@ -1151,6 +1151,18 @@ export interface Scorecard {
   horodatage: string;
   /** Politique de décision demandée pour TOUT ce run : sans elle, deux scorecards ne se comparent pas. */
   politique: string;
+  /**
+   * `production` quand le sujet est le moteur monté par `creerScannerParDefaut`
+   * SANS client injecté — le vrai client, le vrai réseau, la vraie dépense.
+   * Absent : le run ordinaire, client rejouable sur cassettes.
+   *
+   * L'étiquette existe pour qu'un fichier de résultats d'un run payant et
+   * non déterministe ne puisse JAMAIS être pris pour un rejeu, ni entrer dans
+   * une moyenne du banc sans qu'on le sache (APPRENTISSAGES n°6 : un
+   * journal qui ne distingue pas deux sens fabrique le diagnostic qui accusera
+   * le mauvais bout).
+   */
+  assemblage?: 'production';
   global: Agregat;
   /**
    * La famille « cibles atteintes », une ligne par politique connue des

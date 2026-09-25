@@ -1,7 +1,9 @@
 {
   "banc": {
-    "usage": "Usage : pnpm banc [--sujet reel|factice] [--sans-ia] [--politique deterministe|ia] --scenario <id> | --tous",
+    "usage": "Usage : pnpm banc [--sujet reel|factice] [--sans-ia | --assemblage-production] [--politique deterministe|ia] --scenario <id> | --tous",
     "sansIa": "Mode --sans-ia : aucun client IA n'est fourni au moteur, les attendus de profil resteront non mesurés",
+    "assemblageProduction": "⚠ Mode --assemblage-production : le moteur construit SON client IA (vrai réseau, vraie dépense, non déterministe) — aucune cassette n'est lue ni écrite. C'est la contre-épreuve d'équivalence du cahier correctif n°1, pas l'instrument.",
+    "assemblageProductionSansCle": "Mode --assemblage-production refusé : aucune clé dans {{variable}}. Ce mode mesure le VRAI client ; sans clé il ne mesurerait qu'un silence de plus.",
     "iaRejeu": "IA : mode rejeu sur cassettes ({{dossier}}) — aucun appel réseau ; cassette absente : lancez {{commande}}",
     "sujetInconnu": "Sujet inconnu : {{sujet}} (sujets connus : {{sujets}})",
     "scenarioIntrouvable": "Scénario introuvable : {{id}}",

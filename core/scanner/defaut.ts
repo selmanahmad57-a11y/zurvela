@@ -9,7 +9,9 @@
  * Seul module du moteur qui relie le pipeline aux modules concrets
  * (navigateur, exploration, observation, détection, re-exécution).
  */
-import { creerClientIa, RAISON_REPLI_DETERMINISTE, type ClientIa } from '../ia/index.js';
+import { RAISON_REPLI_DETERMINISTE, type ClientIa } from '../ia/index.js';
+import { creerClientAnthropic, type PorteeSdk } from '../ia/anthropic.js';
+import { chargerConfigNavigation } from '../ia/config-navigation.js';
 import { creerBudgetScan } from '../ia/plafond.js';
 import type { Browser } from 'playwright';
 import type { ContexteExploration, PolitiqueDecision, Scanner } from '../types.js';
@@ -178,6 +180,14 @@ export interface OptionsAssemblage {
    */
   fichierConfig?: string;
   /**
+   * Environnement d'où lire la clé (tests). Absent : `process.env`.
+   * Avec `sdk`, c'est ce qui permet d'EXERCER l'assemblage réel sans réseau —
+   * par un chemin qui n'injecte aucun client (APPRENTISSAGES n°15).
+   */
+  env?: NodeJS.ProcessEnv;
+  /** Doublure de SDK (tests). En production, le SDK est construit depuis la clé. */
+  sdk?: PorteeSdk;
+  /**
    * Surcharges PARTIELLES de `config/scanner.json` → `exploration`, pour un
    * appelant qui pilote le scan plutôt que de le subir : le banc mesure UNE
    * politique par run, et c'est le scénario — lui seul — qui sait sous quel
@@ -224,11 +234,35 @@ export async function creerScannerParDefaut(options: OptionsAssemblage = {}): Pr
     chargerConfigRapport(),
   ]);
   const config = appliquerSurcharges(configChargee, options.exploration, options.interaction);
+  // Les bornes de ce que le modèle de navigation VOIT viennent de
+  // `exploration` : la config de décision s'assemble donc après elle.
+  const configNavigation = await chargerConfigNavigation(config.exploration);
+  // LE CLIENT DE PRODUCTION, PAR LE MÊME CODE QUE LE BANC (cahier correctif n°1).
+  // Pendant quatre briques, ce point appelait `creerClientIa`, qui rendait
+  // TOUJOURS le client sans capacité — avec clé, la raison était littéralement
+  // « non implémenté ». Le seul constructeur du vrai client vivait dans le
+  // banc, qui l'INJECTAIT : chaque mesure d'IA de la Phase 1 est passée par
+  // lui, et le moteur de production, lui, n'a jamais eu de client. Le second
+  // scan réel de la campagne l'a révélé (bestiaire, fiche 02). Sans clé,
+  // `creerClientAnthropic` rend lui-même le client dégradé, raison
+  // « clé absente » — et c'est la seule raison de dégradation qui a le droit
+  // d'exister sur ce chemin.
+  const clientProduction = (): ClientIa =>
+    creerClientAnthropic({
+      config: config.ia,
+      profilage: configProfilage,
+      navigation: configNavigation,
+      diagnostic: configDiagnostic,
+      rapport: configRapport,
+      tarifs: config.ia.tarifs,
+      ...(options.env === undefined ? {} : { env: options.env }),
+      ...(options.sdk === undefined ? {} : { sdk: options.sdk }),
+    });
   // LE PLAFOND ENVELOPPE LE CLIENT AVANT TOUT LE RESTE. Les quatre surfaces —
   // profilage, navigation, diagnostic, rédaction — reçoivent le client
   // plafonné, donc le budget porte sur leur somme et non sur chacune : quatre
   // plafonds séparés feraient quatre fois le budget.
-  const budget = creerBudgetScan(options.ia ?? creerClientIa(config.ia), config.budget.maxUsdParScan);
+  const budget = creerBudgetScan(options.ia ?? clientProduction(), config.budget.maxUsdParScan);
   const ia = budget.client;
   return creerScanner({
     ouvrirBudget: budget.ouvrirScan,

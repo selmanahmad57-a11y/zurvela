@@ -56,9 +56,21 @@ export interface SurchargesExploration {
 export async function creerSujet(
   nom: NomSujet,
   ia?: ClientIa,
-  options: { politique?: NomPolitique } = {},
+  options: {
+    politique?: NomPolitique;
+    /**
+     * ASSEMBLAGE DE PRODUCTION : le moteur est monté par `creerScannerParDefaut`
+     * sans aucun client injecté — il construit le sien, comme en production.
+     * C'est le mode d'ÉQUIVALENCE du cahier correctif n°1 : le banc ne peut
+     * pas révéler l'absence d'une pièce qu'il fournit lui-même (APPRENTISSAGES
+     * n°15), donc il doit savoir ne rien fournir. Payant, réseau réel, non
+     * déterministe : ce n'est pas l'instrument, c'est sa contre-épreuve.
+     */
+    assemblageProduction?: boolean;
+  } = {},
 ): Promise<SujetNote> {
-  if (nom === 'factice' || ia === undefined) {
+  const assemblageProduction = options.assemblageProduction === true;
+  if (nom === 'factice' || (ia === undefined && !assemblageProduction)) {
     return sujetConstant(nom, SUJETS[nom]);
   }
   // Import différé : l'assemblage réel tire Playwright et la configuration,
@@ -70,19 +82,22 @@ export async function creerSujet(
     async pour(scenario: Scenario): Promise<Scanner> {
       const pagesMax = scenario.contraintes?.pagesMax;
       const soumission = scenario.contraintes?.soumission;
+      // Le client n'est passé QUE hors assemblage de production : là, le
+      // moteur construit le sien, et lui passer quoi que ce soit serait
+      // réinjecter la pièce dont on veut précisément vérifier l'existence.
+      const client: { ia?: ClientIa } = assemblageProduction || ia === undefined ? {} : { ia };
       if (politique === undefined && pagesMax === undefined && soumission === undefined) {
-        return creerScannerParDefaut({ ia });
+        return creerScannerParDefaut(client);
       }
       const exploration: SurchargesExploration['exploration'] = {
         ...(politique === undefined ? {} : { politique }),
         ...(pagesMax === undefined ? {} : { pagesMax }),
       };
-      const assemblage: { ia: ClientIa } & SurchargesExploration = {
-        ia,
+      return creerScannerParDefaut({
+        ...client,
         exploration,
         ...(soumission === undefined ? {} : { interaction: { soumission } }),
-      };
-      return creerScannerParDefaut(assemblage);
+      });
     },
   };
 }

@@ -34,13 +34,13 @@ describe('registre des sujets', () => {
 
 describe('lireOptions', () => {
   it('accepte --sujet avec --scenario ou --tous, et le laisse absent sinon', () => {
-    expect(lireOptions(['--sujet', 'factice', '--scenario', 'x'])).toEqual({ scenario: 'x', tous: false, sujet: 'factice', sansIa: false, politique: undefined });
-    expect(lireOptions(['--tous', '--sujet', 'reel'])).toEqual({ scenario: undefined, tous: true, sujet: 'reel', sansIa: false, politique: undefined });
-    expect(lireOptions(['--tous'])).toEqual({ scenario: undefined, tous: true, sujet: undefined, sansIa: false, politique: undefined });
+    expect(lireOptions(['--sujet', 'factice', '--scenario', 'x'])).toEqual({ scenario: 'x', tous: false, sujet: 'factice', sansIa: false, assemblageProduction: false, politique: undefined });
+    expect(lireOptions(['--tous', '--sujet', 'reel'])).toEqual({ scenario: undefined, tous: true, sujet: 'reel', sansIa: false, assemblageProduction: false, politique: undefined });
+    expect(lireOptions(['--tous'])).toEqual({ scenario: undefined, tous: true, sujet: undefined, sansIa: false, assemblageProduction: false, politique: undefined });
   });
 
   it('accepte --sans-ia, qui est un drapeau et vaut faux par défaut', () => {
-    expect(lireOptions(['--tous', '--sans-ia'])).toEqual({ scenario: undefined, tous: true, sujet: undefined, sansIa: true, politique: undefined });
+    expect(lireOptions(['--tous', '--sans-ia'])).toEqual({ scenario: undefined, tous: true, sujet: undefined, sansIa: true, assemblageProduction: false, politique: undefined });
     expect(lireOptions(['--scenario', 'x', '--sans-ia'])?.sansIa).toBe(true);
     // Le drapeau ne prend pas de valeur : `--sans-ia faux` est une ligne mal formée.
     expect(lireOptions(['--tous', '--sans-ia=faux'])).toBeNull();

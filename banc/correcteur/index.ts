@@ -102,6 +102,8 @@ export interface ParametresNotation {
 }
 
 export interface ParametresBanc extends ParametresNotation {
+  /** Étiquette du run d'équivalence : le moteur monté sans client injecté. */
+  assemblage?: 'production';
   scenarios: Scenario[];
   /** Sortie de progression (une ligne par appel) ; silencieux si absent. */
   journal?: (ligne: string) => void;
@@ -376,7 +378,7 @@ export async function executerBanc(params: ParametresBanc): Promise<Scorecard> {
       );
     }
   }
-  return calculerScorecard(resultats, config, horodatage, politique);
+  return calculerScorecard(resultats, config, horodatage, politique, params.assemblage);
 }
 
 // ---------------------------------------------------------------------------
@@ -395,6 +397,12 @@ export interface OptionsCli {
    * c'est l'épreuve du mode dégradé permanent (constitution §4).
    */
   sansIa: boolean;
+  /**
+   * `--assemblage-production` : le sujet est le moteur monté SANS client
+   * injecté — le vrai client, le vrai réseau, la vraie dépense. C'est le mode
+   * d'équivalence du cahier correctif n°1, et il est exclusif de `--sans-ia`.
+   */
+  assemblageProduction: boolean;
   /**
    * `--politique deterministe|ia` : la politique de décision de navigation
    * imposée au moteur pour tout le run. Absente = celle de
@@ -415,15 +423,21 @@ export function lireOptions(args?: string[]): OptionsCli | null {
         tous: { type: 'boolean' },
         sujet: { type: 'string' },
         'sans-ia': { type: 'boolean' },
+        'assemblage-production': { type: 'boolean' },
         politique: { type: 'string' },
       },
       strict: true,
     });
+    // Les deux modes se contredisent : l'un retire toute IA, l'autre exige la vraie.
+    if (values['sans-ia'] === true && values['assemblage-production'] === true) {
+      return null;
+    }
     return {
       scenario: values.scenario,
       tous: values.tous === true,
       sujet: values.sujet,
       sansIa: values['sans-ia'] === true,
+      assemblageProduction: values['assemblage-production'] === true,
       politique: values.politique,
     };
   } catch {
@@ -472,20 +486,39 @@ async function principal(): Promise<void> {
   // aucune capacité avec `--sans-ia`. Dans les deux cas, aucun appel réseau —
   // un poste qui porte une clé d'API ne doit pas noter autre chose qu'un poste
   // qui n'en a pas.
-  const { creerClientIaBanc, DOSSIER_CASSETTES } = await import('../ia.js');
-  const { COMMANDE_ENREGISTREMENT_IA } = await import('../../core/ia/index.js');
-  const { client } = await creerClientIaBanc({
-    regime: options.sansIa ? 'sans-ia' : 'rejeu',
-    journaliser: (type, details) => {
-      console.log(`  ${type} ${JSON.stringify(details ?? {})}`);
-    },
-  });
-  console.log(
-    options.sansIa
-      ? traduire(dico, 'banc.sansIa')
-      : traduire(dico, 'banc.iaRejeu', { dossier: DOSSIER_CASSETTES, commande: COMMANDE_ENREGISTREMENT_IA }),
-  );
-  const sujet = await creerSujet(nomSujet, client, { politique });
+  let sujet: SujetNote;
+  if (options.assemblageProduction) {
+    // MODE D'ÉQUIVALENCE (cahier correctif n°1). Aucun client n'est fourni au
+    // moteur : il construit le sien depuis config/ et la clé, comme en
+    // production. Payant, réseau réel, non déterministe, aucune cassette lue ni
+    // écrite — et il refuse de partir sans clé plutôt que de mesurer un
+    // silence de plus.
+    const { chargerConfigScanner } = await import('../../core/scanner/config.js');
+    const scanner = await chargerConfigScanner();
+    const cle = process.env[scanner.ia.variableCle];
+    if (cle === undefined || cle === '') {
+      console.error(traduire(dico, 'banc.assemblageProductionSansCle', { variable: scanner.ia.variableCle }));
+      process.exitCode = 2;
+      return;
+    }
+    console.log(traduire(dico, 'banc.assemblageProduction'));
+    sujet = await creerSujet(nomSujet, undefined, { politique, assemblageProduction: true });
+  } else {
+    const { creerClientIaBanc, DOSSIER_CASSETTES } = await import('../ia.js');
+    const { COMMANDE_ENREGISTREMENT_IA } = await import('../../core/ia/index.js');
+    const { client } = await creerClientIaBanc({
+      regime: options.sansIa ? 'sans-ia' : 'rejeu',
+      journaliser: (type, details) => {
+        console.log(`  ${type} ${JSON.stringify(details ?? {})}`);
+      },
+    });
+    console.log(
+      options.sansIa
+        ? traduire(dico, 'banc.sansIa')
+        : traduire(dico, 'banc.iaRejeu', { dossier: DOSSIER_CASSETTES, commande: COMMANDE_ENREGISTREMENT_IA }),
+    );
+    sujet = await creerSujet(nomSujet, client, { politique });
+  }
 
   const dossierScenarios = depuisRacine(config.scenarios.dossier);
   let scenarios: Scenario[];
@@ -526,6 +559,7 @@ async function principal(): Promise<void> {
     iaDeclareeAbsente,
     sujetSansRapport,
     detectionLangue,
+    ...(options.assemblageProduction ? { assemblage: 'production' as const } : {}),
   });
   console.log(rendreScorecardConsole(scorecard, dico, config.langueConsole, { iaDeclareeAbsente }));
   const dossierResultats = depuisRacine(config.scorecard.dossierResultats);

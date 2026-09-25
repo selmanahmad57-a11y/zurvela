@@ -6,7 +6,7 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import {
   RAISON_CLE_ABSENTE,
-  creerClientIa,
+  creerClientSansCapacite,
   type ClientIa,
   type ContexteProfilage,
   type ProfilPage,
@@ -55,7 +55,7 @@ let ia: ClientIa;
 
 beforeAll(async () => {
   config = await chargerConfigScanner();
-  ia = creerClientIa(config.ia, {});
+  ia = creerClientSansCapacite(RAISON_CLE_ABSENTE);
 });
 
 /** Observateur en mémoire, avec compteur d'instances pour vérifier « un observateur neuf par scan ». */

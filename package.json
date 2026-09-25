@@ -10,6 +10,7 @@
   "packageManager": "pnpm@12.5.1",
   "scripts": {
     "banc": "tsx banc/correcteur/index.ts",
+    "banc:equivalence": "node --env-file-if-exists=.env --env-file-if-exists=.env.local --env-file-if-exists=docs/.env.local --import tsx banc/correcteur/index.ts --assemblage-production",
     "banc:servir": "tsx banc/serveur.ts",
     "banc:generer": "tsx banc/scenarios/generer.ts",
     "rapport:exemple": "tsx banc/rapport-exemple.ts",

@@ -13,7 +13,6 @@ import type {
   DecisionIa,
   EtatDecisionEnumere,
   ProvenanceDecision, ProvenanceSortieIa } from '../types.js';
-import type { ConfigScanner } from '../scanner/config.js';
 import type { EtatNormalise } from './etat-decision.js';
 import type { ContexteDiagnosticNormalise } from './contexte-diagnostic.js';
 
@@ -314,26 +313,7 @@ export interface ClientIaEnregistrable extends ClientIa {
 }
 
 export const RAISON_CLE_ABSENTE = 'cle-absente';
-export const RAISON_NON_IMPLEMENTE = 'non-implemente';
 
-/**
- * Fabrique un client SANS capacité IA : toutes les fonctions répondent
- * « indisponible » sans lever et sans réseau, le moteur fonctionne avec ses
- * détecteurs techniques seuls (constitution §4, mode dégradé obligatoire).
- *
- * Le mode reflète la disponibilité EFFECTIVE, pas la seule présence d'une
- * clé : le journal `ia.mode` ne doit pas annoncer un moteur actif qui ne
- * l'est pas. Le client CONCRET se construit avec `creerClientAnthropic` —
- * cette fabrique reste le chemin explicite du « sans IA ».
- */
-export function creerClientIa(
-  config: ConfigScanner['ia'],
-  env: NodeJS.ProcessEnv = process.env,
-): ClientIaEnregistrable {
-  const cle = env[config.variableCle];
-  const raison = cle === undefined || cle === '' ? RAISON_CLE_ABSENTE : RAISON_NON_IMPLEMENTE;
-  return creerClientSansCapacite(raison);
-}
 
 /** Client dégradé sur une raison donnée : aucun appel, aucune exception. */
 export function creerClientSansCapacite(raison: string, message?: string): ClientIaEnregistrable {

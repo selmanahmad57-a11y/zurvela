@@ -427,10 +427,12 @@ export function calculerScorecard(
   config: ConfigBanc,
   horodatage: string,
   politique: string,
+  assemblage?: 'production',
 ): Scorecard {
   const parLangue = agregerParLangue(resultats, config);
   return {
     horodatage,
+    ...(assemblage === undefined ? {} : { assemblage }),
     politique,
     global: agreger(trancheComplete(resultats)),
     cibles: agregerCiblesParPolitique(resultats, politique),

@@ -12,7 +12,6 @@ import {
   RAISON_CONTEXTE_DEPASSE,
   RAISON_DIAGNOSTIC_INACTIF,
   RAISON_DIAGNOSTIC_INVALIDE,
-  RAISON_NON_IMPLEMENTE,
   RAISON_PROFIL_INVALIDE,
   RAISON_REDACTION_INVALIDE,
   RAISON_REFUS_MODELE,
@@ -668,7 +667,7 @@ describe('creerClientAnthropic — rédiger (doublure de SDK)', () => {
     // compilation (APPRENTISSAGES n°7).
     const { sdk } = sdkQuiRepond([message(REDACTION_VALIDE)]);
     const resultat = await client(sdk).rediger(CONTEXTE_REDACTION);
-    expect(JSON.stringify(resultat)).not.toContain(RAISON_NON_IMPLEMENTE);
+    expect(JSON.stringify(resultat)).not.toContain('non-implemente');
   });
 
   it('sans tarif pour le modèle de rédaction : indisponible BRUYANT, et aucun appel', async () => {

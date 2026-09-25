@@ -25,6 +25,26 @@
 
 **🚦 Jalon** : détection ≥ 80 %, faux positifs ≤ 10 %, coût/scan ≤ 0,15 €, écarts inter-langues < 5 pts.
 
+> **Bilan du 2026-09-24 — battu sur toute la ligne au banc ; mesuré en
+> production le 2026-09-25.** Au banc (cassettes) : détection 100 % (32/32,
+> politique IA), faux positifs 0 %, ~0,048 USD/scan, écart inter-langues 0 pt.
+> **Astérisque, posé le 2026-09-25** : le deuxième scan réel de la campagne
+> (bestiaire, fiche 02) a révélé que l'assemblage de PRODUCTION n'avait jamais eu
+> de client IA (`creerClientIa` rendait toujours le client sans capacité). Le
+> cahier correctif n°1 a câblé le vrai client et re-mesuré le banc À TRAVERS
+> l'assemblage de production (réseau réel, 1,653 USD) : profils, cibles,
+> gravités, rapports et coût identiques ; **détection 91,4 % (32/35) en une
+> passe, 0 faux positif, 0,038 USD/scan**. L'écart ne vient pas de
+> l'assemblage : le 100 % du banc tenait sur deux cassettes réutilisées qui
+> verrouillaient une bonne passe par scénario (APPRENTISSAGES n°16) ; en
+> production chaque décision est un tirage, et la politique IA soumet avant
+> de remplir dans ~45 % des passes puis relit le blocage comme une soumission
+> (dette n°19, promue cahier correctif n°2). Le jalon tient sur le banc et, en production, tient sur tout
+> sauf la détection en politique IA, mesurée une fois à 91,4 % — au-dessus du
+> seuil de 80 %, sous le chiffre annoncé. La politique par défaut de
+> production reste `deterministe` ; sa jumelle d'équivalence n'est pas encore
+> mesurée.
+
 ---
 
 ## Phase 2 — Lancement commercial (4-6 semaines, chevauche la fin de Phase 1)

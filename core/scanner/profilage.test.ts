@@ -8,7 +8,7 @@ import { describe, expect, it } from 'vitest';
 import {
   RAISON_CLE_ABSENTE,
   RAISON_PROFIL_INVALIDE,
-  creerClientIa,
+  creerClientSansCapacite,
   type ClientIa,
   type ContexteProfilage,
   type ProfilPage,
@@ -45,13 +45,6 @@ const BORNES = { maxChars: CONFIG.contexteMaxChars, enTeteMaxChars: CONFIG.enTet
 /** Forme résolue servie pour l'alias : distincte de lui, comme dans la réalité. */
 const MODELE_SERVI = 'claude-haiku-4-5-20251001';
 
-/** Config IA minimale d'un client sans capacité : aucune clé, aucun tarif, aucun réseau. */
-const CONFIG_IA = {
-  variableCle: 'INEXISTANTE',
-  variableWorkspace: 'INEXISTANTE_WORKSPACE', reessaisReseauMax: 2,
-  modeles: { profilage: MODELE, navigation: MODELE, diagnostic: MODELE, redaction: MODELE },
-  tarifs: {},
-};
 
 const CONTEXTE: ContexteProfilage = { url: 'http://site.invalid/', texte: 'title: Aurore\nbody:\nreliure', langueDeclaree: 'fr' };
 
@@ -72,7 +65,7 @@ function profil(surcharges: Partial<ProfilPage> = {}): ProfilPage {
 /** Client IA factice : compte ses appels, rend ce qu'on lui dit de rendre. JAMAIS de réseau. */
 function clientFactice(reponse: ResultatIa<ProfilPage> | (() => Promise<never>)): ClientIa & { appels: ContexteProfilage[] } {
   const appels: ContexteProfilage[] = [];
-  const base = creerClientIa(CONFIG_IA, {});
+  const base = creerClientSansCapacite(RAISON_CLE_ABSENTE);
   return {
     ...base,
     appels,
@@ -275,7 +268,7 @@ describe('profilerSite — le chemin nominal', () => {
 
 describe('profilerSite — le mode dégradé', () => {
   it('client sans capacité : aucun profil, coût nul, raison au journal, aucune exception', async () => {
-    const ia = creerClientIa(CONFIG_IA, {});
+    const ia = creerClientSansCapacite(RAISON_CLE_ABSENTE);
     const { journal, journaliser } = journalDe();
     const resultat = await profilerSite({ ia, options: OPTIONS, contexte: CONTEXTE, journaliser, echeance: DANS_UNE_MINUTE() });
     expect(resultat).toEqual({ coutApi: 0 });
