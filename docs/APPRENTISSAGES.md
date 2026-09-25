@@ -589,3 +589,40 @@ regardé.
   confondues. Et c’est encore le réel qui l’a montré, comme pour le client
   manquant : *le réel est le seul juge qui ne partage aucun angle mort avec
   l’instrument*.
+
+## 17. La qualité de rédaction est un multiplicateur : elle rend un faux positif PLUS dangereux, pas moins (2026-09-25, campagne 6b, scan n°3)
+
+- **Le fait** : le premier rapport complet réel du projet (fiche 03) publie
+  en section 1, sous le titre le plus lisible du rapport, « Page d'accueil
+  lente à s'afficher sur téléphone », avec un constat, une conséquence et une
+  action à faire corriger. La preuve unique est une vidéo de démonstration
+  servie en contenu partiel (206) en 14,6 s — un flux qui se télécharge au
+  rythme de sa lecture. Le document d'accueil répondait en 0,25 s. Pendant ce
+  temps, le seul vrai ralentissement du scan (`/pricing`, 22,9 s) est écarté
+  par le protocole — pour une mauvaise raison (les rejeux ne mesurent pas).
+  Le vrai lent est caché, le faux lent est publié avec aplomb.
+- **Ce que cela dit** : tout le travail sur la voix, les statuts
+  épistémiques, l'honnêteté des formulations, la prose sans chiffres —
+  fonctionne. Et c'est précisément pour cela qu'il est dangereux quand le
+  fait sous-jacent est faux : la rédaction amplifie avec la même assurance ce
+  qui est vrai et ce qui est faux, elle habille un faux positif de la clarté
+  d'une vérité. Un commerçant lit ce rapport, ignore le problème qu'on lui a
+  caché et paie son prestataire pour chasser un fantôme. C'est l'inversion
+  parfaite, et c'est la première défaite réelle du pilier n°1.
+- **Pourquoi rien ne l'a vu** : le banc mesure la rédaction sur des anomalies
+  VRAIES par construction (les manifestes) — il ne peut pas mesurer ce que la
+  prose fait d'une anomalie fausse, puisqu'il n'en fabrique pas. Et le
+  détecteur de lenteur n'a jamais rencontré de flux média au banc : les
+  gabarits n'en ont pas. Le web réel en a.
+- **Règle** : **le zéro faux positif n'est pas le voisin du rapport lisible,
+  il en est la condition.** Toute amélioration de la rédaction augmente le
+  coût d'un faux positif ; toute mesure de la rédaction doit donc être lue
+  avec le taux de faux positifs de la détection qui l'alimente, jamais seule.
+  Et le banc doit un jour contenir des anomalies FAUSSES par construction
+  (un flux média lent, un tiers qui refuse le robot) pour mesurer ce que la
+  chaîne entière en fait — pas seulement des vraies.
+- **Conséquence** : carnet des correctifs C-02 (le détecteur), C-03 (la
+  prose qui ne nomme pas), C-04 (les rejeux sans mesure — le plus urgent :
+  un pilier qui ne mesure pas ne protège pas). Rien n'est corrigé avant le
+  vingtième scan : corriger sur trois sites, ce serait optimiser sur un
+  échantillon de trois.

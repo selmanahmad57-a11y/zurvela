@@ -1,0 +1,21 @@
+# Carnet des correctifs post-campagne
+
+Ce que les fiches du bestiaire ont mis au jour et que la règle d'or interdit
+de corriger avant le vingtième scan. Chaque entrée deviendra un cahier
+correctif — **priorisé à la fin de la campagne, sur vingt sites, pas sur
+trois**. Une entrée cite la fiche qui l'a fait naître ; une fiche qui
+retrouve un défaut déjà inscrit l'ajoute à la colonne « revu par ».
+
+Une entrée par défaut. Deux défauts qui ne se corrigent pas ensemble sont
+deux entrées, même s'ils viennent de la même observation.
+
+| id | défaut | né dans | revu par | pourquoi c'est grave | note |
+|---|---|---|---|---|---|
+| C-01 | **L'historique montré à l'IA ne porte pas l'issue des actions** : une soumission bloquée y figure comme une soumission ; l'IA conclut « déjà fait » et abandonne. | cahier correctif n°1 §6 (dette n°19) | — | Cause racine des trois ratés du run d'équivalence (91,4 % au lieu de 100 %) et d'une classe entière d'échecs à venir en navigation réelle. | **Déjà promu cahier correctif n°2** (prompt de navigation v3, variance mesurée avant la première cassette). Ne touche pas la déterministe. |
+| C-02 | **`d-lenteur` ignore le type et le statut de la ressource** : un flux média en 206 (contenu partiel) est compté comme une réponse lente. | fiche 03, obs. 2 | — | Faux positif publié avec le titre le plus lisible du rapport et une action à faire pour rien, confiance 0,85 — plus sûre que le vrai lent du scan 02. Attaque le différenciateur n°1 là où il fait le plus mal. | Mesurer le document principal et les ressources bloquantes ; un média chargé à la demande n'est pas une lenteur de page (206, `typeRessource: media` : c'est le web). |
+| C-03 | **La prose ne nomme pas le tiers** : « un service extérieur » alors que la preuve porte `accounts.google.com`. | fiche 03, obs. 3 | — | APPRENTISSAGES n°6 dans le rapport : un diagnostic qui n'accuse pas assez précisément envoie chercher au mauvais endroit — ici, une panne qui n'existe pas. | Contrat de rédaction : quand une anomalie tierce porte une origine identifiable, la prose doit pouvoir la nommer. |
+| C-04 | **Les rejeux de lenteur ne rapportent aucune mesure** : `mesure` absente sur les douze tentatives de deux scans ; un rejeu de 27 s sort « jamais reproduite ». | fiche 02, obs. 4 | fiche 03, obs. 4 | **Le protocole anti-faux-positifs ne fonctionne pas sur la catégorie lenteur** : il n'écarte pas par re-mesure, il écarte par absence de mesure — un hasard, pas une garantie. Le vrai lent de `/pricing` (22,9 s) a été écarté pour une mauvaise raison. | **Probablement le plus urgent** : un pilier qui ne mesure pas ne protège pas. |
+| C-05 | **`ERR_BLOCKED_BY_ORB` est traité comme une défaillance du tiers** alors que c'est un blocage côté navigateur (le tiers a servi du HTML au robot déclaré). | fiche 02, obs. 2 | fiche 03, obs. 1 | Faux positif tiers-mineur sur toute page qui embarque Google Sign-In, tant que le robot se déclare — et il se déclarera toujours (constitution §3). | Place probable dans `erreursReseauIgnorees` ou dans une famille « blocages du navigateur ». |
+| C-06 | **L'échéance du scan ne laisse pas de marge** : 92 % puis 90,5 %, et la rédaction (17 s) arrive en dernier. | fiche 02, obs. 5 | fiche 03, obs. 6 | Un site un peu plus lent, et les re-vérifications sont sacrifiées, ou le rapport redevient structurel au moment d'être rédigé. Non éprouvé au banc (l'instrument n'a pas d'échéance). | Arbitrage `pagesMax` / `delaiEntrePagesMs` / `timeoutMs` / politique de confirmation, et ce qui arrive au rapport quand l'échéance tombe pendant la rédaction. |
+| C-07 | **La langue du rapport n'est pas un paramètre du scan** : `pnpm scan` n'a pas d'option de langue ; `fr` vient de `config/rapport.json`. | fiche 03, inventaire | — | Le différenciateur n°3 promet la langue DU CLIENT ; aujourd'hui c'est celle de la config par défaut. | Option `--langue` sur la commande, portée jusqu'à `langueRapport`. |
+| C-08 | **Couverture : 16 % du site, une seule langue** — la déterministe explore en profondeur là où elle est entrée (`/docs/*`, `/legal/*`). | fiche 02, obs. 6 | fiche 03, obs. 7 | Les préfixes de langue (`/en`, `/es`, `/it`) jamais atteints sous 20 pages. | La politique IA devait arbitrer ; elle est bloquée par C-01. Lire avec C-06. |
