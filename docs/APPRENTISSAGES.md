@@ -626,3 +626,39 @@ regardé.
   un pilier qui ne mesure pas ne protège pas). Rien n'est corrigé avant le
   vingtième scan : corriger sur trois sites, ce serait optimiser sur un
   échantillon de trois.
+
+## 18. Un protocole anti-faux-positifs qui ne rejoue pas ses candidates n'est pas un protocole, c'est un tri par hasard (2026-09-25, campagne 6b, scans n°3 à 5)
+
+- **Le fait** : trois sites, trois causes, un seul effet. getlumavo (fiche
+  03) : les rejeux de lenteur ressortent sans mesure — le protocole écarte
+  par absence de mesure, pas par re-mesure (C-04). cutlybook (fiche 04) :
+  dix tentatives, dix « sélecteur introuvable » — le rejeu s'ouvre sur la
+  page d'arrivée et y cherche les préalables de la page d'origine (C-09).
+  books (fiche 05) : zéro tentative, l'échéance est atteinte pendant
+  l'exploration (C-06, C-10). Les trois rapports disent « aucune anomalie » :
+  deux le disent par accident (toutes les candidates étaient tierces), un le
+  dit en cachant un vrai défaut (jQuery en http sur https, contenu mixte,
+  classé tiers-mineur et jamais rejoué).
+- **Ce que cela dit** : on mesurait la détection, les verdicts, les faux
+  positifs — jamais quelle fraction des candidates le protocole a
+  PHYSIQUEMENT réussi à re-tester. Le pilier n°1 tenait au banc parce que le
+  banc est fait de pages que le rejeu sait rouvrir ; sur le web réel il est
+  structurellement aveugle, sous trois formes différentes, et rien ne le
+  comptait. Ce n'est pas une anomalie par site, c'est un pattern.
+- **Pourquoi rien ne l'a vu** : un rapport vide se lit comme « rien à
+  signaler », et la scorecard n'a pas de colonne pour « rien n'a pu être
+  vérifié ». Le silence d'un rejeu impossible et le silence d'un site sain
+  ont la même forme (n°4, n°6). Les chiffres mesurés rétroactivement le
+  disent d'un coup : candidates rejouables **3/3, 3/3, 0/8, 0/13**.
+- **Règle** : **le taux de candidates rejouables est une métrique de premier
+  rang**, publiée par la commande de scan, dans chaque fiche, et un jour
+  dans la scorecard — au même titre que la détection et les faux positifs.
+  Un scan à 0 % de rejouabilité ne dit pas « aucune anomalie », il dit
+  « rien n'a pu être vérifié », et le rapport doit le dire ainsi. Une
+  candidate qu'on ne peut pas rejouer n'est ni confirmée ni écartée : elle
+  est non mesurée, et le non-mesuré se compte (n°4).
+- **Conséquence** : C-09 passe priorité 1 du carnet — devant le client IA
+  manquant, parce qu'il touche le pilier qui EST le produit ; la doctrine
+  tierce (C-05) priorité 2 par récurrence ; rien ne s'ouvre avant le dixième
+  scan, parce que cinq sites suffisent à pressentir la hiérarchie, pas à la
+  figer.

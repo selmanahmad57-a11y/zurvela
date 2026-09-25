@@ -19,6 +19,8 @@
 convention du banc, qui compte des visites et non des URL. À lire ainsi dans
 toutes les fiches.*
 
+**Candidates rejouables** : 0/0 — aucune candidate, rien à rejouer (mesure ajoutée rétroactivement le 2026-09-25, APPRENTISSAGES n°18).
+
 ## Rapport
 
 Lu par : l'agent. Fichier : `01-zurvela.rapport.md`.

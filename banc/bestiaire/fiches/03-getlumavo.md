@@ -40,6 +40,8 @@ confirmation 81 s → +254,2 s · **rédaction 17,4 s → +271,6 s** · arrêt
 | coût | 0 | 0,047 USD | 9,4 % du plafond ; le rapport coûte 0,045 |
 | durée | 229 s (instrument) · 276 s (officiel) | 271,6 s | +19 s d'IA sur un scan qui frôlait déjà l'échéance (obs. 6) |
 
+**Candidates rejouables** : 3/3 (3/3 groupes, 6 tentatives exploitables sur 6) — idem fiche 02 : les rejeux de lenteur tournent mais ne mesurent rien (obs. 4, C-04) (mesure ajoutée rétroactivement le 2026-09-25, APPRENTISSAGES n°18).
+
 ## Rapport
 
 Lu par : l'agent. Fichier : `03-getlumavo.rapport.md`.

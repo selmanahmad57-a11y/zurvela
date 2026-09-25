@@ -28,6 +28,8 @@ obs. 2). Il vit hors dépôt (scratchpad) ; son journal est conservé ici :
 (6 rejeux de 6,6 à 23,8 s) · **arrêt `limite-pages`** : 20 URL sur les 125 du
 sitemap (16 %), toutes en français — `/en`, `/es`, `/it` jamais atteintes.
 
+**Candidates rejouables** : 3/3 (3/3 groupes, 6 tentatives exploitables sur 6) — rejouées physiquement, mais les deux groupes de lenteur sans aucune mesure (obs. 4, C-04) : le verdict tombe par absence, pas par re-mesure (mesure ajoutée rétroactivement le 2026-09-25, APPRENTISSAGES n°18).
+
 ## Rapport
 
 Lu par : l'agent. Fichier : `02-getlumavo.rapport.md`.

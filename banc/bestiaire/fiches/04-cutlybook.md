@@ -25,6 +25,8 @@ le budget de 20 pages. `/reset-password` **refusée par robots.txt** (×2, une
 par viewport). Trois formulaires remplis (`/login`, `/register`, `/support`),
 aucun soumis.
 
+**Candidates rejouables** : **0/8** (0/5 groupes, 0 tentative exploitable sur 10 — `selecteur-introuvable`, C-09) (mesure ajoutée rétroactivement le 2026-09-25, APPRENTISSAGES n°18).
+
 ## Rapport
 
 Lu par : l'agent. Fichier : `04-cutlybook.rapport.md`.

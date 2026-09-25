@@ -13,7 +13,7 @@
  */
 import { describe, expect, it } from 'vitest';
 import { chargerConfigScanner } from '../core/scanner/config.js';
-import { FICHIERS_CONFIG, estNomConfig, lireOptions, timeoutDe } from './scan.js';
+import { FICHIERS_CONFIG, estNomConfig, lireOptions, tauxRejouabilite, timeoutDe } from './scan.js';
 
 describe('la configuration de production GOUVERNE le scan', () => {
   it('le timeout du scan vient de production.json, et il DIFFÈRE de celui de l’instrument', async () => {
@@ -83,5 +83,46 @@ describe('la commande npm charge la clé comme les scripts du banc', () => {
     const paquet = JSON.parse(await readFile(new URL('../package.json', import.meta.url), 'utf8')) as { scripts: Record<string, string> };
     expect(paquet.scripts['scan']).toContain('--env-file-if-exists=docs/.env.local');
     expect(paquet.scripts['banc:enregistrer-ia']).toContain('--env-file-if-exists=docs/.env.local');
+  });
+});
+
+describe('le taux de candidates rejouables — le chiffre qui manquait partout (APPRENTISSAGES n°18)', () => {
+  const rejouee = { echecOutillage: false };
+  const outil = { echecOutillage: true };
+  const groupe = (membres: number, tentatives: { echecOutillage: boolean }[]) => ({
+    groupe: { membres: Array.from({ length: membres }, (_, i) => ({ id: i })) },
+    tentatives,
+  });
+
+  it('compte les CANDIDATES des groupes qu’au moins une tentative a physiquement rejoués', () => {
+    // fiche 04 en miniature : un groupe de 4 (Stripe) jamais rejoué, un groupe
+    // de 1 rejoué deux fois, un groupe de 2 rejoué une fois sur deux.
+    const taux = tauxRejouabilite({
+      groupes: [groupe(4, [outil, outil]), groupe(1, [rejouee, rejouee]), groupe(2, [outil, rejouee])],
+    });
+    expect(taux).toEqual({ candidates: 7, candidatesRejouees: 3, groupes: 3, groupesRejoues: 2 });
+  });
+
+  it('peut être NUL : tout échec d’outillage (fiche 04) et aucune tentative (fiche 05, échéance) donnent 0', () => {
+    // Le contrôle qui peut échouer : une fonction qui compterait les
+    // tentatives, ou les groupes, rendrait autre chose que zéro ici.
+    expect(tauxRejouabilite({ groupes: [groupe(8, [outil, outil]), groupe(13, [])] })).toEqual({
+      candidates: 21,
+      candidatesRejouees: 0,
+      groupes: 2,
+      groupesRejoues: 0,
+    });
+  });
+
+  it('sans candidate, 0/0 — un scan sain n’a rien à rejouer, et cela se lit tel quel', () => {
+    expect(tauxRejouabilite({})).toEqual({ candidates: 0, candidatesRejouees: 0, groupes: 0, groupesRejoues: 0 });
+    expect(tauxRejouabilite({ groupes: [] }).candidates).toBe(0);
+  });
+
+  it('une tentative rejouée mais NON reproduite compte comme rejouée : la rejouabilité n’est pas le verdict', () => {
+    // fiche 03 : les rejeux de lenteur ont tourné (echecOutillage false) sans
+    // rien mesurer — c'est C-04, un autre défaut, qui ne doit pas se cacher ici.
+    const taux = tauxRejouabilite({ groupes: [groupe(2, [{ echecOutillage: false }, { echecOutillage: false }])] });
+    expect(taux.candidatesRejouees).toBe(2);
   });
 });

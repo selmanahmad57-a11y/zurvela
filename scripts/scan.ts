@@ -36,6 +36,41 @@ export function estNomConfig(valeur: string): valeur is NomConfig {
 }
 
 /**
+ * LE CHIFFRE QUI MANQUAIT PARTOUT (APPRENTISSAGES n°18) : quelle fraction des
+ * candidates le protocole a PHYSIQUEMENT réussi à re-tester.
+ *
+ * Cinq scans du bestiaire, trois causes différentes (rejeux de lenteur sans
+ * mesure, rejeu ouvert sur la mauvaise page, échéance atteinte), un seul
+ * effet : le protocole ne confirme rien — et trois rapports qui disent
+ * « aucune anomalie ». On mesurait la détection, les verdicts, les faux
+ * positifs ; jamais la rejouabilité. Une candidate est REJOUÉE si son groupe
+ * a au moins une tentative qui n'a pas échoué par l'outillage
+ * (`echecOutillage: false`) — qu'elle ait ensuite été reproduite ou non.
+ * Une tentative qui a tourné sans rien mesurer (C-04) compte comme rejouée :
+ * c'est un autre défaut, qui se lit dans la fiche, pas ici.
+ *
+ * Le type est STRUCTUREL, volontairement : la commande ne dépend que de ce
+ * qu'elle lit, et le typecheck rougit si le rapport technique change de forme.
+ */
+export function tauxRejouabilite(rapport: {
+  groupes?: readonly { groupe: { membres: readonly unknown[] }; tentatives: readonly { echecOutillage: boolean }[] }[];
+}): { candidates: number; candidatesRejouees: number; groupes: number; groupesRejoues: number } {
+  let candidates = 0;
+  let candidatesRejouees = 0;
+  let groupesRejoues = 0;
+  const groupes = rapport.groupes ?? [];
+  for (const resultat of groupes) {
+    const membres = resultat.groupe.membres.length;
+    candidates += membres;
+    if (resultat.tentatives.some((tentative) => !tentative.echecOutillage)) {
+      candidatesRejouees += membres;
+      groupesRejoues += 1;
+    }
+  }
+  return { candidates, candidatesRejouees, groupes: groupes.length, groupesRejoues };
+}
+
+/**
  * Le TIMEOUT du scan, et d'où il vient.
  *
  * De `scan.timeoutMs` de la configuration choisie. Il est FACULTATIF dans le
@@ -129,7 +164,11 @@ async function principal(): Promise<void> {
     console.log(`\nRapport écrit : ${options.sortie}`);
   }
   if (options.journal !== undefined) {
-    await writeFile(options.journal, `${JSON.stringify(rapport, null, 1)}\n`, 'utf8');
+    // JSON COMPACT : le journal du scan n°5 du bestiaire pesait 4,3 Mo indenté ;
+    // vingt scans à ce rythme alourdissent le dépôt de dizaines de Mo pour une
+    // campagne. La preuve n'a pas besoin d'être lisible à l'œil, elle a besoin
+    // d'être là (outillage de campagne, règle d'or respectée).
+    await writeFile(options.journal, `${JSON.stringify(rapport)}\n`, 'utf8');
     console.log(`Journal écrit : ${options.journal} (${rapport.journal.length} entrées)`);
   }
 
@@ -138,6 +177,7 @@ async function principal(): Promise<void> {
   // 0 » se lisait comme une économie. Un silence doit se lire comme un
   // silence.
   const modeIa = rapport.journal.find((entree) => entree.type === 'ia.mode')?.details as { mode?: string; raison?: string | null } | undefined;
+  const rejouabilite = tauxRejouabilite(rapport);
   const ligneIa = modeIa === undefined ? 'inconnu' : modeIa.mode === 'actif' ? 'actif' : `DÉGRADÉ (${modeIa.raison ?? 'raison inconnue'})`;
 
   console.log(
@@ -149,6 +189,7 @@ async function principal(): Promise<void> {
       `pages        : ${rapport.parcours?.pages.length ?? 0}`,
       `candidates   : ${rapport.candidates?.length ?? 0}`,
       `retenues     : ${rapport.anomalies.length}`,
+      `rejouables   : ${rejouabilite.candidatesRejouees}/${rejouabilite.candidates} candidates (${rejouabilite.groupesRejoues}/${rejouabilite.groupes} groupes)`,
     ].join('\n'),
   );
 }
