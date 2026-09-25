@@ -1,0 +1,14 @@
+{
+  "$commentaire": "Taxonomie de classement du bestiaire — CLOSE après la campagne 6b, EXTENSIBLE pendant. Une observation reçoit une classe et une seule. Une classe absente s'ajoute ici d'abord, jamais dans une fiche seule. Le jour où une classe devient un gabarit du banc, la fiche qui l'a fait naître est citée dans le gabarit.",
+  "version": "6b-initiale",
+  "classes": [
+    { "id": "crash", "definition": "Le scan ne rend pas de rapport." },
+    { "id": "blocage-anti-bot", "definition": "Le site nous refuse : pare-feu applicatif, captcha, 403 généralisé." },
+    { "id": "faux-positif", "definition": "Une anomalie retenue qui n'en est pas une, jugée par un humain qui a regardé le site." },
+    { "id": "rate-suspecte", "definition": "Un défaut visible à l'oeil que le moteur n'a pas retenu." },
+    { "id": "lenteur-outil", "definition": "Le scan lui-même est lent : échéance frôlée ou atteinte, re-vérifications sacrifiées." },
+    { "id": "rapport-illisible", "definition": "Le rapport existe mais un non-technicien ne le comprendrait pas." },
+    { "id": "comportement-inattendu", "definition": "Ce qui surprend sans entrer ailleurs. À nommer précisément : c'est le vivier des classes futures." },
+    { "id": "RAS", "definition": "Rien à signaler. C'est une donnée, pas une absence de donnée." }
+  ]
+}
