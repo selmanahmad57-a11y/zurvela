@@ -210,3 +210,42 @@ Run : `pnpm banc:equivalence --tous --politique deterministe`. Coût attendu
 déterministe du 2026-09-25 06:35 ; décisions gratuites), **plafond 1,20 USD**.
 Référence de comparaison : `banc/resultats/2026-09-25T06-35-05.501Z.json`
 (33/35, 0 faux positif, gravités 29/29, profils 35/35, rapports 41/41).
+
+### 7.1 Résultat — 2026-09-25, 14:11 → 14:24
+
+Run sur le moteur committé `7f6aa1c`. Scorecard
+`banc/resultats/2026-09-25T12-11-43.323Z.json` (étiquetée `assemblage:
+production`) ; extrait sans journaux à côté de ce cahier,
+`correctif-01-equivalence-deterministe.scorecard.json`. Dépensé : **0,893 USD**
+sur 0,89 annoncés (plafond 1,20).
+
+| Famille | Référence déterministe (cassettes, 06:35) | Production (réseau réel) |
+|---|---|---|
+| Client IA actif | injecté | 43/43 — 0 décision confiée au modèle (politique déterministe) |
+| Détection | 33/35 (94,3 %) | **33/35 (94,3 %)** |
+| Ratés | mini-boutique f01 en/fr | les mêmes deux |
+| Faux positifs | 0 | 0 |
+| Gravités · profils · rapports | 29/29 · 35/35 · 41/41 | 29/29 · 35/35 · 41/41 |
+| Cibles (déterministe) | 20/20 conformes, inerties 10/10 | 20/20, 10/10 |
+| Soumission avant remplissage | 0 sur 86 passes | **0 sur 86 passes** |
+| Coût total · par scan | 0,891 · 0,0207 USD | 0,893 · 0,0208 USD |
+| Écart inter-langues | 0,3 pt | 0,3 pt |
+
+Bit à bit sur chaque compteur ; seuls la durée (latence réseau) et quelques
+dix-millièmes de dollar bougent. Les deux « ratés » sont les mêmes F01 de la
+mini-boutique, dont la page `/devis` est une cible **déclarée hors parcours
+sous budget pour cette politique** (`atteinteAttendue.deterministe: false`,
+attendu satisfait) — le prix affiché de la gratuité, pas un défaut.
+
+### 7.2 Ce que le chiffre décide
+
+La politique de `config/production.json`, celle de la campagne, produit en
+production réelle exactement ce que le banc lui prédit, et elle ne souffre
+pas du mécanisme de la dette n°19 : elle remplit avant de soumettre par
+construction, 0 soumission prématurée sur 86 passes, contre 45 % en IA.
+**La campagne peut reprendre au scan n°3 sur la politique déterministe**
+pendant que le cahier correctif n°2 corrige l'IA — les deux chantiers ne se
+bloquent pas. Le bestiaire mesurera désormais `7f6aa1c` : la règle d'or
+reprend à cette version, et les fiches 01 et 02 restent valides (elles
+notaient la déterministe, dont rien n'a bougé hors le client de profilage et
+de rédaction, désormais présent).
