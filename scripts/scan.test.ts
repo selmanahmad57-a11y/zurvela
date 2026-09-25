@@ -62,7 +62,26 @@ describe('lecture des options', () => {
     expect(estNomConfig('autre')).toBe(false);
   });
 
+  it('accepte --journal : sans lui, la campagne ne pouvait citer aucune preuve', () => {
+    expect(lireOptions(['https://x.invalid', '--journal', 'j.json'])?.journal).toBe('j.json');
+    expect(lireOptions(['https://x.invalid'])?.journal).toBeUndefined();
+  });
+
   it('sans URL, il n’y a rien à scanner', () => {
     expect(lireOptions([])?.url).toBeUndefined();
+  });
+});
+
+
+describe('la commande npm charge la clé comme les scripts du banc', () => {
+  it('« pnpm scan » lit docs/.env.local : le scan n°1 du bestiaire est parti sans clé', async () => {
+    // Test de FORME (apprentissage n°5) : la commande telle qu'elle est écrite
+    // dans package.json, pas telle qu'on croit qu'elle est. `tsx scripts/scan.ts`
+    // seul ne charge aucun fichier d'environnement, et un scan réel « standard »
+    // mesurait alors le mode sans clé.
+    const { readFile } = await import('node:fs/promises');
+    const paquet = JSON.parse(await readFile(new URL('../package.json', import.meta.url), 'utf8')) as { scripts: Record<string, string> };
+    expect(paquet.scripts['scan']).toContain('--env-file-if-exists=docs/.env.local');
+    expect(paquet.scripts['banc:enregistrer-ia']).toContain('--env-file-if-exists=docs/.env.local');
   });
 });

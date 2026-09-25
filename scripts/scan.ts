@@ -58,13 +58,19 @@ interface Options {
   url?: string;
   config: NomConfig;
   sortie?: string;
+  /**
+   * Fichier où écrire le RAPPORT TECHNIQUE complet (journal, candidates,
+   * écartées, anomalies) en JSON. Sans lui, la campagne ne pouvait citer
+   * aucune preuve : le premier scan réel l'a montré (bestiaire, fiche 01).
+   */
+  journal?: string;
 }
 
 export function lireOptions(args?: string[]): Options | null {
   try {
     const { values, positionals } = parseArgs({
       args,
-      options: { config: { type: 'string' }, sortie: { type: 'string' } },
+      options: { config: { type: 'string' }, sortie: { type: 'string' }, journal: { type: 'string' } },
       allowPositionals: true,
       strict: true,
     });
@@ -76,6 +82,7 @@ export function lireOptions(args?: string[]): Options | null {
       ...(positionals[0] === undefined ? {} : { url: positionals[0] }),
       config: nomConfig,
       ...(values.sortie === undefined ? {} : { sortie: values.sortie }),
+      ...(values.journal === undefined ? {} : { journal: values.journal }),
     };
   } catch {
     return null;
@@ -85,7 +92,7 @@ export function lireOptions(args?: string[]): Options | null {
 async function principal(): Promise<void> {
   const options = lireOptions();
   if (options?.url === undefined) {
-    console.error('Usage : pnpm scan <url> [--config production|instrument] [--sortie <fichier>]');
+    console.error('Usage : pnpm scan <url> [--config production|instrument] [--sortie <fichier>] [--journal <fichier.json>]');
     process.exitCode = 2;
     return;
   }
@@ -121,10 +128,22 @@ async function principal(): Promise<void> {
     await writeFile(options.sortie, `${texte}\n`, 'utf8');
     console.log(`\nRapport écrit : ${options.sortie}`);
   }
+  if (options.journal !== undefined) {
+    await writeFile(options.journal, `${JSON.stringify(rapport, null, 1)}\n`, 'utf8');
+    console.log(`Journal écrit : ${options.journal} (${rapport.journal.length} entrées)`);
+  }
+
+  // LE MODE IA, DIT À VOIX HAUTE. Le scan n°2 du bestiaire a tourné en mode
+  // dégradé avec la clé chargée, et rien dans la sortie ne le disait : « coût
+  // 0 » se lisait comme une économie. Un silence doit se lire comme un
+  // silence.
+  const modeIa = rapport.journal.find((entree) => entree.type === 'ia.mode')?.details as { mode?: string; raison?: string | null } | undefined;
+  const ligneIa = modeIa === undefined ? 'inconnu' : modeIa.mode === 'actif' ? 'actif' : `DÉGRADÉ (${modeIa.raison ?? 'raison inconnue'})`;
 
   console.log(
     [
       '',
+      `mode IA      : ${ligneIa}`,
       `durée        : ${rapport.dureeMs} ms`,
       `coût API     : ${rapport.coutApi}`,
       `pages        : ${rapport.parcours?.pages.length ?? 0}`,
