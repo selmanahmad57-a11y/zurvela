@@ -105,7 +105,7 @@ afterAll(async () => {
 async function explorer(url: string, config: ConfigScanner, dureeMs = 15_000): Promise<Resultat> {
   const journal: EntreeJournal[] = [];
   const observateur = creerObservateur();
-  const deterministe = politiqueDeterministe(config.remplissage);
+  const deterministe = politiqueDeterministe();
   const explorateur = creerExplorateur({ config, politique: deterministe, secours: deterministe, filtre, navigateur });
   const parcours = await explorateur.explorer(
     {

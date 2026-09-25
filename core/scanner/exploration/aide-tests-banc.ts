@@ -58,7 +58,7 @@ export async function preparerBanc(): Promise<BancEssai> {
   async function explorerUrl(url: string, echeance = Date.now() + ECHEANCE_TEST_MS): Promise<ResultatExploration> {
     const journal: EntreeJournal[] = [];
     const observateur = creerObservateur();
-    const deterministe = politiqueDeterministe(config.remplissage);
+    const deterministe = politiqueDeterministe();
     const explorateur = creerExplorateur({ config, politique: deterministe, secours: deterministe, filtre, navigateur });
     const parcours = await explorateur.explorer(
       { urlDepart: url, echeance, journaliser: (type, details) => journal.push({ horodatage: new Date().toISOString(), type, details }) },

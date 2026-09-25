@@ -50,7 +50,7 @@ beforeAll(async () => {
 
   const observateur = creerObservateur();
   const journal: EntreeJournal[] = [];
-  const deterministe = politiqueDeterministe(config.remplissage);
+  const deterministe = politiqueDeterministe();
   const explorateur = creerExplorateur({
     config,
     politique: deterministe,

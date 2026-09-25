@@ -10,10 +10,19 @@
  * Cette copie n'a pas vocation à vivre : elle est le témoin d'une migration.
  * Elle disparaîtra quand la politique déterministe changera volontairement de
  * comportement — et ce jour-là, c'est ce test qui l'exigera à voix haute.
+ *
+ * CE JOUR EST ARRIVÉ À MOITIÉ (dette n°18, 2026-09-25). La politique élit
+ * désormais dans le menu énuméré au lieu de trancher sur le contexte. Sur
+ * l'espace d'états NON GATÉ, l'oracle prouve que pas une décision ne bouge :
+ * la première action énumérée est celle de l'algorithme d'origine. Sous le
+ * gate de soumission, elle diverge — et c'est voulu : `politique.test.ts` le
+ * tient. L'oracle reste donc, avec un rôle précis : garantir que le menu
+ * reproduit l'ordre déterministe historique.
  */
 import { describe, expect, it } from 'vitest';
 import type { Action, ContexteDecision, DescriptionFormulaire, EtatDecisionEnumere, PageVisitee } from '../../types.js';
 import type { ConfigScanner } from '../config.js';
+import { enumererActions } from './enumeration.js';
 import { politiqueDeterministe, RAISON_PLUS_RIEN } from './politique.js';
 import { choisirValeurs } from './remplissage.js';
 
@@ -60,15 +69,24 @@ function formulaire(rang: number, avecDeclencheur: boolean): DescriptionFormulai
   };
 }
 
-const ETAT_VIDE: EtatDecisionEnumere = {
-  page: '/x',
-  viewport: 'desktop',
-  profil: null,
-  actions: [],
-  historique: [],
-  nbPagesVisitees: 0,
-  pagesRestantes: 0,
-};
+/** Le VRAI menu du contexte, tel que l'explorateur le construit hors gate. */
+function menuDe(contexte: ContexteDecision): EtatDecisionEnumere {
+  return {
+    page: '/x',
+    viewport: 'desktop',
+    profil: null,
+    actions: enumererActions(contexte, {
+      remplissage,
+      libelleMaxChars: 120,
+      origine: 'http://site.invalid',
+      libelles: new Map(),
+      soumission: 'site-possede',
+    }),
+    historique: [],
+    nbPagesVisitees: 0,
+    pagesRestantes: 0,
+  };
+}
 
 /** Tous les états de décision engendrés par 0 à 3 formulaires × leurs états × 0 à 2 URL. */
 function tousLesContextes(): ContexteDecision[] {
@@ -106,11 +124,11 @@ function tousLesContextes(): ContexteDecision[] {
 
 describe('migration vers PolitiqueDecision — non-régression', () => {
   it('rend EXACTEMENT les mêmes décisions qu’avant la migration, sur tout l’espace d’états', async () => {
-    const politique = politiqueDeterministe(remplissage);
+    const politique = politiqueDeterministe();
     const contextes = tousLesContextes();
     expect(contextes.length).toBeGreaterThan(200);
     for (const contexte of contextes) {
-      const { action, politique: appliquee, provenance, raisonRepli } = await politique.decider(contexte, ETAT_VIDE);
+      const { action, politique: appliquee, provenance, raisonRepli } = await politique.decider(contexte, menuDe(contexte));
       expect(action).toEqual(deciderAvantMigration(contexte));
       // La forme neuve n'ajoute rien de son cru : pas d'IA, pas de repli.
       expect(appliquee).toBe('deterministe');

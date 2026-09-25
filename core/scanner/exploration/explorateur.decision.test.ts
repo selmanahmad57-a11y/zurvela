@@ -109,7 +109,7 @@ async function explorer(url: string, politique: PolitiqueDecision, dureeMs = 20_
   const explorateur = creerExplorateur({
     config: base,
     politique,
-    secours: politiqueDeterministe(base.remplissage),
+    secours: politiqueDeterministe(),
     filtre,
     navigateur,
   });
@@ -296,7 +296,7 @@ describe('politique IA branchée — repli par décision et traçabilité jusqu�
     try {
       const politique = politiqueIa({
         ia: clientIa(1),
-        deterministe: politiqueDeterministe(base.remplissage),
+        deterministe: politiqueDeterministe(),
         journaliser: (type, details) => journalPolitique.push({ horodatage: new Date().toISOString(), type, details }),
         cout: (montant) => {
           cout += montant;
@@ -331,7 +331,7 @@ describe('politique IA branchée — repli par décision et traçabilité jusqu�
     try {
       const politique = politiqueIa({
         ia: clientIa(0),
-        deterministe: politiqueDeterministe(base.remplissage),
+        deterministe: politiqueDeterministe(),
         journaliser: () => undefined,
       });
 
@@ -421,7 +421,7 @@ describe('l’arrêt décidé par la politique', () => {
   it('un arrêt HONNÊTE (plus rien à faire) laisse le compteur à zéro : pas de fausse alarme sur la déterministe', async () => {
     const serveur = await servir({ '/': '<a href="/a">A</a>', '/a': '<p>a</p>' });
     try {
-      const resultat = await explorer(serveur.url, politiqueDeterministe(base.remplissage));
+      const resultat = await explorer(serveur.url, politiqueDeterministe());
 
       expect(resultat.parcours.arret).toBe('complet');
       expect(resultat.parcours.enAttenteALArret).toBe(0);

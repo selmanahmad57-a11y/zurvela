@@ -91,7 +91,7 @@ function choisirPolitique(
  */
 function explorateurAvecNavigateur(config: ConfigScanner, actionsInterdites: ActionsInterdites, ia: ClientIa): ExplorateurProfilant {
   const filtre = creerFiltre(actionsInterdites);
-  const deterministe = politiqueDeterministe(config.remplissage);
+  const deterministe = politiqueDeterministe();
   return {
     nom: NOM_EXPLORATEUR_NAVIGATEUR,
     async explorer(contexte, observateur, collecte, cout) {

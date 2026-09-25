@@ -77,7 +77,7 @@ beforeAll(async () => {
   navigateur = await lancerNavigateur(config);
 
   const observateur = creerObservateur();
-  const deterministe = politiqueDeterministe(config.remplissage);
+  const deterministe = politiqueDeterministe();
   const explorateur = creerExplorateur({
     config,
     politique: deterministe,

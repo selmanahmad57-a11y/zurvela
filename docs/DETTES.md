@@ -370,7 +370,7 @@ dette est levée (le commit qui la lève renvoie à ce fichier).
 - **Ce qui la garde en attendant** : le contrat est écrit en toutes lettres
   dans `core/ia/plafond.ts`, sur l'interface `PorteeBudget`.
 
-## 18. La politique déterministe ne choisit pas dans le menu énuméré (2026-09-25, brique 6a)
+## 18. ~~La politique déterministe ne choisit pas dans le menu énuméré~~ — LEVÉE le 2026-09-25 (session courte après 6a)
 
 - **Quoi** : `politiqueDeterministe` fabrique son action depuis l'état de la
   page et **ne lit pas l'énumération** — « c'est délibéré », dit son en-tête,
@@ -394,6 +394,16 @@ dette est levée (le commit qui la lève renvoie à ce fichier).
 - **Ce que cela coûte en attendant** : deux cycles de décision perdus par page
   à formulaire sous interaction restreinte, et une colonne « replis » dont la
   cause n'est plus univoque. Rien pour le client.
-- **Condition de levée** : arbitrage sur l'en-tête de `politique.ts`. Si la
-  déterministe lit l'énumération, sa gratuité est intacte (l'énumération est
-  déjà calculée) et tout gate futur la gouverne par construction.
+- **Levée, et par quoi** : arbitrage rendu — la décision de conception est
+  renversée en connaissance de cause. L'en-tête justifiait de ne pas lire
+  l'énumération à une époque où elle n'était qu'une vue pour le modèle ; elle
+  est devenue une couche de sécurité avec le gate de soumission, et *une
+  justification que rien ne ré-éprouve survit à ses raisons* (n°5 appliqué aux
+  décisions). La déterministe élit désormais la PREMIÈRE action énumérée — le
+  menu est déjà trié dans son ordre — comme l'IA le fait depuis 4b : les deux
+  politiques sous le même contrat.
+- **Preuves** : l'oracle de `politique.non-regression.test.ts` tient sur tout
+  l'espace d'états hors gate (pas une décision ne bouge) ; sous le gate, la
+  divergence est voulue et tenue par `politique.test.ts` ; les **2 replis** du
+  scénario mode « aucune » sont tombés à **0** ; et le paramètre `remplissage`
+  de la fabrique, devenu mort, a été retiré plutôt que masqué.

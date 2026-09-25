@@ -75,7 +75,7 @@ function bancEssai(decider: ClientIa['decider']): { politique: ReturnType<typeof
   let total = 0;
   const politique = politiqueIa({
     ia: client(decider),
-    deterministe: politiqueDeterministe(remplissage),
+    deterministe: politiqueDeterministe(),
     journaliser: (type, details) => journal.push({ horodatage: new Date().toISOString(), type, details }),
     cout: (montant) => {
       total += montant;

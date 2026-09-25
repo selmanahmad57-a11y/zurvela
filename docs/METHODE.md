@@ -270,3 +270,22 @@ Le coût est de quelques minutes. Il a déjà évité une correction fantôme en
 brique 5, où un sceptique a supprimé deux appels fraîchement ajoutés et relancé
 369 tests sans en tuer un seul : les bornes ajoutées étaient des no-op, et la
 suite entière le taisait.
+
+## 11. L'instrument refuse de piloter un scan plutôt que d'inventer un défaut
+
+`config/scanner.json` ne porte pas `scan.timeoutMs`, et ce n'est pas un oubli :
+c'est la frontière banc/production rendue OPÉRATIONNELLE. Le banc impose son
+propre timeout depuis `config/banc.json` ; la production porte le sien dans
+`config/production.json`. Quand `pnpm scan --config instrument` demande un
+timeout à l'instrument, la commande **lève** — elle ne replie sur aucune
+valeur choisie par le code.
+
+Pourquoi lever plutôt que replier : un défaut caché dans le code serait
+exactement le seuil en dur que la constitution §2 interdit, et il ferait
+tourner un scan réel avec des réglages que personne n'a arbitrés pour le réel.
+La forme forte de la règle : **une configuration qui ne sait pas répondre à
+une question doit le dire, jamais deviner.**
+
+La garde anti-dérive (`core/scanner/config.production.test.ts`) tient l'autre
+moitié : mêmes clés, écarts énumérés avec leur raison, aucune ligne morte. Les
+deux fichiers ne peuvent diverger que par une décision écrite.
