@@ -24,7 +24,7 @@
 import type { Action, ActionProposee, ContexteDecision, DescriptionFormulaire, EtatDecisionEnumere, ProfilSiteRapporte, TypeAction } from '../../types.js';
 import type { ConfigScanner } from '../config.js';
 import { RAISON_PLUS_RIEN } from './politique.js';
-import { choisirValeurs } from './remplissage.js';
+import { choisirValeurs, signatureFormulaire } from './remplissage.js';
 
 /** Préfixe des identifiants opaques. Leur seule propriété utile : le moteur seul les attribue. */
 export const PREFIXE_ACTION_PROPOSEE = 'c';
@@ -123,11 +123,28 @@ export function enumererActions(contexte: ContexteDecision, options: OptionsEnum
     proposees.push({ id: `${PREFIXE_ACTION_PROPOSEE}${proposees.length + 1}`, type, action, reperes, libelle });
   };
 
+  // LE MENU N'ÉNUMÈRE QUE CE QUI SE REMPLIT (cahier P2-1, contrat 3). Un
+  // formulaire sans champ remplissable — un bouton seul, la construction
+  // standard d'une carte produit — n'a pas d'action `remplir` : c'est le web,
+  // pas le monde. Et vingt formulaires identiques (même méthode, même cible,
+  // mêmes champs) sur une page ne valent qu'une action : books.toscrape a coûté
+  // 237 remplissages vides et toute l'échéance à la campagne 6b (C-10).
+  const signaturesVues = new Set<string>();
   for (const formulaire of pageCourante.formulaires) {
-    if (!formulairesRemplis.includes(formulaire.localisation.selecteur)) {
-      const action: Action = { type: 'remplir', formulaire: formulaire.localisation, valeurs: choisirValeurs(formulaire, remplissage) };
-      ajouter('remplir', action, reperesFormulaire(formulaire, origine), null);
+    if (formulairesRemplis.includes(formulaire.localisation.selecteur)) {
+      continue;
     }
+    const valeurs = choisirValeurs(formulaire, remplissage);
+    if (valeurs.length === 0) {
+      continue;
+    }
+    const signature = signatureFormulaire(formulaire);
+    if (signaturesVues.has(signature)) {
+      continue;
+    }
+    signaturesVues.add(signature);
+    const action: Action = { type: 'remplir', formulaire: formulaire.localisation, valeurs };
+    ajouter('remplir', action, reperesFormulaire(formulaire, origine), null);
   }
   for (const formulaire of soumission === 'aucune' ? [] : pageCourante.formulaires) {
     if (!formulairesSoumis.includes(formulaire.localisation.selecteur)) {

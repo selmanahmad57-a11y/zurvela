@@ -35,40 +35,9 @@ export function estNomConfig(valeur: string): valeur is NomConfig {
   return Object.hasOwn(FICHIERS_CONFIG, valeur);
 }
 
-/**
- * LE CHIFFRE QUI MANQUAIT PARTOUT (APPRENTISSAGES n°18) : quelle fraction des
- * candidates le protocole a PHYSIQUEMENT réussi à re-tester.
- *
- * Cinq scans du bestiaire, trois causes différentes (rejeux de lenteur sans
- * mesure, rejeu ouvert sur la mauvaise page, échéance atteinte), un seul
- * effet : le protocole ne confirme rien — et trois rapports qui disent
- * « aucune anomalie ». On mesurait la détection, les verdicts, les faux
- * positifs ; jamais la rejouabilité. Une candidate est REJOUÉE si son groupe
- * a au moins une tentative qui n'a pas échoué par l'outillage
- * (`echecOutillage: false`) — qu'elle ait ensuite été reproduite ou non.
- * Une tentative qui a tourné sans rien mesurer (C-04) compte comme rejouée :
- * c'est un autre défaut, qui se lit dans la fiche, pas ici.
- *
- * Le type est STRUCTUREL, volontairement : la commande ne dépend que de ce
- * qu'elle lit, et le typecheck rougit si le rapport technique change de forme.
- */
-export function tauxRejouabilite(rapport: {
-  groupes?: readonly { groupe: { membres: readonly unknown[] }; tentatives: readonly { echecOutillage: boolean }[] }[];
-}): { candidates: number; candidatesRejouees: number; groupes: number; groupesRejoues: number } {
-  let candidates = 0;
-  let candidatesRejouees = 0;
-  let groupesRejoues = 0;
-  const groupes = rapport.groupes ?? [];
-  for (const resultat of groupes) {
-    const membres = resultat.groupe.membres.length;
-    candidates += membres;
-    if (resultat.tentatives.some((tentative) => !tentative.echecOutillage)) {
-      candidatesRejouees += membres;
-      groupesRejoues += 1;
-    }
-  }
-  return { candidates, candidatesRejouees, groupes: groupes.length, groupesRejoues };
-}
+/** La rejouabilité vit dans le moteur depuis P2-1 (contrat 5) ; la commande la publie, le banc aussi. */
+export { tauxRejouabilite } from '../core/scanner/confirmation/rejouabilite.js';
+import { tauxRejouabilite } from '../core/scanner/confirmation/rejouabilite.js';
 
 /**
  * Le TIMEOUT du scan, et d'où il vient.

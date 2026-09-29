@@ -1,0 +1,12 @@
+{
+  "cle": "88c26f9a1a3bff54c43f79031443cf7ce3ace0d1a239bcda91027421f3f932e2",
+  "metadonnees": {
+    "date": "2026-09-29T07:55:59.716Z",
+    "modeleDemande": "claude-haiku-4-5",
+    "modeleServi": "claude-haiku-4-5-20251001",
+    "versionPrompt": "v2",
+    "coutApi": 0.0022849999999999997,
+    "apresRelance": false
+  },
+  "reponse": "{\"actionId\": \"c8\", \"raison\": \"Le site est un catalogue de pages similaires (pagination de produits). Une seule page de ce type suffit à éprouver la mécanique; les autres pages 2-7 seraient des répétitions sans valeur de test ajoutée. Le budget doit être réservé aux pages où un visiteur agit réellement (panier, commande, contact). Terminer l'exploration est le choix rationnel.\"}"
+}

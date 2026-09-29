@@ -33,7 +33,7 @@ import { creerProtocole } from './confirmation/protocole.js';
 import { MOTIF_REPRODUITE } from './confirmation/verdict.js';
 import { DESCRIPTION_404_INTERNE, creerDetecteurHttp } from './detection/d-http.js';
 import { DESCRIPTION_IMAGE_CASSEE, creerDetecteurImage } from './detection/d-image.js';
-import { creerScanner, RAISON_CONFIRMATION_EN_ERREUR, type DependancesScanner, type SessionRejeu } from './index.js';
+import { creerScanner, EVENEMENT_RESERVE_INSUFFISANTE, RAISON_CONFIRMATION_EN_ERREUR, type DependancesScanner, type SessionRejeu } from './index.js';
 import {
   RAISON_CONTEXTE_ABSENT,
   RAISON_PROFILAGE_EN_ERREUR,
@@ -156,7 +156,7 @@ function detecteurInerteSimule(contexteVu: { viewports: string[] }): Detecteur {
             confiance: 0.8,
             detecteur: 'd-inerte-simule',
             element: BOUTON,
-            reproduction: { url: signal.page, viewport, action, actionsPrealables: [] },
+            reproduction: { url: signal.page, pageDepart: signal.page, viewport, action, actionsPrealables: [] },
             preuves: [signal],
           },
         ];
@@ -270,8 +270,10 @@ describe('creerScanner', () => {
     // Le contexte d'exploration : URL de départ et échéance = début + timeout.
     expect(explorateur.contextes).toHaveLength(1);
     expect(explorateur.contextes[0]?.urlDepart).toBe(ORIGINE);
-    expect(explorateur.contextes[0]?.echeance).toBeGreaterThanOrEqual(avant + 60000);
-    expect(explorateur.contextes[0]?.echeance).toBeLessThanOrEqual(Date.now() + 60000);
+    // Depuis P2-1 (contrat 2), l'explorateur reçoit SA part de l'échéance, pas l'échéance du scan.
+    const partExploration = 60000 * config.echeance.repartition.exploration;
+    expect(explorateur.contextes[0]?.echeance).toBeGreaterThanOrEqual(avant + partExploration);
+    expect(explorateur.contextes[0]?.echeance).toBeLessThanOrEqual(Date.now() + partExploration);
 
     // La détection reçoit les viewports de la config et tous les signaux ; le
     // même élément constaté sur deux viewports est dédoublonné (détecteur
@@ -305,6 +307,8 @@ describe('creerScanner', () => {
     expect(rapport.journal.map((entree) => entree.type)).toEqual([
       'scan.debut',
       'ia.mode',
+      // La répartition de l'échéance est publiée avant la première phase (P2-1, contrat 2).
+      'scan.echeance',
       'exploration.viewport',
       'exploration.viewport',
       'exploration.fin',
@@ -363,6 +367,9 @@ describe('creerScanner', () => {
     expect(rapport.journal.map((entree) => entree.type)).toEqual([
       'scan.debut',
       'ia.mode',
+      'scan.echeance',
+      // À 1 s d'échéance, la réserve de confirmation ne paie pas un rejeu : c'est DIT.
+      'confirmation.reserve.insuffisante',
       'scan.erreur',
       'exploration.cout',
       'profilage.indisponible',
@@ -757,6 +764,7 @@ describe('creerScanner — rapport business', () => {
     maxTokensReponse: 4096,
     relancesMax: 1,
     appelMaxMs: 120000,
+    dureeParSectionMs: 6000,
   };
 
   /** Client qui rédige : une phrase par champ, un identifiant par section énumérée. */
@@ -934,6 +942,7 @@ describe('creerScanner — une panne de rédaction ne coûte jamais le rapport t
           maxTokensReponse: 4096,
           relancesMax: 1,
           appelMaxMs: 120000,
+          dureeParSectionMs: 6000,
         },
       }),
     );
@@ -943,5 +952,74 @@ describe('creerScanner — une panne de rédaction ne coûte jamais le rapport t
     expect(rapport.anomalies).toHaveLength(1);
     expect(rapport.rapportBusiness).toBeUndefined();
     expect(rapport.journal.find((entree) => entree.type === 'scan.erreur')?.details).toMatchObject({ etape: 'rapport' });
+  });
+});
+
+describe('creerScanner — l’échéance est répartie, réservée et appliquée (cahier P2-1, contrat 2)', () => {
+  it('donne à l’explorateur SA part de l’échéance et le motif d’arrêt « reserve-confirmation », jamais l’échéance du scan', async () => {
+    const explorateur = explorateurSimule(['desktop']);
+    const avant = Date.now();
+    await creerScanner(dependances({ explorateur }))(ORIGINE, { timeoutMs: 100_000 });
+    const contexte = explorateur.contextes[0];
+    const part = config.echeance.repartition.exploration;
+    // L'échéance de phase est débutée à l'instant du scan : on la borne entre
+    // « avant + part » et « après + part », sans lire l'horloge du moteur.
+    expect(contexte?.echeance).toBeGreaterThanOrEqual(avant + 100_000 * part);
+    expect(contexte?.echeance).toBeLessThanOrEqual(Date.now() + 100_000 * part);
+    expect(contexte?.arretEcheance).toBe('reserve-confirmation');
+  });
+
+  it('donne au protocole une échéance qui laisse la réserve de rédaction, et le journal publie la répartition', async () => {
+    let vu: ContexteConfirmation | undefined;
+    const protocole: ProtocoleConfirmation = {
+      nom: 'protocole-temoin',
+      async confirmer(candidates, contexte) {
+        vu = contexte;
+        return { retenues: [...candidates], ecartees: [], coutApi: 0 };
+      },
+    };
+    const avant = Date.now();
+    const rapport = await creerScanner(dependances({ protocole }))(ORIGINE, { timeoutMs: 100_000 });
+    const reserve = 100_000 * config.echeance.repartition.redaction;
+    expect(vu?.echeance).toBeGreaterThanOrEqual(avant + 100_000 - reserve);
+    expect(vu?.echeance).toBeLessThanOrEqual(Date.now() + 100_000 - reserve);
+    const entree = rapport.journal.find((e) => e.type === 'scan.echeance');
+    expect(entree?.details).toMatchObject({
+      timeoutMs: 100_000,
+      explorationMs: Math.round(100_000 * config.echeance.repartition.exploration),
+      confirmationReserveMs: Math.round(100_000 * config.echeance.repartition.confirmation),
+      redactionReserveMs: Math.round(reserve),
+    });
+  });
+
+  it('une réserve de confirmation qui ne paie pas UN rejeu est DITE, jamais subie en silence', async () => {
+    // Le contrôle qui peut échouer : à 1 s d'échéance, la réserve (35 %) vaut
+    // 350 ms, moins que le chargement d'une page de rejeu.
+    const rapport = await creerScanner(dependances())(ORIGINE, { timeoutMs: 1_000 });
+    const entree = rapport.journal.find((e) => e.type === EVENEMENT_RESERVE_INSUFFISANTE);
+    expect(entree?.details).toMatchObject({ reserveMs: 350, coutRejeuMs: config.confirmation.rejeu.chargementPageMs });
+    // Et à 100 s, rien à dire.
+    const large = await creerScanner(dependances())(ORIGINE, { timeoutMs: 100_000 });
+    expect(large.journal.find((e) => e.type === EVENEMENT_RESERVE_INSUFFISANTE)).toBeUndefined();
+  });
+
+  it('un explorateur arrêté par sa part rend « reserve-confirmation », et le scan continue : la confirmation a lieu', async () => {
+    let confirmee = false;
+    const protocole: ProtocoleConfirmation = {
+      nom: 'protocole-temoin',
+      async confirmer(candidates) {
+        confirmee = true;
+        return { retenues: [...candidates], ecartees: [], coutApi: 0 };
+      },
+    };
+    const explorateur: Explorateur = {
+      nom: 'explorateur-coupe',
+      explorer(contexte) {
+        return Promise.resolve({ ...parcoursSimule(contexte.urlDepart, 'desktop'), arret: contexte.arretEcheance ?? 'echeance' });
+      },
+    };
+    const rapport = await creerScanner(dependances({ explorateur, protocole }))(ORIGINE, { timeoutMs: 100_000 });
+    expect(rapport.parcours?.arret).toBe('reserve-confirmation');
+    expect(confirmee).toBe(true);
   });
 });

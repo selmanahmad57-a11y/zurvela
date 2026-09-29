@@ -25,7 +25,7 @@ import { chargerConfigScanner, type ConfigScanner } from './config.js';
 import { DESCRIPTION_DOCUMENT_INJOIGNABLE } from './detection/d-http.js';
 import { creerDetecteurs, detecter } from './detection/index.js';
 import { lancerNavigateur } from './navigateur.js';
-import { creerReexecuteur, ERREUR_BUDGET_INSUFFISANT, ERREUR_PAGE_INCHARGEABLE } from './reexecuteur.js';
+import { creerReexecuteur, ERREUR_BUDGET_INSUFFISANT, ERREUR_PAGE_INCHARGEABLE, ERREUR_RECETTE_INCOHERENTE } from './reexecuteur.js';
 
 /** Chargement raccourci : seules les ATTENTES sont resserrées, jamais la classification. */
 const CHARGEMENT_MS = 4000;
@@ -84,7 +84,7 @@ afterAll(async () => {
 });
 
 function reproduction(url: string): ContexteReproduction {
-  return { url, viewport, action: null, actionsPrealables: [] };
+  return { url, pageDepart: url, viewport, action: null, actionsPrealables: [] };
 }
 
 async function rejouer(url: string, echeance?: number): Promise<ResultatRejeu> {
@@ -104,6 +104,29 @@ function candidatesDe(rejeu: ResultatRejeu, urlDepart: string): { description: s
 function signauxDe(signaux: Signal[], type: Signal['type']): Signal[] {
   return signaux.filter((signal) => signal.type === type);
 }
+
+describe('re-exécuteur — la recette est vérifiée avant d’ouvrir quoi que ce soit (cahier P2-1, contrat 1)', () => {
+  it('un préalable venu d’une autre page que pageDepart → échec d’OUTILLAGE « recette-incoherente », et aucune page chargée', async () => {
+    // C-09 : le rejeu ouvrait la page d'arrivée et y cherchait le formulaire
+    // de la page de départ. Le contrôle qui peut échouer : sans la garde, le
+    // rejeu CHARGERAIT la page et échouerait plus loin, sur un sélecteur.
+    const serveur = await servir((_chemin, reponse) => html(reponse, '<p>vivant</p>'));
+    const url = serveur.url;
+    const prealable = {
+      id: 'a1',
+      action: { type: 'naviguer' as const, url: `${url}autre` },
+      page: `${url}autre`,
+      viewport: viewport.nom,
+      debut: new Date().toISOString(),
+      fin: new Date().toISOString(),
+      resultat: 'ok' as const,
+    };
+    const rejeu = await creerReexecuteur({ navigateur, config }).rejouer({ ...reproduction(url), actionsPrealables: [prealable] }, viewport);
+    await serveur.arreter();
+    expect(rejeu).toMatchObject({ echecOutillage: true, causeEchec: 'outil', erreur: ERREUR_RECETTE_INCOHERENTE });
+    expect(rejeu.parcours.pages).toEqual([]);
+  }, 60_000);
+});
 
 describe('re-exécuteur — classer l’échec d’un chargement', () => {
   it('serveur MORT (connexion refusée) → reseau-site, et le document injoignable est constaté', async () => {

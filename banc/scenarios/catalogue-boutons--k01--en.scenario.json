@@ -1,0 +1,11 @@
+{
+  "id": "catalogue-boutons--k01--en",
+  "gabarit": "catalogue-boutons",
+  "langue": "en",
+  "bugsActifs": [
+    "K01"
+  ],
+  "contraintes": {
+    "soumission": "aucune"
+  }
+}

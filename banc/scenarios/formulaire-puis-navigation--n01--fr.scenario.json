@@ -1,0 +1,11 @@
+{
+  "id": "formulaire-puis-navigation--n01--fr",
+  "gabarit": "formulaire-puis-navigation",
+  "langue": "fr",
+  "bugsActifs": [
+    "N01"
+  ],
+  "contraintes": {
+    "soumission": "aucune"
+  }
+}

@@ -35,6 +35,7 @@ import {
   type SectionRapport,
   type StatutSection,
 } from '../types.js';
+import { tauxRejouabilite } from '../scanner/confirmation/rejouabilite.js';
 import { AUCUNE_VERIFICATION, chiffresDe, statutDe, type ChiffresStatut } from './statuts.js';
 import { formulerStatut, type LangueRapport } from './voix.js';
 
@@ -178,6 +179,11 @@ function aEteReverifie(resultat: ResultatGroupe): boolean {
   return chiffresDe(resultat).nbVerifications > 0;
 }
 
+/** La rejouabilité réduite à ce que le rapport publie : les groupes. */
+function rejouabiliteEnGroupes(taux: { groupes: number; groupesRejoues: number }): { groupes: number; groupesRejoues: number } {
+  return { groupes: taux.groupes, groupesRejoues: taux.groupesRejoues };
+}
+
 export function compterEcartes(rapport: Rapport, clesPubliees: Set<string>): number | null {
   // PAS DE GROUPES, PAS DE COMPTE. Sans consolidation, il n'y a eu ni cause
   // racine ni re-exécution : `ecartees` ne contient que des candidates, et
@@ -279,6 +285,9 @@ export function construireStructure(rapport: Rapport, langue: LangueRapport): St
       sections,
       nbEcartes: compterEcartes(rapport, clesPubliees),
       nbNonVerifies: compterNonVerifies(rapport, clesPubliees),
+      // Ce que le protocole a rejoué, en groupes : null sans consolidation,
+      // comme les deux comptes ci-dessus (P2-1, contrat 5).
+      rejouabilite: rapport.groupes === undefined ? null : rejouabiliteEnGroupes(tauxRejouabilite(rapport)),
       ligneMethode: '',
       // Aucune prose n'a encore été demandée : zéro section rédigée. La
       // rédaction remplacera ce compte par ce qu'elle a réellement écrit.

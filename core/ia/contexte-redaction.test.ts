@@ -37,6 +37,7 @@ const CONFIG: ConfigRapport = {
   maxTokensReponse: 4096,
   relancesMax: 1,
   appelMaxMs: 120000,
+  dureeParSectionMs: 6000,
 };
 
 function section(id: string, pages = '/contact (mobile)'): SectionFaits {

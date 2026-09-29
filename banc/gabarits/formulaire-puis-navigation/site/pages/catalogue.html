@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="{{langue}}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{catalogue.titre}} — {{site.nom}}</title>
+  <link rel="stylesheet" href="/statique/style.css">
+  <link rel="icon" href="/statique/images/logo.svg" type="image/svg+xml">
+</head>
+<body>
+  <header class="entete">
+    <a class="marque" href="/">
+      <img data-role="logo" src="/statique/images/logo.svg" alt="{{site.nom}}" width="40" height="40">
+      <span>{{site.nom}}</span>
+    </a>
+    <nav aria-label="{{nav.libelle}}">
+      <ul>
+        <li><a href="/">{{nav.accueil}}</a></li>
+        <li><a href="/inscription">{{nav.inscription}}</a></li>
+        <li><a href="/catalogue" aria-current="page">{{nav.catalogue}}</a></li>
+      </ul>
+    </nav>
+  </header>
+  <main class="contenu">
+    <h1>{{catalogue.titre}}</h1>
+    <p class="intro">{{catalogue.intro}}</p>
+    <figure>
+      <img data-role="vedette" src="/statique/images/vedette.svg" alt="{{catalogue.vedette}}" width="320" height="180">
+      <figcaption>{{catalogue.vedette}}</figcaption>
+    </figure>
+    <ul>
+      <li>{{catalogue.livre1}}</li>
+      <li>{{catalogue.livre2}}</li>
+      <li>{{catalogue.livre3}}</li>
+    </ul>
+  </main>
+  <footer class="pied">
+    <p>{{pied.mentions}}</p>
+  </footer>
+</body>
+</html>

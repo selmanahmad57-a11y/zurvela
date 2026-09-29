@@ -1,0 +1,12 @@
+{
+  "cle": "0486ccd486cce9e2e4bc37ed6024d83b4099b6b25bc073129276ea8214485821",
+  "metadonnees": {
+    "date": "2026-09-29T07:57:57.102Z",
+    "modeleDemande": "claude-haiku-4-5",
+    "modeleServi": "claude-haiku-4-5-20251001",
+    "versionPrompt": "v2",
+    "coutApi": 0.00252,
+    "apresRelance": false
+  },
+  "reponse": "{\"actionId\": \"c10\", \"raison\": \"Le site est un blog de contenu avec des pages similaires (rubriques numérotées). Après avoir visité 4 pages déjà, continuer à parcourir des listes paginées d'un même modèle n'offre aucune valeur de test supplémentaire. Il n'y a pas de formulaire, de commande, de contact ou d'action utilisateur à éprouver. Le budget restant doit être préservé pour des pages qui comptent vraiment pour un visiteur.\"}"
+}

@@ -21,6 +21,28 @@ export interface PalierConfiance {
   confiance: number;
 }
 
+/** Parts de l'échéance d'un scan, par phase. Chaque part est dans ]0, 1[ et leur somme est < 1. */
+export interface RepartitionEcheance {
+  exploration: number;
+  confirmation: number;
+  redaction: number;
+}
+
+/**
+ * INVARIANT en code : les fractions de l'échéance laissent une marge — leur
+ * somme est strictement inférieure à 1. Le schéma sait borner chaque nombre,
+ * pas les additionner ; une répartition qui promet plus que l'échéance serait
+ * acceptée au démarrage et ne se manifesterait qu'au premier scan (n°5).
+ */
+export function verifierRepartitionEcheance(repartition: RepartitionEcheance, source: string): void {
+  // Arrondi à la micro-fraction : 0,6 + 0,3 + 0,1 vaut 0,9999999999999999 en
+  // virgule flottante, et passerait sous 1 sans rien laisser à personne.
+  const somme = Math.round((repartition.exploration + repartition.confirmation + repartition.redaction) * 1e6) / 1e6;
+  if (!(somme < 1)) {
+    throw new Error(`${source} : echeance.repartition promet plus que l'échéance — exploration ${repartition.exploration} + confirmation ${repartition.confirmation} + redaction ${repartition.redaction} = ${somme}, la somme doit être strictement inférieure à 1`);
+  }
+}
+
 export interface ConfigScanner {
   navigateur: { canal: string | null; sansTete: boolean };
   robot: { userAgent: string; enTete: string; valeurEnTete: string };
@@ -53,6 +75,12 @@ export interface ConfigScanner {
    * sources de vérité pour le même nombre en seraient une de trop.
    */
   scan?: { timeoutMs: number };
+  /**
+   * Répartition de l'échéance entre les phases, en FRACTIONS de l'échéance de
+   * l'appelant (cahier P2-1, contrat 2). Réglage en config ; l'invariant
+   * « somme < 1 » est tenu en code, au chargement.
+   */
+  echeance: { repartition: RepartitionEcheance };
   /** Ce que le robot a le droit de FAIRE, par opposition à ce qu'il regarde. */
   interaction: {
     /**
@@ -205,7 +233,9 @@ async function chargerValide<T>(fichier: string, schema: string, nom: string): P
 }
 
 export async function chargerConfigScanner(fichier: string = FICHIER_CONFIG_SCANNER): Promise<ConfigScanner> {
-  return chargerValide<ConfigScanner>(fichier, depuisRacine('config', 'scanner.schema.json'), 'config/scanner.json');
+  const config = await chargerValide<ConfigScanner>(fichier, depuisRacine('config', 'scanner.schema.json'), 'config/scanner.json');
+  verifierRepartitionEcheance(config.echeance.repartition, fichier);
+  return config;
 }
 
 /** Déclenchement, bornes et calibration de l'auto-diagnostic (config/diagnostic.json). */
@@ -240,6 +270,8 @@ export interface ConfigRapport {
   maxTokensReponse: number;
   relancesMax: number;
   appelMaxMs: number;
+  /** Durée estimée d'une section rédigée : convertit le temps restant en plafond de sections (P2-1, contrat 2). */
+  dureeParSectionMs: number;
 }
 
 /**

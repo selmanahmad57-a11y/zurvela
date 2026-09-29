@@ -11,11 +11,12 @@
  * ── L'ORDRE DE LECTURE EST UNE DÉCISION DE SÉCURITÉ ─────────────────────────
  *
  * Le MOTIF est lu AVANT le verdict, et ce n'est pas un détail d'implémentation.
- * `anomalieDecouverte` pose `verdict: 'confirmee'` sur une découverte — ce qui
- * est correct pour le protocole, qui veut dire « retenue » — alors qu'une
- * découverte n'a JAMAIS été re-confirmée. Un module qui lirait le verdict
- * d'abord publierait « constaté et re-vérifié » sur une anomalie vue une seule
- * fois : le sur-engagement exact que la brique existe pour rendre impossible.
+ * Jusqu'au cahier P2-1, `anomalieDecouverte` posait `verdict: 'confirmee'`
+ * sur une découverte, et seul cet ordre de lecture empêchait de publier
+ * « constaté et re-vérifié » sur une anomalie vue une seule fois. Depuis le
+ * contrat 8 le verdict dit lui-même `decouverte` ; l'ordre reste, parce que
+ * c'est le motif qui distingue les deux familles de découverte (rejeu,
+ * diagnostic), et qu'une défense ne se retire pas quand une seconde arrive.
  *
  * ── CE QUE LA TABLE NE PEUT PAS TRADUIRE ────────────────────────────────────
  *
@@ -42,6 +43,12 @@ const STATUT_PAR_MOTIF: Readonly<Record<string, StatutSection>> = {
 };
 
 /**
+ * Les statuts d'un constat PUBLIÉ sans re-test qui lui soit propre : les deux
+ * familles de découverte. Le rapport en donne le compte (P2-1, contrat 8).
+ */
+export const STATUTS_SANS_RETEST: readonly StatutSection[] = ['constatee-au-rejeu', 'diagnostic-site'];
+
+/**
  * Verdict du protocole → statut publiable, ou `null` quand il n'en existe
  * aucun d'honnête.
  *
@@ -56,6 +63,9 @@ export const STATUT_PAR_VERDICT: Readonly<Record<VerdictConfirmation, StatutSect
   'non-reproduite': null,
   'limite-automatisation': null,
   'basse-confiance': null,
+  // Une découverte sans motif connu reste une découverte : le statut le moins
+  // affirmatif des deux qui la décrivent, jamais « confirmee ».
+  decouverte: 'constatee-au-rejeu',
 };
 
 /**

@@ -21,7 +21,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "banc:reel": "node --env-file-if-exists=.env --env-file-if-exists=.env.local --env-file-if-exists=docs/.env.local --import tsx banc/reel.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "0.127.0",

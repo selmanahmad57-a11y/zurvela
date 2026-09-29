@@ -1,0 +1,12 @@
+{
+  "cle": "62b193e58ce0e221140707270667441f6e8164dcb387db10d71dc1e8b003df0e",
+  "metadonnees": {
+    "date": "2026-09-29T07:55:18.527Z",
+    "modeleDemande": "claude-haiku-4-5",
+    "modeleServi": "claude-haiku-4-5-20251001",
+    "versionPrompt": "v2",
+    "coutApi": 0.001934,
+    "apresRelance": false
+  },
+  "reponse": "{\"actionId\": \"c1\", \"raison\": \"L'utilisateur a rempli le formulaire d'inscription sur /inscription. La prochaine action logique pour un visiteur est de soumettre ce formulaire en cliquant sur le bouton de validation, ce qui conclut le processus d'inscription et teste une interaction critique du site.\"}"
+}

@@ -11,7 +11,7 @@ import { MOTIF_CONSTATEE_AU_REJEU } from '../scanner/confirmation/decouvertes.js
 import { MOTIF_DECOUVERTE_DIAGNOSTIC_SITE } from '../scanner/confirmation/pont-vocabulaires.js';
 import type { VerdictConfirmation } from '../types.js';
 import { anomalie, resultatGroupe, tentative } from './aide-tests.js';
-import { STATUT_PAR_VERDICT, chiffresDe, statutDe } from './statuts.js';
+import { STATUTS_SANS_RETEST, STATUT_PAR_VERDICT, chiffresDe, statutDe } from './statuts.js';
 
 describe('statutDe — l’ordre de lecture est une décision de sécurité', () => {
   it('une DÉCOUVERTE n’obtient jamais « confirmee », alors même qu’elle porte ce verdict', () => {
@@ -53,10 +53,15 @@ describe('statutDe — l’ordre de lecture est une décision de sécurité', ()
     expect(statutDe(sansVerdict)).toBeNull();
   });
 
-  it('la table couvre les CINQ verdicts : un sixième casserait la compilation ici', () => {
+  it('la table couvre les SIX verdicts : un septième casserait la compilation ici', () => {
     expect(Object.keys(STATUT_PAR_VERDICT).sort()).toEqual(
-      ['basse-confiance', 'confirmee', 'intermittente', 'limite-automatisation', 'non-reproduite'].sort(),
+      ['basse-confiance', 'confirmee', 'decouverte', 'intermittente', 'limite-automatisation', 'non-reproduite'].sort(),
     );
+  });
+
+  it('une DÉCOUVERTE sans motif reconnu reste une découverte : jamais le statut « confirmee » (P2-1, contrat 8)', () => {
+    expect(statutDe({ ...anomalie('g1', { verdict: 'decouverte' }), motif: undefined })).toBe('constatee-au-rejeu');
+    expect(STATUTS_SANS_RETEST).toContain(STATUT_PAR_VERDICT.decouverte);
   });
 });
 

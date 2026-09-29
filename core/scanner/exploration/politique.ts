@@ -31,7 +31,7 @@
  */
 import type { Action, ContexteDecision, DecisionPrise, EtatDecisionEnumere, PolitiqueDecision } from '../../types.js';
 import type { ConfigScanner } from '../config.js';
-import { choisirValeurs } from './remplissage.js';
+import { choisirValeurs, signatureFormulaire } from './remplissage.js';
 
 export const RAISON_PLUS_RIEN = 'plus-rien-a-faire';
 
@@ -46,9 +46,21 @@ export const NOM_POLITIQUE_DETERMINISTE = 'deterministe';
  */
 export function decisionDeterministe(contexte: ContexteDecision, remplissage: ConfigScanner['remplissage']): Action {
   const { pageCourante, formulairesRemplis, formulairesSoumis, urlsEnAttente } = contexte;
-  const aRemplir = pageCourante.formulaires.find((f) => !formulairesRemplis.includes(f.localisation.selecteur));
-  if (aRemplir !== undefined) {
-    return { type: 'remplir', formulaire: aRemplir.localisation, valeurs: choisirValeurs(aRemplir, remplissage) };
+  // Depuis le cahier P2-1 (contrat 3), la spécification suit le menu : un
+  // formulaire sans champ remplissable n'est pas « à remplir », et un
+  // formulaire de même signature qu'un précédent non plus.
+  const signaturesVues = new Set<string>();
+  for (const candidat of pageCourante.formulaires) {
+    if (formulairesRemplis.includes(candidat.localisation.selecteur)) {
+      continue;
+    }
+    const valeurs = choisirValeurs(candidat, remplissage);
+    const signature = signatureFormulaire(candidat);
+    if (valeurs.length === 0 || signaturesVues.has(signature)) {
+      continue;
+    }
+    signaturesVues.add(signature);
+    return { type: 'remplir', formulaire: candidat.localisation, valeurs };
   }
   const aSoumettre = pageCourante.formulaires.find((f) => !formulairesSoumis.includes(f.localisation.selecteur));
   if (aSoumettre !== undefined) {

@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="{{langue}}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{site.nom}}</title>
+  <meta name="description" content="{{site.slogan}}">
+  <link rel="stylesheet" href="/statique/style.css">
+  <link rel="icon" href="/statique/images/logo.svg" type="image/svg+xml">
+</head>
+<body>
+  <header class="entete">
+    <a class="marque" href="/">
+      <img data-role="logo" src="/statique/images/logo.svg" alt="{{site.nom}}" width="40" height="40">
+      <span>{{site.nom}}</span>
+    </a>
+    <nav aria-label="{{nav.libelle}}">
+      <ul>
+        <li><a href="/">{{nav.accueil}}</a></li>
+      </ul>
+    </nav>
+  </header>
+  <main class="contenu">
+    <h1>{{contenu.titre}} 7</h1>
+    <p>{{contenu.texte}}</p>
+    <p><a href="/">{{contenu.retour}}</a></p>
+  </main>
+  <footer class="pied">
+    <p>{{pied.mentions}}</p>
+  </footer>
+</body>
+</html>

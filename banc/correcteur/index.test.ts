@@ -47,7 +47,7 @@ function candidate(categorie: Anomalie['categorie'], urlOuEtape: string): Anomal
   return {
     ...anomalie(categorie, urlOuEtape),
     detecteur: 'd-test',
-    reproduction: { url: urlOuEtape, viewport: VIEWPORT, actionsPrealables: [], action: null },
+    reproduction: { url: urlOuEtape, pageDepart: urlOuEtape, viewport: VIEWPORT, actionsPrealables: [], action: null },
     preuves: [],
   };
 }

@@ -1,0 +1,25 @@
+{
+  "langue": "fr",
+  "site": {
+    "nom": "Gazette du Val",
+    "slogan": "Les nouvelles de la vallée, chaque semaine"
+  },
+  "nav": {
+    "libelle": "Navigation principale",
+    "accueil": "Accueil",
+    "rubrique": "Rubrique"
+  },
+  "accueil": {
+    "titre": "Gazette du Val",
+    "intro": "Douze rubriques, mises à jour chaque semaine.",
+    "sommaire": "Sommaire"
+  },
+  "contenu": {
+    "titre": "Rubrique",
+    "texte": "Le texte de cette rubrique est mis à jour chaque semaine par la rédaction bénévole de la vallée.",
+    "retour": "Retour à l’accueil"
+  },
+  "pied": {
+    "mentions": "Gazette du Val — journal associatif"
+  }
+}

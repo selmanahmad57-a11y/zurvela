@@ -271,6 +271,17 @@ brique 5, où un sceptique a supprimé deux appels fraîchement ajoutés et rela
 369 tests sans en tuer un seul : les bornes ajoutées étaient des no-op, et la
 suite entière le taisait.
 
+**Étendu le 2026-09-29 (cahier P2-1, APPRENTISSAGES n°20) — la mutation
+AVANT la cassette, sous les conditions du réel.** Un scénario neuf ne
+s'enregistre pas tant qu'il n'a pas tué la mutation du contrat qu'il prétend
+mesurer ; un scénario sain qui passe ne prouve rien. Et la mutation ne tue
+que si le gabarit miniaturise les CONDITIONS dans lesquelles le défaut a
+mordu — mode de soumission déclaré en config, taille qui épuise la réserve,
+ordre des actions —, pas seulement l'anomalie finale : deux gabarits de P2-1
+sur trois passaient verts avec et sans leur contrat, jusqu'à ce qu'on leur
+rende ces conditions. Un kill se lit sur trois colonnes de la scorecard
+(détection, verdicts corrects, rejouabilité), jamais sur la première seule.
+
 ## 11. L'instrument refuse de piloter un scan plutôt que d'inventer un défaut
 
 `config/scanner.json` ne porte pas `scan.timeoutMs`, et ce n'est pas un oubli :
@@ -322,3 +333,10 @@ plus à clore un cahier qui corrige ce que le réel a cassé.
 - **Rien ne se corrige à chaud sur le réel** : le réel juge, il n'est pas un
   atelier. La règle d'or de la campagne survit à la campagne sous cette
   forme.
+- **Le réel juge le rapport CLIENT, pas seulement la métrique du cahier**
+  (APPRENTISSAGES n°21, 2026-09-29) : la validation lit le rapport publié
+  comme un client le lirait. Si le livrable est plus faux qu'avant — même
+  quand la métrique progresse —, le cahier ne se committe pas ; s'il s'agit
+  du défaut que la réparation vient de démasquer, le cahier s'élargit d'un
+  contrat étroit. Honnête et incomplet est acceptable ; faux et affirmatif
+  ne l'est pas.

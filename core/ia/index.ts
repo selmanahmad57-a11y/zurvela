@@ -265,7 +265,11 @@ export interface ClientIa {
    * factuelle. Le modèle ne reçoit pas le rapport technique brut et ne rend
    * aucun fait : ni chiffre, ni gravité, ni statut — ceux-là sont déjà posés.
    */
-  rediger(contexte: ContexteRedaction): Promise<ResultatIa<RedactionEstampillee>>;
+  /**
+   * `delaiMs` : plafond de temps de l'appel, imposé par l'appelant quand
+   * l'échéance du scan le serre plus que `rapport.appelMaxMs` (P2-1, contrat 2).
+   */
+  rediger(contexte: ContexteRedaction, options?: OptionsRedaction): Promise<ResultatIa<RedactionEstampillee>>;
 }
 
 /**
@@ -309,10 +313,16 @@ export interface ClientIaEnregistrable extends ClientIa {
    * décorateur rejouable, pour la même raison qu'ailleurs : la cassette doit
    * figer la réponse du prompt qui a servi à calculer sa clé.
    */
-  redigerBrut(contexte: ContexteRedaction): Promise<ResultatIa<ReponseBrute>>;
+  redigerBrut(contexte: ContexteRedaction, options?: OptionsRedaction): Promise<ResultatIa<ReponseBrute>>;
 }
 
 export const RAISON_CLE_ABSENTE = 'cle-absente';
+
+/** Options d'un appel de rédaction : ce que l'appelant impose au client, jamais l'inverse. */
+export interface OptionsRedaction {
+  /** Plafond de temps de l'appel en millisecondes ; le client retient le plus serré de ce plafond et du sien. */
+  delaiMs?: number;
+}
 
 
 /** Client dégradé sur une raison donnée : aucun appel, aucune exception. */

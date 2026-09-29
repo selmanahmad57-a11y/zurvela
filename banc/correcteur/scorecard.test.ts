@@ -192,6 +192,12 @@ describe('calculerScorecard', () => {
       nbSectionsRapport: 0,
       nbSectionsRedigees: 0,
       tauxCouvertureRedaction: null,
+      nbCandidatesRejouables: 0,
+      nbCandidatesRejouees: 0,
+      nbGroupesRejouables: 0,
+      nbGroupesRejoues: 0,
+      tauxRejouabiliteCandidates: null,
+      tauxRejouabiliteGroupes: null,
       nbRapportsSansProse: 0,
       nbRapportsSansSection: 0,
       nbPagesVisitees: 0,
@@ -333,7 +339,8 @@ describe('rendreScorecardConsole', () => {
     const lignes = rendu.split('\n');
     const nonApplicable = traduire(dico, 'scorecard.nonApplicable');
     for (const langue of config.langues) {
-      expect(lignes.filter((ligne) => new RegExp(`^${langue}\\s{2,}\\d`).test(ligne))).toHaveLength(3);
+      // Quatre tableaux partitionnants par langue depuis P2-1 : global, protocole, rejouabilité, coût.
+      expect(lignes.filter((ligne) => new RegExp(`^${langue}\\s{2,}\\d`).test(ligne))).toHaveLength(4);
     }
     // Une catégorie de bug NE partitionne pas les scénarios : sa ligne existe,
     // mais la colonne « Scénarios » — comme erreurs, coût et durée — y est sans
@@ -981,5 +988,83 @@ describe('scorecard — la famille « rapports », comptée à part de tout le r
     );
     expect(scorecard.parCategorie['fonctionnel']).toMatchObject({ nbRapportsMesures: 0, tauxRapportsConformes: null });
     expect(scorecard.global.nbRapportsMesures).toBe(1);
+  });
+});
+
+describe('scorecard — la famille « rejouabilité », comptée à part de tout le reste (cahier P2-1, contrat 5)', () => {
+  const rejoue = (candidates: number, candidatesRejouees: number, groupes: number, groupesRejoues: number): ResultatScenario['rejouabilite'] => ({
+    candidates,
+    candidatesRejouees,
+    groupes,
+    groupesRejoues,
+  });
+
+  it('somme les deux comptes et publie les deux taux — celui par groupes est celui qui dit vrai', () => {
+    // demoqa en miniature : 20 candidates rejouées sur 62, mais 1 groupe sur 22.
+    const resultats = [
+      resultat({ scenarioId: 'a--fr', langue: 'fr', rejouabilite: rejoue(62, 20, 22, 1) }),
+      resultat({ scenarioId: 'b--fr', langue: 'fr', rejouabilite: rejoue(8, 0, 5, 0) }),
+      resultat({ scenarioId: 'c--en', langue: 'en', rejouabilite: rejoue(24, 24, 5, 5) }),
+    ];
+    const scorecard = calculerScorecard(resultats, config, HORODATAGE, POLITIQUE_DETERMINISTE);
+    expect(scorecard.global).toMatchObject({
+      nbCandidatesRejouables: 94,
+      nbCandidatesRejouees: 44,
+      nbGroupesRejouables: 32,
+      nbGroupesRejoues: 6,
+      tauxRejouabiliteCandidates: 46.8,
+      tauxRejouabiliteGroupes: 18.8,
+    });
+    expect(scorecard.parLangue['en']).toMatchObject({ tauxRejouabiliteGroupes: 100 });
+    expect(scorecard.parLangue['fr']).toMatchObject({ nbGroupesRejouables: 27, nbGroupesRejoues: 1 });
+  });
+
+  it('sans candidate, le taux est null — jamais 0 : un site sain n’a rien à rejouer', () => {
+    const scorecard = calculerScorecard([resultat({ scenarioId: 'sain--fr', langue: 'fr', rejouabilite: rejoue(0, 0, 0, 0) })], config, HORODATAGE, POLITIQUE_DETERMINISTE);
+    expect(scorecard.global.tauxRejouabiliteGroupes).toBeNull();
+    expect(scorecard.global.tauxRejouabiliteCandidates).toBeNull();
+  });
+
+  it('un scénario sans rejouabilité (sujet sans protocole, erreur) vaut zéro partout, jamais undefined', () => {
+    const scorecard = calculerScorecard([resultat({ scenarioId: 'x--fr', langue: 'fr' })], config, HORODATAGE, POLITIQUE_DETERMINISTE);
+    expect(scorecard.global.nbGroupesRejouables).toBe(0);
+    expect(scorecard.global.tauxRejouabiliteGroupes).toBeNull();
+  });
+
+  it('par gabarit : les gabarits partitionnent le global, et c’est là que se voit le gabarit qui cesse de rejouer', () => {
+    // Le contrôle qui peut échouer : un global dilué (9/14 groupes) cache un
+    // gabarit à 0 % ; la ligne du gabarit le désigne (C-09 sur
+    // « formulaire-puis-navigation » avant le contrat 1).
+    const resultats = [
+      resultat({ scenarioId: 'a--fr', langue: 'fr', gabarit: 'formulaire-contact', rejouabilite: rejoue(10, 10, 4, 4) }),
+      resultat({ scenarioId: 'b--en', langue: 'en', gabarit: 'formulaire-contact', rejouabilite: rejoue(8, 8, 5, 5) }),
+      resultat({ scenarioId: 'c--fr', langue: 'fr', gabarit: 'formulaire-puis-navigation', rejouabilite: rejoue(6, 0, 5, 0) }),
+    ];
+    const scorecard = calculerScorecard(resultats, config, HORODATAGE, POLITIQUE_DETERMINISTE);
+    expect(Object.keys(scorecard.parGabarit)).toEqual(['formulaire-contact', 'formulaire-puis-navigation']);
+    expect(scorecard.parGabarit['formulaire-puis-navigation']).toMatchObject({ nbGroupesRejouables: 5, nbGroupesRejoues: 0, tauxRejouabiliteGroupes: 0 });
+    expect(scorecard.parGabarit['formulaire-contact']).toMatchObject({ tauxRejouabiliteGroupes: 100 });
+    const somme = Object.values(scorecard.parGabarit).reduce((total, agregat) => total + agregat.nbGroupesRejouables, 0);
+    expect(somme).toBe(scorecard.global.nbGroupesRejouables);
+    const rendu = rendreScorecardConsole(scorecard, dico, config.langueConsole);
+    const lignes = rendu.split('\n');
+    const titre = lignes.indexOf(traduire(dico, 'scorecard.rejouabiliteParGabarit'));
+    expect(titre).toBeGreaterThan(-1);
+    const ligneGabarit = lignes.slice(titre).find((ligne) => ligne.startsWith('formulaire-puis-navigation'));
+    expect(ligneGabarit).toMatch(/0,0\s%$/);
+  });
+
+  it('le rendu console porte le tableau, la synthèse, et une ALARME sous le seuil — muette au-dessus, muette sans dénominateur', () => {
+    const sousSeuil = calculerScorecard([resultat({ scenarioId: 'a--fr', langue: 'fr', rejouabilite: rejoue(8, 0, 5, 0) })], config, HORODATAGE, POLITIQUE_DETERMINISTE);
+    const rendu = rendreScorecardConsole(sousSeuil, dico, config.langueConsole, { rejouabiliteMinPourcent: 100 });
+    expect(rendu).toContain(traduire(dico, 'scorecard.colonnes.tauxRejouabiliteGroupes'));
+    expect(rendu).toContain('ALARME REJOUABILITÉ');
+    // Le contrôle qui peut échouer : le même run au-dessus du seuil ne crie pas…
+    const auDessus = calculerScorecard([resultat({ scenarioId: 'a--fr', langue: 'fr', rejouabilite: rejoue(8, 8, 5, 5) })], config, HORODATAGE, POLITIQUE_DETERMINISTE);
+    expect(rendreScorecardConsole(auDessus, dico, config.langueConsole, { rejouabiliteMinPourcent: 100 })).not.toContain('ALARME REJOUABILITÉ');
+    // …ni un run sans candidate, ni un rendu sans seuil fourni.
+    const vide = calculerScorecard([resultat({ scenarioId: 'a--fr', langue: 'fr', rejouabilite: rejoue(0, 0, 0, 0) })], config, HORODATAGE, POLITIQUE_DETERMINISTE);
+    expect(rendreScorecardConsole(vide, dico, config.langueConsole, { rejouabiliteMinPourcent: 100 })).not.toContain('ALARME REJOUABILITÉ');
+    expect(rendreScorecardConsole(sousSeuil, dico, config.langueConsole)).not.toContain('ALARME REJOUABILITÉ');
   });
 });

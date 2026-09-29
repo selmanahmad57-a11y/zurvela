@@ -143,7 +143,7 @@ describe('consolider', () => {
     const sansAction = candidateSimulee({
       detecteur: 'd-http',
       description: 'ressource-interne-404',
-      reproduction: { url: URL_CONTACT, viewport: DESKTOP, action: null, actionsPrealables: [] },
+      reproduction: { url: URL_CONTACT, pageDepart: URL_CONTACT, viewport: DESKTOP, action: null, actionsPrealables: [] },
       preuves: [reponse({ statut: 500 }), reponse({ statut: 500 }), reponse({ statut: 500 })],
     });
     const avecAction = candidateSimulee({ detecteur: 'd-echec-muet', description: 'echec-muet' });

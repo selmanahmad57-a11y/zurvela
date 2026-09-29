@@ -1,0 +1,28 @@
+{
+  "langue": "fr",
+  "site": {
+    "nom": "Comptoir des Objets",
+    "slogan": "Petits objets du quotidien, expédiés le jour même"
+  },
+  "nav": {
+    "libelle": "Navigation principale",
+    "page1": "Page 1",
+    "page2": "Page 2",
+    "page3": "Page 3",
+    "page4": "Page 4",
+    "page5": "Page 5",
+    "page6": "Page 6",
+    "page7": "Page 7",
+    "page8": "Page 8"
+  },
+  "catalogue": {
+    "titre": "Catalogue",
+    "intro": "Cent soixante références réparties sur huit pages.",
+    "ajouter": "Ajouter au panier",
+    "article": "Article",
+    "prix": "12 €"
+  },
+  "pied": {
+    "mentions": "Comptoir des Objets — SAS au capital de 10 000 €"
+  }
+}

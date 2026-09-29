@@ -1,0 +1,21 @@
+{
+  "id": "expandtesting",
+  "url": "https://practice.expandtesting.com",
+  "role": "defaut",
+  "fiche": "07",
+  "defaut": "C-06",
+  "avant": {
+    "rejouabiliteGroupesPourcent": 0,
+    "candidates": 187,
+    "groupes": 93,
+    "retenues": 0,
+    "pages": 31,
+    "dureeMs": 295897
+  },
+  "attendus": {
+    "rejouabiliteGroupesMinPourcent": 10,
+    "dureeMaxMs": 300000,
+    "pagesMin": 15,
+    "candidatesMin": 60
+  }
+}

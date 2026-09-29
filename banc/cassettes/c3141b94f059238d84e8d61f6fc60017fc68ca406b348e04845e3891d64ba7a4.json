@@ -1,0 +1,12 @@
+{
+  "cle": "c3141b94f059238d84e8d61f6fc60017fc68ca406b348e04845e3891d64ba7a4",
+  "metadonnees": {
+    "date": "2026-09-29T07:55:42.472Z",
+    "modeleDemande": "claude-haiku-4-5",
+    "modeleServi": "claude-haiku-4-5-20251001",
+    "versionPrompt": "v2",
+    "coutApi": 0.001863,
+    "apresRelance": false
+  },
+  "reponse": "{\"actionId\": \"c1\", \"raison\": \"L'utilisateur a rempli le formulaire d'inscription et doit le valider. Terminer l'inscription est l'action suivante logique qu'un visiteur effectuerait pour compléter ce processus d'enregistrement.\"}"
+}

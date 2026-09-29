@@ -46,3 +46,52 @@ sites, trois causes (C-04, C-09, C-06/C-10), un seul effet — le protocole ne
 confirme rien — et trois rapports qui disent « aucune anomalie ». Mesuré
 rétroactivement : 3/3, 3/3, **0/8**, **0/13**. Publié dans chaque fiche et
 par la commande de scan à partir du n°6 (APPRENTISSAGES n°18).
+
+## État après P2-1 — la rejouabilité (2026-09-29)
+
+Validé au banc (mutation tuée pour chaque contrat moteur) et sur le réel
+(`pnpm banc:reel --avant`, quatre sites, avant et après dans la même
+session ; fiches 04 à 07, section « Revu après P2-1 »).
+
+| entrée | statut | preuve sur le réel |
+|---|---|---|
+| **C-09** | **corrigée** (contrat 1 : la recette porte `pageDepart`, le rejeu s'ouvre sur elle) | cutlybook : 0/5 → **6/6** groupes rejoués |
+| **C-10** | **corrigée** (contrat 3 : pas de `remplir` sans champ, formulaires identiques dédoublonnés) | books : 244 remplissages vides → **0** ; 295 s à l'échéance → 132 s au budget de pages ; the-internet : 10 → 2 remplissages, rien perdu |
+| **C-06** | **corrigée dans sa lettre** (contrat 2 : échéance répartie, réserve de confirmation, rédaction plafonnée) | expandtesting : exploration arrêtée à sa fraction, confirmation servie, 6 sections sur 41 rédigées dans le temps restant, scan à 290 s au lieu d'un dépassement ; **mais** 2 groupes sur 54 rejoués — voir ci-dessous |
+| **C-13** | **corrigée** (contrat 7 : les écartées référencent leur groupe par sa clé) | expandtesting 7,2 → 1,7 Mo ; books 2,9 → 0,8 Mo |
+| **C-16** | **statut corrigé** (contrat 8 : une découverte porte le verdict `decouverte`, jamais `confirmee`, et jamais « Bloquant ») ; le dédoublonnage par cause reste à P2-2 | expandtesting : 36 découvertes, 0 affirmée, plus aucune section « Bloquant » ; mais six sections rédigées pour les mêmes iframes publicitaires |
+| **C-04** | **corrigée au banc seulement** (contrat 4 : un rejeu gradué mesure la ressource visée, ou il est `non-mesuree`) | aucun des quatre sites n'avait de lenteur ; le réel ne l'a pas éprouvée. C-02 reste à P2-4 |
+
+**Ce que la validation réelle a ouvert** — trois constats, aucun corrigé à
+chaud :
+
+- **Le coût d'un rejeu PAR GROUPE borne la rejouabilité des pages lourdes.**
+  expandtesting : 29 s par tentative, deux tentatives par groupe, 54 groupes
+  — aucune fraction de 300 s ne les finance (2/54). Les groupes d'une même
+  page pourraient partager un chargement ; et l'ordre dans lequel on les
+  rejoue décide de ce qui est vérifié quand tout ne peut pas l'être (ici
+  une bibliothèque tierce et une balise signée, pas le site). À instruire
+  avec P2-2, qui réduira le nombre de groupes tiers.
+- **C-16 mord partout où le rejeu marche** — nouvelle occurrence :
+  expandtesting après P2-1, 40 découvertes `constatee-au-rejeu` publiées
+  `confirmee` (24 Funding Choices, 12 clics interceptés par UNE iframe
+  publicitaire, 3 polices, 1 ORB), **41 retenues au lieu de 0**, six
+  sections `Bloquant` en tête du rapport. Tant que P2-1 empêchait le rejeu,
+  C-16 était masqué ; P2-1 le démasque. Une découverte n'a jamais été
+  re-testée : la publier `confirmee` contredit le différenciateur n°1.
+- **C-05 et C-11 deviennent visibles au client** : cutlybook publie cinq
+  sections tierces (quatre pour une seule police), books publie la vraie
+  trouvaille de la campagne — le jQuery en http — sous l'étiquette « service
+  extérieur » et la gravité `mineur`. P2-2 et P2-3.
+
+**Noté pendant P2-1, pour un cahier de navigation** : au banc, la politique
+IA refuse de paginer un catalogue (« les pages 2 à 8 seraient des
+répétitions sans valeur de test ») et termine avant la page du défaut —
+K01 fr/en ratés en IA, détectés en déterministe. C'est la couverture (C-08,
+cahier n°2), pas le rejeu : une page de liste « redondante » pour l'IA est
+exactement celle où vit le produit que le client vend.
+
+**Gabarit qui manque au banc (METHODE §12)** : aucun scénario ne produit de
+découverte au rejeu. Le contrat 8 est éprouvé par les tests et par le réel ;
+un gabarit dont un calque (publicité plein écran, bandeau) n'apparaît qu'au
+second chargement le mesurerait au banc.

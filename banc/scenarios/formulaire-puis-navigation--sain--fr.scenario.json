@@ -1,0 +1,9 @@
+{
+  "id": "formulaire-puis-navigation--sain--fr",
+  "gabarit": "formulaire-puis-navigation",
+  "langue": "fr",
+  "bugsActifs": [],
+  "contraintes": {
+    "soumission": "aucune"
+  }
+}

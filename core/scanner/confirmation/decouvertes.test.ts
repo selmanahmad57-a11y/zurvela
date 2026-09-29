@@ -5,7 +5,15 @@
 import { describe, expect, it } from 'vitest';
 import { BOUTON, MOBILE, URL_ACCUEIL, interception, reponse } from '../detection/fabriques-test.js';
 import { consolider } from './consolidation.js';
-import { MOTIF_CONSTATEE_AU_REJEU, anomalieDecouverte, collecterDecouvertes, estDecouverte, identitesConnues } from './decouvertes.js';
+import {
+  GRAVITE_MAX_DECOUVERTE,
+  MOTIF_CONSTATEE_AU_REJEU,
+  anomalieDecouverte,
+  collecterDecouvertes,
+  estDecouverte,
+  graviteDecouverte,
+  identitesConnues,
+} from './decouvertes.js';
 import { candidateSimulee } from './fabriques-test.js';
 
 /** Un groupe d'origine construit à partir d'une candidate du scan. */
@@ -67,11 +75,24 @@ describe('collecterDecouvertes', () => {
     expect(decouvertes[0]?.confiance).toBe(0.9);
   });
 
+  it('une découverte ne sort JAMAIS « Bloquant » : sa gravité est bornée, et seulement celle-là (P2-1, contrat 8)', () => {
+    // expandtesting : six sections « Bloquant » pour une iframe publicitaire vue
+    // pendant un rejeu et jamais re-testée. Le contrôle qui peut échouer : sans
+    // la borne, la gravité du détecteur passe telle quelle.
+    expect(anomalieDecouverte(groupeDe(candidateSimulee({ graviteEstimee: 'bloquant' }))).graviteEstimee).toBe(GRAVITE_MAX_DECOUVERTE);
+    expect(GRAVITE_MAX_DECOUVERTE).not.toBe('bloquant');
+    // …et la borne n'élève rien : une gravité inférieure passe telle quelle.
+    expect(graviteDecouverte('important')).toBe('important');
+    expect(graviteDecouverte('mineur')).toBe('mineur');
+    expect(anomalieDecouverte(groupeDe(candidateSimulee({ graviteEstimee: 'mineur' }))).graviteEstimee).toBe('mineur');
+  });
+
   it('l’anomalie découverte garde la confiance de son détecteur, sans calibration', () => {
     const groupe = groupeDe(candidateSimulee({ confiance: 0.8 }));
     const anomalie = anomalieDecouverte(groupe);
 
-    expect(anomalie).toMatchObject({ verdict: 'confirmee', confiance: 0.8 });
+    // Le verdict dit lui-même que rien ne l'a re-confirmée (P2-1, contrat 8).
+    expect(anomalie).toMatchObject({ verdict: 'decouverte', confiance: 0.8 });
     // Son motif DIT dans le rapport que son statut n'est pas celui d'une
     // anomalie re-confirmée, et sa clé la relie à son groupe de découverte.
     expect(anomalie.motif).toBe(MOTIF_CONSTATEE_AU_REJEU);

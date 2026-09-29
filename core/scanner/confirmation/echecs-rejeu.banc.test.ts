@@ -36,7 +36,7 @@ import { lancerNavigateur } from '../navigateur.js';
 import { creerObservateur } from '../observation/observateur.js';
 import { creerReexecuteur } from '../reexecuteur.js';
 import { autoDiagnosticMecanique } from './auto-diagnostic.js';
-import { MOTIF_CONSTATEE_AU_REJEU } from './decouvertes.js';
+import { MOTIF_CONSTATEE_AU_REJEU, graviteDecouverte } from './decouvertes.js';
 import { creerProtocole } from './protocole.js';
 import { MOTIF_REJEU_IMPOSSIBLE } from './verdict.js';
 
@@ -128,11 +128,16 @@ describe('échecs de rejeu — à qui la faute ?', () => {
     const injoignable = decouvertes.find((anomalie) => anomalie.description === DESCRIPTION_DOCUMENT_INJOIGNABLE);
     expect(injoignable).toMatchObject({
       detecteur: NOM_DETECTEUR_HTTP,
-      verdict: 'confirmee',
+      // Publiée, jamais re-confirmée : son verdict le dit (P2-1, contrat 8).
+      verdict: 'decouverte',
       // Confiance du détecteur, SANS calibration : constatée une fois, pas re-confirmée.
       confiance: config.detecteurs.http.confianceDocumentInjoignable,
-      graviteEstimee: config.detecteurs.http.graviteDocumentInjoignable,
+      // Gravité du détecteur BORNÉE : même un site injoignable vu une seule
+      // fois n'ouvre pas le rapport en « Bloquant » sans un re-test à lui.
+      graviteEstimee: graviteDecouverte(config.detecteurs.http.graviteDocumentInjoignable),
     });
+    // Le groupe de découverte porte le même verdict dans le rapport technique.
+    expect(resultat.groupes?.find((groupe) => groupe.groupe.cle === injoignable?.groupe)?.verdict).toBe('decouverte');
     // Elle est aussi dans les retenues : c'est le rapport final qui la porte.
     expect(resultat.retenues).toContain(injoignable);
     // Et elle porte son statut DANS le rapport : motif « constatée une fois »

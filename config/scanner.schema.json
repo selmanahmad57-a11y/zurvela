@@ -16,7 +16,8 @@
     "confirmation",
     "interaction",
     "politesse",
-    "budget"
+    "budget",
+    "echeance"
   ],
   "definitions": {
     "gravite": {
@@ -839,6 +840,45 @@
           ],
           "exclusiveMinimum": 0,
           "description": "Plafond en dollars pour UN scan, toutes surfaces de modèle confondues. `null` : aucun plafond — c'est l'état du banc, dont le coût est mesuré et non borné. Sur une page publique où n'importe qui colle une URL, `null` est intenable."
+        }
+      }
+    },
+    "echeance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "repartition"
+      ],
+      "description": "Répartition de l'échéance d'un scan entre ses phases, en FRACTIONS de l'échéance totale (celle de l'appelant : scan.timeoutMs en production, config/banc.json au banc). Des fractions, pas des millisecondes : l'échéance de production est de 300 s, celle du banc de 60 s, et des réserves fixes seraient absurdes sur l'une ou sur l'autre. L'invariant « somme < 1 » est tenu en CODE au chargement (core/scanner/config.ts), le schéma ne sait pas additionner. Cahier P2-1, contrat 2 : le protocole de confirmation est le cœur du produit, il ne peut pas être la variable d'ajustement du budget — c'est l'exploration qui se fait couper.",
+      "properties": {
+        "repartition": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "exploration",
+            "confirmation",
+            "redaction"
+          ],
+          "properties": {
+            "exploration": {
+              "type": "number",
+              "exclusiveMinimum": 0,
+              "exclusiveMaximum": 1,
+              "description": "Part de l'échéance au-delà de laquelle l'exploration s'arrête (arrêt `reserve-confirmation`), quel que soit le budget de pages."
+            },
+            "confirmation": {
+              "type": "number",
+              "exclusiveMinimum": 0,
+              "exclusiveMaximum": 1,
+              "description": "Part de l'échéance RÉSERVÉE à la confirmation : l'exploration ne peut pas l'entamer. Si elle vaut moins qu'un seul rejeu (confirmation.rejeu.chargementPageMs), le scan le journalise (confirmation.reserve.insuffisante) au lieu de le subir en silence."
+            },
+            "redaction": {
+              "type": "number",
+              "exclusiveMinimum": 0,
+              "exclusiveMaximum": 1,
+              "description": "Part de l'échéance réservée à la rédaction du rapport business : la confirmation s'arrête avant, et la rédaction s'y tient (plafond de sections par le temps, appel borné)."
+            }
+          }
         }
       }
     }

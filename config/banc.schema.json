@@ -82,7 +82,8 @@
       "required": [
         "seuilAlarmeEcartLanguesPoints",
         "dossierResultats",
-        "retentionRuns"
+        "retentionRuns",
+        "rejouabiliteMinPourcent"
       ],
       "properties": {
         "seuilAlarmeEcartLanguesPoints": {
@@ -98,6 +99,12 @@
           "type": "integer",
           "minimum": 1,
           "description": "Nombre de scorecards JSON conservées dans dossierResultats (les plus récentes) ; les autres sont purgées à chaque exécution du banc."
+        },
+        "rejouabiliteMinPourcent": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100,
+          "description": "Taux de rejouabilité par GROUPES (en %) sous lequel la scorecard affiche une ALARME : un protocole qui n'atteint pas ses candidates n'est pas un protocole, c'est un tri par hasard (APPRENTISSAGES n°18, cahier P2-1). Sur l'instrument, 100 : un groupe non rejoué est un défaut du moteur ou du gabarit."
         }
       }
     },
@@ -141,16 +148,24 @@
           "additionalProperties": {
             "type": "object",
             "additionalProperties": false,
-            "required": [
-              "pagesMax"
-            ],
+            "required": [],
             "properties": {
               "pagesMax": {
                 "type": "integer",
                 "minimum": 1,
                 "description": "Budget de pages imposé au moteur pour chaque scénario de ce gabarit. C'est ce qui rend la qualité d'une décision mesurable : sans budget contraint, tout parcours exhaustif atteint tout et une bonne navigation ne se distingue pas d'une navigation aveugle. Les atteintes attendues par politique (cibles du gabarit) sont vraies SOUS CE BUDGET."
+              },
+              "soumission": {
+                "type": "string",
+                "enum": [
+                  "aucune",
+                  "site-possede"
+                ],
+                "description": "Mode d'interaction imposé au moteur pour chaque scénario de ce gabarit (`interaction.soumission`). C'est une CONTRAINTE : elle restreint ce que le moteur a le droit de faire. Le gabarit « catalogue-boutons » (cahier P2-1) s'explore sous `aucune`, comme la campagne réelle : soixante formulaires-boutons soumis n'apprendraient rien."
               }
-            }
+            },
+            "minProperties": 1,
+            "description": " Au moins une contrainte ; chacune est facultative."
           },
           "description": "Contraintes imposées au moteur pour les scénarios d'un gabarit (clé = nom du gabarit). Un gabarit absent n'en reçoit aucune et garde les réglages de config/scanner.json."
         },

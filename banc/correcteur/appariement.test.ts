@@ -37,7 +37,7 @@ function candidate(surcharges: Partial<Anomalie>): AnomalieCandidate {
   return {
     ...anomalie(surcharges),
     detecteur: 'd-test',
-    reproduction: { url: `${URL_BASE}/contact`, viewport: VIEWPORT, actionsPrealables: [], action: null },
+    reproduction: { url: `${URL_BASE}/contact`, pageDepart: `${URL_BASE}/contact`, viewport: VIEWPORT, actionsPrealables: [], action: null },
     preuves: [],
   };
 }
@@ -528,6 +528,14 @@ describe('calculerComptesProtocole', () => {
     expect(comptes.nbGroupesRetenus).toBe(2);
     expect(comptes.nbGroupesEcartes).toBe(2);
     expect(comptes.nbGroupes).toBe(comptes.nbGroupesRetenus + comptes.nbGroupesEcartes);
+  });
+
+  it('un groupe de DÉCOUVERTE est publié, jamais compté écarté : il ne devient pas une fausse alerte évitée (P2-1, contrat 8)', () => {
+    // Le contrôle qui peut échouer : compté écarté, le groupe de découverte
+    // d'un bug à écarter (T01) créditerait une « fausse alerte évitée » alors
+    // qu'il a été PUBLIÉ.
+    const comptes = comptesDe(rapportProtocole([resultatGroupe('decouverte', [{ urlOuEtape: '/contact' }])], 1), manifesteT01);
+    expect(comptes).toMatchObject({ nbGroupesRetenus: 1, nbGroupesEcartes: 0, nbFaussesAlertesEvitees: 0 });
   });
 });
 

@@ -85,3 +85,32 @@ Ligne(s) de `docs/INVENTAIRE-PRODUCTION.md` confirmée(s) ou raturée(s) :
 - **Protocole (brique 3) — 24/24 rejouables** : quand le rejeu marche, le
   pilier tient (0 écartée, 2 contre-épreuves menées). Ce scan est la
   preuve que C-09 est un défaut de recette, pas de protocole.
+
+## Revu après P2-1 (2026-09-29)
+
+Rejoué dans la même session par `pnpm banc:reel --avant` (METHODE §12) :
+l'« avant » est le moteur de la campagne (`e872872`, code moteur inchangé
+depuis `7f6aa1c`), l'« après » le moteur P2-1, à quelques minutes d'écart,
+même commande, même configuration de production.
+
+| | durée (ms) | pages | candidates | retenues | rejouables (groupes) | arrêt | journal | coût (USD) |
+|---|---|---|---|---|---|---|---|---|
+| avant | 196 182 | 40 | 24 | 5 | 5/5 (100 %) | limite-pages | 562 Ko | 0,0631 |
+| après | 190 068 | 40 | 24 | 5 | 5/5 (100 %) | limite-pages | 548 Ko | 0,0610 |
+
+**Le témoin n'a pas bougé** : mêmes cinq retenues, mêmes vingt URL, 24/24
+candidates rejouées avant comme après. Seul changement visible : 2
+remplissages au lieu de 10 (contrat 3, formulaires identiques dédoublonnés),
+sans candidate perdue. Les deux sections `bloquant` du modal fermable
+(`/entry_ad`, C-12) sont toujours là : hors périmètre de P2-1, c'est P2-3.
+
+Second « après » (variance, une heure plus tard) : 186 894 ms, 24/24
+candidates, 5/5 groupes, les cinq mêmes retenues — le témoin tient deux
+fois.
+
+Après le contrat 8 (même soir, avant/après) : 24/24 candidates, 5/5 groupes,
+les cinq mêmes retenues — le témoin tient une troisième fois.
+
+Journaux, rapports et résultat hors dépôt :
+`~/.config/zurvela/bestiaire/p2-1-reel-2026-09-29/` (journal après :
+sha256 `65b74b5d935aeb1d998db1cd69753f1caea4f2862aa5e6b0fdde94e17b781c45` ; toutes les sommes dans `SHA256SUMS`).

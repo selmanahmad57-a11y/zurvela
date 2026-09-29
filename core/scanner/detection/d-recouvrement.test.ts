@@ -27,7 +27,7 @@ describe('D-RECOUVREMENT', () => {
       urlOuEtape: URL_CONTACT,
       viewport: MOBILE.nom,
       element: BOUTON,
-      reproduction: { url: URL_CONTACT, viewport: MOBILE, action: null, actionsPrealables: [] },
+      reproduction: { url: URL_CONTACT, pageDepart: URL_CONTACT, viewport: MOBILE, action: null, actionsPrealables: [] },
       preuves: [signal],
     });
   });
@@ -41,7 +41,7 @@ describe('D-RECOUVREMENT', () => {
     const action = soumission('a1', { viewport: MOBILE.nom, resultat: 'bloquee' });
     const signal = interception({ viewport: MOBILE.nom, source: 'clic', intercepteur: null, actionId: 'a1' });
     const [candidate] = detecteur.detecter([signal], contexte([action]));
-    expect(candidate?.reproduction).toEqual({ url: URL_CONTACT, viewport: MOBILE, action, actionsPrealables: [] });
+    expect(candidate?.reproduction).toEqual({ url: URL_CONTACT, pageDepart: URL_CONTACT, viewport: MOBILE, action, actionsPrealables: [] });
   });
 });
 

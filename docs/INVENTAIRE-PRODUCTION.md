@@ -63,6 +63,8 @@ bestiaire.
 | `bruitFondRepetitions` | 2 | La notion même de « bruit de fond » a été étalonnée sur un site sans tiers. |
 | `elementsInteractifsMax` / `liensParPageMax` | 500 / 500 | Jamais approchés au banc ; un méga-menu réel peut les frôler. |
 | `confirmation.seuilConfirmationDirecte` / `seuilRetenue` | 0,9 / 0,6 | Calibrés contre des bugs **dont nous connaissions la confiance attendue**. C'est le réglage le plus circulaire du lot, et il n'a qu'un remède : des données réelles. |
+| `echeance.repartition` (exploration / confirmation / rédaction) | 0,5 / 0,35 / 0,1 | **La seule ligne de ce tableau qui vient du réel** (cahier P2-1, 2026-09-29) : calibrée sur la campagne 6b — fiches 05, 08 et 10, où l'exploration mangeait l'échéance entière, laissait 5 s à la confirmation, ou laissait la rédaction déborder de 59 s. La somme est < 1 par invariant en code ; le reste est la marge. Sans donnée de plus, ces fractions sont une première pose, pas un étalon. |
+| `rapport.dureeParSectionMs` | 6000 | Durée observée d'une section rédigée sur la campagne (fiche 10 : seize sections, 17 s de rédaction en fiche 02). Sert à plafonner le NOMBRE de sections quand le temps restant ne les paie pas ; une valeur trop basse rédige trop et déborde, une valeur trop haute coupe des sections qu'on aurait eu le temps d'écrire. |
 
 **Le point de tension le plus net** : `scan.timeoutMs` (60 s) contre la politique
 `complet` (2 re-exécutions + contre-épreuve). L'échéance a déjà tué une
@@ -77,6 +79,16 @@ substance.
 se mesure pas en mode dégradé. La politique `econome` est l'affaire de la page
 publique, quand le volume l'exigera, et l'arbitrage sera alors chiffré par le
 bestiaire, pas deviné.
+
+*Complété le 2026-09-29 (cahier P2-1)* : l'échéance n'est plus un seul
+compte à rebours que l'exploration peut consommer entière (fiches 05, 08, 10),
+elle est RÉPARTIE en fractions (`echeance.repartition`) : l'exploration
+s'arrête à la sienne (`reserve-confirmation`, journalisé), la confirmation
+reçoit la suivante, la rédaction le reste — et le journal dit
+`confirmation.reserve.insuffisante` quand il ne reste pas de quoi rejouer une
+fois. La tension demeure (300 s pour dix-neuf rejeux ne se répartissent pas
+mieux qu'ils ne s'additionnaient), mais elle se lit désormais dans le journal
+au lieu de se deviner dans un rapport vide.
 
 ## C. Le coût change de nature
 

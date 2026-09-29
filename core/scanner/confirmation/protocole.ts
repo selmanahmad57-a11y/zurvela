@@ -89,7 +89,7 @@ function candidatesEcartees(resultat: ResultatGroupe): CandidateEcartee[] {
     candidate,
     raison: resultat.motif,
     verdict: resultat.verdict,
-    resultat,
+    cle: resultat.groupe.cle,
   }));
 }
 
@@ -266,6 +266,8 @@ export function creerProtocole(dependances: DependancesProtocole): ProtocoleConf
           motif: surAvis.motif,
           confiance: anomalie.confiance,
           confianceOrigine: resultat.confianceInitiale,
+          gravite: anomalie.graviteEstimee,
+          graviteDetecteur: resultat.groupe.representant.graviteEstimee,
           nbMembres: resultat.groupe.membres.length,
           verdictGroupe: resultat.verdict,
         });
@@ -285,13 +287,15 @@ export function creerProtocole(dependances: DependancesProtocole): ProtocoleConf
           urlOuEtape: anomalie.urlOuEtape,
           motif: MOTIF_CONSTATEE_AU_REJEU,
           confiance: anomalie.confiance,
+          gravite: anomalie.graviteEstimee,
+          graviteDetecteur: groupe.representant.graviteEstimee,
           nbMembres: groupe.membres.length,
         });
         decouvertes.push(anomalie);
         retenues.push(anomalie);
         resultats.push({
           groupe,
-          verdict: 'confirmee',
+          verdict: 'decouverte',
           motif: MOTIF_CONSTATEE_AU_REJEU,
           tentatives: [],
           tauxReproduction: null,

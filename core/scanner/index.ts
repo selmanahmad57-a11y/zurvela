@@ -22,6 +22,7 @@ import type { ConfigRapport, ConfigScanner } from './config.js';
 import { detecter } from './detection/index.js';
 import { ouvrirProfilage, type ExplorateurProfilant, type OptionsProfilage } from './profilage.js';
 import { redigerRapportBusiness, type ResultatRapportBusiness } from '../rapport/index.js';
+import type { RepartitionEcheance } from './config.js';
 
 /**
  * Ressource de rejeu d'un scan : le protocole de confirmation re-exécute
@@ -106,12 +107,49 @@ function compterParDetecteur(detecteurs: Detecteur[], candidates: { detecteur: s
 /** Identifiant technique de l'écart : la confirmation elle-même est tombée. */
 export const RAISON_CONFIRMATION_EN_ERREUR = 'confirmation-en-erreur';
 
+/** Journal : la part d'échéance réservée à la confirmation ne suffit pas à un seul rejeu. */
+export const EVENEMENT_RESERVE_INSUFFISANTE = 'confirmation.reserve.insuffisante';
+
+export interface EcheancesDePhase {
+  /** Instant où l'exploration doit avoir rendu la main. */
+  exploration: number;
+  /** Instant où la confirmation doit avoir rendu la main : l'échéance moins la réserve de rédaction. */
+  confirmation: number;
+  reserveConfirmationMs: number;
+  reserveRedactionMs: number;
+}
+
+/**
+ * Les échéances de phase, depuis les fractions de config. Ce que l'exploration
+ * ne consomme pas revient aux phases suivantes ; ce qu'elle consommerait en
+ * trop lui est refusé. Pure : le banc la teste sans horloge.
+ */
+export function echeancesDePhase(debut: number, timeoutMs: number, repartition: RepartitionEcheance): EcheancesDePhase {
+  const reserveConfirmationMs = Math.round(timeoutMs * repartition.confirmation);
+  const reserveRedactionMs = Math.round(timeoutMs * repartition.redaction);
+  return {
+    exploration: debut + Math.round(timeoutMs * repartition.exploration),
+    confirmation: debut + timeoutMs - reserveRedactionMs,
+    reserveConfirmationMs,
+    reserveRedactionMs,
+  };
+}
+
 export function creerScanner(dependances: DependancesScanner): Scanner {
   const { config, explorateur, detecteurs, protocole, ouvrirRejeu, ia, ouvrirBudget } = dependances;
 
   return async function scanner(url, options): Promise<Rapport> {
     const debut = Date.now();
     const echeance = debut + options.timeoutMs;
+    // L'ÉCHÉANCE EST RÉPARTIE, RÉSERVÉE ET APPLIQUÉE (cahier P2-1, contrat 2).
+    // Quatre sites de la campagne 6b ont vu l'exploration manger le temps de
+    // la confirmation — 0/13, 0/187, 1/22 groupes rejoués —, et un cinquième
+    // a vu la rédaction tourner 59 s au-delà de l'échéance. Les phases ne
+    // tirent plus sur la même horloge : l'exploration a sa part, la
+    // confirmation sa réserve que l'exploration ne peut pas entamer, la
+    // rédaction la sienne. Le protocole est le cœur du produit ; il n'est
+    // plus la variable d'ajustement du budget.
+    const phases = echeancesDePhase(debut, options.timeoutMs, config.echeance.repartition);
     const journal: EntreeJournal[] = [];
     const journaliser = (type: string, details?: unknown): void => {
       journal.push({ horodatage: new Date().toISOString(), type, details });
@@ -125,6 +163,18 @@ export function creerScanner(dependances: DependancesScanner): Scanner {
       protocole: protocole.nom,
     });
     journaliser('ia.mode', { mode: ia.mode, raison: ia.raisonDegrade });
+    journaliser('scan.echeance', {
+      timeoutMs: options.timeoutMs,
+      explorationMs: phases.exploration - debut,
+      confirmationReserveMs: phases.reserveConfirmationMs,
+      redactionReserveMs: phases.reserveRedactionMs,
+    });
+    // Une réserve qui vaut moins qu'un seul rejeu ne protège rien : elle est
+    // DITE, jamais subie en silence (P2-1, contrat 2).
+    const coutRejeuMs = config.confirmation.rejeu.chargementPageMs;
+    if (phases.reserveConfirmationMs < coutRejeuMs) {
+      journaliser(EVENEMENT_RESERVE_INSUFFISANTE, { reserveMs: phases.reserveConfirmationMs, coutRejeuMs });
+    }
     // Le budget s'ouvre AVANT la première dépense possible, et il est propre à
     // ce scan : le compteur d'un scan précédent ne doit pas amputer celui-ci.
     ouvrirBudget?.(journaliser);
@@ -176,7 +226,7 @@ export function creerScanner(dependances: DependancesScanner): Scanner {
     let parcours: Parcours;
     try {
       parcours = await explorateur.explorer(
-        { urlDepart: url, echeance, journaliser },
+        { urlDepart: url, echeance: phases.exploration, arretEcheance: 'reserve-confirmation', journaliser },
         observateur,
         dependances.profilage === undefined ? undefined : profilageOuvert.collecte,
         compteurCout,
@@ -207,13 +257,15 @@ export function creerScanner(dependances: DependancesScanner): Scanner {
     // est fermée dans tous les cas, et une panne de sa part donne un rapport
     // partiel — sans confirmation, aucune anomalie n'est AFFIRMÉE, elles
     // sont écartées avec leur raison plutôt que signalées sans preuve.
-    const session = ouvrirRejeu(journaliser, echeance);
+    // La confirmation s'arrête avant la réserve de rédaction : la rédaction
+    // est la dernière phase et la seule qui n'avait pas de filet de temps.
+    const session = ouvrirRejeu(journaliser, phases.confirmation);
     let confirmation: ResultatConfirmation;
     try {
       confirmation = await protocole.confirmer(candidates, {
         urlDepart: url,
         options,
-        echeance,
+        echeance: phases.confirmation,
         journaliser,
         reexecuteur: session.reexecuteur,
         detecteurs,

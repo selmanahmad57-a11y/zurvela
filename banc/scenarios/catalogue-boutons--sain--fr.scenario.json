@@ -1,0 +1,9 @@
+{
+  "id": "catalogue-boutons--sain--fr",
+  "gabarit": "catalogue-boutons",
+  "langue": "fr",
+  "bugsActifs": [],
+  "contraintes": {
+    "soumission": "aucune"
+  }
+}

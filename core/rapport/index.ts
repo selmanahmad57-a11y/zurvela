@@ -51,6 +51,10 @@ export const EVENEMENT_SANS_PROSE = 'rapport.sans-prose';
 export const EVENEMENT_ECHEANCE_DEPASSEE = 'rapport.echeance-depassee';
 /** Raison technique stable : la rédaction a été renoncée faute de temps. */
 export const RAISON_ECHEANCE_REDACTION = 'echeance-scan-depassee';
+/** Journal : le temps restant avant l'échéance a plafonné le nombre de sections rédigées (P2-1, contrat 2). */
+export const EVENEMENT_SECTIONS_PLAFONNEES = 'rapport.sections-plafonnees';
+/** Raison du plafonnement : la réserve de rédaction ne paie pas une seule section. */
+export const RAISON_TEMPS_INSUFFISANT = 'temps-insuffisant';
 /** Journal : la rédaction a abouti. */
 export const EVENEMENT_REDIGE = 'rapport.redige';
 
@@ -168,8 +172,24 @@ export async function redigerRapportBusiness(
     return { rapportBusiness, coutApi: 0 };
   }
 
-  const contexte = contexteRedaction(normaliserFaits(rapportBusiness, rapport, config));
-  const resultat = await ia.rediger(contexte);
+  // LA RÉDACTION SE TIENT DANS SA RÉSERVE (P2-1, contrat 2). Le temps restant
+  // se convertit en plafond de sections par `dureeParSectionMs` ; les
+  // sections sont déjà triées par gravité, donc ce qui tombe est le moins
+  // grave, et le rendu dit combien de sections restent muettes. L'appel
+  // lui-même est borné par ce même temps : automationexercise a vu la
+  // rédaction tourner 59 s au-delà de l'échéance, à 113 % du scan.
+  const restantMs = parametres.echeance === null ? null : parametres.echeance - maintenant();
+  const plafondTemps = restantMs === null ? rapportBusiness.sections.length : Math.floor(restantMs / Math.max(1, config.dureeParSectionMs));
+  if (plafondTemps <= 0) {
+    journaliser(EVENEMENT_ECHEANCE_DEPASSEE, { langue, raison: RAISON_TEMPS_INSUFFISANT, nbSections: rapportBusiness.sections.length, restantMs });
+    return { rapportBusiness, coutApi: 0 };
+  }
+  const aRediger = plafondTemps < rapportBusiness.sections.length ? { ...rapportBusiness, sections: rapportBusiness.sections.slice(0, plafondTemps) } : rapportBusiness;
+  if (aRediger !== rapportBusiness) {
+    journaliser(EVENEMENT_SECTIONS_PLAFONNEES, { langue, plafond: plafondTemps, nbSections: rapportBusiness.sections.length, restantMs });
+  }
+  const contexte = contexteRedaction(normaliserFaits(aRediger, rapport, config));
+  const resultat = await ia.rediger(contexte, restantMs === null ? {} : { delaiMs: restantMs });
   if (!resultat.disponible) {
     // Le coût DÉPENSÉ reste compté même quand rien n'en est sorti : un coût
     // invisible ment (APPRENTISSAGES n°3).

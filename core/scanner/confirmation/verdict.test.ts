@@ -1,16 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { TentativeReexecution } from '../../types.js';
 import { CONFIG_CONFIRMATION_TEST } from './fabriques-test.js';
-import {
-  MOTIF_JAMAIS_REPRODUITE,
-  MOTIF_MESURE_SOUS_SEUIL,
-  MOTIF_REJEU_IMPOSSIBLE,
-  MOTIF_REPRODUCTION_PARTIELLE,
-  MOTIF_REPRODUITE,
-  agreger,
-  estExploitable,
-  juger,
-} from './verdict.js';
+import { MOTIF_JAMAIS_REPRODUITE, MOTIF_MESURE_SOUS_SEUIL, MOTIF_NON_MESUREE, MOTIF_REJEU_IMPOSSIBLE, MOTIF_REPRODUCTION_PARTIELLE, MOTIF_REPRODUITE, agreger, estExploitable, juger } from './verdict.js';
 
 const OPTIONS = { tauxRequis: CONFIG_CONFIRMATION_TEST.tauxReproduction, agregation: CONFIG_CONFIRMATION_TEST.agregationMesures };
 
@@ -123,5 +114,28 @@ describe('juger', () => {
   it('un taux requis plus bas confirme là où le taux par défaut dirait intermittente', () => {
     const jugement = juger([reproduite(), muette()], { ...OPTIONS, tauxRequis: 0.5 });
     expect(jugement.verdict).toBe('confirmee');
+  });
+});
+
+describe('juger — un détecteur gradué sans aucune mesure est une LIMITE, pas une non-reproduction (cahier P2-1, contrat 4)', () => {
+  const gradue = { ...OPTIONS, seuilMesure: 8000 };
+
+  it('aucune tentative exploitable ne porte de mesure → limite-automatisation, motif non-mesuree, taux inconnu', () => {
+    // C-04 : douze rejeux de lenteur écartés « jamais reproduite » par ABSENCE
+    // de mesure. Le contrôle qui peut échouer : sans cette branche, deux
+    // tentatives muettes sans mesure rendraient « non-reproduite ».
+    const jugement = juger([tentative({ nonMesuree: true }), tentative({ nonMesuree: true })], gradue);
+    expect(jugement).toEqual({ verdict: 'limite-automatisation', motif: MOTIF_NON_MESUREE, tauxReproduction: null });
+  });
+
+  it('une seule tentative mesurée suffit à juger : sous le seuil, non-reproduite par RE-MESURE', () => {
+    const jugement = juger([tentative({ nonMesuree: true }), muette(120)], gradue);
+    expect(jugement.verdict).toBe('non-reproduite');
+    expect(jugement.motif).toBe(MOTIF_MESURE_SOUS_SEUIL);
+    expect(jugement.mesureAgregee).toBe(120);
+  });
+
+  it('un détecteur BINAIRE (sans seuil) n’est pas concerné : sans mesure, le comptage seul tranche', () => {
+    expect(juger([muette(), muette()], OPTIONS).motif).toBe(MOTIF_JAMAIS_REPRODUITE);
   });
 });

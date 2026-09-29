@@ -1,0 +1,21 @@
+{
+  "id": "cutlybook",
+  "url": "https://cutlybook.com",
+  "role": "defaut",
+  "fiche": "04",
+  "defaut": "C-09",
+  "avant": {
+    "rejouabiliteGroupesPourcent": 0,
+    "candidates": 8,
+    "groupes": 5,
+    "retenues": 0,
+    "pages": 26,
+    "dureeMs": 170277
+  },
+  "attendus": {
+    "rejouabiliteGroupesMinPourcent": 80,
+    "dureeMaxMs": 300000,
+    "pagesMin": 12,
+    "candidatesMin": 4
+  }
+}

@@ -288,8 +288,8 @@ export interface Parcours {
   urlDepart: string;
   pages: PageVisitee[];
   actions: ActionExecutee[];
-  /** Pourquoi l'exploration s'est arrêtée. */
-  arret: 'complet' | 'limite-pages' | 'echeance' | 'erreur';
+  /** Pourquoi l'exploration s'est arrêtée. `reserve-confirmation` : la part d'échéance de l'exploration est épuisée, la confirmation garde la sienne (P2-1). */
+  arret: 'complet' | 'limite-pages' | 'echeance' | 'reserve-confirmation' | 'erreur';
   /**
    * URLs internes découvertes et JAMAIS visitées au moment où l'exploration
    * s'est arrêtée, tous viewports confondus.
@@ -419,10 +419,24 @@ export interface ProvenanceDecision extends ProvenanceSortieIa {
 
 export interface ContexteExploration {
   urlDepart: string;
-  /** Instant (epoch ms) avant lequel l'exploration doit avoir rendu son parcours. */
+  /**
+   * Instant (epoch ms) avant lequel l'exploration doit avoir rendu son parcours.
+   * Depuis le cahier P2-1 (contrat 2), c'est l'échéance de la PHASE — une part
+   * de l'échéance du scan —, pas celle du scan : la confirmation a sa réserve,
+   * l'exploration ne peut plus la manger.
+   */
   echeance: number;
+  /**
+   * Motif d'arrêt à rendre quand `echeance` est atteinte : `reserve-confirmation`
+   * quand c'est une part réservée qui s'est épuisée (le cas normal depuis P2-1),
+   * `echeance` (défaut) quand c'est l'échéance du scan elle-même.
+   */
+  arretEcheance?: ArretEcheance;
   journaliser(type: string, details?: unknown): void;
 }
+
+/** Les deux façons de s'arrêter par le temps : l'échéance du scan, ou la part réservée aux phases suivantes. */
+export type ArretEcheance = 'echeance' | 'reserve-confirmation';
 
 export interface Explorateur {
   nom: string;
@@ -530,7 +544,22 @@ export interface Observateur {
 // ---- Détection ------------------------------------------------------------
 
 export interface ContexteReproduction {
+  /** Page où l'anomalie a été OBSERVÉE : c'est elle que le rapport localise. */
   url: string;
+  /**
+   * Page où la recette S'OUVRE : celle où l'action déclenchante a été exécutée
+   * (`action.page`), et donc celle d'où viennent les préalables. Pour une
+   * anomalie constatée au chargement, c'est `url`. Pour une NAVIGATION, c'est
+   * la page d'ORIGINE — et c'est toute la différence : la campagne 6b a vu le
+   * rejeu ouvrir la page d'arrivée et y chercher le formulaire de la page de
+   * départ, sur 100 % des candidates dès qu'un remplissage précédait une
+   * navigation (carnet C-09, cahier P2-1, contrat 1).
+   *
+   * INVARIANT (en code, pas en config) : tout préalable vient de `pageDepart`.
+   * `construireCandidate` le tient à la construction, le rejeu le vérifie
+   * avant d'ouvrir quoi que ce soit.
+   */
+  pageDepart: string;
   viewport: Viewport;
   /** Action déclenchante, ou null pour une anomalie constatée au chargement. */
   action: ActionExecutee | null;
@@ -582,8 +611,14 @@ export interface CandidateEcartee {
   /** Identifiant technique stable de la raison (jamais de prose). */
   raison: string;
   verdict?: VerdictConfirmation;
-  /** Détail de la confirmation du groupe auquel la candidate appartenait. */
-  resultat?: ResultatGroupe;
+  /**
+   * Clé du groupe de cause racine qui a porté le verdict — une RÉFÉRENCE vers
+   * `Rapport.groupes`, jamais une copie. Une écartée recopiait son groupe entier
+   * avec tous ses membres : à 1 649 candidates, 35 Mo d'écartées sur 42 de
+   * journal, en O(n²) (campagne 6b, carnet C-13, cahier P2-1 contrat 7). La
+   * preuve complète existe une fois, dans le groupe.
+   */
+  cle?: string;
 }
 
 export interface ContexteConfirmation {
@@ -648,10 +683,29 @@ export type VerdictConfirmation =
   | 'intermittente'
   | 'non-reproduite'
   | 'limite-automatisation'
-  | 'basse-confiance';
+  | 'basse-confiance'
+  /**
+   * DÉCOUVERTE (cahier P2-1, contrat 8) : PUBLIÉE, jamais re-confirmée —
+   * constatée une fois pendant une re-exécution, ou suspectée côté site par
+   * l'auto-diagnostic. Ce n'est pas un verdict de retenue : aucun re-test ne
+   * l'a éprouvée. La distinction vit dans le rapport TECHNIQUE lui-même, et
+   * plus seulement dans la phrase du rapport business : un consommateur du
+   * journal (banc, métriques, bestiaire) qui lisait `confirmee` sur une
+   * découverte comptait comme vérifié ce qui ne l'avait pas été, et la
+   * gravité du détecteur ouvrait le rapport (expandtesting : six sections
+   * « Bloquant » pour une iframe publicitaire vue pendant un rejeu).
+   */
+  | 'decouverte';
 
-/** Verdicts dont les anomalies sont RETENUES dans le rapport final. */
+/** Verdicts dont les anomalies sont RETENUES dans le rapport final APRÈS re-vérification. */
 export const VERDICTS_RETENUS: readonly VerdictConfirmation[] = ['confirmee', 'intermittente'];
+
+/**
+ * Verdicts dont les anomalies sont PUBLIÉES : les retenus, plus la découverte,
+ * publiée comme une observation. Deux listes et non une : « publié » n'est
+ * pas « vérifié » (cahier P2-1, contrat 8).
+ */
+export const VERDICTS_PUBLIES: readonly VerdictConfirmation[] = [...VERDICTS_RETENUS, 'decouverte'];
 
 /** Un endroit où une cause racine se manifeste. */
 export interface LocalisationCause {
@@ -811,6 +865,14 @@ export interface TentativeReexecution {
   erreur?: string;
   /** Mesure brute quand le détecteur est gradué (durée observée pour D-LENTEUR). */
   mesureMs?: number;
+  /**
+   * Détecteur GRADUÉ seulement : le rejeu a tourné mais la ressource visée
+   * n'a pas été rechargée, donc rien n'a été mesuré. Un troisième état,
+   * compté, jamais confondu avec « non reproduite » : la campagne 6b a vu
+   * douze rejeux de lenteur écarter par ABSENCE de mesure, pas par re-mesure
+   * (carnet C-04, cahier P2-1 contrat 4).
+   */
+  nonMesuree?: boolean;
   dureeMs: number;
   /**
    * Ce que le rejeu a observé. Optionnel parce que le champ est arrivé après
@@ -1023,6 +1085,12 @@ export interface RapportBusiness {
    * compte possible.
    */
   nbNonVerifies: number | null;
+  /**
+   * Ce que le protocole a physiquement rejoué, en GROUPES (P2-1, contrat 5) :
+   * quand rien n'a pu l'être, la première ligne du rapport le dit, avant
+   * « aucune anomalie ». null quand la confirmation n'a pas consolidé.
+   */
+  rejouabilite: { groupes: number; groupesRejoues: number } | null;
   /**
    * Phrase de méthode, rédigée par le modèle, posée À CÔTÉ de ce chiffre.
    *

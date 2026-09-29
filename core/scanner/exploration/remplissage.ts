@@ -41,3 +41,15 @@ export function choisirValeurs(formulaire: DescriptionFormulaire, config: Config
   }
   return valeurs;
 }
+
+/**
+ * Signature STRUCTURELLE d'un formulaire : méthode, cible et la liste ordonnée
+ * de ses champs (type, autocomplete, requis) — jamais un sélecteur ni un
+ * texte. Deux formulaires de même signature sur une page sont le même
+ * formulaire répété (une carte produit par article) ; le remplir deux fois
+ * n'apprend rien.
+ */
+export function signatureFormulaire(formulaire: DescriptionFormulaire): string {
+  const champs = formulaire.champs.map((champ) => `${champ.type}:${champ.autocomplete ?? ''}:${champ.requis ? '1' : '0'}`);
+  return [formulaire.methode, formulaire.action, ...champs].join('|');
+}

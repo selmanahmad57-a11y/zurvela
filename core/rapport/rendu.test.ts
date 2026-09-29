@@ -20,6 +20,7 @@ function rapport(surcharges: Partial<RapportBusiness> = {}): RapportBusiness {
     ligneMethode: 'Chaque signalement est re-vérifié avant d’être publié.',
     nbEcartes: 4,
     nbNonVerifies: 0,
+    rejouabilite: { groupes: 5, groupesRejoues: 5 },
     sansProse: false,
     sections: [
       {
@@ -354,5 +355,53 @@ describe('ce que le scan n’a PAS essayé', () => {
   it('en anglais aussi : une limite tue par traduction serait une limite tue', () => {
     const texte = rendreRapport(rapport({ langue: 'en', soumissionsTestees: false }));
     expect(texte).toContain('We did not send any of this site’s forms');
+  });
+});
+
+describe('rendreRapport — un constat publié sans re-test se COMPTE dans la méthode (cahier P2-1, contrat 8)', () => {
+  const decouverte = (id: string, statut: 'constatee-au-rejeu' | 'diagnostic-site') => ({
+    ...rapport().sections[0]!,
+    id,
+    groupe: id,
+    gravite: 'important' as const,
+    statut,
+    statutFormule: 'Détecté pendant nos vérifications ; non re-testé.',
+  });
+
+  it('les découvertes des deux familles sont comptées, dans les deux langues', () => {
+    const sections = [rapport().sections[0]!, decouverte('d1', 'constatee-au-rejeu'), decouverte('d2', 'diagnostic-site')];
+    expect(rendreRapport(rapport({ sections }))).toContain('2 constats de ce rapport ont été vus pendant nos vérifications sans pouvoir être re-testés');
+    expect(rendreRapport(rapport({ langue: 'en', sections }))).toContain('2 findings in this report were seen during our verification pass and could not be re-tested');
+  });
+
+  it('muette quand tout ce qui est publié a été re-testé — le contrôle qui peut échouer', () => {
+    expect(rendreRapport(rapport())).not.toContain('sans pouvoir être re-test');
+  });
+});
+
+describe('rendreRapport — rien vérifié n’est pas rien trouvé (cahier P2-1, contrat 5)', () => {
+  it('quand aucun groupe n’a pu être rejoué, la PREMIÈRE ligne le dit, avant la synthèse et avant « aucune anomalie »', () => {
+    // Trois rapports de la campagne 6b disaient « aucune anomalie » sans un
+    // seul rejeu : deux par accident, un en enterrant un vrai défaut.
+    const texte = rendreRapport(rapport({ sections: [], synthese: '', nbEcartes: 0, nbNonVerifies: 21, rejouabilite: { groupes: 21, groupesRejoues: 0 } }), { url: 'https://site.invalid' });
+    const lignes = texte.split('\n').filter((ligne) => ligne.trim() !== '');
+    expect(lignes[2]).toContain('Rien n’a pu être vérifié sur ce site');
+    expect(lignes[2]).toContain('21 signalements');
+    expect(texte.indexOf('Rien n’a pu être vérifié')).toBeLessThan(texte.indexOf('Aucune anomalie'));
+  });
+
+  it('un seul groupe rejoué suffit à ne PAS l’afficher : la ligne est réservée au silence total', () => {
+    // Le contrôle qui peut échouer : demoqa, 1 groupe sur 22 rejoué, ne doit
+    // pas déclencher la ligne — le rapport dit ses 21 non-vérifiés plus bas.
+    expect(rendreRapport(rapport({ sections: [], synthese: '', nbNonVerifies: 21, rejouabilite: { groupes: 22, groupesRejoues: 1 } }))).not.toContain('Rien n’a pu être vérifié');
+  });
+
+  it('sans candidate, rien à rejouer : pas de ligne, un site sain reste un site sain', () => {
+    expect(rendreRapport(rapport({ sections: [], synthese: '', nbNonVerifies: 0, rejouabilite: { groupes: 0, groupesRejoues: 0 } }))).not.toContain('Rien n’a pu être vérifié');
+    expect(rendreRapport(rapport({ sections: [], synthese: '', rejouabilite: null }))).not.toContain('Rien n’a pu être vérifié');
+  });
+
+  it('en anglais, la même garantie', () => {
+    expect(rendreRapport(rapport({ langue: 'en', sections: [], synthese: '', nbNonVerifies: 3, rejouabilite: { groupes: 3, groupesRejoues: 0 } }))).toContain('Nothing could be verified on this site');
   });
 });

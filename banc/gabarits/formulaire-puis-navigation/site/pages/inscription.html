@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="{{langue}}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{inscription.titre}} — {{site.nom}}</title>
+  <link rel="stylesheet" href="/statique/style.css">
+  <link rel="icon" href="/statique/images/logo.svg" type="image/svg+xml">
+</head>
+<body>
+  <header class="entete">
+    <a class="marque" href="/">
+      <img data-role="logo" src="/statique/images/logo.svg" alt="{{site.nom}}" width="40" height="40">
+      <span>{{site.nom}}</span>
+    </a>
+    <nav aria-label="{{nav.libelle}}">
+      <ul>
+        <li><a href="/">{{nav.accueil}}</a></li>
+        <li><a href="/inscription" aria-current="page">{{nav.inscription}}</a></li>
+        <li><a href="/catalogue">{{nav.catalogue}}</a></li>
+      </ul>
+    </nav>
+  </header>
+  <main class="contenu">
+    <h1>{{inscription.titre}}</h1>
+    <p class="intro">{{inscription.intro}}</p>
+    <form method="post" action="/api/inscription" data-role="inscription">
+      <div>
+        <label for="nom">{{inscription.champs.nom}}</label>
+        <input id="nom" name="nom" type="text" required>
+      </div>
+      <div>
+        <label for="email">{{inscription.champs.email}}</label>
+        <input id="email" name="email" type="email" autocomplete="email" required>
+      </div>
+      <div>
+        <button type="submit" data-role="inscription-envoyer">{{inscription.envoyer}}</button>
+      </div>
+    </form>
+    <p><a href="/catalogue">{{inscription.sansCompte}}</a></p>
+  </main>
+  <footer class="pied">
+    <p>{{pied.mentions}}</p>
+  </footer>
+</body>
+</html>

@@ -1,0 +1,21 @@
+{
+  "id": "books",
+  "url": "https://books.toscrape.com",
+  "role": "defaut",
+  "fiche": "05",
+  "defaut": "C-10",
+  "avant": {
+    "rejouabiliteGroupesPourcent": 0,
+    "candidates": 13,
+    "groupes": 1,
+    "retenues": 0,
+    "pages": 13,
+    "dureeMs": 295233
+  },
+  "attendus": {
+    "rejouabiliteGroupesMinPourcent": 80,
+    "dureeMaxMs": 300000,
+    "pagesMin": 13,
+    "candidatesMin": 5
+  }
+}

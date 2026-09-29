@@ -1,0 +1,12 @@
+{
+  "cle": "d2fd612c4a869ef3600ada4e130e4cd016fecfb56f866bc5ed1f188665a9f39a",
+  "metadonnees": {
+    "date": "2026-09-29T07:54:57.696Z",
+    "modeleDemande": "claude-haiku-4-5",
+    "modeleServi": "claude-haiku-4-5-20251001",
+    "versionPrompt": "v2",
+    "coutApi": 0.001942,
+    "apresRelance": false
+  },
+  "reponse": "{\"actionId\": \"c1\", \"raison\": \"La page d'inscription présente un formulaire avec 2 champs requis destiné à être rempli par un visiteur. C'est une action fonctionnelle importante (inscription) qui mérite d'être testée avant d'épuiser le budget de pages.\"}"
+}

@@ -15,7 +15,8 @@
     "relancesMax",
     "symptomesMaxChars",
     "ligneMaxChars",
-    "appelMaxMs"
+    "appelMaxMs",
+    "dureeParSectionMs"
   ],
   "properties": {
     "$schema": {
@@ -73,6 +74,11 @@
       "type": "integer",
       "minimum": 1,
       "description": "Délai maximal d'UNE TENTATIVE d'appel de rédaction, transmis au SDK. La rédaction est la dernière étape du scan et son appel est le plus long : sans cette borne, une réponse lente faisait dépasser le timeoutMs du scan sans limite. Attention à la composition : le délai s'applique PAR TENTATIVE, et le SDK réessaie `ia.reessaisReseauMax` fois. Le dépassement d'un scan imputable à la rédaction est donc majoré par appelMaxMs × (1 + ia.reessaisReseauMax) × (1 + relancesMax)."
+    },
+    "dureeParSectionMs": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Durée de rédaction estimée d'une section, en millisecondes : c'est par elle que le temps restant avant l'échéance se convertit en nombre de sections rédigées (cahier P2-1, contrat 2 : la rédaction se tient dans sa réserve). Campagne 6b : de 3 à 12 s par section selon leur nombre."
     }
   }
 }

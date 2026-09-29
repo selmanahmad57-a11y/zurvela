@@ -236,6 +236,7 @@ function agreger(tranche: Tranche): Agregat {
   const cibles = agregerCibles(tranche.cibles);
   const rapports = agregerRapports(tranche.rapports);
   const couverture = agregerCouverture(tranche.scenarios);
+  const rejouabilite = agregerRejouabilite(tranche.scenarios);
   const coutApi = somme(tranche.scenarios.map((scenario) => scenario.coutApi));
   // Le coût est VENTILÉ, jamais réparti : les trois montants sont mesurés
   // séparément à la source et leur somme vaut `coutApi`. Un scénario dont le
@@ -272,6 +273,9 @@ function agreger(tranche: Tranche): Agregat {
     tauxRapportsConformes: taux(rapports.nbRapportsConformes, rapports.nbRapportsMesures),
     tauxInertiesRapportTenues: taux(rapports.nbInertiesRapportTenues, rapports.nbInertiesRapportMesurees),
     tauxCouvertureRedaction: taux(rapports.nbSectionsRedigees, rapports.nbSectionsRapport),
+    ...rejouabilite,
+    tauxRejouabiliteCandidates: taux(rejouabilite.nbCandidatesRejouees, rejouabilite.nbCandidatesRejouables),
+    tauxRejouabiliteGroupes: taux(rejouabilite.nbGroupesRejoues, rejouabilite.nbGroupesRejouables),
     ...couverture,
     tauxEfficacite: taux(couverture.nbPagesUtiles, couverture.nbPagesVisitees),
     // Le coût moyen par scan n'est calculé que s'il y a des scans : sur un
@@ -287,6 +291,28 @@ function agreger(tranche: Tranche): Agregat {
   };
 }
 
+/**
+ * La famille REJOUABILITÉ (APPRENTISSAGES n°18, P2-1 contrat 5) : somme des
+ * comptes des scénarios. Un scénario sans rejouabilité (sujet sans protocole,
+ * scénario en erreur) vaut zéro partout — comme les comptes du protocole,
+ * et pour la même raison : des nombres, jamais `undefined` dans un agrégat.
+ * La somme n'a de sens que sur une tranche qui PARTITIONNE les scénarios.
+ */
+function agregerRejouabilite(scenarios: readonly ResultatScenario[]): {
+  nbCandidatesRejouables: number;
+  nbCandidatesRejouees: number;
+  nbGroupesRejouables: number;
+  nbGroupesRejoues: number;
+} {
+  const comptes = scenarios.map((scenario) => scenario.rejouabilite);
+  return {
+    nbCandidatesRejouables: somme(comptes.map((compte) => compte?.candidates ?? 0)),
+    nbCandidatesRejouees: somme(comptes.map((compte) => compte?.candidatesRejouees ?? 0)),
+    nbGroupesRejouables: somme(comptes.map((compte) => compte?.groupes ?? 0)),
+    nbGroupesRejoues: somme(comptes.map((compte) => compte?.groupesRejoues ?? 0)),
+  };
+}
+
 function trancheComplete(scenarios: ResultatScenario[]): Tranche {
   return {
     scenarios,
@@ -296,6 +322,16 @@ function trancheComplete(scenarios: ResultatScenario[]): Tranche {
     rapports: scenarios.flatMap((scenario) => scenario.rapports),
     fauxPositifs: scenarios.flatMap((scenario) => scenario.fauxPositifs),
   };
+}
+
+/** Un agrégat par gabarit, dans l'ordre alphabétique : un périmètre qui partitionne, comme la langue. */
+function agregerParGabarit(resultats: ResultatScenario[]): Record<string, Agregat> {
+  const gabarits = [...new Set(resultats.map((resultat) => resultat.gabarit))].sort();
+  const parGabarit: Record<string, Agregat> = {};
+  for (const gabarit of gabarits) {
+    parGabarit[gabarit] = agreger(trancheComplete(resultats.filter((resultat) => resultat.gabarit === gabarit)));
+  }
+  return parGabarit;
 }
 
 /** Un agrégat par langue : celles de la config d'abord (dans leur ordre), puis toute langue rencontrée en plus. */
@@ -437,6 +473,7 @@ export function calculerScorecard(
     global: agreger(trancheComplete(resultats)),
     cibles: agregerCiblesParPolitique(resultats, politique),
     parLangue,
+    parGabarit: agregerParGabarit(resultats),
     parCategorie: agregerParCategorie(resultats),
     ecartLangues: calculerEcartLangues(parLangue, config),
     scenarios: resultats,
@@ -477,6 +514,16 @@ const COLONNES = [
  * manifeste. C'est ce qui rend la ligne lisible de gauche à droite :
  * `Groupes = Retenus + Écartés`.
  */
+const COLONNES_REJOUABILITE = [
+  'perimetre',
+  'candidatesRejouables',
+  'candidatesRejouees',
+  'tauxRejouabiliteCandidates',
+  'groupesRejouables',
+  'groupesRejoues',
+  'tauxRejouabiliteGroupes',
+] as const;
+
 const COLONNES_PROTOCOLE = [
   'perimetre',
   'candidates',
@@ -641,6 +688,20 @@ function ligneAgregat(
  * pas les anomalies signalées : mélanger les deux unités sur la même ligne
  * donnait un total arithmétiquement faux (`Groupes ≠ Retenues + Écartées`).
  */
+/** Une ligne du tableau de rejouabilité : les deux comptes et leurs taux, le second étant celui qui dit vrai. */
+function ligneRejouabilite(perimetre: string, agregat: Agregat, formateurs: Formateurs, nonApplicable: string): string[] {
+  const formaterTaux = (valeur: number | null): string => (valeur === null ? nonApplicable : formateurs.pourcentage.format(valeur / 100));
+  return [
+    perimetre,
+    formateurs.entier.format(agregat.nbCandidatesRejouables),
+    formateurs.entier.format(agregat.nbCandidatesRejouees),
+    formaterTaux(agregat.tauxRejouabiliteCandidates),
+    formateurs.entier.format(agregat.nbGroupesRejouables),
+    formateurs.entier.format(agregat.nbGroupesRejoues),
+    formaterTaux(agregat.tauxRejouabiliteGroupes),
+  ];
+}
+
 function ligneProtocole(perimetre: string, agregat: Agregat, formateurs: Formateurs): string[] {
   return [
     perimetre,
@@ -768,7 +829,7 @@ export function rendreScorecardConsole(
   dico: Dictionnaire,
   langueConsole: string,
   /** `iaDeclareeAbsente` : le banc tourne en `--sans-ia`, l'absence de profil est DEMANDÉE. */
-  options: { iaDeclareeAbsente?: boolean } = {},
+  options: { iaDeclareeAbsente?: boolean; rejouabiliteMinPourcent?: number } = {},
 ): string {
   const formateurs = construireFormateurs(langueConsole);
   const nonApplicable = traduire(dico, 'scorecard.nonApplicable');
@@ -810,6 +871,31 @@ export function rendreScorecardConsole(
     nonApparies: formateurs.entier.format(nbEcartesNonApparies),
     scenarios: formateurs.entier.format(nbScenarios),
   });
+
+  const tableauRejouabilite = formaterTableau(
+    COLONNES_REJOUABILITE.map((colonne) => traduire(dico, `scorecard.colonnes.${colonne}`)),
+    perimetresPartitionnants.map(([perimetre, agregat]) => ligneRejouabilite(perimetre, agregat, formateurs, nonApplicable)),
+  );
+  // Les gabarits dans leur PROPRE table : chaque partition se somme au global,
+  // deux partitions dans une même table se sommeraient au double.
+  const tableauRejouabiliteParGabarit = formaterTableau(
+    COLONNES_REJOUABILITE.map((colonne) => traduire(dico, `scorecard.colonnes.${colonne}`)),
+    Object.entries(scorecard.parGabarit).map(([gabarit, agregat]) => ligneRejouabilite(gabarit, agregat, formateurs, nonApplicable)),
+  );
+  const syntheseRejouabilite = traduire(dico, 'scorecard.syntheseRejouabilite', {
+    candidatesRejouees: formateurs.entier.format(scorecard.global.nbCandidatesRejouees),
+    candidatesRejouables: formateurs.entier.format(scorecard.global.nbCandidatesRejouables),
+    groupesRejoues: formateurs.entier.format(scorecard.global.nbGroupesRejoues),
+    groupesRejouables: formateurs.entier.format(scorecard.global.nbGroupesRejouables),
+    taux: scorecard.global.tauxRejouabiliteGroupes === null ? nonApplicable : formateurs.pourcentage.format(scorecard.global.tauxRejouabiliteGroupes / 100),
+  });
+  // L'alarme porte sur le taux par GROUPES — celui qui dit vrai — et reste
+  // muette quand il n'y a rien à rejouer : un taux sans dénominateur n'est
+  // pas un zéro (APPRENTISSAGES n°4).
+  const alarmeRejouabilite =
+    options.rejouabiliteMinPourcent !== undefined && scorecard.global.tauxRejouabiliteGroupes !== null && scorecard.global.tauxRejouabiliteGroupes < options.rejouabiliteMinPourcent
+      ? [traduire(dico, 'scorecard.alarmeRejouabilite', { taux: formateurs.pourcentage.format(scorecard.global.tauxRejouabiliteGroupes / 100), seuil: formateurs.pourcentage.format(options.rejouabiliteMinPourcent / 100) })]
+      : [];
 
   const tableauProfil = formaterTableau(
     COLONNES_PROFIL.map((colonne) => traduire(dico, `scorecard.colonnes.${colonne}`)),
@@ -942,6 +1028,15 @@ export function rendreScorecardConsole(
     ...(nbPertesProtocole > 0
       ? [traduire(dico, 'scorecard.alarmePertes', { perdues: formateurs.entier.format(nbPertesProtocole) })]
       : []),
+    '',
+    traduire(dico, 'scorecard.rejouabilite'),
+    ...tableauRejouabilite,
+    '',
+    traduire(dico, 'scorecard.rejouabiliteParGabarit'),
+    ...tableauRejouabiliteParGabarit,
+    '',
+    syntheseRejouabilite,
+    ...alarmeRejouabilite,
     '',
     traduire(dico, 'scorecard.profils'),
     ...tableauProfil,

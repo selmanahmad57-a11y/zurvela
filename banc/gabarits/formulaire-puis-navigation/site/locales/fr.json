@@ -1,0 +1,27 @@
+{
+  "langue": "fr",
+  "site": { "nom": "Cercle des Lecteurs", "slogan": "Une bibliothèque de prêt entre voisins" },
+  "nav": { "libelle": "Navigation principale", "accueil": "Accueil", "inscription": "S'inscrire", "catalogue": "Catalogue" },
+  "accueil": {
+    "titre": "Bienvenue au Cercle des Lecteurs",
+    "intro": "Empruntez et prêtez des livres dans votre quartier. L'inscription prend une minute, le catalogue est ouvert à tous.",
+    "appelInscription": "Créer un compte",
+    "appelCatalogue": "Voir le catalogue"
+  },
+  "inscription": {
+    "titre": "Créer un compte",
+    "intro": "Indiquez votre nom et votre adresse e-mail pour recevoir votre carte de membre.",
+    "champs": { "nom": "Nom", "email": "Adresse e-mail" },
+    "envoyer": "Créer mon compte",
+    "sansCompte": "Continuer sans compte vers le catalogue"
+  },
+  "catalogue": {
+    "titre": "Catalogue du mois",
+    "intro": "Les titres disponibles au prêt ce mois-ci.",
+    "vedette": "Livre vedette",
+    "livre1": "Le Jardin des brumes",
+    "livre2": "Cartes du silence",
+    "livre3": "Une saison à Vallonet"
+  },
+  "pied": { "mentions": "Cercle des Lecteurs — association à but non lucratif" }
+}

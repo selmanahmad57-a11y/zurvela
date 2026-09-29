@@ -32,6 +32,7 @@
  * d'abord prouver qu'elle n'est pas l'une des trois déguisée — c'est ce qui
  * empêche le manifeste de se déformer au fil des extensions du banc.
  */
+import type { Rejouabilite } from '../core/scanner/confirmation/rejouabilite.js';
 import type {
   Anomalie,
   Categorie,
@@ -77,7 +78,8 @@ export interface ConfigBanc {
   langues: string[];
   serveur: { portDeBase: number; nombrePortsEssayes: number };
   scan: { timeoutMs: number; sujetParDefaut: NomSujet };
-  scorecard: { seuilAlarmeEcartLanguesPoints: number; dossierResultats: string; retentionRuns: number };
+  /** `rejouabiliteMinPourcent` : taux de rejouabilité par groupes sous lequel la scorecard alarme (P2-1, contrat 5). */
+  scorecard: { seuilAlarmeEcartLanguesPoints: number; dossierResultats: string; retentionRuns: number; rejouabiliteMinPourcent: number };
   scenarios: {
     dossier: string;
     jetonSain: string;
@@ -93,13 +95,17 @@ export interface ConfigBanc {
      */
     combinaisons: Record<string, string[][]>;
     /**
-     * Budget de pages imposé aux scénarios d'un gabarit (clé = nom du
-     * gabarit). C'est le RÉGLAGE qui rend la qualité d'une décision mesurable
-     * — un seuil numérique, donc en config (constitution §2) ; la VÉRITÉ qui
-     * en découle (quelle politique atteint quelle cible sous ce budget) vit,
-     * elle, dans les `cibles` du gabarit.
+     * Contraintes imposées aux scénarios d'un gabarit (clé = nom du
+     * gabarit) : un budget de pages, et/ou un mode de soumission. Le budget
+     * est le RÉGLAGE qui rend la qualité d'une décision mesurable — un seuil
+     * numérique, donc en config (constitution §2) ; la VÉRITÉ qui en découle
+     * (quelle politique atteint quelle cible sous ce budget) vit, elle, dans
+     * les `cibles` du gabarit. Le mode de soumission est ce que la campagne
+     * a imposé sur le réel (`soumission: aucune`) : un gabarit qui rejoue un
+     * défaut vu sous cette contrainte la déclare ici, et ses scénarios en
+     * héritent.
      */
-    contraintes: Record<string, { pagesMax: number }>;
+    contraintes: Record<string, NonNullable<Scenario['contraintes']>>;
     /**
      * Scénarios CROISÉS : un site servi dans une langue, un rapport demandé
      * dans une autre.
@@ -323,6 +329,13 @@ export interface BugInjectable {
    */
   validerParametres?(parametres: Record<string, unknown>): void;
   /** Transforme le HTML brut d'une page (AVANT la substitution i18n). */
+  /**
+   * Retarde le SERVICE d'une page — le document lui-même, pas l'API. Appelé
+   * par le serveur avant de rendre la page, avec le `attendre` injecté (réel
+   * en run, factice en test). Cahier P2-1 : c'est par là qu'un gabarit fait
+   * coûter chaque page à l'exploration et éprouve la répartition de l'échéance.
+   */
+  retarderPage?(chemin: string, contexte: ContexteBug): Promise<void>;
   transformerHtml?(html: string, chemin: string, contexte: ContexteBug): string;
   /** Transforme une ressource statique textuelle (JS, CSS). */
   transformerRessourceTexte?(chemin: string, contenu: string, contexte: ContexteBug): string;
@@ -896,6 +909,8 @@ export interface ResultatScenario {
    */
   coutApiParFamille?: CoutParFamille;
   dureeMs: number;
+  /** Ce que le protocole a PHYSIQUEMENT réussi à re-tester (APPRENTISSAGES n°18, P2-1 contrat 5) ; absent sur un scénario en erreur. */
+  rejouabilite?: Rejouabilite;
   rapport?: Rapport;
 }
 
@@ -1029,6 +1044,20 @@ export interface Agregat {
   /** Épreuves de DÉSOBÉISSANCE de rédaction (une charge vise le rapport), hors du taux ci-dessus. */
   nbInertiesRapportMesurees: number;
   nbInertiesRapportTenues: number;
+  /**
+   * La famille REJOUABILITÉ (APPRENTISSAGES n°18, cahier P2-1 contrat 5),
+   * comptée SÉPARÉMENT de tout le reste : quelle fraction des candidates le
+   * protocole a physiquement réussi à re-tester. Deux comptes, par candidates
+   * et par groupes — ils divergent quand un seul gros groupe est rejoué, et
+   * c'est le second qui dit la vérité du protocole. Un taux sans dénominateur
+   * est null, jamais 0 : un site sans candidate n'a rien à rejouer.
+   */
+  nbCandidatesRejouables: number;
+  nbCandidatesRejouees: number;
+  nbGroupesRejouables: number;
+  nbGroupesRejoues: number;
+  tauxRejouabiliteCandidates: number | null;
+  tauxRejouabiliteGroupes: number | null;
   tauxInertiesRapportTenues: number | null;
   /**
    * COUVERTURE DE RÉDACTION : sections rédigées / sections publiées, sur les
@@ -1170,6 +1199,15 @@ export interface Scorecard {
    */
   cibles: AgregatCibles[];
   parLangue: Record<string, Agregat>;
+  /**
+   * Un agrégat par gabarit (cahier P2-1, contrat 5). Comme les langues, les
+   * gabarits PARTITIONNENT les scénarios — chaque scénario en a exactement
+   * un —, donc leurs compteurs se somment au global. C'est le périmètre qui
+   * dit OÙ le protocole cesse de rejouer : un gabarit à 0 % désigne la
+   * recette qui casse (C-09 sur « formulaire-puis-navigation »), là où le
+   * global dilué la cache.
+   */
+  parGabarit: Record<string, Agregat>;
   parCategorie: Record<string, Agregat>;
   ecartLangues: EcartLangues;
   scenarios: ResultatScenario[];

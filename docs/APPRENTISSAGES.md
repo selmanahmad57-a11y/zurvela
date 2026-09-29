@@ -702,3 +702,79 @@ regardé.
   neuf sites) ; le banc devra contenir des tiers qui répondent AUTREMENT au
   robot pour que la doctrine soit mesurable (n°17 : des anomalies fausses par
   construction).
+
+## 20. Un contrat n'est éprouvé que si sa mutation tue, et une mutation ne tue que si le gabarit reproduit les CONDITIONS du réel, pas seulement le défaut (2026-09-29, cahier P2-1)
+
+- **Le fait** : quatre contrats moteur, quatre mutations, chacune rejouée
+  sur le scénario qui prétend la mesurer. Deux ont tué du premier coup
+  (l'échéance répartie : 0 % rejoué et alarme ; la re-mesure : verdict
+  `limite-automatisation` au lieu de `non-reproduite`, colonne « verdicts
+  corrects » à 0 %). Deux ont SURVÉCU. Contrat 1 (le rejeu s'ouvre sur la
+  page de départ) : le banc explorait « formulaire-puis-navigation » sous
+  `soumission: site-possede`, la déterministe soumettait le formulaire, le
+  navigateur atterrissait sur la réponse JSON de l'API, et la navigation
+  vers le catalogue partait d'une page SANS préalable — recette triviale,
+  ouvrir `url` ou `pageDepart` ne changeait rien. cutlybook avait été scanné
+  sous `soumission: aucune`. Contrat 3 (pas de `remplir` sur un bouton
+  seul) : trois pages de vingt formulaires vides font soixante remplissages
+  de rien, que la réserve d'exploration du banc PAIE encore — la dernière
+  page était atteinte, le défaut vu, la mutation invisible. books.toscrape
+  en avait deux cent trente-sept.
+- **Ce que cela dit** : un scénario sain qui passe ne prouve rien sur le
+  contrat qu'il est censé tenir ; seul un scénario qui ÉCHOUE sous la
+  mutation le prouve. Et pour échouer sous la mutation, le gabarit doit
+  miniaturiser les CONDITIONS dans lesquelles le défaut a mordu sur le réel
+  — le mode de soumission, la taille qui épuise un budget, l'ordre des
+  actions —, pas seulement l'anomalie finale. Un gabarit fidèle au défaut et
+  infidèle aux conditions mesure zéro.
+- **Pourquoi rien ne l'a vu** : les douze scénarios neufs passaient tous,
+  fr et en, sains et cassés, à 100 % de rejouabilité ; le banc entier était
+  vert. Sans les mutations, deux contrats sur sept partaient en production
+  validés par un instrument qui ne les regardait pas — exactement le
+  mécanisme du n°18, une couche plus bas. Et la colonne de détection seule
+  n'aurait pas suffi à LIRE le kill du contrat 4 : « 1/1 détecté » restait
+  vrai, la candidate ayant été vue puis écartée ; ce sont les verdicts
+  corrects (0 %) qui le disent.
+- **Règle** : **un gabarit se valide par sa mutation, jamais par son
+  scénario sain.** Avant sa première cassette, chaque scénario neuf prouve
+  qu'il tue la mutation du contrat qu'il prétend mesurer, sous les
+  conditions du réel qu'il miniaturise (contrainte de soumission déclarée
+  en config, taille qui épuise la réserve, ordre des actions). Un kill se
+  lit sur TROIS colonnes — détection, verdicts corrects, rejouabilité —,
+  jamais sur la première seule. Le cahier note, pour chaque contrat, la
+  mutation et ce qu'elle a fait rougir.
+- **Conséquence** : « formulaire-puis-navigation » explore sous
+  `soumission: aucune` (config du banc, comme la campagne) ; « catalogue-
+  boutons » a huit pages, cent quarante formulaires vides avant le défaut ;
+  les quatre kills sont consignés au cahier P2-1 (§5) ; la méthode (§12)
+  demande la mutation avant la cassette.
+
+## 21. Un correctif se clôt sur le livrable client, pas sur sa métrique : réparer un pilier démasque le défaut suivant (2026-09-29, cahier P2-1, arbitrage du propriétaire)
+
+- **Le fait** : P2-1 a fait rejouer le protocole là où il ne rejouait plus
+  (cutlybook 0/5 → 6/6, books 0/1 → 1/1). Sur expandtesting, le rejeu a
+  enfin tourné — et chaque rejeu a « découvert » ce qu'il voyait en passant :
+  quarante anomalies publiées `confirmee`, jamais re-testées, et un rapport
+  qui s'ouvrait sur six sections « Bloquant » nées d'une seule iframe
+  publicitaire. L'avant disait « aucune anomalie » ; l'après affirmait six
+  blocages. La métrique du cahier progressait ; le rapport client régressait.
+- **Ce que cela dit** : le défaut n'était pas nouveau — la brique 3 publiait
+  déjà ses découvertes `confirmee`, et seul l'ordre de lecture du rapport
+  business les protégeait dans la phrase de statut. Il était MASQUÉ par le
+  défaut que P2-1 réparait : sans rejeu, pas de découverte. Réparer un
+  pilier fait apparaître ce qui reposait sur sa panne. Et le silence d'avant
+  mentait par omission quand le bruit d'après mentait ouvertement : le
+  second est réparable, mais il ne se fige pas dans l'historique.
+- **Règle** : **une validation réelle juge le RAPPORT CLIENT, pas seulement
+  la métrique du cahier.** Un commit dont la propre mesure montre un
+  livrable plus faux qu'avant ne se fait pas — pas même sous un titre
+  « échec partiel ». Quand le défaut démasqué est la conséquence directe de
+  ce qui vient d'être réparé, le cahier s'ÉLARGIT d'un contrat étroit, avec
+  sa mutation et sa validation, plutôt que de committer puis corriger.
+  Honnête et incomplet est un état acceptable ; faux et affirmatif ne l'est
+  pas.
+- **Conséquence** : contrat 8 de P2-1 — une découverte porte le verdict
+  `decouverte`, jamais `confirmee`, sa gravité est bornée sous « Bloquant »,
+  la méthode du rapport les compte, et `banc:reel` déclare non tenu tout
+  site où une découverte serait publiée comme vérifiée. METHODE §12 porte la
+  règle.

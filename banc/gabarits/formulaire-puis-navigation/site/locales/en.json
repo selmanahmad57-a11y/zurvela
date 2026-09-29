@@ -1,0 +1,27 @@
+{
+  "langue": "en",
+  "site": { "nom": "Readers' Circle", "slogan": "A neighbourhood lending library" },
+  "nav": { "libelle": "Main navigation", "accueil": "Home", "inscription": "Sign up", "catalogue": "Catalogue" },
+  "accueil": {
+    "titre": "Welcome to the Readers' Circle",
+    "intro": "Borrow and lend books in your neighbourhood. Signing up takes a minute; the catalogue is open to everyone.",
+    "appelInscription": "Create an account",
+    "appelCatalogue": "Browse the catalogue"
+  },
+  "inscription": {
+    "titre": "Create an account",
+    "intro": "Enter your name and e-mail address to receive your member card.",
+    "champs": { "nom": "Name", "email": "E-mail address" },
+    "envoyer": "Create my account",
+    "sansCompte": "Continue to the catalogue without an account"
+  },
+  "catalogue": {
+    "titre": "This month's catalogue",
+    "intro": "The titles available for loan this month.",
+    "vedette": "Featured book",
+    "livre1": "The Garden of Mists",
+    "livre2": "Maps of Silence",
+    "livre3": "A Season in Vallonet"
+  },
+  "pied": { "mentions": "Readers' Circle — a non-profit association" }
+}

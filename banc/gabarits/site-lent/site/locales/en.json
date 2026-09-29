@@ -1,0 +1,25 @@
+{
+  "langue": "en",
+  "site": {
+    "nom": "Valley Gazette",
+    "slogan": "The valley’s news, every week"
+  },
+  "nav": {
+    "libelle": "Main navigation",
+    "accueil": "Home",
+    "rubrique": "Section"
+  },
+  "accueil": {
+    "titre": "Valley Gazette",
+    "intro": "Twelve sections, updated every week.",
+    "sommaire": "Contents"
+  },
+  "contenu": {
+    "titre": "Section",
+    "texte": "The text of this section is updated every week by the valley’s volunteer editors.",
+    "retour": "Back to the home page"
+  },
+  "pied": {
+    "mentions": "Valley Gazette — a community newspaper"
+  }
+}

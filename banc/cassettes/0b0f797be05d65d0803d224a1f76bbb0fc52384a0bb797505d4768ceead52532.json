@@ -1,0 +1,12 @@
+{
+  "cle": "0b0f797be05d65d0803d224a1f76bbb0fc52384a0bb797505d4768ceead52532",
+  "metadonnees": {
+    "date": "2026-09-29T07:54:40.073Z",
+    "modeleDemande": "claude-haiku-4-5",
+    "modeleServi": "claude-haiku-4-5-20251001",
+    "versionPrompt": "v2",
+    "coutApi": 0.001901,
+    "apresRelance": false
+  },
+  "reponse": "{\"actionId\": \"c1\", \"raison\": \"L'inscription est une action significative qu'un visiteur peut effectuer sur une application. Avec 18 pages encore permises par le budget, il est judicieux d'explorer cette fonctionnalité clé plutôt que de terminer l'exploration.\"}"
+}

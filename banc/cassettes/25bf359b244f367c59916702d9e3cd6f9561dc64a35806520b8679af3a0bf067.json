@@ -1,0 +1,12 @@
+{
+  "cle": "25bf359b244f367c59916702d9e3cd6f9561dc64a35806520b8679af3a0bf067",
+  "metadonnees": {
+    "date": "2026-09-29T07:57:48.187Z",
+    "modeleDemande": "claude-haiku-4-5",
+    "modeleServi": "claude-haiku-4-5-20251001",
+    "versionPrompt": "v2",
+    "coutApi": 0.002371,
+    "apresRelance": false
+  },
+  "reponse": "{\"actionId\":\"c1\",\"raison\":\"Le site est un blog avec contenu. Pour tester les pages où un visiteur agit réellement, je dois explorer les rubriques principales. Je commence par la première rubrique, qui révèlera le type de contenu et les interactions possibles (articles, formulaires, etc.) avant d'épuiser le budget sur des variantes similaires.\"}"
+}

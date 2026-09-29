@@ -97,6 +97,7 @@ export function detailsTentative(cle: string, tentative: TentativeReexecution): 
     ...(tentative.causeEchec === undefined ? {} : { causeEchec: tentative.causeEchec }),
     ...(tentative.erreur === undefined ? {} : { erreur: tentative.erreur }),
     ...(tentative.mesureMs === undefined ? {} : { mesureMs: tentative.mesureMs }),
+    ...(tentative.nonMesuree === true ? { nonMesuree: true } : {}),
     dureeMs: tentative.dureeMs,
     // JUSQU'OÙ le rejeu est allé et CE QU'IL A VU. Sans ces chiffres, une
     // tentative en échec dit qu'elle a échoué et ne dit pas si le site a

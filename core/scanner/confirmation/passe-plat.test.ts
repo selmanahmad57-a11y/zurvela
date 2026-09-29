@@ -14,7 +14,7 @@ function candidate(confiance: number, description: string): AnomalieCandidate {
     graviteEstimee: 'bloquant',
     confiance,
     detecteur: 'd-test',
-    reproduction: { url: PAGE, viewport: VIEWPORT, action: null, actionsPrealables: [] },
+    reproduction: { url: PAGE, pageDepart: PAGE, viewport: VIEWPORT, action: null, actionsPrealables: [] },
     preuves: [],
   };
 }

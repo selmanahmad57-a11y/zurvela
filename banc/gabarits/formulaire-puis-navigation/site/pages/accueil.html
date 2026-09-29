@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="{{langue}}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{accueil.titre}} — {{site.nom}}</title>
+  <meta name="description" content="{{site.slogan}}">
+  <link rel="stylesheet" href="/statique/style.css">
+  <link rel="icon" href="/statique/images/logo.svg" type="image/svg+xml">
+</head>
+<body>
+  <header class="entete">
+    <a class="marque" href="/">
+      <img data-role="logo" src="/statique/images/logo.svg" alt="{{site.nom}}" width="40" height="40">
+      <span>{{site.nom}}</span>
+    </a>
+    <nav aria-label="{{nav.libelle}}">
+      <ul>
+        <li><a href="/" aria-current="page">{{nav.accueil}}</a></li>
+        <li><a href="/inscription">{{nav.inscription}}</a></li>
+        <li><a href="/catalogue">{{nav.catalogue}}</a></li>
+      </ul>
+    </nav>
+  </header>
+  <main class="contenu">
+    <h1>{{accueil.titre}}</h1>
+    <p class="intro">{{accueil.intro}}</p>
+    <p><a class="bouton" href="/inscription">{{accueil.appelInscription}}</a></p>
+    <p><a href="/catalogue">{{accueil.appelCatalogue}}</a></p>
+  </main>
+  <footer class="pied">
+    <p>{{pied.mentions}}</p>
+  </footer>
+</body>
+</html>

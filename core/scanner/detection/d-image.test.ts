@@ -35,7 +35,7 @@ describe('D-IMAGE', () => {
       confiance: CONFIG_TEST.image.confianceSignalSimple,
       urlOuEtape: URL_CONTACT,
       element: LOGO,
-      reproduction: { url: URL_CONTACT, viewport: DESKTOP, action: null, actionsPrealables: [] },
+      reproduction: { url: URL_CONTACT, pageDepart: URL_CONTACT, viewport: DESKTOP, action: null, actionsPrealables: [] },
       preuves: [etat],
     });
   });

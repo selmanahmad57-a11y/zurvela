@@ -44,7 +44,7 @@ describe('D-LENTEUR', () => {
       confiance: PALIER_BAS?.confiance,
       urlOuEtape: URL_CONTACT,
       element: BOUTON,
-      reproduction: { url: URL_CONTACT, viewport: DESKTOP, action, actionsPrealables: [] },
+      reproduction: { url: URL_CONTACT, pageDepart: URL_CONTACT, viewport: DESKTOP, action, actionsPrealables: [] },
       preuves: [lente],
     });
   });

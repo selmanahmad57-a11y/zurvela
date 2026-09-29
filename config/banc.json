@@ -16,7 +16,8 @@
   "scorecard": {
     "seuilAlarmeEcartLanguesPoints": 5,
     "dossierResultats": "banc/resultats",
-    "retentionRuns": 100
+    "retentionRuns": 100,
+    "rejouabiliteMinPourcent": 100
   },
   "scenarios": {
     "dossier": "banc/scenarios",
@@ -36,6 +37,12 @@
     "contraintes": {
       "mini-boutique": {
         "pagesMax": 5
+      },
+      "catalogue-boutons": {
+        "soumission": "aucune"
+      },
+      "formulaire-puis-navigation": {
+        "soumission": "aucune"
       }
     },
     "croises": [
@@ -91,6 +98,16 @@
     "L01": {
       "nbPremieresRequetesLentes": 1,
       "delaiReponseMs": 5000
+    },
+    "N01": {
+      "cheminRessourceIntrouvable": "/statique/images/vedette-v2.svg"
+    },
+    "K01": {
+      "cheminRessourceIntrouvable": "/statique/images/article-v2.svg"
+    },
+    "L02": {
+      "delaiPageMs": 2000,
+      "delaiPremiereVisiteMs": 9000
     }
   }
 }

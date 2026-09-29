@@ -153,7 +153,7 @@ export function candidateSimulee(surcharges: Partial<AnomalieCandidate> = {}): A
     graviteEstimee: 'bloquant',
     confiance: 0.8,
     detecteur: 'd-http',
-    reproduction: { url: URL_CONTACT, viewport: DESKTOP, action: soumission('a1'), actionsPrealables: [] },
+    reproduction: { url: URL_CONTACT, pageDepart: URL_CONTACT, viewport: DESKTOP, action: soumission('a1'), actionsPrealables: [] },
     preuves: [reponse({ statut: 500, actionId: 'a1' })],
     ...surcharges,
   };

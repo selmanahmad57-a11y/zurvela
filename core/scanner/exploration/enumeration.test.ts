@@ -22,12 +22,20 @@ const remplissage: ConfigScanner['remplissage'] = {
 
 const declencheur = { balise: 'button', selecteur: 'form > button[type="submit"]', attributs: { type: 'submit' } };
 
-function formulaire(selecteur: string): DescriptionFormulaire {
+const CHAMP_EMAIL = { localisation: { balise: 'input', selecteur: '#email', attributs: {} }, type: 'email', autocomplete: null, requis: true };
+const CHAMP_MESSAGE = { localisation: { balise: 'textarea', selecteur: '#message', attributs: {} }, type: 'textarea', autocomplete: null, requis: false };
+/**
+ * Deux formulaires DISTINCTS par leurs champs : depuis le cahier P2-1
+ * (contrat 3), deux formulaires de même signature sur une page ne valent
+ * qu'une action — les tests qui comptent deux `remplir` ont donc besoin de
+ * deux formulaires différents, et le dédoublonnage a son propre test plus bas.
+ */
+function formulaire(selecteur: string, champs: DescriptionFormulaire['champs'] = [CHAMP_EMAIL]): DescriptionFormulaire {
   return {
     localisation: { balise: 'form', selecteur, attributs: { id: 'contact' } },
     methode: 'post',
     action: `${ORIGINE}/api/envoi`,
-    champs: [{ localisation: { balise: 'input', selecteur: '#email', attributs: {} }, type: 'email', autocomplete: null, requis: true }],
+    champs,
     declencheur,
   };
 }
@@ -38,7 +46,7 @@ function contexte(surcharges: Partial<ContexteDecision> = {}): ContexteDecision 
     viewport: 'desktop',
     statutHttp: 200,
     liensInternes: [],
-    formulaires: [formulaire('form:nth-of-type(1)'), formulaire('form:nth-of-type(2)')],
+    formulaires: [formulaire('form:nth-of-type(1)'), formulaire('form:nth-of-type(2)', [CHAMP_EMAIL, CHAMP_MESSAGE])],
     horodatage: new Date(0).toISOString(),
   };
   return { pageCourante, formulairesRemplis: [], formulairesSoumis: [], urlsEnAttente: [], nbPagesVisitees: 1, ...surcharges };
@@ -216,5 +224,49 @@ describe('la frontière du prompt', () => {
     expect(etat.page).toBe('/contact');
     // Et l'état complet porte bien l'acte : c'est le moteur qui l'exécute.
     expect(JSON.stringify(etat.actions.map((a) => a.action))).toContain('nth-of-type');
+  });
+});
+
+describe('enumererActions — le menu n’énumère que ce qui se remplit (cahier P2-1, contrat 3)', () => {
+  it('un formulaire SANS champ remplissable (un bouton seul) n’a pas d’action « remplir » : c’est le web, pas le monde', () => {
+    // books.toscrape : vingt cartes à formulaire-bouton par page, 237
+    // remplissages vides, l'échéance entière (C-10).
+    const bouton = formulaire('form:nth-of-type(1)', []);
+    const actions = enumererActions(contexte({ pageCourante: { ...contexte().pageCourante, formulaires: [bouton] } }), OPTIONS);
+    expect(actions.filter((action) => action.type === 'remplir')).toEqual([]);
+    // La spécification déterministe dit la même chose.
+    expect(decisionDeterministe(contexte({ pageCourante: { ...contexte().pageCourante, formulaires: [bouton] } }), remplissage).type).not.toBe('remplir');
+  });
+
+  it('un formulaire dont tous les champs sont IGNORÉS par la config n’est pas remplissable non plus', () => {
+    const cache = formulaire('form:nth-of-type(1)', [{ ...CHAMP_EMAIL, type: 'hidden' }]);
+    const actions = enumererActions(contexte({ pageCourante: { ...contexte().pageCourante, formulaires: [cache] } }), OPTIONS);
+    expect(actions.filter((action) => action.type === 'remplir')).toEqual([]);
+  });
+
+  it('vingt formulaires de MÊME signature ne valent qu’une action ; le premier est retenu', () => {
+    const cartes = Array.from({ length: 20 }, (_, i) => formulaire(`form:nth-of-type(${i + 1})`));
+    const ctx = contexte({ pageCourante: { ...contexte().pageCourante, formulaires: cartes } });
+    const remplir = enumererActions(ctx, OPTIONS).filter((action) => action.type === 'remplir');
+    expect(remplir).toHaveLength(1);
+    expect(remplir[0]?.action).toMatchObject({ type: 'remplir', formulaire: cartes[0]?.localisation });
+    expect(decisionDeterministe(ctx, remplissage)).toMatchObject({ type: 'remplir', formulaire: cartes[0]?.localisation });
+  });
+
+  it('deux formulaires de signatures DIFFÉRENTES restent deux actions : le dédoublonnage ne confond pas', () => {
+    const remplir = enumererActions(contexte(), OPTIONS).filter((action) => action.type === 'remplir');
+    expect(remplir).toHaveLength(2);
+  });
+
+  it('le formulaire dédoublonné mais DÉJÀ rempli laisse la place au suivant de même signature', () => {
+    // Le contrôle qui peut échouer : si le dédoublonnage se faisait avant le
+    // filtre « déjà rempli », un second formulaire identique ne serait jamais
+    // proposé une fois le premier rempli — ce qui est le comportement voulu
+    // ici (le même formulaire répété n'apprend rien), et ce test le fige.
+    const cartes = [formulaire('form:nth-of-type(1)'), formulaire('form:nth-of-type(2)')];
+    const ctx = contexte({ pageCourante: { ...contexte().pageCourante, formulaires: cartes }, formulairesRemplis: ['form:nth-of-type(1)'] });
+    const remplir = enumererActions(ctx, OPTIONS).filter((action) => action.type === 'remplir');
+    expect(remplir).toHaveLength(1);
+    expect(remplir[0]?.action).toMatchObject({ formulaire: cartes[1]?.localisation });
   });
 });

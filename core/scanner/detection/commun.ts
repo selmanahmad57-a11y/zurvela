@@ -10,6 +10,7 @@ import type {
   AnomalieCandidate,
   Categorie,
   ContexteDetection,
+  ContexteReproduction,
   Gravite,
   LocalisationElement,
   Parcours,
@@ -141,6 +142,31 @@ export interface ParametresCandidate {
   preuves: Signal[];
 }
 
+/** Identifiant technique (jamais de prose) de la recette refusée : un préalable qui ne vient pas de sa page d'ouverture. */
+export const ERREUR_RECETTE_INCOHERENTE = 'recette-incoherente';
+
+/**
+ * La recette de reproduction, construite en UN SEUL endroit.
+ *
+ * `pageDepart` est la page où l'action déclenchante a eu lieu — pour une
+ * navigation, la page d'ORIGINE, pas la page d'arrivée où l'anomalie est
+ * observée. Les préalables sont, par construction, les actions de cette même
+ * page (`actionsPrealablesDe`) ; l'invariant est tout de même VÉRIFIÉ ici,
+ * parce qu'une recette qui s'ouvrirait sur une page et rejouerait les
+ * actions d'une autre est exactement le défaut que la campagne 6b a mesuré à
+ * 0/8, 0/187 et 4/410 candidates rejouables (carnet C-09). Une garde qui
+ * dépend de ce qu'elle garde ne vérifie rien : celle-ci est indépendante du
+ * chemin qui remplit les préalables.
+ */
+export function recetteDe(page: string, viewport: Viewport, action: ActionExecutee | null, actionsPrealables: ActionExecutee[]): ContexteReproduction {
+  const pageDepart = action?.page ?? page;
+  const etranger = actionsPrealables.find((prealable) => prealable.page !== pageDepart);
+  if (etranger !== undefined) {
+    throw new Error(`${ERREUR_RECETTE_INCOHERENTE} : le préalable ${etranger.id} vient de ${etranger.page}, la recette s'ouvre sur ${pageDepart}`);
+  }
+  return { url: page, pageDepart, viewport, action, actionsPrealables };
+}
+
 export function construireCandidate(parametres: ParametresCandidate, contexte: ContexteDetection): AnomalieCandidate {
   const viewport = trouverViewport(contexte.viewports, parametres.viewport);
   const candidate: AnomalieCandidate = {
@@ -150,12 +176,7 @@ export function construireCandidate(parametres: ParametresCandidate, contexte: C
     graviteEstimee: parametres.gravite,
     confiance: parametres.confiance,
     detecteur: parametres.detecteur,
-    reproduction: {
-      url: parametres.page,
-      viewport,
-      action: parametres.action,
-      actionsPrealables: actionsPrealablesDe(contexte.parcours, parametres.action),
-    },
+    reproduction: recetteDe(parametres.page, viewport, parametres.action, actionsPrealablesDe(contexte.parcours, parametres.action)),
     preuves: parametres.preuves,
   };
   if (parametres.element !== undefined) {

@@ -25,10 +25,12 @@ import type {
   GroupeCause,
   ObservationsRejeu,
   ResultatRejeu,
+  Signal,
   TentativeReexecution,
   Viewport,
 } from '../../types.js';
 import type { ConfigConfirmation } from '../config.js';
+import { cheminDePage } from '../detection/commun.js';
 import { identiteCause, identiteHorsViewport } from './consolidation.js';
 import {
   detailsContreEpreuve,
@@ -123,6 +125,7 @@ interface Constat {
   /** Candidates relevées par les détecteurs sur les signaux de CE rejeu. */
   candidates: AnomalieCandidate[];
   mesureMs?: number;
+  nonMesuree?: boolean;
   /** Absente dans un seul cas : le `Reexecuteur` a LEVÉ, il n'a rien rendu à observer. */
   observations?: ObservationsRejeu;
   echecOutillage: boolean;
@@ -177,8 +180,57 @@ async function rejouerEtRelire(options: OptionsReexecution, viewport: Viewport, 
   const correspondante = candidates.find(
     (candidate) => identite(candidate) === attendue && candidate.description === groupe.representant.description,
   );
-  const mesureMs = correspondante === undefined ? undefined : detecteur?.mesureDe?.(correspondante);
-  return { reproduite: correspondante !== undefined, candidates, ...(mesureMs === undefined ? {} : { mesureMs }), ...echec };
+  // UN REJEU DE LENTEUR MESURE, OU DIT QU'IL N'A PAS MESURÉ (P2-1, contrat 4).
+  // Pour un détecteur gradué, une ressource revenue SOUS le seuil ne produit
+  // pas de candidate — et sans candidate, rien n'était mesuré : le verdict
+  // « jamais reproduite » tombait par absence de mesure. On relit donc la
+  // ressource visée dans les signaux du rejeu, qu'elle soit lente ou non ; si
+  // elle n'a pas été rechargée du tout, la tentative est NON MESURÉE.
+  const mesureCandidate = correspondante === undefined ? undefined : detecteur?.mesureDe?.(correspondante);
+  const gradue = detecteur?.mesureDe !== undefined;
+  const mesureRessource = gradue && mesureCandidate === undefined ? mesurerRessourceVisee(groupe.representant, rejeu.signaux) : undefined;
+  const mesureMs = mesureCandidate ?? mesureRessource;
+  const nonMesuree = gradue && mesureMs === undefined;
+  return {
+    reproduite: correspondante !== undefined,
+    candidates,
+    ...(mesureMs === undefined ? {} : { mesureMs }),
+    ...(nonMesuree ? { nonMesuree: true } : {}),
+    ...echec,
+  };
+}
+
+type SignalRessource = Extract<Signal, { type: 'reponse-reseau' | 'requete-echouee' | 'requete-en-attente' }>;
+
+function estSignalRessource(signal: Signal): signal is SignalRessource {
+  return signal.type === 'reponse-reseau' || signal.type === 'requete-echouee' || signal.type === 'requete-en-attente';
+}
+
+/**
+ * Durée observée, dans les signaux d'un rejeu, de la ressource que le
+ * représentant du groupe met en cause (même méthode, même chemin — la clé de
+ * groupe elle-même, `identiteCause`). La pire durée si elle a été demandée
+ * plusieurs fois, comme `dureeMax` du détecteur. `undefined` si elle n'a pas
+ * été rechargée : ce n'est pas une mesure nulle, c'est une absence.
+ */
+export function mesurerRessourceVisee(representant: AnomalieCandidate, signaux: Signal[]): number | undefined {
+  const visee = representant.preuves.find(estSignalRessource);
+  if (visee === undefined) {
+    return undefined;
+  }
+  const chemin = cheminDePage(visee.urlRessource);
+  let mesure: number | undefined;
+  for (const signal of signaux) {
+    if (!estSignalRessource(signal) || signal.methode !== visee.methode || cheminDePage(signal.urlRessource) !== chemin) {
+      continue;
+    }
+    // `dureeMs` peut être null (réponse sans chronométrage) : ce n'est pas une mesure.
+    const duree = signal.type === 'reponse-reseau' ? (signal.dureeMs ?? undefined) : signal.type === 'requete-en-attente' ? signal.attenteMs : undefined;
+    if (duree !== undefined && (mesure === undefined || duree > mesure)) {
+      mesure = duree;
+    }
+  }
+  return mesure;
 }
 
 /** Viewport dans lequel le groupe a été constaté : celui de son représentant. */
@@ -212,6 +264,7 @@ export async function reexecuterGroupe(options: OptionsReexecution): Promise<Res
       ...(constat.causeEchec === undefined ? {} : { causeEchec: constat.causeEchec }),
       ...(constat.erreur === undefined ? {} : { erreur: constat.erreur }),
       ...(constat.mesureMs === undefined ? {} : { mesureMs: constat.mesureMs }),
+      ...(constat.nonMesuree === true ? { nonMesuree: true } : {}),
       dureeMs: constat.dureeMs,
       ...(constat.observations === undefined ? {} : { observations: constat.observations }),
     };

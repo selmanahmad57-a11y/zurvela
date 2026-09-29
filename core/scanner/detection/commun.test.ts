@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { ActionExecutee, Parcours } from '../../types.js';
-import { actionsPrealablesDe, construireCandidate } from './commun.js';
+import { actionsPrealablesDe, construireCandidate, ERREUR_RECETTE_INCOHERENTE, recetteDe } from './commun.js';
 import {
   BOUTON,
   contexte,
@@ -11,6 +11,7 @@ import {
   reponse,
   soumission,
   URL_ACCUEIL,
+  URL_CONFIRMATION,
   URL_CONTACT,
 } from './fabriques-test.js';
 
@@ -105,6 +106,7 @@ describe('construireCandidate', () => {
 
     expect(candidate.reproduction).toEqual({
       url: URL_CONTACT,
+      pageDepart: URL_CONTACT,
       viewport: DESKTOP,
       action: soumettre,
       actionsPrealables: [remplir],
@@ -128,5 +130,63 @@ describe('construireCandidate', () => {
       contexte([remplissage('a1')]),
     );
     expect(candidate.reproduction.actionsPrealables).toEqual([]);
+  });
+});
+
+describe('recetteDe — la recette porte sa page d’OUVERTURE (cahier P2-1, contrat 1)', () => {
+  it('pour une NAVIGATION, la recette s’ouvre sur la page d’ORIGINE, et l’anomalie reste localisée sur la page d’arrivée', () => {
+    // cutlybook en miniature : remplir sur /contact, naviguer vers /confirmation
+    // où une ressource échoue. Avant P2-1, le rejeu ouvrait /confirmation et y
+    // cherchait le formulaire de /contact : 0 candidate rejouable sur 8.
+    const remplir = remplissage('a1');
+    const naviguer = navigationAction('a2', URL_CONFIRMATION, { page: URL_CONTACT });
+    const parcours = parcoursDe([remplir, naviguer]);
+    const recette = recetteDe(URL_CONFIRMATION, DESKTOP, naviguer, actionsPrealablesDe(parcours, naviguer));
+    expect(recette.url).toBe(URL_CONFIRMATION);
+    expect(recette.pageDepart).toBe(URL_CONTACT);
+    expect(recette.actionsPrealables).toEqual([remplir]);
+  });
+
+  it('pour une anomalie constatée au chargement (sans action), la page d’ouverture est la page observée', () => {
+    const recette = recetteDe(URL_CONTACT, DESKTOP, null, []);
+    expect(recette.pageDepart).toBe(URL_CONTACT);
+    expect(recette.actionsPrealables).toEqual([]);
+  });
+
+  it('pour une soumission, la page d’ouverture est la page du formulaire : rien ne change pour le gabarit historique', () => {
+    const remplir = remplissage('a1');
+    const soumettre = soumission('a2');
+    const recette = recetteDe(URL_CONTACT, DESKTOP, soumettre, actionsPrealablesDe(parcoursDe([remplir, soumettre]), soumettre));
+    expect(recette.pageDepart).toBe(URL_CONTACT);
+    expect(recette.actionsPrealables).toEqual([remplir]);
+  });
+
+  it('INVARIANT : un préalable étranger à la page d’ouverture ne se construit pas — la garde ne dépend pas de la dérivation', () => {
+    // Le contrôle qui peut échouer : la dérivation ne produit jamais ce cas ;
+    // la garde doit le refuser quand même, sinon elle ne vérifie rien.
+    const remplirAilleurs = remplissage('a1', { page: URL_ACCUEIL });
+    const soumettre = soumission('a2');
+    expect(() => recetteDe(URL_CONTACT, DESKTOP, soumettre, [remplirAilleurs])).toThrow(ERREUR_RECETTE_INCOHERENTE);
+  });
+
+  it('construireCandidate passe par la même recette : la page d’ouverture d’une navigation est bien l’origine', () => {
+    const remplir = remplissage('a1');
+    const naviguer = navigationAction('a2', URL_CONFIRMATION, { page: URL_CONTACT });
+    const candidate = construireCandidate(
+      {
+        categorie: 'fonctionnel',
+        description: 'reponse-5xx',
+        page: URL_CONFIRMATION,
+        gravite: 'bloquant',
+        confiance: 0.9,
+        detecteur: 'd-http',
+        viewport: DESKTOP.nom,
+        action: naviguer,
+        dependDuViewport: false,
+        preuves: [reponse({ page: URL_CONFIRMATION, actionId: 'a2' })],
+      },
+      contexte([remplir, naviguer]),
+    );
+    expect(candidate.reproduction).toMatchObject({ url: URL_CONFIRMATION, pageDepart: URL_CONTACT, actionsPrealables: [remplir] });
   });
 });

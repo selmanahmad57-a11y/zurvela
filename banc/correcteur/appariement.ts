@@ -6,7 +6,7 @@
  * déclarées par le bug. La description (prose IA) et la gravité ne servent
  * jamais de clé (règle maîtresse §2).
  */
-import { VERDICTS_RETENUS, type Anomalie, type CandidateEcartee, type Rapport } from '../../core/types.js';
+import { VERDICTS_PUBLIES, VERDICTS_RETENUS, type Anomalie, type CandidateEcartee, type Rapport } from '../../core/types.js';
 import { attendusBug, attendusProfil, type AttenduBug, type ComptesProtocole, type Manifeste, type ResultatAttendu, type ResultatProfil } from '../types.js';
 
 /** Motif structurel d'une URL absolue : schéma suivi de `//` (RFC 3986). */
@@ -260,7 +260,9 @@ export function calculerComptesProtocole(
   const attendusEvites = new Set<number>();
   const attendusPerdus = new Set<number>();
   for (const resultat of groupes) {
-    if (VERDICTS_RETENUS.includes(resultat.verdict)) {
+    // Un groupe de DÉCOUVERTE est publié (comme observation) : le compter
+    // écarté le ferait passer pour une fausse alerte évitée (P2-1, contrat 8).
+    if (VERDICTS_PUBLIES.includes(resultat.verdict)) {
       comptes.nbGroupesRetenus += 1;
       continue;
     }

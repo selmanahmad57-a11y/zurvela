@@ -28,6 +28,7 @@ import {
   type RejeuScripte,
 } from './fabriques-test.js';
 import { NOM_PROTOCOLE_ANTI_FAUX_POSITIFS, creerProtocole } from './protocole.js';
+import { MOTIF_MESURE_SOUS_SEUIL, MOTIF_NON_MESUREE } from './verdict.js';
 import {
   MOTIF_CONFIANCE_SUFFISANTE,
   MOTIF_ECHEANCE_ATTEINTE,
@@ -105,9 +106,29 @@ describe('creerProtocole — verdicts', () => {
     expect(resultat.retenues).toEqual([]);
     expect(resultat.ecartees).toHaveLength(1);
     expect(resultat.ecartees[0]).toMatchObject({ verdict: 'non-reproduite', raison: MOTIF_JAMAIS_REPRODUITE });
-    // La candidate écartée garde ses preuves d'origine et son résultat de groupe.
+    // La candidate écartée garde ses preuves d'origine et RÉFÉRENCE son groupe
+    // par sa clé : la preuve complète existe une fois (P2-1, contrat 7).
     expect(resultat.ecartees[0]?.candidate).toBe(resultat.groupes?.[0]?.groupe.membres[0]);
-    expect(resultat.ecartees[0]?.resultat?.tentatives).toHaveLength(2);
+    expect(resultat.ecartees[0]?.cle).toBe(resultat.groupes?.[0]?.groupe.cle);
+    expect(resultat.groupes?.find((groupe) => groupe.groupe.cle === resultat.ecartees[0]?.cle)?.tentatives).toHaveLength(2);
+    expect(JSON.stringify(resultat.ecartees[0])).not.toContain('"membres"');
+  });
+
+  it('le rapport pèse en O(n) des candidates : une écartée RÉFÉRENCE son groupe, elle ne le recopie pas (P2-1, contrat 7)', async () => {
+    // Le contrôle qui peut échouer : quand chaque écartée recopiait son groupe
+    // avec tous ses membres, un groupe de N membres pesait N² — 6,9 Mo à 187
+    // candidates (fiche 07), 42 Mo à 1 649 (fiche 10). Quatre fois plus de
+    // candidates doit peser environ quatre fois plus, pas seize.
+    const poids = async (n: number): Promise<number> => {
+      const candidates = Array.from({ length: n }, (_, i) => candidateSimulee({ urlOuEtape: `${URL_CONTACT}?p=${i}` }));
+      const { resultat } = await confirmer(candidates, [{ enEchec: false }]);
+      expect(resultat.groupes).toHaveLength(1);
+      expect(resultat.ecartees).toHaveLength(n);
+      return JSON.stringify({ groupes: resultat.groupes, ecartees: resultat.ecartees }).length;
+    };
+    const petit = await poids(10);
+    const grand = await poids(40);
+    expect(grand / petit).toBeLessThan(6);
   });
 
   it('aucune tentative exploitable : limite-automatisation — distincte de non-reproduite', async () => {
@@ -218,7 +239,7 @@ describe('creerProtocole — consolidation, échéance, politique', () => {
 });
 
 describe('creerProtocole — détecteur gradué et contre-épreuve', () => {
-  const candidateLente = (): AnomalieCandidate =>
+  const candidateLente = (surcharges: Partial<AnomalieCandidate> = {}): AnomalieCandidate =>
     candidateSimulee({
       detecteur: 'd-lenteur',
       description: 'reponse-lente',
@@ -226,6 +247,7 @@ describe('creerProtocole — détecteur gradué et contre-épreuve', () => {
       graviteEstimee: 'important',
       confiance: 0.95,
       preuves: [reponse({ statut: 200, actionId: 'a1', dureeMs: 9000 })],
+      ...surcharges,
     });
 
   it('enregistre la mesure brute de chaque tentative et l’agrège (D-LENTEUR est le seul détecteur gradué)', async () => {
@@ -235,11 +257,27 @@ describe('creerProtocole — détecteur gradué et contre-épreuve', () => {
     expect(details(journal, 'confirmation.tentative')).toMatchObject({ mesureMs: 9000 });
   });
 
-  it('une lenteur qui ne se reproduit plus est écartée (L01)', async () => {
+  it('une lenteur qui ne se reproduit plus est écartée (L01) — par RE-MESURE, pas par absence de mesure', async () => {
+    // Avant P2-1 (contrat 4), la ressource revenue sous le seuil ne produisait
+    // pas de candidate, donc pas de mesure : le verdict tombait « jamais
+    // reproduite » par absence (C-04). Désormais la ressource visée est relue
+    // dans les signaux du rejeu, et le verdict tient sur sa mesure.
     const { resultat } = await confirmer([candidateLente()], [{ dureeMs: 100 }]);
     expect(resultat.retenues).toEqual([]);
     expect(resultat.ecartees[0]?.verdict).toBe('non-reproduite');
-    expect(resultat.groupes?.[0]?.mesureAgregee).toBeUndefined();
+    expect(resultat.ecartees[0]?.raison).toBe(MOTIF_MESURE_SOUS_SEUIL);
+    expect(resultat.groupes?.[0]?.mesureAgregee).toBe(100);
+    expect(resultat.groupes?.[0]?.tentatives.every((tentative) => tentative.mesureMs === 100 && tentative.nonMesuree === undefined)).toBe(true);
+  });
+
+  it('un rejeu de lenteur où la ressource visée n’est PAS rechargée est NON MESURÉ : limite, jamais « non reproduite »', async () => {
+    // Le contrôle qui peut échouer : un rejeu qui charge la page mais ne
+    // redemande pas la ressource lente ne prouve rien sur sa lenteur.
+    const { resultat } = await confirmer([candidateLente({ preuves: [reponse({ actionId: 'a1', urlRessource: 'http://127.0.0.1:4800/api/autre', dureeMs: 9000 })] })], [{ dureeMs: 100 }]);
+    expect(resultat.retenues).toEqual([]);
+    expect(resultat.ecartees[0]?.verdict).toBe('limite-automatisation');
+    expect(resultat.ecartees[0]?.raison).toBe(MOTIF_NON_MESUREE);
+    expect(resultat.groupes?.[0]?.tentatives.every((tentative) => tentative.nonMesuree === true)).toBe(true);
   });
 
   it('anomalie de viewport : contre-épreuve dans l’AUTRE viewport, l’asymétrie attendue renforce la confiance', async () => {
@@ -252,7 +290,7 @@ describe('creerProtocole — détecteur gradué et contre-épreuve', () => {
       confiance: CONFIG_TEST.recouvrement.confianceGeometrie,
       observations: [{ viewport: MOBILE.nom }],
       preuves: [interception({ viewport: MOBILE.nom })],
-      reproduction: { url: URL_CONTACT, viewport: MOBILE, action: soumission('a1', { viewport: MOBILE.nom }), actionsPrealables: [] },
+      reproduction: { url: URL_CONTACT, pageDepart: URL_CONTACT, viewport: MOBILE, action: soumission('a1', { viewport: MOBILE.nom }), actionsPrealables: [] },
     });
     // Le recouvrement n'existe QUE sur mobile : c'est ce que la contre-épreuve doit constater.
     const rejeu: Reexecuteur & { viewports: string[] } = {

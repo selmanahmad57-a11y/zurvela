@@ -216,6 +216,15 @@ function construirePipelines(scenario: Scenario, gabarit: Gabarit, config: Confi
     },
 
     async page(chemin, fichier, sansCorps, res) {
+      // Le retard d'une page se paie ICI, sur la requête, et pas dans `rendrePage`
+      // que `verifier()` appelle au démarrage : à ce moment-là rien n'écoute
+      // encore, et un délai dont le minuteur est `unref()` laisserait le
+      // processus s'éteindre en silence (cahier P2-1, gabarit site-lent).
+      for (const { bug, contexte } of bugsActifs) {
+        if (bug.retarderPage) {
+          await bug.retarderPage(chemin, contexte);
+        }
+      }
       envoyer(res, 200, { 'content-type': TYPE_HTML }, await rendrePage(chemin, fichier), sansCorps);
     },
 

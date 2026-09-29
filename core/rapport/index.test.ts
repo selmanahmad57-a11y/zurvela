@@ -7,6 +7,7 @@
  * produire un rapport faux, ni un rapport absent.
  */
 import { describe, expect, it } from 'vitest';
+import type { Rapport } from '../types.js';
 import type { ClientIa, RedactionEstampillee, ResultatIa } from '../ia/index.js';
 import { RAISON_CASSETTE_ABSENTE } from '../ia/index.js';
 import { MOTIF_CONSTATEE_AU_REJEU } from '../scanner/confirmation/decouvertes.js';
@@ -18,7 +19,9 @@ import {
   EVENEMENT_SANS_PROSE,
   EVENEMENT_SANS_SECTION,
   EVENEMENT_SECTION_NON_SITUEE,
+  EVENEMENT_SECTIONS_PLAFONNEES,
   RAISON_ECHEANCE_REDACTION,
+  RAISON_TEMPS_INSUFFISANT,
   redigerRapportBusiness,
 } from './index.js';
 import { rendreRapport } from './rendu.js';
@@ -213,12 +216,14 @@ describe('redigerRapportBusiness — le rapport existe TOUJOURS', () => {
   it('ÉCHÉANCE non atteinte : la porte laisse passer — sans quoi le contrôle précédent ne prouverait rien', async () => {
     const client = clientQuiRedige();
     const journal = journalDe();
+    // Depuis P2-1 (contrat 2), « non atteinte » ne suffit plus : il faut le
+    // temps d'une section (dureeParSectionMs). Une milliseconde ne paie rien.
     await redigerRapportBusiness({
       rapport: rapportTechnique(),
       config: CONFIG_RAPPORT_TEST,
       ia: client,
       journaliser: journal.journaliser,
-      echeance: 1_001,
+      echeance: 1_000 + CONFIG_RAPPORT_TEST.dureeParSectionMs,
       maintenant: () => 1_000,
     });
     expect(client.appelsFaits).toBe(1);
@@ -408,5 +413,89 @@ describe('du moteur au texte : la chaîne complète', () => {
     // Et il reste lisible : statut, gravité, localisation.
     expect(texte).toContain('Constaté, puis reproduit lors de nos 2 vérifications indépendantes.');
     expect(texte).toContain('/contact');
+  });
+});
+
+describe('redigerRapportBusiness — la rédaction se tient dans sa réserve (cahier P2-1, contrat 2)', () => {
+  /** Un client qui enregistre les OPTIONS reçues et rédige tout ce qu’on lui montre. */
+  function clientQuiNote(): ClientIa & { sectionsVues: number[]; delais: (number | undefined)[] } {
+    const base = clientQuiRedige();
+    const sectionsVues: number[] = [];
+    const delais: (number | undefined)[] = [];
+    return {
+      ...base,
+      sectionsVues,
+      delais,
+      rediger(contexte, options) {
+        sectionsVues.push(contexte.sections.length);
+        delais.push(options?.delaiMs);
+        return base.rediger(contexte, options);
+      },
+    };
+  }
+
+  /** Trois anomalies de gravités décroissantes : la structure les trie, la coupe par le temps garde les plus graves. */
+  function rapportTrois(): Rapport {
+    return rapportTechnique({
+      anomalies: [anomalie('g1', { gravite: 'bloquant' }), anomalie('g2', { gravite: 'important' }), anomalie('g3', { gravite: 'mineur' })],
+      groupes: ['g1', 'g2', 'g3'].map((cle) => resultatGroupe(cle, [tentative(1, true), tentative(2, true)])),
+    });
+  }
+
+  it('plafonne le nombre de sections par le temps restant : 2 sections rédigées sur 3 quand il reste 13 s à 6 s la section', async () => {
+    const client = clientQuiNote();
+    const journal = journalDe();
+    const { rapportBusiness } = await redigerRapportBusiness({
+      rapport: rapportTrois(),
+      config: CONFIG_RAPPORT_TEST,
+      ia: client,
+      journaliser: journal.journaliser,
+      echeance: 14_000,
+      maintenant: () => 1_000,
+    });
+    expect(client.sectionsVues).toEqual([2]);
+    expect(rapportBusiness.sections).toHaveLength(3);
+    expect(rapportBusiness.nbSectionsRedigees).toBe(2);
+    // La section qui tombe est la moins grave : la dernière.
+    expect(rapportBusiness.sections[2]?.titre).toBe('');
+    expect(journal.entrees.find((entree) => entree.type === EVENEMENT_SECTIONS_PLAFONNEES)?.details).toMatchObject({ plafond: 2, nbSections: 3, restantMs: 13_000 });
+  });
+
+  it('impose au client le temps restant comme plafond d’appel : l’appel ne peut plus dépasser l’échéance', async () => {
+    const client = clientQuiNote();
+    await redigerRapportBusiness({
+      rapport: rapportTrois(),
+      config: CONFIG_RAPPORT_TEST,
+      ia: client,
+      journaliser: journalDe().journaliser,
+      echeance: 61_000,
+      maintenant: () => 1_000,
+    });
+    expect(client.delais).toEqual([60_000]);
+  });
+
+  it('sans échéance, rien ne plafonne et aucun délai n’est imposé', async () => {
+    const client = clientQuiNote();
+    await redigerRapportBusiness({ rapport: rapportTrois(), config: CONFIG_RAPPORT_TEST, ia: client, journaliser: journalDe().journaliser, echeance: null });
+    expect(client.sectionsVues).toEqual([3]);
+    expect(client.delais).toEqual([undefined]);
+  });
+
+  it('quand le temps restant ne paie pas une seule section, aucun appel : le rapport reste structurel et le journal dit pourquoi', async () => {
+    // Le contrôle qui peut échouer : à 5 s restantes pour 6 s la section, un
+    // plafond arrondi par excès rédigerait quand même une section hors délai.
+    const client = clientQuiNote();
+    const journal = journalDe();
+    const { coutApi } = await redigerRapportBusiness({
+      rapport: rapportTrois(),
+      config: CONFIG_RAPPORT_TEST,
+      ia: client,
+      journaliser: journal.journaliser,
+      echeance: 6_000,
+      maintenant: () => 1_000,
+    });
+    expect(client.sectionsVues).toEqual([]);
+    expect(coutApi).toBe(0);
+    expect(journal.entrees.find((entree) => entree.type === EVENEMENT_ECHEANCE_DEPASSEE)?.details).toMatchObject({ raison: RAISON_TEMPS_INSUFFISANT });
   });
 });

@@ -10,5 +10,6 @@
   "ligneMaxChars": 1400,
   "maxTokensReponse": 8192,
   "relancesMax": 1,
-  "appelMaxMs": 120000
+  "appelMaxMs": 120000,
+  "dureeParSectionMs": 6000
 }

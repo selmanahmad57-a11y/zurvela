@@ -118,6 +118,9 @@ describe('l’effet NOMINAL d’un avis « cause site »', () => {
     // La découverte : confiance d'origine (0,8) × 0,6, motif `diagnostic-site`.
     expect(resultat.decouvertes).toHaveLength(1);
     expect(resultat.decouvertes?.[0]).toMatchObject({ motif: MOTIF_DECOUVERTE_DIAGNOSTIC_SITE, confiance: 0.8 * 0.6 });
+    // Un avis n'est pas un re-test : la découverte « cause site » porte le
+    // verdict de découverte, jamais `confirmee` (P2-1, contrat 8).
+    expect(resultat.decouvertes?.[0]?.verdict).toBe('decouverte');
     // Elle est publiée : se taire au moment où le modèle impute le site serait
     // exactement le silence que la brique existe pour réduire.
     expect(resultat.retenues).toEqual(resultat.decouvertes);

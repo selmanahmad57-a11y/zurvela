@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="{{langue}}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{site.nom}}</title>
+  <meta name="description" content="{{site.slogan}}">
+  <link rel="stylesheet" href="/statique/style.css">
+  <link rel="icon" href="/statique/images/logo.svg" type="image/svg+xml">
+</head>
+<body>
+  <header class="entete">
+    <a class="marque" href="/">
+      <img data-role="logo" src="/statique/images/logo.svg" alt="{{site.nom}}" width="40" height="40">
+      <span>{{site.nom}}</span>
+    </a>
+    <nav aria-label="{{nav.libelle}}">
+      <ul>
+        <li><a href="/" aria-current="page">{{nav.accueil}}</a></li>
+      </ul>
+    </nav>
+  </header>
+  <main class="contenu">
+    <h1>{{accueil.titre}}</h1>
+    <p class="intro">{{accueil.intro}}</p>
+    <section>
+      <h2>{{accueil.sommaire}}</h2>
+      <ul>
+        <li><a href="/p/1">{{nav.rubrique}} 1</a></li>
+        <li><a href="/p/2">{{nav.rubrique}} 2</a></li>
+        <li><a href="/p/3">{{nav.rubrique}} 3</a></li>
+        <li><a href="/p/4">{{nav.rubrique}} 4</a></li>
+        <li><a href="/p/5">{{nav.rubrique}} 5</a></li>
+        <li><a href="/p/6">{{nav.rubrique}} 6</a></li>
+        <li><a href="/p/7">{{nav.rubrique}} 7</a></li>
+        <li><a href="/p/8">{{nav.rubrique}} 8</a></li>
+        <li><a href="/p/9">{{nav.rubrique}} 9</a></li>
+        <li><a href="/p/10">{{nav.rubrique}} 10</a></li>
+        <li><a href="/p/11">{{nav.rubrique}} 11</a></li>
+        <li><a href="/p/12">{{nav.rubrique}} 12</a></li>
+      </ul>
+    </section>
+  </main>
+  <footer class="pied">
+    <p>{{pied.mentions}}</p>
+  </footer>
+</body>
+</html>

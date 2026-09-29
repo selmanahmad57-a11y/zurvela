@@ -24,6 +24,8 @@ export const MOTIF_JAMAIS_REPRODUITE = 'jamais-reproduite';
 export const MOTIF_MESURE_SOUS_SEUIL = 'mesure-sous-seuil';
 export const MOTIF_CONFIANCE_SUFFISANTE = 'confiance-suffisante';
 export const MOTIF_ECHEANCE_ATTEINTE = 'echeance-atteinte';
+/** Détecteur gradué dont aucune tentative exploitable n'a pu mesurer la ressource visée : rien ne dit qu'elle est revenue sous le seuil. */
+export const MOTIF_NON_MESUREE = 'non-mesuree';
 
 /**
  * Une tentative dit quelque chose du SITE si elle s'est déroulée, ou si son
@@ -86,6 +88,12 @@ export function juger(tentatives: TentativeReexecution[], options: OptionsJugeme
   const mesures = exploitables
     .map((tentative) => tentative.mesureMs)
     .filter((mesure): mesure is number => mesure !== undefined);
+  // Détecteur gradué SANS AUCUNE mesure : le verdict « jamais reproduite »
+  // tomberait par absence de mesure, pas par re-mesure (C-04). Ce n'est ni une
+  // reproduction ni sa négation : c'est une limite, comptée comme telle.
+  if (options.seuilMesure !== undefined && mesures.length === 0) {
+    return { verdict: 'limite-automatisation', motif: MOTIF_NON_MESUREE, tauxReproduction: null };
+  }
   const mesureAgregee = agreger(mesures, options.agregation);
   const taux = exploitables.filter((tentative) => tentative.reproduite).length / exploitables.length;
   const mesure = mesureAgregee === undefined ? {} : { mesureAgregee };

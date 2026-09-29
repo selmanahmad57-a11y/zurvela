@@ -1,0 +1,21 @@
+{
+  "id": "the-internet",
+  "url": "https://the-internet.herokuapp.com",
+  "role": "temoin",
+  "fiche": "06",
+  "defaut": null,
+  "avant": {
+    "rejouabiliteGroupesPourcent": 100,
+    "candidates": 24,
+    "groupes": 5,
+    "retenues": 5,
+    "pages": 40,
+    "dureeMs": 216570
+  },
+  "attendus": {
+    "rejouabiliteGroupesMinPourcent": 100,
+    "dureeMaxMs": 300000,
+    "pagesMin": 20,
+    "candidatesMin": 10
+  }
+}

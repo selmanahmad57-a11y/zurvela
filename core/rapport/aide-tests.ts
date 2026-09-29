@@ -27,6 +27,7 @@ export const CONFIG_RAPPORT_TEST: ConfigRapport = {
   maxTokensReponse: 4096,
   relancesMax: 1,
   appelMaxMs: 120000,
+  dureeParSectionMs: 6000,
 };
 
 /** Une tentative exploitable (le rejeu a eu lieu) ou non (l'outil n'a pas su). */

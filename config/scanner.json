@@ -204,12 +204,12 @@
     },
     "tarifs": {
       "claude-haiku-4-5": {
-        "entreeParMillion": 1.0,
-        "sortieParMillion": 5.0
+        "entreeParMillion": 1,
+        "sortieParMillion": 5
       },
       "claude-opus-5": {
-        "entreeParMillion": 5.0,
-        "sortieParMillion": 25.0
+        "entreeParMillion": 5,
+        "sortieParMillion": 25
       }
     }
   },
@@ -251,5 +251,12 @@
   },
   "budget": {
     "maxUsdParScan": null
+  },
+  "echeance": {
+    "repartition": {
+      "exploration": 0.5,
+      "confirmation": 0.35,
+      "redaction": 0.1
+    }
   }
 }

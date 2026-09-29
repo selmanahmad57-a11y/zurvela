@@ -22,6 +22,7 @@ import { creerValidateurRedaction } from './schema-redaction.js';
 import { identifiantsEnumeres, normaliserEtatDecision, type EtatNormalise } from './etat-decision.js';
 import { creerValidateurDecision } from './schema-decision.js';
 import {
+  type OptionsRedaction,
   RAISON_APPEL_API,
   RAISON_APPEL_INATTENDU,
   RAISON_APPEL_LIMITE,
@@ -291,7 +292,7 @@ export function creerClientAnthropic(options: OptionsClientAnthropic): ClientIaE
    * n'éteint ni le profilage, ni la navigation, ni le diagnostic — il rend un
    * rapport STRUCTUREL, qui reste un rapport.
    */
-  const redigerBrut = (contexteRecu: ContexteRedaction): Promise<ResultatIa<ReponseBrute>> => {
+  const redigerBrut = (contexteRecu: ContexteRedaction, options: OptionsRedaction = {}): Promise<ResultatIa<ReponseBrute>> => {
     // LA BORNE EST REFAITE ICI, au seuil de `core/ia`, et pas seulement sur le
     // chemin rejouable. Une borne de sécurité ne doit pas dépendre de la
     // discipline de son appelant — c'est la règle écrite dans
@@ -320,7 +321,9 @@ export function creerClientAnthropic(options: OptionsClientAnthropic): ClientIaE
           maxTokens: rapport.maxTokensReponse,
           nomPlafond: 'rapport.maxTokensReponse',
           detailEntree: `rapport.faitsMaxChars ${rapport.faitsMaxChars}`,
-          delaiMs: rapport.appelMaxMs,
+          // Le plus serré des deux plafonds : celui du client (config) et celui
+          // que l'échéance du scan impose (P2-1, contrat 2).
+          delaiMs: options.delaiMs === undefined ? rapport.appelMaxMs : Math.max(1, Math.min(rapport.appelMaxMs, options.delaiMs)),
         },
         prompt,
         schemaContratModele,
@@ -407,12 +410,12 @@ export function creerClientAnthropic(options: OptionsClientAnthropic): ClientIaE
      * déjà normalisé — c'est `core/rapport/faits.ts` qui le construit, une
      * fois, pour le prompt comme pour la clé de cassette.
      */
-    async rediger(contexteRecu: ContexteRedaction): Promise<ResultatIa<RedactionEstampillee>> {
+    async rediger(contexteRecu: ContexteRedaction, options: OptionsRedaction = {}): Promise<ResultatIa<RedactionEstampillee>> {
       // Le validateur est construit sur le contexte BORNÉ, celui-là même qui a
       // été envoyé : construire l'énumération sur le contexte reçu accepterait
       // des identifiants que le modèle n'a jamais vus.
       const contexte = bornerContexteRedaction(contexteRecu, rapport);
-      const brut = await redigerBrut(contexte);
+      const brut = await redigerBrut(contexte, options);
       if (!brut.disponible) return brut;
       return redactionDepuisReponse({
         texte: brut.valeur.texte,

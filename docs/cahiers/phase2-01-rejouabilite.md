@@ -170,6 +170,33 @@ rapport.
    cause) reste dans P2-2 : dédoublonner « par cause » suppose la notion de
    cause de la doctrine tierce ; la taille du journal, elle, est C-13.*
 
+8. **Une découverte n'est jamais publiée comme un défaut vérifié.** *Ajouté
+   le 2026-09-29 après la première validation réelle, par arbitrage du
+   propriétaire : élargir P2-1 plutôt que committer en l'état.* Le rejeu
+   réparé a démasqué le défaut suivant : sur expandtesting, quarante
+   anomalies constatées PENDANT les rejeux sont sorties `confirmee`, jamais
+   re-testées, et le rapport s'ouvrait sur six sections « Bloquant » nées
+   d'une seule iframe publicitaire. Le silence d'avant mentait par omission,
+   ce bruit mentait ouvertement ; honnête et incomplet est acceptable, faux
+   et affirmatif ne l'est pas. Le contrat : une anomalie constatée pendant
+   une re-exécution — ou suspectée côté site par l'auto-diagnostic — porte
+   le verdict `decouverte` (le troisième état épistémique de la brique 3,
+   porté enfin par le rapport TECHNIQUE et non plus seulement par la phrase
+   du rapport business), ne peut jamais sortir `confirmee`, et sa gravité
+   est bornée sous « Bloquant » sans un re-test qui lui soit propre.
+   Invariants en code, pas en config. Le rapport compte, dans sa méthode,
+   les constats publiés sans re-test (texte à garantie sémantique) ; le banc
+   compte un groupe de découverte comme publié, pas comme écarté ;
+   `banc:reel` déclare non tenu tout site où une découverte serait publiée
+   comme vérifiée. Mutation nommée : une découverte sort `confirmee` — des
+   contrôles doivent rougir. Validation : expandtesting rejoué, plus aucune
+   section « Bloquant » née d'un rejeu ; cutlybook et books inchangés ;
+   the-internet 5/5 ; les 43 scénarios historiques intacts. HORS périmètre,
+   et c'est tranché : le coût d'un rejeu à 29 s sur un site publicitaire
+   (cahier de performance à part : rejeu sélectionné, cache de décisions),
+   le dédoublonnage des découvertes par cause (C-16 plein, P2-2), la doctrine
+   tierce (P2-2).
+
 Aucun prompt ne change dans ce cahier ; aucune version de prompt ne bouge.
 
 ## 3. Budget
@@ -198,3 +225,161 @@ runs ; la nouvelle famille dans la scorecard ; les quatre cas réels rejoués
 et comparés, avec le jugement humain des retenues ; les fiches 04, 05, 06 et
 07 annotées « revu après P2-1 » ; commit « P2-1 — la rejouabilité » à la
 validation seulement.
+
+### 5.1 Ce qui a été livré (2026-09-29)
+
+**Contrats et mutations.** Chaque contrat moteur a son contrôle qui peut
+échouer, et chaque mutation nommée a été jouée (METHODE §10) :
+
+| contrat | mutation | ce qui a rougi |
+|---|---|---|
+| 1 | le rejeu ouvre `url` au lieu de `pageDepart` | N01 : 0/1 groupe rejoué, une anomalie réelle perdue, alarmes « pertes » et « rejouabilité » |
+| 2 | l'explorateur reçoit l'échéance de confirmation au lieu de sa fraction | L02 : 0/1 groupe rejoué, alarme « rejouabilité » |
+| 2 | la rédaction ignore son budget *(nommée par le cahier)* | trois tests du rapport (plafond de sections, délai d'appel, aucun appel sans temps) |
+| 3 | les deux gardes de `remplir` retirées (sans champ, doublons) | K01 : 0/1 détecté, l'exploration n'atteint plus la dernière page |
+| 4 | la ressource visée n'est plus mesurée au rejeu | L02 : `limite-automatisation / non-mesuree` au lieu de `non-reproduite`, verdicts corrects à 0 % |
+| 4 | une mesure absente compte comme non reproduite *(nommée par le cahier)* | deux tests du verdict et du protocole |
+| 5 | l'agrégat par gabarit vidé | son test ; la famille elle-même rougit sous la mutation du contrat 1 |
+| 7 | chaque écartée recopie son groupe *(nommée par le cahier)* | deux tests du protocole, dont le test de poids en O(n) |
+
+Deux mutations ont d'abord SURVÉCU (contrats 1 et 3) : les gabarits
+reproduisaient le défaut, pas les conditions dans lesquelles il avait mordu.
+« formulaire-puis-navigation » s'explore désormais sous `soumission: aucune`
+(la déterministe soumettait, et la navigation partait d'une page sans
+préalable) ; « catalogue-boutons » a huit pages et non trois (soixante
+remplissages vides tenaient encore dans l'échéance du banc, cent quarante non).
+Leçon : APPRENTISSAGES n°20, METHODE §10 étendu.
+
+**Banc.** 55 scénarios (12 nouveaux, trois gabarits), sur cassettes :
+
+| run | détectés | faux positifs | verdicts corrects | gravités conformes | rejouabilité (groupes) | coût des cassettes (USD) |
+|---|---|---|---|---|---|---|
+| déterministe ×3 | 39/41 | 0 | 39/41 | 33/33 | 39/39 (100 %) | 1,0396 |
+| IA | 39/41 | 0 | 39/41 | 33/33 | 39/39 (100 %) | 1,9571 |
+
+Les 43 scénarios existants gardent une empreinte IDENTIQUE à la référence
+d'avant P2-1 (runs du 2026-09-25, déterministe et IA) sur les quatre runs :
+statut, attendus, verdicts, faux positifs, comptes du protocole, coût,
+profils, cibles, rapports. Les deux ratés déterministes sont F01 fr/en,
+déjà ratés avant P2-1. Les deux ratés IA sont K01 fr/en : la politique IA
+refuse de paginer un catalogue (« les pages 2 à 8 seraient des répétitions »)
+et termine avant la page du défaut — un défaut de couverture (C-08, cahier
+n°2), pas de rejouabilité.
+
+**Réel** (`pnpm banc:reel --avant`, moteur de la campagne contre moteur P2-1,
+même session) :
+
+| site | rôle | rejouabilité avant → après (groupes) | retenues avant → après | durée après | verdict du cas |
+|---|---|---|---|---|---|
+| cutlybook | défaut C-09 | 0/5 → **6/6** | 0 → 5 | 193 s | **tenu** |
+| books | défaut C-10 | 0/1 → **1/1** | 0 → 1 | 132 s | **tenu** |
+| the-internet | témoin | 5/5 → 5/5 | 5 → 5 (les mêmes) | 190 s | **tenu, stable** |
+| expandtesting | défaut C-06 | 0/98 → **2/94** | 0 → **41** | 290 s | **non tenu** (2,1 % < 10 %) |
+
+Un second « après » (variance, une heure plus tard) rend les mêmes verdicts :
+cutlybook 5/5, books 1/1, the-internet 5/5 avec les cinq mêmes retenues,
+expandtesting 2/79 (2,5 %) avec 21 retenues dont 20 découvertes au rejeu et
+deux sections `Bloquant` pour la même iframe publicitaire. Le constat
+d'expandtesting n'est pas un tirage : il se reproduit, en plus petit.
+
+Les quatre « avant » reproduisent leurs fiches : aucun site n'a changé de
+structure, aucun n'est déclaré. Le premier passage a tourné avec une borne de
+durée de 305 s, ramenée à 300 s (les marges de la config se prennent avant
+l'échéance, jamais après) ; aucun scan ne s'en approchait. Journaux : 7,2 → 1,7 Mo (expandtesting),
+2,9 → 0,8 Mo (books). Aucun scan « après » ne dépasse 300 s.
+
+**Jugement humain des retenues nouvelles** (fiches 04 à 07, « Revu après
+P2-1 ») : books, 1 vraie — le jQuery en http, la trouvaille que la campagne
+avait perdue, mais étiquetée « service extérieur » et `mineur` ; cutlybook, 5
+tierces (quatre fichiers d'une police, la télémétrie Stripe), vraies pour le
+robot, non démontrées pour un visiteur, du bruit ; expandtesting, 40
+découvertes au rejeu publiées `confirmee` sans avoir été re-testées (C-16),
+dont six sections `Bloquant` pour une seule iframe publicitaire — **non
+fondées**. Le critère « aucune retenue nouvelle qu'un humain jugerait
+fausse » n'est PAS tenu sur expandtesting.
+
+**Écarts au cahier, déclarés.**
+- Contrat 1 : l'invariant est tenu en code, à l'exécution (constructeur
+  unique `recetteDe` qui refuse une recette incohérente, garde du rejeu qui
+  refuse de l'ouvrir), pas par le type : une page est une chaîne, `tsc` ne
+  peut pas comparer deux valeurs. La voie typée existe — des préalables sans
+  page propre, rejoués par construction sur `pageDepart` — et toucherait
+  toutes les recettes des tests ; non faite.
+- Noms de réglages : `echeance.repartition` (et non `scan.repartition`),
+  `scorecard.rejouabiliteMinPourcent` (et non `rejouabiliteMin`).
+- Contrat 4 : éprouvé au banc seulement ; aucun des quatre sites n'avait de
+  lenteur.
+- Contrat 5 : la table par gabarit est une seconde table, pour que chaque
+  table ne porte qu'une partition (langues ou gabarits) et reste sommable.
+- Contrat 6 : le seuil d'expandtesting (10 %) est celui du cas ; le cahier
+  demandait « au-dessus de zéro avec une réserve servie », tenu à la lettre
+  (2/94, réserve servie), mais la livraison attendue disait « proche du
+  maximum » — c'est ce dernier critère qui compte, et il n'est pas tenu.
+- C-16 reste hors P2-1 (§4) : la taille du journal est venue de C-13.
+
+**Ce que la validation réelle a ouvert** : sur une page lourde, le coût d'un
+rejeu PAR GROUPE (29 s par tentative, 54 groupes) borne la rejouabilité
+quelle que soit la répartition ; et dès que le rejeu marche, C-16, C-12 et
+C-05 deviennent visibles au client (carnet des correctifs, « État après
+P2-1 »).
+
+**Budget dépensé** : cassettes des 12 scénarios nouveaux 0,18 USD (43
+appels) ; validation réelle avant/après 0,31 USD (huit scans) ; second
+« après » pour la variance 0,24 USD (quatre scans). **Total 0,73 USD**, sous
+les 0,90 annoncés et le plafond de 2,00.
+
+### 5.2 Contrat 8 — livré et validé (2026-09-29, le soir)
+
+**Arbitrage du propriétaire** après la première validation réelle : ne pas
+committer un moteur dont la propre mesure montre un rapport client plus faux
+qu'avant, élargir P2-1 d'un contrat étroit (§2, contrat 8).
+
+**Mutations** (toutes jouées, chacune restaurée) :
+
+| contrat | mutation | ce qui a rougi |
+|---|---|---|
+| 8 | une découverte sort `confirmee` *(nommée par le propriétaire)* | trois tests : la découverte au rejeu, la découverte « cause site », le site injoignable |
+| 8 | la gravité du détecteur passe sans borne | la borne elle-même, et le site injoignable qui ressortait « Bloquant » |
+| 8 | la méthode tait les constats non re-testés | le compte, dans les deux langues |
+| 8 | le banc compte un groupe de découverte comme écarté | le test qui refuse d'en faire une « fausse alerte évitée » |
+| 8 | `banc:reel` tient un site qui affirme une découverte | le test du critère |
+| 1 | `recetteDe` accepte un préalable étranger | l'invariant du constructeur |
+| 1 | le rejeu ouvre une recette incohérente | le test de la garde du rejeu, ajouté à cette occasion : elle n'en avait pas |
+
+**Banc** : trois runs déterministes et un run IA après le contrat 8, tous
+identiques aux runs d'avant le contrat (55/55 scénarios) et les 43
+historiques identiques à la référence d'avant P2-1. Aucun scénario du banc ne
+produit de découverte : le contrat 8 est éprouvé par les tests du protocole,
+du rapport et du banc, et par le réel — un gabarit où un calque n'apparaît
+qu'au rejeu manque au banc (METHODE §12), noté au carnet.
+
+**Réel**, avant (moteur de la campagne) et après (moteur P2-1 avec le
+contrat 8), même session :
+
+| site | rejouables après (groupes) | retenues après | dont découvertes | découvertes affirmées | verdict du cas |
+|---|---|---|---|---|---|
+| cutlybook | 5/5 | 5, les mêmes | 0 | 0 | tenu |
+| books | 1/1 | 1, la même | 0 | 0 | tenu |
+| the-internet | 5/5 | 5, les mêmes | 0 | 0 | tenu, témoin stable |
+| expandtesting | 2/101 | 37 | 36 | **0** | non tenu sur la rejouabilité seule (2 % < 10 %) |
+
+**Jugement humain d'expandtesting** : plus aucune section « Bloquant » ; les
+quinze découvertes que le détecteur classait « bloquant » (douze clics
+interceptés par des iframes publicitaires, trois par un calque de la page)
+sortent « Important », statut « Détecté pendant nos vérifications ; non
+re-testé » ; la méthode dit « 63 autres signalements n'ont pas pu être
+re-vérifiés » et « 36 constats de ce rapport ont été vus pendant nos
+vérifications sans pouvoir être re-testés : ils sont présentés comme des
+observations, pas comme des défauts établis ». La synthèse reste à
+l'observation (« nous avons observé… ce qui mérite un examen »). Le rapport
+est **honnête et incomplet** : six sections rédigées pour les mêmes iframes
+publicitaires (C-16 plein, P2-2) et 63 groupes jamais rejoués (le coût du
+rejeu, cahier de performance à part). Le seuil de 10 % du cas n'a pas été
+baissé après coup : il reste la cible de ce cahier-là.
+
+**Budget** : contrat 8, validation réelle avant/après 0,32 USD, aucune
+cassette nouvelle. **Total du cahier : 1,05 USD** (annoncé 0,90 puis
+≈ 1,04 à l'élargissement ; plafond 2,00).
+
+Journal après d'expandtesting : `~/.config/zurvela/bestiaire/p2-1-reel-2026-09-29/contrat-8/`,
+sha256 `62615ff2925f3e6a7d0b76b3c55f70d1401bb15275fa9d7a87f6cdcf474a5e30`.

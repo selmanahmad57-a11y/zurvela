@@ -43,6 +43,7 @@ async function configSur(surcharges: Record<string, unknown>): Promise<string> {
       maxTokensReponse: 8192,
       relancesMax: 1,
       appelMaxMs: 120000,
+      dureeParSectionMs: 6000,
       ...surcharges,
     }),
     'utf8',

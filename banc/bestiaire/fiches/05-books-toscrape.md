@@ -66,3 +66,40 @@ Ligne(s) de `docs/INVENTAIRE-PRODUCTION.md` confirmée(s) ou raturée(s) :
   de ne rien rejouer (C-04 mesure absente, C-09 préalables, C-06 échéance),
   et à chaque fois le rapport dit « aucune anomalie ». Le chiffre qui manque
   au rapport comme à la scorecard est le même.
+
+## Revu après P2-1 (2026-09-29)
+
+Rejoué dans la même session par `pnpm banc:reel --avant` (METHODE §12) :
+l'« avant » est le moteur de la campagne (`e872872`, code moteur inchangé
+depuis `7f6aa1c`), l'« après » le moteur P2-1, à quelques minutes d'écart,
+même commande, même configuration de production.
+
+| | durée (ms) | pages | candidates | retenues | rejouables (groupes) | arrêt | journal | coût (USD) |
+|---|---|---|---|---|---|---|---|---|
+| avant | 295 203 | 13 | 13 | 0 | 0/1 | echeance | 2 904 Ko | 0,0017 |
+| après | 132 236 | 40 | 20 | **1** | **1/1 (100 %)** | limite-pages | 813 Ko | 0,0385 |
+
+L'avant reproduit la fiche à la seconde près (295 s, 13 pages, 244
+remplissages vides). **C-10 corrigé** (contrat 3) : 0 remplissage au lieu de
+244, 40 actions au lieu de 257 ; l'exploration couvre 20 URL sur les deux
+viewports et s'arrête sur son budget de pages, pas sur l'échéance, à 44 % du
+temps. **C-13** : 813 Ko au lieu de 2,9 Mo.
+
+**Jugement humain de la retenue nouvelle** : jQuery 1.9.1 chargé en
+`http://` depuis une page `https://`, bloqué `mixed-content` sur vingt pages
+et les deux viewports, reproduit — **la vraie trouvaille que la campagne
+avait perdue** (obs. 1 de cette fiche) : pour chaque visiteur, le script ne
+se charge pas. VRAIE. Mais mal attribuée et sous-graduée : le rapport dit
+« un service extérieur ne répond pas » et la classe `mineur`, alors que
+c'est LE SITE qui charge mal une ressource (la réciproque de A.1 ci-dessus).
+C'est P2-2.
+
+Second « après » (variance, une heure plus tard) : 139 586 ms, 40 pages, 1/1
+groupe rejoué, la même retenue (jQuery en http).
+
+Après le contrat 8 (même soir, avant/après) : 1/1 groupe rejoué, la même
+retenue (jQuery en http), aucune découverte.
+
+Journaux, rapports et résultat hors dépôt :
+`~/.config/zurvela/bestiaire/p2-1-reel-2026-09-29/` (journal après :
+sha256 `f7a75194b8d958163da47e2c6a9fdc79ed6d2103253d92fd71028cdccd35c8ee` ; toutes les sommes dans `SHA256SUMS`).

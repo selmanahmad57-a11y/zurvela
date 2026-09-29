@@ -225,9 +225,10 @@ export function nonVerifiesAttendus(rapport: Rapport): number | null {
  *  - une anomalie DÉCOUVERTE — présente dans `decouvertes`, donc constatée une
  *    fois et jamais re-confirmée — ne peut porter ni `confirmee`, ni
  *    `intermittente`. C'est le sur-engagement qu'il faut rendre impossible :
- *    `anomalieDecouverte` pose pourtant `verdict: 'confirmee'` sur ces
- *    anomalies, et un rapport qui lirait le verdict en premier publierait
- *    « constaté et re-vérifié » sur une anomalie vue une seule fois ;
+ *    `anomalieDecouverte` a longtemps posé `verdict: 'confirmee'` sur ces
+ *    anomalies (elle pose `decouverte` depuis le cahier P2-1, contrat 8), et
+ *    un rapport qui lirait le verdict en premier publierait « constaté et
+ *    re-vérifié » sur une anomalie vue une seule fois ;
  *  - une anomalie ORDINAIRE doit porter très exactement son verdict.
  *
  * La formulation, elle, est confrontée à la table de la langue DÉCLARÉE, avec

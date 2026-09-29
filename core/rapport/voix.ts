@@ -200,6 +200,15 @@ export const LIBELLES_RAPPORT: Readonly<
       methodeIndisponible: string;
       ligneEcartes: (nbEcartes: number) => string;
       ligneNonVerifies: (nbNonVerifies: number) => string;
+      /**
+       * TEXTE À GARANTIE SÉMANTIQUE (cahier P2-1, contrat 8) : combien de
+       * constats PUBLIÉS n'ont jamais été re-testés. Chaque section le dit
+       * dans son statut ; la méthode en donne le compte, pour qu'un rapport
+       * fait surtout de découvertes ne se lise pas comme un rapport vérifié.
+       */
+      ligneDecouvertes: (nbDecouvertes: number) => string;
+      /** TEXTE À GARANTIE SÉMANTIQUE : quand aucun groupe n'a pu être rejoué, le rapport ne peut pas se lire comme « le site va bien ». */
+      rienVerifie: (nbNonVerifies: number) => string;
     }
   >
 > = {
@@ -246,6 +255,14 @@ export const LIBELLES_RAPPORT: Readonly<
       nbNonVerifies === 1
         ? '1 autre signalement n’a pas pu être re-vérifié et ne figure pas dans ce rapport.'
         : `${nbNonVerifies} autres signalements n’ont pas pu être re-vérifiés et ne figurent pas dans ce rapport.`,
+    ligneDecouvertes: (nbDecouvertes) =>
+      nbDecouvertes === 1
+        ? '1 constat de ce rapport a été vu pendant nos vérifications sans pouvoir être re-testé : il est présenté comme une observation, pas comme un défaut établi.'
+        : `${nbDecouvertes} constats de ce rapport ont été vus pendant nos vérifications sans pouvoir être re-testés : ils sont présentés comme des observations, pas comme des défauts établis.`,
+    rienVerifie: (nbNonVerifies) =>
+      nbNonVerifies === 1
+        ? 'Rien n’a pu être vérifié sur ce site : notre seul signalement n’a pas pu être rejoué, et aucun n’est publié. Ce rapport ne dit pas que le site va bien ; il dit que nous n’avons pas pu le vérifier.'
+        : `Rien n’a pu être vérifié sur ce site : aucun de nos ${nbNonVerifies} signalements n’a pu être rejoué, et aucun n’est publié. Ce rapport ne dit pas que le site va bien ; il dit que nous n’avons pas pu le vérifier.`,
   },
   en: {
     titre: 'Verification report',
@@ -278,5 +295,13 @@ export const LIBELLES_RAPPORT: Readonly<
       nbNonVerifies === 1
         ? '1 further report could not be re-checked and does not appear here.'
         : `${nbNonVerifies} further reports could not be re-checked and do not appear here.`,
+    ligneDecouvertes: (nbDecouvertes) =>
+      nbDecouvertes === 1
+        ? '1 finding in this report was seen during our verification pass and could not be re-tested: it is presented as an observation, not as an established defect.'
+        : `${nbDecouvertes} findings in this report were seen during our verification pass and could not be re-tested: they are presented as observations, not as established defects.`,
+    rienVerifie: (nbNonVerifies) =>
+      nbNonVerifies === 1
+        ? 'Nothing could be verified on this site: our 1 report could not be replayed, and none is published. This report does not say the site is fine; it says we could not check it.'
+        : `Nothing could be verified on this site: none of our ${nbNonVerifies} reports could be replayed, and none is published. This report does not say the site is fine; it says we could not check it.`,
   },
 };

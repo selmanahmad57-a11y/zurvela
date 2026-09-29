@@ -71,6 +71,9 @@ export const ERREUR_DELAI_DEPASSE = 'delai-depasse';
 export const ERREUR_NAVIGATEUR_PERDU = 'navigateur-perdu';
 export const ERREUR_BUDGET_INSUFFISANT = 'budget-insuffisant';
 export const ERREUR_URL_INVALIDE = 'url-invalide';
+/** Recette refusée avant d'ouvrir quoi que ce soit : un préalable étranger à la page d'ouverture (cahier P2-1, contrat 1). */
+import { ERREUR_RECETTE_INCOHERENTE } from './detection/commun.js';
+export { ERREUR_RECETTE_INCOHERENTE };
 
 /** Préfixe des identifiants d'action d'un rejeu : le journal distingue un rejeu d'une exploration. */
 const PREFIXE_ACTION_REJEU = 'r';
@@ -171,12 +174,23 @@ export function creerReexecuteur(dependances: DependancesReexecuteur): Reexecute
 
       journaliser('rejeu.debut', {
         url: reproduction.url,
+        pageDepart: reproduction.pageDepart,
         viewport: viewport.nom,
         nbPrealables: reproduction.actionsPrealables.length,
         action: reproduction.action?.action.type ?? null,
       });
 
       try {
+        // LA RECETTE EST VÉRIFIÉE AVANT D'OUVRIR QUOI QUE CE SOIT. Un préalable
+        // qui ne vient pas de la page d'ouverture ne peut pas y être rejoué :
+        // c'est le défaut C-09 de la campagne 6b (le rejeu ouvrait la page
+        // d'arrivée et y cherchait le formulaire de la page de départ). La
+        // garde est indépendante de `construireCandidate`, qui tient le même
+        // invariant : une garde qui dépend de ce qu'elle garde ne vérifie rien.
+        const etranger = reproduction.actionsPrealables.find((prealable) => prealable.page !== reproduction.pageDepart);
+        if (etranger !== undefined) {
+          throw new EchecRejeu(ERREUR_RECETTE_INCOHERENTE, 'outil');
+        }
         const origine = originesDe(reproduction.url);
         contexteNavigateur = await creerContexte(navigateur, config, viewport);
         const ouverte = await contexteNavigateur.newPage();
@@ -373,8 +387,12 @@ export function creerReexecuteur(dependances: DependancesReexecuteur): Reexecute
           }
         }
 
-        // 1. Chargement de la page du représentant, observé comme une action.
-        await rejouerAction({ type: 'naviguer', url: reproduction.url }, false);
+        // 1. Chargement de la page d'OUVERTURE de la recette — celle où l'action
+        // déclenchante a eu lieu, donc celle des préalables — observé comme une
+        // action. Pour une anomalie constatée au chargement c'est la page
+        // observée elle-même ; pour une navigation c'est la page d'origine, et
+        // c'est l'action déclenchante (étape 3) qui mènera à la page observée.
+        await rejouerAction({ type: 'naviguer', url: reproduction.pageDepart }, false);
         const extraction = await extrairePage(ouverte, delai());
         const pageVisitee: PageVisitee = {
           url: ouverte.url(),

@@ -25,6 +25,7 @@
  * n'a donc jamais deux nombres à départager.
  */
 import type { RapportBusiness, SectionRapport } from '../types.js';
+import { STATUTS_SANS_RETEST } from './statuts.js';
 import { LIBELLES_CATEGORIE, LIBELLES_GRAVITE, LIBELLES_RAPPORT, estLangueRapport, type LangueRapport } from './voix.js';
 
 export interface OptionsRendu {
@@ -189,6 +190,15 @@ export function rendreRapport(rapportBusiness: RapportBusiness, options: Options
   if (options.url !== undefined) {
     lignes.push(`\`${options.url.replace(/`/g, '')}\``, '');
   }
+  // RIEN VÉRIFIÉ N'EST PAS RIEN TROUVÉ (P2-1, contrat 5). Trois rapports de la
+  // campagne 6b disaient « aucune anomalie » alors que pas un groupe n'avait
+  // été rejoué : deux par accident, un en enterrant un vrai défaut. Quand la
+  // rejouabilité est nulle, c'est la PREMIÈRE ligne — avant la synthèse, avant
+  // « aucune anomalie » — et c'est un texte à garantie sémantique (voix.ts).
+  const rienVerifie = rapportBusiness.rejouabilite !== null && rapportBusiness.rejouabilite.groupes > 0 && rapportBusiness.rejouabilite.groupesRejoues === 0;
+  if (rienVerifie) {
+    lignes.push(`**${libelles.rienVerifie(rapportBusiness.nbNonVerifies ?? rapportBusiness.rejouabilite?.groupes ?? 0)}**`, '');
+  }
   if (rapportBusiness.synthese !== '') {
     lignes.push(echapper(rapportBusiness.synthese), '');
   }
@@ -230,6 +240,13 @@ export function rendreRapport(rapportBusiness: RapportBusiness, options: Options
   // re-vérifications ont tranché ce qu'elles n'ont jamais examiné.
   if (rapportBusiness.nbNonVerifies !== null && rapportBusiness.nbNonVerifies > 0) {
     methode.push(libelles.ligneNonVerifies(rapportBusiness.nbNonVerifies));
+  }
+  // Les constats PUBLIÉS sans re-test ont leur compte à eux (P2-1, contrat
+  // 8) : un rapport fait surtout de découvertes ne doit pas se lire comme un
+  // rapport vérifié. Le compte est lu sur les statuts, posés par le code.
+  const nbDecouvertes = rapportBusiness.sections.filter((section) => STATUTS_SANS_RETEST.includes(section.statut)).length;
+  if (nbDecouvertes > 0) {
+    methode.push(libelles.ligneDecouvertes(nbDecouvertes));
   }
   // CE QUE NOUS N'AVONS PAS ESSAYÉ. Sans cette phrase, « aucune anomalie
   // retenue » se lirait « votre formulaire fonctionne » — alors que personne

@@ -88,7 +88,7 @@ export interface DependancesExplorateur {
 type Arret = Parcours['arret'];
 
 /** Priorité des raisons d'arrêt quand les viewports divergent. */
-const PRIORITE_ARRET: Arret[] = ['echeance', 'erreur', 'limite-pages', 'complet'];
+const PRIORITE_ARRET: Arret[] = ['echeance', 'reserve-confirmation', 'erreur', 'limite-pages', 'complet'];
 
 const RAISON_ECHEANCE = 'echeance';
 
@@ -766,7 +766,7 @@ export function creerExplorateur(dependances: DependancesExplorateur): Explorate
             pageCourante: () => page.url(),
           });
           if (echeanceProche()) {
-            return 'echeance';
+            return contexte.arretEcheance ?? 'echeance';
           }
           // Un seul objet d'état, muté par `visiter` (file, profondeurs) : jamais copié.
           const etat: EtatViewport = {
@@ -903,7 +903,7 @@ export function creerExplorateur(dependances: DependancesExplorateur): Explorate
         for (;;) {
           if (echeanceProche()) {
             contexte.journaliser('action', { type: 'terminer', raison: RAISON_ECHEANCE, viewport: etat.viewport.nom });
-            return 'echeance';
+            return contexte.arretEcheance ?? 'echeance';
           }
           if (etat.page.isClosed()) {
             // Navigateur fermé ou planté : inutile d'enchaîner des actions vouées à l'échec.

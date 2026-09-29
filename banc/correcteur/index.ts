@@ -5,6 +5,7 @@
  *
  * Mode CLI : `pnpm banc [--sujet reel|factice] [--sans-ia] [--politique deterministe|ia] --scenario <id> | --tous`.
  */
+import { tauxRejouabilite } from '../../core/scanner/confirmation/rejouabilite.js';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
@@ -284,6 +285,8 @@ export async function noterScenario(scenario: Scenario, params: ParametresNotati
       // profils afficherait le total du scan — donc, depuis la navigation IA,
       // surtout le prix du PARCOURS — sous l'étiquette du profilage.
       ...(rapport.coutApiParFamille === undefined ? {} : { coutApiParFamille: rapport.coutApiParFamille }),
+      // Le chiffre qui manquait partout (APPRENTISSAGES n°18) : ce que le protocole a physiquement rejoué.
+      rejouabilite: tauxRejouabilite(rapport),
       rapport,
     };
   } catch (cause: unknown) {
@@ -561,7 +564,7 @@ async function principal(): Promise<void> {
     detectionLangue,
     ...(options.assemblageProduction ? { assemblage: 'production' as const } : {}),
   });
-  console.log(rendreScorecardConsole(scorecard, dico, config.langueConsole, { iaDeclareeAbsente }));
+  console.log(rendreScorecardConsole(scorecard, dico, config.langueConsole, { iaDeclareeAbsente, rejouabiliteMinPourcent: config.scorecard.rejouabiliteMinPourcent }));
   const dossierResultats = depuisRacine(config.scorecard.dossierResultats);
   const fichier = await ecrireScorecard(scorecard, dossierResultats);
   console.log(traduire(dico, 'banc.resultatsEcrits', { fichier }));

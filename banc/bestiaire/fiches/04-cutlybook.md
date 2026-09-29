@@ -69,3 +69,42 @@ Ligne(s) de `docs/INVENTAIRE-PRODUCTION.md` confirmée(s) ou raturée(s) :
   tant que ce taux n'est pas publié, un rapport vide ne distingue pas « rien
   à signaler » de « rien n'a pu être vérifié ». Le rapport le dit en une
   phrase ; la scorecard et le journal doivent le compter.
+
+## Revu après P2-1 (2026-09-29)
+
+Rejoué dans la même session par `pnpm banc:reel --avant` (METHODE §12) :
+l'« avant » est le moteur de la campagne (`e872872`, code moteur inchangé
+depuis `7f6aa1c`), l'« après » le moteur P2-1, à quelques minutes d'écart,
+même commande, même configuration de production.
+
+| | durée (ms) | pages | candidates | retenues | rejouables (groupes) | arrêt | journal | coût (USD) |
+|---|---|---|---|---|---|---|---|---|
+| avant | 164 167 | 26 | 8 | 0 | 0/5 | complet | 225 Ko | 0,0019 |
+| après | 193 277 | 26 | 9 | **5** | **6/6 (100 %)** | complet | 167 Ko | 0,0734 |
+
+L'avant reproduit la fiche (8 candidates, 0/5, huit écartées
+`rejeu-impossible`) : le site n'a pas changé, la comparaison tient.
+**C-09 corrigé** (contrat 1) : les rejeux s'ouvrent sur la page de départ et
+y refont le remplissage ; douze tentatives sur douze aboutissent. Une
+candidate est écartée à bon droit (`jamais-reproduite` : une page de salon
+en échec passager).
+
+**Jugement humain des cinq retenues nouvelles** : toutes
+`dependance-tierce-en-echec`, `mineur`, reproduites deux fois, sur les deux
+viewports — quatre fichiers de la police Inter (fonts.gstatic.com,
+`ERR_FAILED`, `/poster`) et la télémétrie Stripe (`m.stripe.com/6`, quatre
+pages de réservation). Vraies pour le robot, non démontrées pour un visiteur
+(APPRENTISSAGES n°19). Aucune n'est fausse par sa gravité ; les cinq sont du
+bruit tiers, et quatre sections pour une seule police (C-11). Le rapport
+n'est plus « propre par accident » : il dit juste, et trop. Le reste est à
+P2-2 (doctrine tierce) et à P2-3 (fusion des groupes d'une même cause).
+
+Second « après » (variance, une heure plus tard) : 201 414 ms, 8 candidates,
+5/5 groupes rejoués, les cinq mêmes retenues tierces.
+
+Après le contrat 8 (même soir, avant/après) : 5/5 groupes rejoués, les cinq
+mêmes retenues tierces, aucune découverte.
+
+Journaux, rapports et résultat hors dépôt :
+`~/.config/zurvela/bestiaire/p2-1-reel-2026-09-29/` (journal après :
+sha256 `25586631ebcd2d2c8efeadb12a53088291bec904a45b88677dacc833d85dea48` ; toutes les sommes dans `SHA256SUMS`).
