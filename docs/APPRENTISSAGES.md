@@ -662,3 +662,43 @@ regardé.
   tierce (C-05) priorité 2 par récurrence ; rien ne s'ouvre avant le dixième
   scan, parce que cinq sites suffisent à pressentir la hiérarchie, pas à la
   figer.
+
+## 19. Le robot déclaré ne voit pas le même web que le visiteur, et la doctrine tierce mesure cette différence comme une panne (2026-09-29, campagne 6b, scans n°2 à 9)
+
+- **Le fait** : sur le site de contrôle de la campagne — statique, sans
+  publicité, sans script tiers, sans formulaire à l'accueil — le rapport
+  publie deux anomalies « confirmées lors de nos 2 vérifications » pour deux
+  fichiers d'une police Google Fonts en `ERR_FAILED`. Vérifié hors moteur :
+  `fonts.googleapis.com` sert au `User-Agent: ZurvelaBot` deux fichiers TTF
+  sans découpage `unicode-range` — le format hérité réservé aux agents
+  inconnus — et à un navigateur dix fichiers woff2. Même mécanisme que
+  Google Sign-In à la fiche 02 : 403 HTML au robot, 200 JavaScript au
+  navigateur. Trois sites sur neuf pour les polices seules ; le robot n'a
+  jamais été refusé, il a été SERVI AUTREMENT.
+- **Ce que cela dit** : la constitution impose une identité déclarée (§3),
+  et elle a raison. Mais une identité déclarée est une identité que les
+  tiers reconnaissent — et certains lui servent un autre web : format
+  hérité, page d'erreur, refus poli, script manquant. Le moteur voit alors
+  des échecs que le visiteur ne verra jamais, et la doctrine A.1, écrite
+  pour « le tiers en panne », les compte comme des pannes du tiers, donc du
+  site. Ce n'est pas un faux positif de détecteur : c'est un point de vue.
+  Nous mesurons le site depuis une fenêtre que le client n'a pas.
+- **Pourquoi rien ne l'a vu** : le banc n'a pas de tiers (ses gabarits sont
+  autonomes), et l'inventaire décrivait la doctrine tierce comme une
+  protection (« jamais bloquant, jamais imputé au site ») — une protection
+  contre la gravité, pas contre l'existence. Il a fallu neuf sites pour que
+  le même fichier de police échoue trois fois et qu'on aille lire ce que
+  Google répond selon qui demande.
+- **Règle** : **une ressource tierce qui échoue POUR LE ROBOT n'est pas
+  jugée.** Le seul échec tiers qui compte est celui dont l'effet est VISIBLE
+  dans la page (un script attendu par le site et absent, une image manquante,
+  un iframe vide) — et il s'impute au site, pas au tiers, parce que c'est le
+  site qui a choisi de dépendre. Tout le reste (police, balise, mesure
+  d'audience, consentement publicitaire, réponse différente au robot) est du
+  bruit de fenêtre, journalisé, jamais publié. L'identité reste déclarée ;
+  c'est le jugement qui change de place.
+- **Conséquence** : C-05 porte désormais sa cause racine et devient un
+  cahier à part entière (priorité 2 du carnet, confirmée par récurrence sur
+  neuf sites) ; le banc devra contenir des tiers qui répondent AUTREMENT au
+  robot pour que la doctrine soit mesurable (n°17 : des anomalies fausses par
+  construction).
