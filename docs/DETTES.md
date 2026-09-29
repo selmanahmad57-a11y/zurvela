@@ -482,3 +482,20 @@ dette est levée (le commit qui la lève renvoie à ce fichier).
   l'exploration (3 faux positifs, verdicts et gravités à 50 %). La mesure
   « une cause, un constat » publie la ligne de base de C-16 : 2 constats en
   double sur 1 cause déclarée unique — ce que P2-2 devra ramener à zéro.
+
+## 21. Le contenu mixte n'est pas éprouvé par le banc (2026-09-29, ouverture de P2-2)
+
+- **Le fait** : le contrat 2 de P2-2 publie le contenu mixte (une page
+  `https` qui charge une ressource en `http`) comme défaut de sécurité du
+  site — le jQuery de books, la police d'automationexercise, deux vrais
+  défauts que la doctrine tierce enterrait. Mais le banc sert en `http`
+  local, et un navigateur ne signale le contenu mixte que sur une page
+  `https` : le cas n'y est pas reproductible. Il est éprouvé par les tests
+  du détecteur sur des signaux construits, et par le réel.
+- **Pourquoi c'est une dette** : un vrai défaut qu'on prétend désormais
+  détecter ne doit pas rester vérifié par une cible vivante seule — la leçon
+  de la dette n°20, appliquée d'avance.
+- **Condition de levée** : un gabarit servi en `https` au banc (certificat
+  auto-signé sur le serveur du banc, navigateur du banc qui l'accepte), avec
+  un contenu mixte attendu publié et sa mutation tuée — dès que ce moyen
+  existe, et au plus tard avant tout cahier qui touche au contenu mixte.

@@ -194,6 +194,20 @@ qui tombe dehors ne rougit jamais, donc paraît sain. Le périmètre du mur doit
 exprès — une erreur de type introduite volontairement dans le dossier
 nouvellement couvert, pour voir `tsc` la relever, puis retirée.
 
+### Variante : un espace de noms sans garde d'unicité laisse une addition en écraser une autre sans bruit (2026-09-29, clôture de P2-1)
+
+Les paramètres de bug du banc vivent dans une seule table de config, indexée
+par IDENTIFIANT, et un identifiant peut servir à plusieurs gabarits (F01 : le
+même bouton mort ici et là). Le gabarit « calque-au-rejeu » a nommé ses bugs
+R01 et R02, déjà pris : les paramètres du R01 de « formulaire-contact » ont
+été remplacés par ceux du nouveau, sans qu'un test, un typecheck ou un
+schéma ne le dise. Seul le banc complet est tombé, au vingtième scénario, au
+démarrage d'un serveur. **Règle** : tout espace de noms partagé (identifiants
+de bug, clés de config, motifs, événements de journal) porte une garde qui
+vérifie, pour CHAQUE occupant, qu'il reçoit ce qu'il attend — et la garde
+s'éprouve en remettant la collision. Ici : chaque bug de chaque gabarit
+valide les paramètres que la config lui donne (`banc/gabarits/index.test.ts`).
+
 ## 6. Un diagnostic faux coûte plus cher qu'une absence de diagnostic (2026-09-23, brique 4a)
 
 - **Cas fondateur** : la garde anti-écrasement des cassettes refuse d'écrire
@@ -798,3 +812,31 @@ regardé.
   échec en succès ; l'échec se déplace vers son cahier, le seuil reste où la
   vérité l'a mis. « Acceptable » se dit en toutes lettres dans le cahier,
   pas en silence dans une configuration.
+
+## 23. Une estimation de budget compte les appels, et une découverte publiée en est un (2026-09-29, clôture de P2-1)
+
+- **Le fait** : 0,15 USD annoncés pour les cassettes du gabarit
+  « calque-au-rejeu », 0,23 dépensés. L'estimation comptait profilage et
+  navigation par scénario ; elle oubliait que la RÉDACTION coûte par section,
+  et que chaque découverte publiée est une section — trois pour un calque.
+- **Règle** : le coût de rédaction d'un scénario ou d'un scan s'estime par
+  son nombre de SECTIONS attendues, découvertes comprises, pas par scénario :
+  coût ≈ profil + décisions + Σ sections × coût d'une section (≈ 0,01 à
+  0,02 USD en Opus sur le banc). Un cahier qui touche les découvertes ou les
+  tiers — P2-2 d'abord — estime avec ce terme ; un changement de prompt de
+  rédaction ré-enregistre TOUTES les cassettes de rédaction du banc.
+
+## 24. La prose garantie nomme ce que la preuve contient, jamais ce que le modèle en déduit (2026-09-29, ouverture de P2-2)
+
+- **Le fait** : pour nommer un tiers (C-03), deux voies — l'hôte que porte la
+  preuve (`accounts.google.com`), ou le produit que le modèle y reconnaît
+  (« Google Sign-In »). La seconde se lit mieux ; elle exige que le modèle
+  sache à quoi correspond l'hôte, c'est-à-dire une inférence sur le monde,
+  dans une phrase que nous garantissons — et une page pourrait lui suggérer
+  un faux nom.
+- **Règle** : la prose à garantie ne porte que des faits extraits de la
+  preuve ; une interprétation, si elle doit paraître, vient d'une table tenue
+  par nous en configuration, jamais du modèle. C'est le pendant, pour les
+  noms, de « la prose ne porte aucun chiffre que le code n'a pas posé » ; et
+  c'est l'apprentissage n°19 appliqué à la rédaction : ne pas publier ce que
+  notre fenêtre suppose.
