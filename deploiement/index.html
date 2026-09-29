@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Zurvela — bientôt disponible</title>
+  <meta name="description" content="Zurvela vérifie votre site web comme le ferait un visiteur exigeant, et vous dit en langage clair ce qui ne fonctionne pas.">
+  <style>
+    :root { color-scheme: light dark; --fond: #fbfaf7; --texte: #1d1d1b; --sourd: #6b6a66; --trait: #e3e1da; --accent: #245c4f; }
+    @media (prefers-color-scheme: dark) { :root { --fond: #151614; --texte: #ece9e1; --sourd: #a2a09a; --trait: #2c2d2a; --accent: #8fd0bf; } }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; background: var(--fond); color: var(--texte); }
+    body { font-family: ui-serif, Georgia, "Times New Roman", serif; line-height: 1.55; min-height: 100vh; display: flex; flex-direction: column; }
+    main { flex: 1; display: flex; align-items: center; justify-content: center; padding: 3rem 1rem; }
+    .carte { max-width: 34rem; text-align: center; }
+    h1 { font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Helvetica, Arial, sans-serif; font-weight: 600; letter-spacing: 0.04em; font-size: 2.4rem; margin: 0 0 1rem; color: var(--accent); }
+    p { font-size: 1.15rem; margin: 0 0 1.5rem; }
+    .bientot { font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Helvetica, Arial, sans-serif; text-transform: uppercase; letter-spacing: 0.18em; font-size: 0.8rem; color: var(--sourd); }
+    footer { border-top: 1px solid var(--trait); padding: 1rem; text-align: center; font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Helvetica, Arial, sans-serif; font-size: 0.85rem; color: var(--sourd); }
+    footer a { color: var(--accent); }
+  </style>
+</head>
+<body>
+  <main>
+    <div class="carte">
+      <h1>Zurvela</h1>
+      <p>Zurvela vérifie votre site web comme le ferait un visiteur exigeant — et vous dit, en langage clair, ce qui ne fonctionne pas.</p>
+      <p class="bientot">Bientôt disponible</p>
+    </div>
+  </main>
+  <footer>
+    Vous administrez un site et vous avez vu passer <code>ZurvelaBot</code> ? Tout est expliqué ici : <a href="/robot/">notre robot</a> · <a href="/robot/#en" hreflang="en" lang="en">English</a>
+  </footer>
+</body>
+</html>

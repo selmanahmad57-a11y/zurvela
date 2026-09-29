@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ZurvelaBot — le robot de vérification</title>
+  <meta name="description" content="Qui est ZurvelaBot, ce qu'il fait, ce qu'il ne fait jamais, et comment l'arrêter. / Who ZurvelaBot is, what it does, what it never does, and how to stop it.">
+  <style>
+    :root { color-scheme: light dark; --fond: #fbfaf7; --texte: #1d1d1b; --sourd: #6b6a66; --trait: #e3e1da; --accent: #245c4f; --code-fond: #f0eee7; }
+    @media (prefers-color-scheme: dark) { :root { --fond: #151614; --texte: #ece9e1; --sourd: #a2a09a; --trait: #2c2d2a; --accent: #8fd0bf; --code-fond: #22231f; } }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; background: var(--fond); color: var(--texte); }
+    body { font-family: ui-serif, Georgia, "Times New Roman", serif; line-height: 1.6; }
+    .page { max-width: 42rem; margin: 0 auto; padding: 2rem 1rem 4rem; }
+    header.site { font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Helvetica, Arial, sans-serif; display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; border-bottom: 1px solid var(--trait); padding-bottom: 0.75rem; margin-bottom: 2rem; }
+    header.site a { color: var(--accent); text-decoration: none; }
+    header.site .marque { font-weight: 600; letter-spacing: 0.04em; }
+    nav.langues a { font-size: 0.9rem; }
+    h1 { font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Helvetica, Arial, sans-serif; font-size: 1.8rem; line-height: 1.2; margin: 0 0 1rem; }
+    h2 { font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Helvetica, Arial, sans-serif; font-size: 1.15rem; margin: 2.2rem 0 0.6rem; color: var(--accent); }
+    p, li { font-size: 1.05rem; }
+    code { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: 0.92em; background: var(--code-fond); padding: 0.1em 0.35em; border-radius: 3px; }
+    pre { background: var(--code-fond); padding: 0.9rem 1rem; border-radius: 6px; overflow-x: auto; font-size: 0.95rem; line-height: 1.45; }
+    pre code { background: none; padding: 0; }
+    table { border-collapse: collapse; width: 100%; margin: 0.5rem 0 1rem; font-size: 0.98rem; }
+    th, td { text-align: left; vertical-align: top; padding: 0.5rem 0.6rem; border-bottom: 1px solid var(--trait); }
+    th { font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Helvetica, Arial, sans-serif; font-weight: 600; white-space: nowrap; width: 11rem; }
+    ul { padding-left: 1.3rem; }
+    li { margin: 0.35rem 0; }
+    .retour { display: block; margin-top: 2.5rem; font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Helvetica, Arial, sans-serif; font-size: 0.9rem; }
+    section + section { margin-top: 3rem; padding-top: 2rem; border-top: 2px solid var(--trait); }
+    a { color: var(--accent); }
+    @media (max-width: 520px) { th { white-space: normal; width: auto; } }
+  </style>
+</head>
+<body>
+<div class="page">
+  <header class="site">
+    <a class="marque" href="/">Zurvela</a>
+    <nav class="langues" aria-label="Langues / Languages">
+      <a href="#fr" lang="fr">Français</a> · <a href="#en" hreflang="en" lang="en">English</a>
+    </nav>
+  </header>
+
+  <!-- ============================== FRANÇAIS ============================== -->
+  <section id="fr" lang="fr" aria-labelledby="titre-fr">
+    <h1 id="titre-fr">ZurvelaBot — le robot de vérification</h1>
+    <p><a href="#en" hreflang="en" lang="en">English version ↓</a></p>
+
+    <h2>Qui vous rend visite</h2>
+    <p><code>ZurvelaBot</code> est le robot de <strong>Zurvela</strong>, un service de vérification automatique de sites web. Il visite un site pour y chercher des anomalies — un bouton qui ne répond pas, une image qui ne s'affiche pas, une page en erreur, une lenteur anormale — et il en rend un rapport au <strong>propriétaire du site</strong>, en langage clair.</p>
+    <p>Il ne collecte aucune donnée personnelle, n'indexe rien, ne revend rien, et n'alimente aucun jeu d'entraînement.</p>
+
+    <h2>Comment le reconnaître</h2>
+    <table>
+      <tr><th scope="row">User-agent</th><td><code>ZurvelaBot/0.1 (+https://zurvela.com)</code></td></tr>
+      <tr><th scope="row">En-tête dédié</th><td><code>X-Zurvela-Scan: 1</code> sur chaque requête</td></tr>
+      <tr><th scope="row">Données de test</th><td>tout formulaire rempli l'est avec des valeurs marquées : adresses en <code>@zurvela-scan.invalid</code>, noms contenant « Zurvela », jamais de données réelles</td></tr>
+    </table>
+    <p>Le robot <strong>se signale toujours</strong>. Il ne se déguise pas en navigateur ordinaire, ne change pas d'agent pour contourner un blocage, et ne cherche jamais à passer inaperçu.</p>
+
+    <h2>Ce qu'il fait, et ce qu'il ne fait jamais</h2>
+    <p><strong>Il fait</strong> : charger des pages publiques, suivre des liens internes, regarder la page sur un écran d'ordinateur et sur un écran de téléphone, mesurer des temps de réponse, et rejouer une anomalie constatée pour vérifier qu'elle est réelle avant de la signaler.</p>
+    <p><strong>Il ne fait jamais</strong> :</p>
+    <ul>
+      <li><strong>aucune action destructrice</strong> — supprimer, vider, réinitialiser, désabonner, résilier, révoquer. Ces actions sont refusées par un filtre appliqué en code, après toute décision, et que rien dans le contenu d'une page ne peut contourner ;</li>
+      <li><strong>aucun paiement, aucune commande, aucun don</strong> ;</li>
+      <li><strong>aucune tentative de connexion</strong> à un compte, aucune saisie d'identifiants réels ;</li>
+      <li><strong>aucun contournement</strong> d'une protection anti-robot, d'un mot de passe, d'une limitation de débit ou d'une interdiction ;</li>
+      <li><strong>aucune soumission de formulaire</strong>, sauf sur un site dont le propriétaire a explicitement déclaré la propriété et demandé le scan.</li>
+    </ul>
+
+    <h2>Il respecte votre <code>robots.txt</code></h2>
+    <p>Le robot lit le <code>robots.txt</code> de votre domaine avant de commencer, et <strong>refuse les chemins que vous lui interdisez</strong>. Un site qui nous interdit est un site que nous n'auditons pas en douce.</p>
+
+    <h2>Comment l'arrêter</h2>
+    <p>Ajoutez ceci à votre <code>robots.txt</code> :</p>
+<pre><code>User-agent: ZurvelaBot
+Disallow: /</code></pre>
+    <p>Le robot cessera de visiter votre site. Vous pouvez aussi n'interdire qu'une partie :</p>
+<pre><code>User-agent: ZurvelaBot
+Disallow: /admin
+Disallow: /panier</code></pre>
+    <p>Si vous préférez un blocage côté serveur, l'en-tête <code>X-Zurvela-Scan: 1</code> et l'user-agent <code>ZurvelaBot</code> suffisent à l'identifier.</p>
+
+    <h2>Un scan a-t-il été demandé ?</h2>
+    <p>Un scan est déclenché par une personne qui saisit une adresse. Nous demandons à cette personne d'être le propriétaire du site ou d'en avoir l'autorisation, mais <strong>nous ne pouvons pas le vérifier dans tous les cas</strong>. Si vous pensez que votre site a été scanné sans votre accord, écrivez-nous : nous vous dirons ce que nous avons enregistré, nous le supprimerons, et nous ajouterons votre domaine à notre liste d'exclusion.</p>
+
+    <h2>Nous écrire</h2>
+    <!-- À CONFIRMER AVANT PUBLICATION : cette adresse doit exister et être relevée. -->
+    <p><a href="mailto:contact@zurvela.com"><strong>contact@zurvela.com</strong></a></p>
+    <p>Nous répondons à toute demande d'un administrateur de site : exclusion, ralentissement, suppression de données, ou simple question.</p>
+
+    <a class="retour" href="#en" hreflang="en" lang="en">English version ↓</a>
+  </section>
+
+  <!-- ============================== ENGLISH ============================== -->
+  <section id="en" lang="en" aria-labelledby="titre-en">
+    <h1 id="titre-en">ZurvelaBot — the verification robot</h1>
+    <p><a href="#fr" hreflang="fr" lang="fr">Version française ↑</a></p>
+
+    <h2>Who is visiting you</h2>
+    <p><code>ZurvelaBot</code> is the robot of <strong>Zurvela</strong>, an automated website verification service. It visits a site looking for defects — a button that does not respond, an image that does not display, a page in error, an abnormal delay — and reports them to the <strong>site owner</strong>, in plain language.</p>
+    <p>It collects no personal data, indexes nothing, resells nothing, and feeds no training set.</p>
+
+    <h2>How to recognise it</h2>
+    <table>
+      <tr><th scope="row">User-agent</th><td><code>ZurvelaBot/0.1 (+https://zurvela.com)</code></td></tr>
+      <tr><th scope="row">Dedicated header</th><td><code>X-Zurvela-Scan: 1</code> on every request</td></tr>
+      <tr><th scope="row">Test data</th><td>any form it fills is filled with marked values: addresses at <code>@zurvela-scan.invalid</code>, names containing “Zurvela”, never real data</td></tr>
+    </table>
+    <p>The robot <strong>always identifies itself</strong>. It does not disguise itself as an ordinary browser, does not switch user-agent to get around a block, and never tries to go unnoticed.</p>
+
+    <h2>What it does, and what it never does</h2>
+    <p><strong>It does</strong>: load public pages, follow internal links, look at each page on a desktop screen and on a phone screen, measure response times, and replay a defect it has observed to check that it is real before reporting it.</p>
+    <p><strong>It never does</strong>:</p>
+    <ul>
+      <li><strong>any destructive action</strong> — delete, clear, reset, unsubscribe, cancel, revoke. Such actions are refused by a filter applied in code, after every decision, which nothing in a page's content can bypass;</li>
+      <li><strong>any payment, order or donation</strong>;</li>
+      <li><strong>any attempt to log in</strong> to an account, any entry of real credentials;</li>
+      <li><strong>any circumvention</strong> of an anti-bot protection, a password, a rate limit or a prohibition;</li>
+      <li><strong>any form submission</strong>, except on a site whose owner has explicitly declared ownership and requested the scan.</li>
+    </ul>
+
+    <h2>It respects your <code>robots.txt</code></h2>
+    <p>The robot reads your domain's <code>robots.txt</code> before it starts, and <strong>refuses the paths you forbid it</strong>. A site that forbids us is a site we do not audit on the sly.</p>
+
+    <h2>How to stop it</h2>
+    <p>Add this to your <code>robots.txt</code>:</p>
+<pre><code>User-agent: ZurvelaBot
+Disallow: /</code></pre>
+    <p>The robot will stop visiting your site. You can also forbid only part of it:</p>
+<pre><code>User-agent: ZurvelaBot
+Disallow: /admin
+Disallow: /cart</code></pre>
+    <p>If you prefer a server-side block, the <code>X-Zurvela-Scan: 1</code> header and the <code>ZurvelaBot</code> user-agent are enough to identify it.</p>
+
+    <h2>Was a scan requested?</h2>
+    <p>A scan is triggered by a person entering an address. We ask that person to be the site's owner or to have its authorisation, but <strong>we cannot verify this in every case</strong>. If you believe your site was scanned without your consent, write to us: we will tell you what we recorded, delete it, and add your domain to our exclusion list.</p>
+
+    <h2>Write to us</h2>
+    <!-- TO CONFIRM BEFORE PUBLISHING: this address must exist and be read. -->
+    <p><a href="mailto:contact@zurvela.com"><strong>contact@zurvela.com</strong></a></p>
+    <p>We answer every request from a site administrator: exclusion, slowing down, data deletion, or a simple question.</p>
+
+    <a class="retour" href="#fr" hreflang="fr" lang="fr">Version française ↑</a>
+  </section>
+</div>
+</body>
+</html>
