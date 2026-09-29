@@ -1,0 +1,12 @@
+{
+  "cle": "baba4f67e8ca60e7ac4cb47de8a74698dcffedba89af85ffafe8f328096efc72",
+  "metadonnees": {
+    "date": "2026-09-29T18:04:42.366Z",
+    "modeleDemande": "claude-haiku-4-5",
+    "modeleServi": "claude-haiku-4-5-20251001",
+    "versionPrompt": "v2",
+    "coutApi": 0.0021190000000000002,
+    "apresRelance": false
+  },
+  "reponse": "{\"actionId\":\"c1\",\"raison\":\"Le site est un vitrine-contact avec un budget de 17 pages restantes. L'action c1 permet de naviguer vers /offre/3, ce qui poursuit l'exploration de la section offres du site - une section qui intéresse directement un visiteur. L'action c2 terminerait l'exploration prématurément. La navigation vers /offre/3 est appropriée pour tester les pages pertinentes du site.\"}"
+}

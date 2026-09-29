@@ -15,6 +15,11 @@ import { formulairePuisNavigation } from './formulaire-puis-navigation/index.js'
 import { PAGE_CATALOGUE, PAGE_INSCRIPTION } from './formulaire-puis-navigation/structure.js';
 import { siteLent } from './site-lent/index.js';
 import { PAGE_LENTE } from './site-lent/structure.js';
+import { genererScenarios } from '../scenarios/generer.js';
+import { deriverManifeste } from '../scenarios/manifeste.js';
+import { calqueAuRejeu } from './calque-au-rejeu/index.js';
+import { ROLE_CALQUE } from './calque-au-rejeu/bugs/d02-calque-au-rejeu.js';
+import { PAGE_ACCUEIL as ACCUEIL_VITRINE, PAGES_OFFRE } from './calque-au-rejeu/structure.js';
 
 const LANGUES = ['fr', 'en'] as const;
 let config: ConfigBanc;
@@ -49,7 +54,7 @@ async function statut(serveur: ServeurScenario, chemin: string): Promise<number>
   return (await fetch(serveur.url + chemin)).status;
 }
 
-describe.each([formulairePuisNavigation, catalogueBoutons, siteLent])('$nom — servi dans les deux langues', (gabarit) => {
+describe.each([formulairePuisNavigation, catalogueBoutons, siteLent, calqueAuRejeu])('$nom — servi dans les deux langues', (gabarit) => {
   it.each(LANGUES)('sert chaque page déclarée en %s, dans la bonne langue et sans emplacement i18n résiduel', async (langue) => {
     const serveur = await servir(gabarit, [], langue);
     for (const chemin of Object.keys(gabarit.routesPages)) {
@@ -132,5 +137,70 @@ describe('site-lent — le retard frappe la requête, jamais le démarrage (C-06
     });
     await page(serveur, PAGE_LENTE);
     expect(attentes).toEqual([]);
+  });
+});
+
+describe('calque-au-rejeu — un calque que seule la vérification voit (clôture de P2-1, dette n°20)', () => {
+  const calque = `data-role="${ROLE_CALQUE}"`;
+
+  it('sous D02, l’accueil est SANS calque pendant les visites de l’exploration, et AVEC au-delà — la vérification du démarrage ne compte pas', async () => {
+    const serveur = await servir(calqueAuRejeu, ['D01', 'D02'], 'fr');
+    const seuil = Number(config.bugs['D02']?.['visitesAvantCalque']);
+    expect(Number.isInteger(seuil) && seuil > 0).toBe(true);
+    // Le contrôle qui peut échouer : si le démarrage consommait une visite,
+    // le calque paraîtrait une visite trop tôt — dès l'exploration.
+    for (let visite = 1; visite <= seuil; visite += 1) {
+      expect(await page(serveur, ACCUEIL_VITRINE)).not.toContain(calque);
+    }
+    expect(await page(serveur, ACCUEIL_VITRINE)).toContain(calque);
+    expect(await page(serveur, ACCUEIL_VITRINE)).toContain(calque);
+    // Les pages d'offre ne portent jamais de calque, et ne comptent pas.
+    for (const chemin of PAGES_OFFRE) {
+      expect(await page(serveur, chemin)).not.toContain(calque);
+    }
+  });
+
+  it('le calque recouvre les TROIS boutons d’un seul bloc : une cause, trois interceptions', async () => {
+    const serveur = await servir(calqueAuRejeu, ['D01', 'D02'], 'en');
+    const seuil = Number(config.bugs['D02']?.['visitesAvantCalque']);
+    for (let visite = 0; visite < seuil; visite += 1) {
+      await page(serveur, ACCUEIL_VITRINE);
+    }
+    const html = await page(serveur, ACCUEIL_VITRINE);
+    const bloc = html.slice(html.indexOf('class="offres"'), html.indexOf('</section>'));
+    expect(bloc.match(/data-role="offre-\d"/g)).toHaveLength(3);
+    expect(bloc).toContain(calque);
+  });
+
+  it('sous D01, la vitrine pointe vers une ressource absente ; sain, elle existe', async () => {
+    const casse = await servir(calqueAuRejeu, ['D01'], 'fr');
+    const chemin = String(config.bugs['D01']?.['cheminRessourceIntrouvable']);
+    expect(await page(casse, ACCUEIL_VITRINE)).toContain(`src="${chemin}"`);
+    expect(await statut(casse, chemin)).toBe(404);
+    const sain = await servir(calqueAuRejeu, [], 'fr');
+    expect(await statut(sain, '/statique/images/vitrine.svg')).toBe(200);
+  });
+
+  it('D02 n’a pas de scénario seul — il n’y serait jamais constatable — mais sa combinaison avec D01 existe', () => {
+    const ids = genererScenarios(calqueAuRejeu, config).map((scenario) => scenario.id);
+    expect(ids.some((id) => /--d02--/.test(id))).toBe(false);
+    expect(ids).toContain('calque-au-rejeu--d01-d02--fr');
+    expect(ids).toContain('calque-au-rejeu--d01--en');
+    // Sans combinaison déclarée, le générateur refuse : D02 disparaîtrait sans rougir.
+    const sansCombinaison = { ...config, scenarios: { ...config.scenarios, combinaisons: {} } };
+    expect(() => genererScenarios(calqueAuRejeu, sansCombinaison)).toThrow(/seulementEnCombinaison/);
+  });
+
+  it('le manifeste porte les DEUX attendus de D02 : verdict « decouverte » à gravité bornée (contrat 8), et cause unique (C-16)', () => {
+    const scenarioCombine = genererScenarios(calqueAuRejeu, config).find((candidat) => candidat.id === 'calque-au-rejeu--d01-d02--fr');
+    expect(scenarioCombine).toBeDefined();
+    const attendus = deriverManifeste(scenarioCombine!, calqueAuRejeu).attendus;
+    expect(attendus.find((attendu) => attendu.nature === 'bug' && attendu.bugId === 'D02')).toMatchObject({
+      categorie: 'fonctionnel',
+      gravite: 'important',
+      verdictAttendu: 'decouverte',
+      causeUnique: true,
+    });
+    expect(attendus.find((attendu) => attendu.nature === 'bug' && attendu.bugId === 'D01')).toMatchObject({ verdictAttendu: 'confirmee' });
   });
 });

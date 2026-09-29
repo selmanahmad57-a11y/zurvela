@@ -778,3 +778,23 @@ regardé.
   la méthode du rapport les compte, et `banc:reel` déclare non tenu tout
   site où une découverte serait publiée comme vérifiée. METHODE §12 porte la
   règle.
+
+## 22. L'échec reste rouge et change de cahier ; le seuil ne bouge pas (2026-09-29, clôture de P2-1)
+
+- **Le fait** : au commit de P2-1, expandtesting restait à 2 % de groupes
+  rejoués contre un seuil de cas à 10 %. La cause était connue et hors
+  périmètre — 29 s par tentative de rejeu sur des pages publicitaires, 101
+  groupes — et le propriétaire avait accepté un rapport « honnête et
+  incomplet ». Baisser le seuil à 1 % aurait fait passer `banc:reel` au vert
+  sans rien changer au moteur. Il est resté à 10 %, le cas est resté « non
+  tenu », et l'échec a été renvoyé au futur cahier de performance.
+- **Ce que cela dit** : la tentation n'est jamais aussi forte qu'au moment
+  où l'on a une bonne raison d'accepter le résultat. C'est le défaut
+  fondateur des agents de test documenté par la recherche — affaiblir
+  l'assertion pour obtenir le vert —, et il se commet sans intention
+  frauduleuse : il suffit de confondre « ce résultat est acceptable » avec
+  « ce contrôle est trop sévère ».
+- **Règle** : METHODE §13. Un seuil ne se baisse jamais pour convertir un
+  échec en succès ; l'échec se déplace vers son cahier, le seuil reste où la
+  vérité l'a mis. « Acceptable » se dit en toutes lettres dans le cahier,
+  pas en silence dans une configuration.

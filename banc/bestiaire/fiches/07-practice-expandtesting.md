@@ -140,6 +140,11 @@ incomplet : six sections rédigées pour les mêmes iframes publicitaires
 rejouabilité. Journal : `contrat-8/`, sha256
 `62615ff2925f3e6a7d0b76b3c55f70d1401bb15275fa9d7a87f6cdcf474a5e30`.
 
+**Périmètre de la rejouabilité corrigé à la clôture de P2-1** (cahier §5.3) :
+les groupes de découverte ne sont plus comptés « non rejoués ». Recalculés
+sur les journaux archivés : 2/54 (3,7 %), 2/59 (3,4 %), 2/65 (3,1 %) groupes
+du scan rejoués, au lieu de 2/94, 2/79 et 2/101. Le cas reste non tenu.
+
 Journaux, rapports et résultat hors dépôt :
 `~/.config/zurvela/bestiaire/p2-1-reel-2026-09-29/` (journal après :
 sha256 `8815dfb101c37f7c1d4d7ff7fd2d9df58ad07593a4c7a33f221aed074465d47f` ; toutes les sommes dans `SHA256SUMS`).

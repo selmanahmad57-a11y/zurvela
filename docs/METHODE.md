@@ -340,3 +340,22 @@ plus à clore un cahier qui corrige ce que le réel a cassé.
   du défaut que la réparation vient de démasquer, le cahier s'élargit d'un
   contrat étroit. Honnête et incomplet est acceptable ; faux et affirmatif
   ne l'est pas.
+
+## 13. Un seuil ne se déplace jamais pour que la mesure passe
+
+Posé le 2026-09-29 à la clôture de P2-1 (APPRENTISSAGES n°22). expandtesting
+est resté déclaré « non tenu » à 2 % de rejouabilité contre un seuil de 10 %,
+alors que baisser la cible aurait rendu la validation verte en une ligne.
+
+- **Un seuil ne change jamais dans le même mouvement que la mesure qu'il
+  ferait basculer.** Un échec se DÉPLACE vers le cahier qui peut le
+  corriger ; le seuil reste où la vérité l'a mis, et la mesure reste dans
+  l'historique telle qu'elle a été rendue.
+- **Un seuil faux se corrige à part** : dans son propre cahier ou sa propre
+  session, avec une justification qui ne dépend pas du résultat qu'il
+  ferait changer — une donnée nouvelle, une erreur de conception nommée —,
+  jamais « parce que le run d'aujourd'hui ne passe pas ».
+- **La même règle vaut pour une assertion de test, un attendu de manifeste,
+  un seuil d'alarme de la scorecard** : affaiblir le contrôle pour obtenir
+  le vert est l'auto-réparation frauduleuse que Zurvela existe pour ne pas
+  commettre — l'agent de test qui corrige le test au lieu du défaut.

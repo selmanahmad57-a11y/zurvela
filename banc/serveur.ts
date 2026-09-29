@@ -221,6 +221,9 @@ function construirePipelines(scenario: Scenario, gabarit: Gabarit, config: Confi
       // encore, et un délai dont le minuteur est `unref()` laisserait le
       // processus s'éteindre en silence (cahier P2-1, gabarit site-lent).
       for (const { bug, contexte } of bugsActifs) {
+        // La visite se compte ICI, sur la requête : `verifier()` rend chaque
+        // page au démarrage, et un compteur tenu au rendu y perdrait une visite.
+        bug.noterVisite?.(chemin, contexte);
         if (bug.retarderPage) {
           await bug.retarderPage(chemin, contexte);
         }

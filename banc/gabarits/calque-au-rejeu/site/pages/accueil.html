@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="{{langue}}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{site.nom}}</title>
+  <meta name="description" content="{{site.slogan}}">
+  <link rel="stylesheet" href="/statique/style.css">
+  <link rel="icon" href="/statique/images/logo.svg" type="image/svg+xml">
+</head>
+<body>
+  <header class="entete">
+    <a class="marque" href="/">
+      <img data-role="logo" src="/statique/images/logo.svg" alt="{{site.nom}}" width="40" height="40">
+      <span>{{site.nom}}</span>
+    </a>
+  </header>
+  <main class="contenu">
+    <h1>{{accueil.titre}}</h1>
+    <p class="intro">{{accueil.intro}}</p>
+    <img data-role="vitrine" src="/statique/images/vitrine.svg" alt="{{accueil.vitrine}}" width="320" height="180">
+    <section class="offres" aria-label="{{accueil.offres}}">
+      <a class="bouton" data-role="offre-1" href="/offre/1">{{offre.nom1}}</a>
+      <a class="bouton" data-role="offre-2" href="/offre/2">{{offre.nom2}}</a>
+      <a class="bouton" data-role="offre-3" href="/offre/3">{{offre.nom3}}</a>
+    </section>
+  </main>
+  <footer class="pied">
+    <p>{{pied.mentions}}</p>
+  </footer>
+</body>
+</html>

@@ -6,7 +6,7 @@
  * déclarées par le bug. La description (prose IA) et la gravité ne servent
  * jamais de clé (règle maîtresse §2).
  */
-import { VERDICTS_PUBLIES, VERDICTS_RETENUS, type Anomalie, type CandidateEcartee, type Rapport } from '../../core/types.js';
+import { VERDICTS_PUBLIES, type Anomalie, type CandidateEcartee, type Rapport } from '../../core/types.js';
 import { attendusBug, attendusProfil, type AttenduBug, type ComptesProtocole, type Manifeste, type ResultatAttendu, type ResultatProfil } from '../types.js';
 
 /** Motif structurel d'une URL absolue : schéma suivi de `//` (RFC 3986). */
@@ -248,13 +248,13 @@ export function calculerComptesProtocole(
     const attendu = attendusDeBug[indice];
     return (
       attendu !== undefined &&
-      VERDICTS_RETENUS.includes(attendu.verdictAttendu) &&
+      VERDICTS_PUBLIES.includes(attendu.verdictAttendu) &&
       (attendus[indice]?.anomaliesAppariees.length ?? 0) === 0
     );
   };
   const estAEcarter = (indice: number): boolean => {
     const attendu = attendusDeBug[indice];
-    return attendu !== undefined && !VERDICTS_RETENUS.includes(attendu.verdictAttendu);
+    return attendu !== undefined && !VERDICTS_PUBLIES.includes(attendu.verdictAttendu);
   };
 
   const attendusEvites = new Set<number>();

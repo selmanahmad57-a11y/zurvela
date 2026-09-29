@@ -1,0 +1,12 @@
+{
+  "cle": "9c2a1f20f5bbd9e6be6b5f01f8a49cf4d85425c9ca874f7385a237c5ef687ae6",
+  "metadonnees": {
+    "date": "2026-09-29T18:04:55.059Z",
+    "modeleDemande": "claude-haiku-4-5",
+    "modeleServi": "claude-haiku-4-5-20251001",
+    "versionPrompt": "v2",
+    "coutApi": 0.001974,
+    "apresRelance": false
+  },
+  "reponse": "{\"actionId\": \"c1\", \"raison\": \"Le site est une vitrine-contact avec exploration limitée à 17 pages restantes. Naviguer vers /offre/3 permet de continuer à découvrir le contenu éditorial (offres/produits) du site, ce qui est plus pertinent qu'une terminaison prématurée.\"}"
+}

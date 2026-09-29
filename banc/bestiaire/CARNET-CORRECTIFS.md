@@ -91,7 +91,8 @@ K01 fr/en ratés en IA, détectés en déterministe. C'est la couverture (C-08,
 cahier n°2), pas le rejeu : une page de liste « redondante » pour l'IA est
 exactement celle où vit le produit que le client vend.
 
-**Gabarit qui manque au banc (METHODE §12)** : aucun scénario ne produit de
+**Gabarit qui manquait au banc (METHODE §12) — créé à la clôture de P2-1,
+gabarit « calque-au-rejeu », dette n°20 levée** : aucun scénario ne produisait de
 découverte au rejeu. Le contrat 8 est éprouvé par les tests et par le réel ;
 un gabarit dont un calque (publicité plein écran, bandeau) n'apparaît qu'au
 second chargement le mesurerait au banc.

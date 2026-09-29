@@ -383,3 +383,69 @@ cassette nouvelle. **Total du cahier : 1,05 USD** (annoncé 0,90 puis
 
 Journal après d'expandtesting : `~/.config/zurvela/bestiaire/p2-1-reel-2026-09-29/contrat-8/`,
 sha256 `62615ff2925f3e6a7d0b76b3c55f70d1401bb15275fa9d7a87f6cdcf474a5e30`.
+
+### 5.3 Clôture — le contrat 8 éprouvé par le banc (dette n°20 levée)
+
+expandtesting avait rendu 40, 20 puis 36 découvertes le même jour : une
+référence qui change trois fois en une journée n'en est pas une. Le gabarit
+« calque-au-rejeu » la remplace par une référence déterministe. D01 casse
+l'image de vitrine de l'accueil (défaut ordinaire, rejoué) ; D02 pose sur les
+trois boutons de l'accueil un calque qui n'apparaît qu'au-delà des deux
+visites de l'exploration — donc pendant le rejeu de D01. D02 porte les deux
+attendus : verdict `decouverte` à gravité bornée (contrat 8), et cause unique
+(une cause, trois interceptions : la ligne de base de C-16 pour P2-2).
+
+Ce que le banc a appris pour le porter : `noterVisite` (le compte de visites
+se tient sur la requête, jamais au rendu que la vérification du démarrage
+appelle aussi), `seulementEnCombinaison` (pas de scénario seul, qui ne
+mesurerait rien, et un refus si aucune combinaison ne le contient),
+`causeUnique` et la mesure « une cause, un constat » dans la scorecard, et
+les camps du manifeste lus en « publié » (`VERDICTS_PUBLIES`).
+
+**Mutations tuées AU BANC** (combinaison D01 + D02, sans IA) :
+
+| mutation | ce qui a rougi |
+|---|---|
+| la découverte sort `confirmee` | verdicts corrects 100 % → 50 % |
+| la gravité du détecteur passe sans borne | gravités conformes 100 % → 50 % |
+| le calque paraît dès l'exploration | 3 faux positifs, verdicts et gravités à 50 % |
+| les découvertes rentrent dans la rejouabilité | 25 % et alarme |
+
+**Un défaut de l'instrument, révélé par le gabarit et corrigé** : les groupes
+de découverte entraient dans le dénominateur de la rejouabilité, comptés
+« non rejoués ». Un protocole qui avait tout rejoué sortait à 25 %. Par sa
+propre définition, la métrique compte les candidates DU SCAN que le protocole
+devait re-tester ; une découverte n'en est jamais une. Ce n'est pas un seuil
+(METHODE §13) : c'est le périmètre de la mesure, corrigé avec une
+justification qui ne dépend d'aucun résultat, et publié. Effet sur les
+chiffres déjà publiés d'expandtesting, recalculés sur les journaux archivés :
+premier après 2/54 (3,7 %) au lieu de 2/94, variance 2/59 (3,4 %) au lieu de
+2/79, contrat 8 2/65 (3,1 %) au lieu de 2/101. Toujours sous le seuil de
+10 %, qui ne bouge pas.
+
+**Un incident, et sa garde** : les deux bugs du gabarit se sont d'abord appelés
+R01 et R02 — identifiants déjà pris par « formulaire-contact » et
+« mini-boutique ». La config range les paramètres de bug par identifiant ;
+ceux du R01 de « formulaire-contact » ont été écrasés, et le premier run
+complet du banc est tombé à son vingtième scénario, au démarrage du serveur.
+Renommés D01 et D02 ; et le test du registre vérifie désormais que chaque bug
+de chaque gabarit accepte les paramètres que la config lui donne — mutation
+jouée : la collision remise, le test rougit.
+
+**Budget de la clôture** : cassettes des six scénarios nouveaux 0,23 USD (22
+appels), au-dessus des 0,15 annoncés — chaque section de découverte coûte une
+rédaction. **Total du cahier : 1,28 USD** sur un plafond de 2,00.
+
+**Banc de clôture** : 61 scénarios (6 nouveaux), trois runs déterministes
+identiques entre eux et un run IA ; les 43 historiques identiques à la
+référence d'avant P2-1, déterministe et IA ; les 55 scénarios d'avant le
+gabarit identiques à leur dernier run.
+
+| run | détectés | faux positifs | gravités conformes | rejouabilité (groupes) | une cause, un constat |
+|---|---|---|---|---|---|
+| déterministe ×3 | 45/47 | 0 | 39/39 | 43/43 (100 %) | 4 en double sur 2 causes uniques |
+| IA | 45/47 | 0 | 39/39 | 43/43 (100 %) | 4 en double sur 2 causes uniques |
+
+Les ratés sont ceux d'avant : F01 fr/en en déterministe, K01 fr/en en IA.
+Le contrat 8 est désormais éprouvé par l'instrument, et P2-2 s'ouvrira sur une
+ligne de base mesurée : 2 constats en double par langue pour un seul calque.

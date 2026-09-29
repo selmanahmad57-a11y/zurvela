@@ -18,9 +18,25 @@
  * quand un seul gros groupe est rejoué (demoqa : 20/62 candidates mais 1/22
  * groupes), et c'est le second qui dit la vérité du protocole.
  *
+ * Les groupes de DÉCOUVERTE n'entrent dans aucun des deux comptes : ce ne
+ * sont pas des candidates du scan que le protocole devait re-tester, ce sont
+ * des constats que ses rejeux ont faits en passant, et ils ne sont jamais
+ * rejoués par construction (re-confirmation récursive hors périmètre). Les
+ * compter « non rejoués » faisait dépendre la métrique du nombre de choses
+ * qu'un rejeu RÉUSSI voit — le gabarit « calque-au-rejeu » l'a montré : un
+ * protocole qui avait tout rejoué sortait à 25 %. Elles se lisent ailleurs :
+ * verdict `decouverte`, et leur compte dans la méthode du rapport. Reconnues
+ * au verdict (moteur P2-1) ou au motif (tout moteur, pour que l'« avant » de
+ * `banc:reel` se compte de la même façon).
+ *
  * Le type est STRUCTUREL, volontairement : la fonction ne dépend que de ce
  * qu'elle lit, et le typecheck rougit si le rapport technique change de forme.
  */
+import type { VerdictConfirmation } from '../../types.js';
+import { MOTIF_CONSTATEE_AU_REJEU } from './decouvertes.js';
+
+const VERDICT_DECOUVERTE: VerdictConfirmation = 'decouverte';
+
 export interface Rejouabilite {
   candidates: number;
   candidatesRejouees: number;
@@ -29,14 +45,24 @@ export interface Rejouabilite {
 }
 
 export interface RapportPourRejouabilite {
-  groupes?: readonly { groupe: { membres: readonly unknown[] }; tentatives: readonly { echecOutillage: boolean }[] }[];
+  groupes?: readonly {
+    groupe: { membres: readonly unknown[] };
+    tentatives: readonly { echecOutillage: boolean }[];
+    verdict?: string;
+    motif?: string;
+  }[];
+}
+
+/** Un groupe de découverte : ni candidate du scan, ni rejouable (voir l'en-tête). */
+function estGroupeDecouverte(resultat: { verdict?: string; motif?: string }): boolean {
+  return resultat.verdict === VERDICT_DECOUVERTE || resultat.motif === MOTIF_CONSTATEE_AU_REJEU;
 }
 
 export function tauxRejouabilite(rapport: RapportPourRejouabilite): Rejouabilite {
   let candidates = 0;
   let candidatesRejouees = 0;
   let groupesRejoues = 0;
-  const groupes = rapport.groupes ?? [];
+  const groupes = (rapport.groupes ?? []).filter((resultat) => !estGroupeDecouverte(resultat));
   for (const resultat of groupes) {
     const membres = resultat.groupe.membres.length;
     candidates += membres;

@@ -336,6 +336,29 @@ export interface BugInjectable {
    * coûter chaque page à l'exploration et éprouve la répartition de l'échéance.
    */
   retarderPage?(chemin: string, contexte: ContexteBug): Promise<void>;
+  /**
+   * Note une VISITE de page : appelé à chaque requête de page, avant le rendu,
+   * et JAMAIS par la vérification du démarrage. C'est là qu'un bug à compteur
+   * de visites tient son compte — dans `transformerHtml`, que le démarrage
+   * appelle aussi, la vérification consommerait une visite en silence.
+   */
+  noterVisite?(chemin: string, contexte: ContexteBug): void;
+  /**
+   * true si ce bug n'est constatable qu'en COMBINAISON avec un autre (dont le
+   * rejeu le fait voir, par exemple). Le générateur ne produit alors pas son
+   * scénario seul — il n'y serait jamais constatable, et son « raté » ne
+   * mesurerait rien — et exige qu'une combinaison déclarée le contienne.
+   * DÉCLARÉ, comme `exigeSoumission` : un bug qui perdrait son scénario seul
+   * sans le dire serait une mesure qui s'éteint sans rougir.
+   */
+  seulementEnCombinaison?: boolean;
+  /**
+   * true si toutes les anomalies que ce bug produit relèvent d'UNE cause —
+   * un calque qui intercepte trois boutons est un défaut, pas trois. Le banc
+   * compte les constats publiés au-delà du premier (« constats en double ») :
+   * la mesure du dédoublonnage par cause (C-16), avant que P2-2 ne l'écrive.
+   */
+  causeUnique?: boolean;
   transformerHtml?(html: string, chemin: string, contexte: ContexteBug): string;
   /** Transforme une ressource statique textuelle (JS, CSS). */
   transformerRessourceTexte?(chemin: string, contenu: string, contexte: ContexteBug): string;
@@ -469,6 +492,8 @@ export interface AttenduBug {
   gravite: Gravite;
   /** Verdict attendu du protocole de confirmation (défaut : `confirmee`). */
   verdictAttendu: VerdictConfirmation;
+  /** Recopié du bug : ses anomalies relèvent d'une seule cause (voir `BugInjectable.causeUnique`). */
+  causeUnique?: boolean;
 }
 
 /**
@@ -1058,6 +1083,14 @@ export interface Agregat {
   nbGroupesRejoues: number;
   tauxRejouabiliteCandidates: number | null;
   tauxRejouabiliteGroupes: number | null;
+  /**
+   * UNE CAUSE, UN CONSTAT (mesure de C-16, posée avant P2-2) : parmi les
+   * attendus déclarés `causeUnique`, combien, et combien de constats publiés
+   * au-delà du premier pour chacun. Aucune alarme ici : c'est la ligne de
+   * base que P2-2 devra ramener à zéro.
+   */
+  nbAttendusCauseUnique: number;
+  nbConstatsEnDouble: number;
   tauxInertiesRapportTenues: number | null;
   /**
    * COUVERTURE DE RÉDACTION : sections rédigées / sections publiées, sur les

@@ -43,9 +43,18 @@ export function genererScenarios(gabarit: Gabarit, config: ConfigBanc): Scenario
     }
   }
 
+  // Un bug SEULEMENT EN COMBINAISON n'a pas de scénario seul : il n'y serait
+  // jamais constatable. Mais il doit en avoir une — sinon il disparaîtrait du
+  // banc sans que rien ne rougisse.
+  for (const bug of gabarit.bugs.filter((candidat) => candidat.seulementEnCombinaison === true)) {
+    if (!combinaisons.some((combinaison) => combinaison.includes(bug.id))) {
+      throw new Error(`Bug ${bug.id} du gabarit ${gabarit.nom} : déclaré seulementEnCombinaison, mais aucune combinaison de la configuration ne le contient`);
+    }
+  }
+
   const jeuxDeBugs: string[][] = [
     [],
-    ...gabarit.bugs.map((bug) => [bug.id]),
+    ...gabarit.bugs.filter((bug) => bug.seulementEnCombinaison !== true).map((bug) => [bug.id]),
     ...combinaisons.map((combinaison) => [...combinaison]),
   ];
 

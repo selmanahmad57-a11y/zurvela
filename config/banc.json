@@ -32,6 +32,12 @@
           "I01",
           "V01"
         ]
+      ],
+      "calque-au-rejeu": [
+        [
+          "D01",
+          "D02"
+        ]
       ]
     },
     "contraintes": {
@@ -108,6 +114,12 @@
     "L02": {
       "delaiPageMs": 2000,
       "delaiPremiereVisiteMs": 9000
+    },
+    "D01": {
+      "cheminRessourceIntrouvable": "/statique/images/vitrine-v2.svg"
+    },
+    "D02": {
+      "visitesAvantCalque": 2
     }
   }
 }

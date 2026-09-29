@@ -446,3 +446,39 @@ dette est levée (le commit qui la lève renvoie à ce fichier).
   dimensionnement, à tirages indépendants (run d’équivalence, 33 scénarios) :
   soumettre avant remplir 45 % des passes desktop, 27 % des passes mobile,
   12 % des scénarios sur les deux viewports.
+
+## 20. ~~Le contrat 8 de P2-1 n'est pas éprouvé par le banc~~ — LEVÉE le 2026-09-29 (clôture de P2-1, gabarit « calque-au-rejeu »)
+
+- **Le fait** : aucun gabarit du banc ne produit de découverte au rejeu.
+  Le contrat 8 — une découverte porte le verdict `decouverte`, jamais
+  `confirmee`, et sa gravité est bornée sous « Bloquant » — est éprouvé par
+  les tests du protocole, du rapport et du banc (mutations tuées), et par
+  le réel sur expandtesting. Pas par l'instrument.
+- **Pourquoi c'est une dette et pas une note** : expandtesting est une cible
+  vivante qui dérive déjà (40, 20 puis 36 découvertes en trois runs le même
+  jour). Tant que le banc ne produit pas de découverte, la non-régression du
+  contrat 8 dépend d'un site tiers instable ; et l'apprentissage n°20 vient
+  de montrer qu'un gabarit qui ne reproduit pas les conditions du réel ne
+  teste pas ce qui casse sur le réel.
+- **Ce qu'il faut** : un gabarit (ou un bug d'un gabarit existant) où un
+  calque recouvrant plusieurs éléments cliquables n'apparaît qu'au-delà des
+  visites de l'exploration — donc pendant un rejeu —, sur une page portant
+  par ailleurs un défaut ordinaire que le protocole doit rejouer. Attendu
+  de manifeste : verdict `decouverte`, gravité bornée ; mutations à tuer AU
+  BANC : la découverte sort `confirmee`, la gravité passe sans borne. Un
+  calque qui intercepte PLUSIEURS éléments donne en outre au dédoublonnage
+  par cause (C-16, P2-2) sa mesure au banc.
+- **Condition de levée** : **avant tout cahier touchant les découvertes** —
+  P2-2 et son dédoublonnage C-16 compris. Aucun code des découvertes ne se
+  modifie tant que seul un site tiers le vérifie.
+- **Levée le 2026-09-29** par le gabarit « calque-au-rejeu » : un accueil
+  dont l'image de vitrine est cassée (D01, défaut ordinaire que le protocole
+  rejoue) et sur lequel un calque recouvre trois boutons au-delà des deux
+  visites de l'exploration (D02, `seulementEnCombinaison`, `causeUnique`,
+  verdict attendu `decouverte`, gravité attendue `important`). Au banc, la
+  combinaison D01 + D02 sort 2/2, 0 faux positif, verdicts et gravités
+  conformes ; les mutations y rougissent : découverte `confirmee` (verdicts
+  corrects 50 %), gravité sans borne (gravités conformes 50 %), calque dès
+  l'exploration (3 faux positifs, verdicts et gravités à 50 %). La mesure
+  « une cause, un constat » publie la ligne de base de C-16 : 2 constats en
+  double sur 1 cause déclarée unique — ce que P2-2 devra ramener à zéro.

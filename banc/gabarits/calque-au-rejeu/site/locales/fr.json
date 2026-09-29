@@ -1,0 +1,25 @@
+{
+  "langue": "fr",
+  "site": {
+    "nom": "Atelier Lumen",
+    "slogan": "Luminaires fabriqués à la main, livrés en France"
+  },
+  "accueil": {
+    "titre": "Atelier Lumen",
+    "intro": "Trois collections de luminaires, fabriquées dans notre atelier.",
+    "vitrine": "La collection de la saison",
+    "offres": "Nos collections"
+  },
+  "offre": {
+    "nom1": "Suspensions",
+    "nom2": "Lampes de table",
+    "nom3": "Appliques",
+    "texte1": "Des suspensions en laiton et en verre soufflé, pour les salles à manger et les cuisines.",
+    "texte2": "Des lampes de chevet et de bureau, en chêne massif et en lin.",
+    "texte3": "Des appliques murales orientables, pour les couloirs et les chambres.",
+    "retour": "Retour à l’accueil"
+  },
+  "pied": {
+    "mentions": "Atelier Lumen — artisan luminairiste"
+  }
+}

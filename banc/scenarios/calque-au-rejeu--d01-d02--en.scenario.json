@@ -1,0 +1,9 @@
+{
+  "id": "calque-au-rejeu--d01-d02--en",
+  "gabarit": "calque-au-rejeu",
+  "langue": "en",
+  "bugsActifs": [
+    "D01",
+    "D02"
+  ]
+}

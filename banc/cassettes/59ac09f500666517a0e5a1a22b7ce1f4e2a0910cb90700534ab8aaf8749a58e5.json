@@ -1,0 +1,12 @@
+{
+  "cle": "59ac09f500666517a0e5a1a22b7ce1f4e2a0910cb90700534ab8aaf8749a58e5",
+  "metadonnees": {
+    "date": "2026-09-29T18:04:46.061Z",
+    "modeleDemande": "claude-haiku-4-5",
+    "modeleServi": "claude-haiku-4-5-20251001",
+    "versionPrompt": "v2",
+    "coutApi": 0.002124,
+    "apresRelance": false
+  },
+  "reponse": "{\"actionId\": \"c1\", \"raison\": \"Le robot a exploré plusieurs pages d'offres (/offre/1, /offre/2, /offre/3) sans trouver d'interaction utilisateur significative (formulaire, commande, contact). Avec un budget limité de 16 pages restantes et un profil de site vitrine-contact, il est judicieux de terminer plutôt que de continuer à parcourir des pages similaires sans valeur de test additionnelle.\"}"
+}

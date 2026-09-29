@@ -103,6 +103,23 @@ entrée indique la brique ou la phase où elle a vocation à être traitée.
 
 ## Phase 2
 
+- **Bilan de rejouabilité sur les dix scans de la campagne (`pnpm banc:reel
+  --avant` sur les neuf sites distincts).** Le chiffre du bilan de Phase 2 :
+  le protocole atteint-il ses candidates, site par site, avant et après
+  P2-1 ? D'après les fiches, AVANT : trois sites sur les huit qui avaient des
+  candidates atteignaient leurs groupes (getlumavo 3/3, the-internet 5/5,
+  quotes 3/3) ; cinq étaient à zéro ou presque (cutlybook 0/5, books 0/1,
+  expandtesting 0/93, demoqa 1/22, automationexercise 4/410) ; zurvela
+  n'avait rien à rejouer. APRÈS, déjà mesuré : cutlybook 5/5, books 1/1,
+  the-internet 5/5, expandtesting 2/101. Reste à mesurer : demoqa et
+  automationexercise (attendus bas pour la raison d'expandtesting — le coût
+  d'un rejeu sur des pages publicitaires, pas la recette), getlumavo et
+  quotes (stabilité), zurvela (rien à rejouer). Préalable : cinq cas
+  `banc/reel/<site>.json` de plus, dont les attendus reprennent la
+  structure des fiches — aucun seuil ne se choisit après avoir vu le run
+  (METHODE §13). Coût estimé ≈ 0,70 USD pour les neuf sites avant/après, à
+  annoncer au lancement. Origine : clôture de P2-1 (2026-09-29).
+
 - **Mesurer la répétabilité inter-scans des états énumérés d'un même site
   AVANT de concevoir le cache de décisions.** Le coût IA d'un scan vit dans
   le NOMBRE d'appels, pas dans le prix du modèle : un profilage par scan

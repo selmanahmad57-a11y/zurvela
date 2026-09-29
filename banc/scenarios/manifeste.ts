@@ -5,7 +5,7 @@
  * de la partie déclarative des bugs du gabarit. Seuls les champs utiles au
  * correcteur sont copiés — les hooks de transformation n'y ont pas leur place.
  */
-import { VERDICTS_RETENUS, type VerdictConfirmation } from '../../core/types.js';
+import { VERDICTS_PUBLIES, type VerdictConfirmation } from '../../core/types.js';
 import { normaliserLocalisation } from '../correcteur/appariement.js';
 import { depuisRacine } from '../outils/racine.js';
 import type {
@@ -55,7 +55,9 @@ function verifierManifesteNonAmbigu(scenarioId: string, attendus: AttenduBug[]):
       if (premier === undefined || second === undefined || premier.categorie !== second.categorie) {
         continue;
       }
-      if (VERDICTS_RETENUS.includes(premier.verdictAttendu) === VERDICTS_RETENUS.includes(second.verdictAttendu)) {
+      // Les deux camps sont « publié » et « écarté » : une découverte attendue
+      // est publiée, elle est dans le camp des retenues (P2-1, contrat 8).
+      if (VERDICTS_PUBLIES.includes(premier.verdictAttendu) === VERDICTS_PUBLIES.includes(second.verdictAttendu)) {
         continue;
       }
       const pagesPremier = pagesNormalisees[i] ?? new Set<string>();
@@ -229,6 +231,7 @@ export function deriverManifeste(scenario: Scenario, gabarit: Gabarit): Manifest
       pages: [...bug.pages],
       gravite: bug.gravite,
       verdictAttendu: bug.verdictAttendu ?? VERDICT_ATTENDU_DEFAUT,
+      ...(bug.causeUnique === true ? { causeUnique: true } : {}),
     }));
   verifierManifesteNonAmbigu(scenario.id, attendusBug);
 

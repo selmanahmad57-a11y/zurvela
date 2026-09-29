@@ -105,7 +105,8 @@
     "rejouabilite": "Rejouabilité — ce que le protocole a PHYSIQUEMENT réussi à re-tester (APPRENTISSAGES n°18 ; le taux par groupes est celui qui dit vrai)",
     "rejouabiliteParGabarit": "Rejouabilité par gabarit — le périmètre qui dit OÙ le protocole cesse de rejouer",
     "syntheseRejouabilite": "Rejouabilité : {{candidatesRejouees}}/{{candidatesRejouables}} candidate(s) rejouée(s), {{groupesRejoues}}/{{groupesRejouables}} groupe(s) rejoué(s) — {{taux}} par groupes ; une candidate non rejouée n'est ni confirmée ni écartée, elle est non mesurée",
-    "alarmeRejouabilite": "⚠ ALARME REJOUABILITÉ : {{taux}} des groupes rejoués, sous le seuil de {{seuil}} — un protocole qui n'atteint pas ses candidates n'est pas un protocole, c'est un tri par hasard (APPRENTISSAGES n°18)"
+    "alarmeRejouabilite": "⚠ ALARME REJOUABILITÉ : {{taux}} des groupes rejoués, sous le seuil de {{seuil}} — un protocole qui n'atteint pas ses candidates n'est pas un protocole, c'est un tri par hasard (APPRENTISSAGES n°18)",
+    "syntheseCauseUnique": "Une cause, un constat : {{doubles}} constat(s) publié(s) en double sur {{causes}} défaut(s) déclaré(s) de cause unique — ligne de base de C-16, que P2-2 devra ramener à zéro"
   },
   "serveur": {
     "usage": "Usage : pnpm banc:servir --scenario <id>",

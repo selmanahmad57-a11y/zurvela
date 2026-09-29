@@ -1,0 +1,12 @@
+{
+  "cle": "2d0724f6aa63c8096b2f4862f60ac9cdcd7a7b169f1b1996f115e7af58e4c879",
+  "metadonnees": {
+    "date": "2026-09-29T18:05:16.935Z",
+    "modeleDemande": "claude-haiku-4-5",
+    "modeleServi": "claude-haiku-4-5-20251001",
+    "versionPrompt": "v2",
+    "coutApi": 0.002121,
+    "apresRelance": false
+  },
+  "reponse": "{\"actionId\":\"c1\",\"raison\":\"Le site est une boutique de luminaires. Visiter les catégories de produits (Pendant lights, Table lamps, Wall lights) permet de tester les pages de navigation et de produits où un visiteur agit réellement (consultation, filtrage, ajout au panier). Commencer par la première catégorie maximise la couverture des scénarios d'interaction avant épuisement du budget.\"}"
+}

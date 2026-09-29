@@ -237,6 +237,11 @@ function agreger(tranche: Tranche): Agregat {
   const rapports = agregerRapports(tranche.rapports);
   const couverture = agregerCouverture(tranche.scenarios);
   const rejouabilite = agregerRejouabilite(tranche.scenarios);
+  // Une cause, un constat (C-16) : les constats publiés au-delà du premier,
+  // sur les seuls attendus DÉCLARÉS de cause unique — ailleurs, deux constats
+  // peuvent être deux défauts, et le banc n'en sait rien.
+  const causesUniques = tranche.attendus.filter((resultat) => resultat.attendu.causeUnique === true);
+  const nbConstatsEnDouble = somme(causesUniques.map((resultat) => Math.max(0, resultat.anomaliesAppariees.length - 1)));
   const coutApi = somme(tranche.scenarios.map((scenario) => scenario.coutApi));
   // Le coût est VENTILÉ, jamais réparti : les trois montants sont mesurés
   // séparément à la source et leur somme vaut `coutApi`. Un scénario dont le
@@ -276,6 +281,8 @@ function agreger(tranche: Tranche): Agregat {
     ...rejouabilite,
     tauxRejouabiliteCandidates: taux(rejouabilite.nbCandidatesRejouees, rejouabilite.nbCandidatesRejouables),
     tauxRejouabiliteGroupes: taux(rejouabilite.nbGroupesRejoues, rejouabilite.nbGroupesRejouables),
+    nbAttendusCauseUnique: causesUniques.length,
+    nbConstatsEnDouble,
     ...couverture,
     tauxEfficacite: taux(couverture.nbPagesUtiles, couverture.nbPagesVisitees),
     // Le coût moyen par scan n'est calculé que s'il y a des scans : sur un
@@ -1037,6 +1044,16 @@ export function rendreScorecardConsole(
     '',
     syntheseRejouabilite,
     ...alarmeRejouabilite,
+    // Une cause, un constat : ligne de base de C-16, dite seulement quand un
+    // attendu la déclare — muette sinon, elle ne mesurerait rien.
+    ...(scorecard.global.nbAttendusCauseUnique > 0
+      ? [
+          traduire(dico, 'scorecard.syntheseCauseUnique', {
+            doubles: formateurs.entier.format(scorecard.global.nbConstatsEnDouble),
+            causes: formateurs.entier.format(scorecard.global.nbAttendusCauseUnique),
+          }),
+        ]
+      : []),
     '',
     traduire(dico, 'scorecard.profils'),
     ...tableauProfil,

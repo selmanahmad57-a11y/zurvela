@@ -1,0 +1,25 @@
+{
+  "langue": "en",
+  "site": {
+    "nom": "Lumen Workshop",
+    "slogan": "Handmade lighting, shipped across Europe"
+  },
+  "accueil": {
+    "titre": "Lumen Workshop",
+    "intro": "Three lighting collections, made in our workshop.",
+    "vitrine": "This season's collection",
+    "offres": "Our collections"
+  },
+  "offre": {
+    "nom1": "Pendant lights",
+    "nom2": "Table lamps",
+    "nom3": "Wall lights",
+    "texte1": "Brass and blown-glass pendant lights, for dining rooms and kitchens.",
+    "texte2": "Bedside and desk lamps, in solid oak and linen.",
+    "texte3": "Adjustable wall lights, for hallways and bedrooms.",
+    "retour": "Back to the home page"
+  },
+  "pied": {
+    "mentions": "Lumen Workshop — lighting maker"
+  }
+}

@@ -198,6 +198,8 @@ describe('calculerScorecard', () => {
       nbGroupesRejoues: 0,
       tauxRejouabiliteCandidates: null,
       tauxRejouabiliteGroupes: null,
+      nbAttendusCauseUnique: 0,
+      nbConstatsEnDouble: 0,
       nbRapportsSansProse: 0,
       nbRapportsSansSection: 0,
       nbPagesVisitees: 0,
@@ -988,6 +990,33 @@ describe('scorecard — la famille « rapports », comptée à part de tout le r
     );
     expect(scorecard.parCategorie['fonctionnel']).toMatchObject({ nbRapportsMesures: 0, tauxRapportsConformes: null });
     expect(scorecard.global.nbRapportsMesures).toBe(1);
+  });
+});
+
+describe('scorecard — une cause, un constat : la ligne de base de C-16 (clôture de P2-1, dette n°20)', () => {
+  const causeUnique = (doublons: number): ResultatAttendu => {
+    const base = attendu('D02', 'fonctionnel', 'detecte', doublons);
+    return { ...base, attendu: { ...base.attendu, causeUnique: true } };
+  };
+
+  it('compte les constats publiés au-delà du premier, sur les seuls attendus DÉCLARÉS de cause unique', () => {
+    // Le contrôle qui peut échouer : un attendu ordinaire à deux constats
+    // (desktop et mobile d'un même bug, par exemple) n'est PAS compté — deux
+    // constats y peuvent être deux défauts, le banc n'en sait rien.
+    const scorecard = calculerScorecard(
+      [resultat({ scenarioId: 'a--fr', langue: 'fr', attendus: [causeUnique(3), attendu('V01', 'visuel', 'detecte', 2)] })],
+      config,
+      HORODATAGE,
+      POLITIQUE_DETERMINISTE,
+    );
+    expect(scorecard.global).toMatchObject({ nbAttendusCauseUnique: 1, nbConstatsEnDouble: 2 });
+  });
+
+  it('la ligne se dit quand une cause unique est déclarée, et se tait sinon', () => {
+    const avec = calculerScorecard([resultat({ scenarioId: 'a--fr', langue: 'fr', attendus: [causeUnique(3)] })], config, HORODATAGE, POLITIQUE_DETERMINISTE);
+    expect(rendreScorecardConsole(avec, dico, config.langueConsole)).toContain(traduire(dico, 'scorecard.syntheseCauseUnique', { doubles: 2, causes: 1 }));
+    const sans = calculerScorecard([resultat({ scenarioId: 'a--fr', langue: 'fr', attendus: [attendu('V01', 'visuel', 'detecte', 3)] })], config, HORODATAGE, POLITIQUE_DETERMINISTE);
+    expect(rendreScorecardConsole(sans, dico, config.langueConsole)).not.toContain('Une cause, un constat');
   });
 });
 
