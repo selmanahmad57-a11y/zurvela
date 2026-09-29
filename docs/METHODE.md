@@ -289,3 +289,36 @@ une question doit le dire, jamais deviner.**
 La garde anti-dérive (`core/scanner/config.production.test.ts`) tient l'autre
 moitié : mêmes clés, écarts énumérés avec leur raison, aucune ligne morte. Les
 deux fichiers ne peuvent diverger que par une décision écrite.
+
+## 12. Depuis la Phase 2, un cahier correctif se valide sur le réel, pas seulement au banc
+
+La campagne 6b l'a rendu évident : le banc a validé à 100 % un moteur qui
+fait 85 % de faux positifs sur le web réel (carnet figé, 2026-09-29). Ses
+gabarits sont propres et ses cassettes figent une réponse ; il mesure la
+reproductibilité, pas la justesse face au monde (APPRENTISSAGES n°16, n°18).
+Il reste l'instrument — déterministe, gratuit, bit à bit — mais il ne suffit
+plus à clore un cahier qui corrige ce que le réel a cassé.
+
+- **Chaque cahier correctif de Phase 2 nomme, à l'ouverture, le
+  sous-ensemble des dix sites de la campagne sur lequel il se valide** :
+  au moins un site où le défaut a mordu, et un témoin où tout marchait déjà
+  (pour ne pas casser ce qui tenait). Les fiches du bestiaire sont la suite
+  de non-régression du réel — c'était leur destin annoncé par le protocole.
+- **Avant/après** : le même site, la même commande, la même configuration,
+  rejoués avant et après la correction ; ce qui se compare est ce que la
+  fiche mesure déjà — durée, coût, candidates, retenues, rejouabilité — et
+  le jugement humain des retenues (vraies, fausses, enterrées).
+- **Le réel est payant et non déterministe** : un scan réel coûte ce que sa
+  rédaction coûte (0,002 à 0,155 USD sur la campagne), et deux runs ne sont
+  jamais identiques (intermittence des sites, tirages du modèle). Le budget
+  s'annonce à l'ouverture, comme pour tout le reste ; un écart entre deux
+  runs se lit avant de se conclure (fiche 02 : 3 puis 2 retenues, c'était le
+  site).
+- **Le banc d'abord, le réel ensuite, jamais l'inverse** : une correction
+  qui ne tient pas au banc ne va pas sur le réel ; une correction qui tient
+  au banc et pas sur le réel n'est pas close — c'est un gabarit qui manque
+  au banc (n°17 : des anomalies fausses par construction, des tiers qui
+  répondent autrement au robot, des formulaires suivis d'une navigation).
+- **Rien ne se corrige à chaud sur le réel** : le réel juge, il n'est pas un
+  atelier. La règle d'or de la campagne survit à la campagne sous cette
+  forme.
