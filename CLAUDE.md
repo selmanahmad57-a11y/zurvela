@@ -78,6 +78,18 @@ Avant de livrer un fichier, tu te poses les trois questions :
 - Le robot se signale : user-agent dédié `ZurvelaBot`, en-tête
   `X-Zurvela-Scan`, données de test marquées (emails en
   `test@zurvela-scan.invalid`).
+- UN MOTEUR QUI AGIT SUR LA PAGE D'AUTRUI SANS LAISSER TRACE DE CE QU'IL A
+  FAIT N'EST PAS RELISIBLE. Dès que le moteur ne se contente plus
+  d'observer — écarter un recouvrement, presser une touche, cliquer pour
+  traverser —, chaque geste, sa cible exacte et son issue vont au journal,
+  et le filtre d'actions destructives s'applique au geste comme à une
+  action décidée par l'IA : après coup, en code, non contournable. Un geste
+  choisi par le code n'échappe pas au filtre parce qu'aucun modèle ne l'a
+  demandé. Et ce que le moteur a FAIT se dit au client dans le rapport, pas
+  seulement ce qu'il a vu : taire un jugement, c'est ne pas publier ; agir
+  sur la page d'un client sans le lui dire, c'est autre chose. (Inscrit le
+  2026-09-30, à l'ouverture du cahier P2-3, premier cahier où le moteur
+  agit pour traverser.)
 - Identifiants clients : chiffrés au repos, jamais dans les logs.
 
 ## 4. Architecture

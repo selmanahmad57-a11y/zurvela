@@ -868,3 +868,34 @@ regardé.
   éprouvé que si son gabarit reproduit les conditions du réel ; celui-ci
   ajoute : encore faut-il qu'un gabarit reproduise la RENCONTRE de deux
   conditions.
+
+## 26. Une affirmation ne combine que ce qu'un seul run a mesuré ENSEMBLE — deux runs, deux phrases (2026-09-30, clôture de P2-2, arbitrage du propriétaire)
+
+- **Le fait** : P2-2 a produit deux résultats, sur deux runs. Celui de 20 h
+  publie **zéro faux positif** sur neuf sites (14 sections, 14 vraies).
+  Celui de 16 h établit que **le retrait du bruit ne perd aucun signal** (24
+  vraies avant comme après le correctif, sur les MÊMES candidates). La
+  phrase qui venait naturellement — « zéro faux positif sans perdre une
+  seule vraie anomalie » — est vraie sur le fond et FAUSSE SUR LA PREUVE :
+  aucun run unique ne porte ses deux moitiés. Le run à zéro faux positif
+  publie 14 vraies, pas 24 ; le run à 24 vraies publie encore 37 fausses.
+- **Ce que cela dit** : fusionner deux mesures faites sur deux états attribue
+  à un seul run une propriété que deux runs séparés établissent. C'est le
+  n°16 appliqué à la rhétorique — une cassette réutilisée n'est pas N
+  échantillons, deux runs ne sont pas une mesure. La faute ne se voit pas
+  dans les chiffres, qui sont justes chacun de leur côté ; elle est dans la
+  CONJONCTION, et aucun test ne rougit sur une conjonction.
+- **Règle, à appliquer à tout texte qui sort d'ici — rapport client, cahier,
+  page de vente, réponse au propriétaire** : une affirmation ne combine que
+  ce qu'un seul run a mesuré ensemble. Deux runs, deux phrases, chacune avec
+  son run. La forme correcte de P2-2 est donc : « sur neuf sites réels, le
+  run complet publie zéro faux positif » ET « le retrait du bruit ne perd
+  aucun signal — 24 vraies avant comme après, sur les mêmes candidates ».
+  Dites ensemble avec leur provenance, elles sont PLUS fortes que la phrase
+  fusionnée, parce qu'elles résistent à « prouve-le ».
+- **Pourquoi l'écrire** : c'est le raccourci qu'on fera tous sous la pression
+  de vendre, et il n'a pas de garde automatique. La seule protection est la
+  règle écrite. Corollaire : c'est le propriétaire qui avait proposé la
+  phrase fusionnée, et l'agent qui l'a démontée — la discipline vaut aussi
+  contre la formulation de celui qui commande, et surtout dans le moment de
+  célébration, qui est le moment où elle cède.
