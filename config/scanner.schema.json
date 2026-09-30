@@ -511,7 +511,9 @@
           "required": [
             "confianceGeometrie",
             "confianceGeometrieEtClic",
-            "gravite"
+            "gravite",
+            "graviteParNature",
+            "fermeture"
           ],
           "properties": {
             "confianceGeometrie": {
@@ -523,7 +525,83 @@
               "description": "Confiance d'un recouvrement constaté par la géométrie ET par un clic refusé par le navigateur : double signal, palier haut."
             },
             "gravite": {
-              "$ref": "#/definitions/gravite"
+              "$ref": "#/definitions/gravite",
+              "description": "Gravité par DÉFAUT d'un recouvrement non écartable, quand la nature de l'élément masqué n'a pas pu être établie (cahier P2-3, contrat 2). Le plafond qui l'empêche d'ouvrir un rapport en « bloquant » dans ce cas vit en CODE, pas ici."
+            },
+            "graviteParNature": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "actionCritique",
+                "controleOrdinaire",
+                "contenuSecondaire"
+              ],
+              "description": "Le critère de gravité est CE QUI EST MASQUÉ, pas le fait de masquer (cahier P2-3, contrat 2, D4). Les natures sont universelles : soumission d'un formulaire ou navigation principale (action critique), contrôle interactif ordinaire, lien ou contenu secondaire.",
+              "properties": {
+                "actionCritique": {
+                  "$ref": "#/definitions/gravite",
+                  "description": "Soumission de formulaire, bouton d'achat, navigation principale : « le parcours s'arrête là » est alors vrai."
+                },
+                "controleOrdinaire": {
+                  "$ref": "#/definitions/gravite",
+                  "description": "Un contrôle interactif qui n'est ni critique ni secondaire."
+                },
+                "contenuSecondaire": {
+                  "$ref": "#/definitions/gravite",
+                  "description": "Lien ou contenu secondaire : un lien de mot-clé recouvert par un pied de page n'arrête aucun parcours."
+                }
+              }
+            },
+            "fermeture": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "gestes",
+                "partMaxSurfaceControle",
+                "partCoin",
+                "delaiApresGesteMs",
+                "recouvrementsMax"
+              ],
+              "description": "Les gestes NEUTRES par lesquels le moteur tente d'écarter un recouvrement, et rien d'autre (cahier P2-3, contrat 1, D1/D2). L'ENSEMBLE des gestes possibles vit en code — c'est un invariant de sécurité, pas un réglage ; la config en choisit l'ordre et l'activation. Un geste absent de cette liste n'est jamais tenté.",
+              "properties": {
+                "gestes": {
+                  "type": "array",
+                  "minItems": 0,
+                  "uniqueItems": true,
+                  "items": {
+                    "type": "string",
+                    "enum": [
+                      "echap",
+                      "dialog-natif",
+                      "controle-ferme",
+                      "clic-hors-zone"
+                    ]
+                  },
+                  "description": "Ordre d'essai. « echap » : la touche Échap. « dialog-natif » : la fermeture standard d'un <dialog open>. « controle-ferme » : un descendant activable, petit, dans un coin, porteur d'un aria-label — sa FORME, jamais son texte —, soumis au filtre d'actions destructives avant tout clic. « clic-hors-zone » : un clic sur un point vérifié sans élément interactif, indisponible si aucun point sûr n'existe."
+                },
+                "partMaxSurfaceControle": {
+                  "type": "number",
+                  "exclusiveMinimum": 0,
+                  "maximum": 1,
+                  "description": "Part maximale de la surface du recouvrement qu'un contrôle de fermeture peut occuper : au-delà, ce n'est pas une croix."
+                },
+                "partCoin": {
+                  "type": "number",
+                  "exclusiveMinimum": 0,
+                  "maximum": 0.5,
+                  "description": "Part des côtés du recouvrement qui compte comme « un coin »."
+                },
+                "delaiApresGesteMs": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "description": "Attente après un geste, avant de re-mesurer : une fermeture animée n'est pas instantanée."
+                },
+                "recouvrementsMax": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "description": "Nombre maximal de recouvrements DISTINCTS qu'une page tente d'écarter. Borne la dépense d'une page pathologique ; au-delà, les restants sont jugés sans tentative et le journal le dit."
+                }
+              }
             }
           }
         },

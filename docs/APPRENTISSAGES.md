@@ -899,3 +899,76 @@ regardé.
   phrase fusionnée, et l'agent qui l'a démontée — la discipline vaut aussi
   contre la formulation de celui qui commande, et surtout dans le moment de
   célébration, qui est le moment où elle cède.
+
+## 27. Une action ne se juge pas à son EXÉCUTION, mais à son effet mesuré sur la page (2026-10-01, cahier P2-3, contrat 1)
+
+- **Le fait** : le premier cahier où le moteur agit pour traverser aurait pu
+  compter « j'ai appuyé sur Échap » comme « le recouvrement est fermé ». Le
+  module ne le fait pas : après chaque geste, il RE-MESURE la géométrie, et
+  un geste qui s'exécute sans rien lever est `sans-effet`, pas `ecarte`.
+  « Écarté » est une propriété de la PAGE, pas du geste.
+- **Ce que cela dit** : c'est le critère d'effet visible de P2-2 (contrat 1)
+  appliqué à l'ACTION au lieu du jugement. Un moteur qui compterait son
+  geste comme un résultat se mentirait exactement comme la doctrine tierce
+  se mentait en comptant « la requête a échoué » pour « le site est cassé » :
+  dans les deux cas, on prend la trace d'un mécanisme pour l'état du monde.
+  Les deux erreurs ont la même forme et la même conséquence — une
+  affirmation que rien n'a vérifiée.
+- **Règle** : partout où le moteur agit, l'effet se mesure séparément de
+  l'acte, et c'est la mesure qui décide. Une action réussie est une action
+  dont on a CONSTATÉ le résultat ; le reste est une tentative. Corollaire au
+  rapport : ce qu'on déclare au client est le nombre d'effets obtenus, pas
+  le nombre de gestes tentés.
+
+## 28. Un invariant que `tsc` impose bat un invariant qu'un test vérifie (2026-10-01, cahier P2-3, arbitrage du propriétaire)
+
+- **Le fait** : P2-3 fait agir le moteur sur la page, donc le filtre
+  d'actions destructives doit couvrir les gestes choisis par le CODE. Plutôt
+  que d'ajouter un test qui vérifie après coup que le chemin est gardé, la
+  dépendance `filtreElement` a été rendue REQUISE dans
+  `DependancesExplorateur` : le compilateur a alors réclamé le filtre dans
+  les six assemblages du dépôt, tests compris. Un moteur sans son filtre ne
+  compile pas.
+- **Ce que cela dit** : c'est l'apprentissage n°5 retourné en garde active.
+  Un test qui vérifie une garde protège le chemin qu'il connaît ; un type
+  qui l'exige protège tous les chemins, y compris ceux qui n'existent pas
+  encore. Le précédent est `cadrePrincipal` en brique 3.
+- **Règle, à appliquer partout où c'est possible** : quand une garde de
+  sécurité doit être présente sur tout assemblage, la rendre OBLIGATOIRE
+  dans le type plutôt que vérifiable par un test. Un champ optionnel qui
+  « devrait » être fourni est une garde qu'un futur assemblage oubliera sans
+  rougir. Et le champ ne prend pas de valeur par défaut : un défaut silencieux
+  ramène exactement le problème qu'on voulait supprimer.
+
+## 29. `git checkout --` ne peut pas séparer une mutation du travail qui l'entoure : il détruit par CONSTRUCTION (2026-10-01, cahier P2-3, incident)
+
+- **Le fait** : trois heures de travail des contrats 3 et 4 effacées par un
+  `git checkout --` lancé pour défaire une mutation, sur deux fichiers
+  suivis dont le travail de P2-3 n'était pas committé. La commande a fait
+  exactement ce qu'elle promet.
+- **La cause profonde, qui n'est pas la maladresse** : `git checkout --`
+  opère sur l'unité FICHIER. Une mutation-kill, par conception, place la
+  mutation DANS le fichier où vit le travail légitime. La commande ne peut
+  donc pas les séparer : l'employer pour défaire une mutation détruit le
+  travail par construction, et pas par accident. Aucune précaution d'usage
+  ne rend ce geste sûr ; il est faux dans son principe.
+- **Ce qui rend l'incident important** : la bonne méthode — copier le
+  fichier avant de le muter, restaurer depuis la copie — était appliquée
+  quelques minutes plus tôt, dans la même session, et a été abandonnée SANS
+  RAISON. Ce n'est donc pas une ignorance qu'une règle corrige, c'est un
+  relâchement : le mode de défaillance d'une règle connue, sous fatigue ou
+  routine. Une règle qui ne tient qu'à la vigilance ne tient pas.
+- **Règle** : une mutation se défait par la copie qu'on a prise, jamais par
+  le dépôt.
+- **Corollaire de méthode, plus fort que la règle** : on COMMITTE avant
+  d'ouvrir une session de mutation-kill (METHODE §8 étendu). Le travail non
+  committé sous la main est le carburant de cette perte ; le commit est le
+  seul mécanisme qui ne dépende de la vigilance de personne. Et quand on se
+  surprend à abandonner une bonne pratique « sans raison », c'est le signal
+  de committer avant de continuer, pas de continuer.
+- **Ce qui a limité le dégât, et pourquoi ça ne suffit pas** : le contenu
+  exact était encore disponible, tout a été restauré et re-vérifié (1 619
+  tests verts, les deux mutations tuant de nouveau chacune son sens). Mais
+  la maîtrise tenait à une mémoire, pas à un mécanisme. C'est exactement ce
+  que le n°28 dit d'une garde : elle vaut ce que vaut son automatisme.
+

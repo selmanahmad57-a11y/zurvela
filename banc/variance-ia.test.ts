@@ -60,7 +60,7 @@ function rapportAvec(actions: ActionExecutee[]): Rapport {
     coutApi: 0,
     dureeMs: 0,
     journal: [],
-    parcours: { urlDepart: 'http://127.0.0.1:1/', pages: [], actions, arret: 'complet', enAttenteALArret: 0, pagesRestantesALArret: 0 },
+    parcours: { urlDepart: 'http://127.0.0.1:1/', pages: [], actions, arret: 'complet', enAttenteALArret: 0, pagesRestantesALArret: 0, nbRecouvrementsEcartes: 0 },
   };
 }
 

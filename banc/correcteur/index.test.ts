@@ -448,7 +448,7 @@ function scannerParcours(options: {
           horodatage: new Date().toISOString(),
         })),
         actions,
-        arret: 'limite-pages', enAttenteALArret: 0, pagesRestantesALArret: 0 as const,
+        arret: 'limite-pages', enAttenteALArret: 0, pagesRestantesALArret: 0 as const, nbRecouvrementsEcartes: 0
       },
     };
   };

@@ -129,6 +129,29 @@ export interface EtatImage {
 export interface Recouvrement {
   element: LocalisationElement;
   intercepteur: LocalisationElement | null;
+  /** Signature de construction de l'intercepteur (cahier P2-3, contrat 4), ou null. */
+  signatureIntercepteur: string | null;
+}
+
+/**
+ * Ce qu'un recouvrement offre comme prise de FERMETURE, mesuré en page et
+ * sans rien activer (cahier P2-3, contrat 1). Le moteur décide ensuite quel
+ * geste tenter, dans l'ordre de la config, et le filtre d'actions
+ * destructives tranche avant tout clic.
+ */
+export interface PrisesFermeture {
+  /** L'intercepteur est, ou est contenu dans, un `<dialog open>` : la fermeture native existe. */
+  dialogOuvert: boolean;
+  /**
+   * Un descendant activable de l'intercepteur, petit et logé dans un coin,
+   * porteur d'un `aria-label` — la forme universelle d'une croix de
+   * fermeture. Son TEXTE n'est pas lu : la règle maîtresse §2 interdit de
+   * juger la langue en détection, et le filtre d'actions lira ses attributs
+   * lui-même, en Node.
+   */
+  controle: LocalisationElement | null;
+  /** Un point de la fenêtre hors de l'intercepteur et sans aucun élément interactif, ou null s'il n'en existe pas. */
+  pointVide: { x: number; y: number } | null;
 }
 
 export interface ResultatGeometrie {
@@ -181,6 +204,15 @@ type Commande =
       max: number;
       budgetMs: number;
     }
+  | {
+      commande: 'prises-fermeture';
+      attributsConserves: string[];
+      selecteursInteractifs: string;
+      selecteurIntercepteur: string;
+      partMaxSurface: number;
+      partCoin: number;
+    }
+  | { commande: 'fermer-dialog'; selecteurIntercepteur: string }
   | { commande: 'mutations.lire'; nomTampon: string; selecteurZone: string | null }
   | { commande: 'mutations.derniere'; nomTampon: string }
   | { commande: 'mutations.vider'; nomTampon: string }
@@ -251,6 +283,66 @@ function enPage(arg: Commande): unknown {
 
     localiser(el: Element, conserves: string[]): LocalisationElement {
       return { balise: el.tagName.toLowerCase(), selecteur: aide.selecteurDe(el), attributs: aide.attributsDe(el, conserves) };
+    },
+
+    /** Un élément dont l'activation déclenche quelque chose : sémantique HTML et ARIA, jamais un nom de classe. */
+    estActivable(el: Element): boolean {
+      const balise = el.tagName.toLowerCase();
+      if (balise === 'button' || (balise === 'a' && el.hasAttribute('href'))) {
+        return true;
+      }
+      const role = (el.getAttribute('role') ?? '').trim().toLowerCase();
+      return role === 'button' || role === 'link';
+    },
+
+    /**
+     * SIGNATURE DE CONSTRUCTION d'un élément (cahier P2-3, contrat 4).
+     *
+     * Trois composantes, toutes structurelles : la balise, l'ensemble TRIÉ
+     * de ses classes, et son chemin dont les rangs de fratrie sont effacés
+     * — le « sélecteur générateur ». Deux cartes d'une même grille ont la
+     * même signature ; deux calques sans rapport ne l'ont pas.
+     *
+     * `null` DÈS QU'IL N'Y A PAS DE CLASSE, et c'est délibéré : le chemin
+     * seul ne distingue pas six cartes d'une grille de deux conteneurs sans
+     * rapport posés côte à côte sous `body` — ils partagent le même
+     * générateur. Sans classe, on refuse donc de fondre. L'asymétrie est
+     * voulue : ne pas fondre coûte une section en double, fondre à tort
+     * perd un signal, et le second est bien plus grave.
+     *
+     * Le code ne LIT aucun nom de classe : il compare deux chaînes. C'est
+     * la même frontière que l'hôte en P2-2 — constater une égalité n'est
+     * pas connaître un sens.
+     */
+    signatureConstruction(el: Element): string | null {
+      const classes = Array.from(el.classList).sort().join('.');
+      if (classes === '') {
+        return null;
+      }
+      const generateur = aide.selecteurDe(el).replace(/:nth-of-type\(\d+\)/g, ':nth-of-type()');
+      return [el.tagName.toLowerCase(), classes, generateur].join('|');
+    },
+
+    /**
+     * Cible et intercepteur sont-ils dans la MÊME région activable ? Si oui,
+     * le clic au point mesuré déclenche ce que le visiteur attend, et rien
+     * n'est bloqué (cahier P2-3, contrat 3).
+     *
+     * On remonte TOUTES les régions activables de la cible, pas seulement la
+     * plus proche : sur une carte marchande, la cible est un bouton — donc
+     * activable lui-même — et le calque est son FRÈRE, à l'intérieur du lien
+     * de la carte. S'arrêter au bouton manquerait le seul ancêtre qui
+     * explique que le clic aboutisse.
+     */
+    memeRegionActivable(cible: Element, intercepteur: Element): boolean {
+      let courant: Element | null = cible;
+      while (courant !== null && courant !== document.body) {
+        if (aide.estActivable(courant) && courant.contains(intercepteur)) {
+          return true;
+        }
+        courant = courant.parentElement;
+      }
+      return false;
     },
 
     typeDe(el: Element): string {
@@ -559,11 +651,115 @@ function enPage(arg: Commande): unknown {
         if (recu instanceof HTMLLabelElement && recu.control === el) {
           continue;
         }
-        recouvrements.push({ element: aide.localiser(el, arg.attributsConserves), intercepteur: aide.localiser(recu, arg.attributsConserves) });
+        // LE CALQUE DE SURVOL N'EST PAS UN RECOUVREMENT SUBI (cahier P2-3,
+        // contrat 3). Sur une grille marchande, chaque carte porte une
+        // surface qui la couvre — et le clic ABOUTIT quand même, parce que
+        // la surface et la cible sont toutes deux DANS la même région
+        // activable : le lien de la carte. Le point de clic déclenche alors
+        // ce que le visiteur attend, la carte s'ouvre, rien n'est bloqué.
+        // Le critère est physique et universel (sémantique HTML : un
+        // ancêtre activable est un `a[href]`, un `button`, ou l'un de leurs
+        // rôles ARIA), jamais un nom de classe : 1 428 candidates à la
+        // fiche 10 venaient de cette seule construction.
+        if (aide.memeRegionActivable(el, recu)) {
+          continue;
+        }
+        recouvrements.push({
+          element: aide.localiser(el, arg.attributsConserves),
+          intercepteur: aide.localiser(recu, arg.attributsConserves),
+          signatureIntercepteur: aide.signatureConstruction(recu),
+        });
       }
       window.scrollTo(0, 0);
       const resultat: ResultatGeometrie = { recouvrements, tronque, examines };
       return resultat;
+    }
+    case 'prises-fermeture': {
+      // NE RIEN ACTIVER ICI. Cette commande MESURE ce qui est disponible ;
+      // c'est Node qui décide, après le filtre d'actions destructives.
+      const intercepteur = document.querySelector(arg.selecteurIntercepteur);
+      const vide: PrisesFermeture = { dialogOuvert: false, controle: null, pointVide: null };
+      if (intercepteur === null) {
+        return vide;
+      }
+      const dialog = intercepteur.closest('dialog');
+      const dialogOuvert = dialog !== null && dialog.hasAttribute('open');
+
+      // LA CROIX DE FERMETURE, par sa FORME et non par son texte : un
+      // descendant activable, petit devant l'intercepteur, logé dans un de
+      // ses coins, et porteur d'un `aria-label` (sa PRÉSENCE seule — le
+      // contenu est de la langue, interdite en détection).
+      const cadre = intercepteur.getBoundingClientRect();
+      const surface = cadre.width * cadre.height;
+      let controle: Element | null = null;
+      for (const candidat of Array.from(intercepteur.querySelectorAll(arg.selecteursInteractifs))) {
+        if (!candidat.hasAttribute('aria-label')) {
+          continue;
+        }
+        const r = candidat.getBoundingClientRect();
+        if (r.width === 0 || r.height === 0 || surface === 0) {
+          continue;
+        }
+        if (r.width * r.height > surface * arg.partMaxSurface) {
+          continue;
+        }
+        const dansCoinX = r.left - cadre.left <= cadre.width * arg.partCoin || cadre.right - r.right <= cadre.width * arg.partCoin;
+        const dansCoinY = r.top - cadre.top <= cadre.height * arg.partCoin || cadre.bottom - r.bottom <= cadre.height * arg.partCoin;
+        if (dansCoinX && dansCoinY) {
+          controle = candidat;
+          break;
+        }
+      }
+
+      // LE POINT VIDE, vérifié et non espéré (D3). On balaie une grille de
+      // la fenêtre ; un point n'est retenu que si ce qu'il reçoit n'est ni
+      // l'intercepteur, ni interactif, ni dans une région activable. Si
+      // aucun point ne passe, le geste est INDISPONIBLE — jamais un clic au
+      // hasard en espérant que c'est vide.
+      let pointVide: { x: number; y: number } | null = null;
+      const pas = 8;
+      for (let i = 1; i < pas && pointVide === null; i += 1) {
+        for (let j = 1; j < pas && pointVide === null; j += 1) {
+          const x = Math.round((window.innerWidth * i) / pas);
+          const y = Math.round((window.innerHeight * j) / pas);
+          const recu = document.elementFromPoint(x, y);
+          if (recu === null || intercepteur.contains(recu) || recu.contains(intercepteur)) {
+            continue;
+          }
+          if (recu.closest(arg.selecteursInteractifs) !== null) {
+            continue;
+          }
+          let activable = false;
+          let courant: Element | null = recu;
+          while (courant !== null && courant !== document.body) {
+            if (aide.estActivable(courant)) {
+              activable = true;
+              break;
+            }
+            courant = courant.parentElement;
+          }
+          if (!activable) {
+            pointVide = { x, y };
+          }
+        }
+      }
+
+      const prises: PrisesFermeture = {
+        dialogOuvert,
+        controle: controle === null ? null : aide.localiser(controle, arg.attributsConserves),
+        pointVide,
+      };
+      return prises;
+    }
+    case 'fermer-dialog': {
+      // La fermeture NATIVE d'un `<dialog>` : l'API du standard, pas un clic.
+      const cible = document.querySelector(arg.selecteurIntercepteur);
+      const dialog = cible === null ? null : cible.closest('dialog');
+      if (dialog === null || !(dialog instanceof HTMLDialogElement) || !dialog.hasAttribute('open')) {
+        return false;
+      }
+      dialog.close();
+      return true;
     }
     case 'mutations.lire': {
       const t = aide.tampon(arg.nomTampon);
@@ -707,6 +903,41 @@ export interface OptionsGeometrie {
   budgetMs: number;
   /** Délai de l'évaluation côté Node (par défaut le budget, avec une marge du même ordre). */
   delaiMs?: number;
+}
+
+export interface OptionsPrises {
+  /** Sélecteur de l'intercepteur dont on cherche les prises de fermeture. */
+  selecteurIntercepteur: string;
+  /** Part maximale de la surface de l'intercepteur qu'un contrôle de fermeture peut occuper. */
+  partMaxSurface: number;
+  /** Part des côtés de l'intercepteur qui compte comme « un coin ». */
+  partCoin: number;
+  delaiMs?: number;
+}
+
+/**
+ * Ce qu'un recouvrement offre comme prise de fermeture. MESURE SEULE :
+ * aucune activation, aucun clic — la décision et le filtre d'actions
+ * destructives restent en Node (constitution §3).
+ */
+export async function prisesFermeture(page: Page, options: OptionsPrises): Promise<PrisesFermeture> {
+  return (await evaluer(
+    page,
+    {
+      commande: 'prises-fermeture',
+      attributsConserves: ATTRIBUTS_CONSERVES,
+      selecteursInteractifs: SELECTEURS_INTERACTIFS,
+      selecteurIntercepteur: options.selecteurIntercepteur,
+      partMaxSurface: options.partMaxSurface,
+      partCoin: options.partCoin,
+    },
+    options.delaiMs,
+  )) as PrisesFermeture;
+}
+
+/** Fermeture NATIVE d'un `<dialog open>` : l'API du standard. Rend true si elle a eu lieu. */
+export async function fermerDialog(page: Page, selecteurIntercepteur: string, delaiMs?: number): Promise<boolean> {
+  return (await evaluer(page, { commande: 'fermer-dialog', selecteurIntercepteur }, delaiMs)) as boolean;
 }
 
 /** Recouvrements des éléments interactifs visibles, bornés en nombre et en temps. */

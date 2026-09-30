@@ -56,7 +56,8 @@ import {
   filtrerMenuFerme,
 } from './couches.js';
 import { cheminDe, composerEtat, enumererActions, libelleBorne } from './enumeration.js';
-import { RAISON_LECTURE_IMPOSSIBLE, type FiltreActions, type VerdictFiltre } from './filtre-actions.js';
+import { RAISON_LECTURE_IMPOSSIBLE, type FiltreActions, type FiltreElement, type VerdictFiltre } from './filtre-actions.js';
+import { ecarterRecouvrements } from './ecarter-recouvrement.js';
 import { ROBOTS_PERMISSIF, chargerRobots, recupererParReseau, type RecupererRobots } from '../politesse/robots.js';
 
 export interface DependancesExplorateur {
@@ -71,6 +72,13 @@ export interface DependancesExplorateur {
    */
   secours: PolitiqueDecision;
   filtre: FiltreActions;
+  /**
+   * Le même filtre, appliqué à un ÉLÉMENT que le CODE s'apprête à activer —
+   * aujourd'hui le contrôle de fermeture d'un recouvrement (cahier P2-3,
+   * contrat 1). Requis, jamais optionnel : un filtre absent laisserait un
+   * geste s'exécuter sans examen, et la constitution §3 dit l'inverse.
+   */
+  filtreElement: FiltreElement;
   navigateur: Browser;
   /**
    * Récupération du `robots.txt`, HORS du contexte navigateur observé. Absente :
@@ -207,7 +215,9 @@ export const PROFILAGE_PAGE_NON_CHARGEE = 'page-non-chargee';
 export const PROFILAGE_PAGE_EXTERNE = 'page-externe';
 
 export function creerExplorateur(dependances: DependancesExplorateur): ExplorateurProfilant {
-  const { config, politique, secours, filtre, navigateur } = dependances;
+  const { config, politique, secours, filtre, filtreElement, navigateur } = dependances;
+  // Ce que le moteur a FAIT sur la page du client, cumulé sur tout le scan.
+  let nbRecouvrementsEcartes = 0;
   const { exploration, politesse } = config;
   const recupererRobots =
     dependances.recupererRobots ??
@@ -218,7 +228,7 @@ export function creerExplorateur(dependances: DependancesExplorateur): Explorate
     nom: 'explorateur-deterministe',
 
     async explorer(contexte: ContexteExploration, observateur: Observateur, collecte?: CollecteProfilage): Promise<Parcours> {
-      const parcours: Parcours = { urlDepart: contexte.urlDepart, pages: [], actions: [], arret: 'complet', enAttenteALArret: 0, pagesRestantesALArret: 0 };
+      const parcours: Parcours = { urlDepart: contexte.urlDepart, pages: [], actions: [], arret: 'complet', enAttenteALArret: 0, pagesRestantesALArret: 0, nbRecouvrementsEcartes: 0 };
       const origine = new URL(contexte.urlDepart).origin;
       // L'URL de départ obéit à la même règle que les liens suivis (http(s)) :
       // le navigateur ne charge jamais un fichier local ni une URL de données.
@@ -501,7 +511,28 @@ export function creerExplorateur(dependances: DependancesExplorateur): Explorate
         if (geometrie.tronque) {
           contexte.journaliser('exploration.geometrie.tronquee', { viewport: viewport.nom, url, examines: geometrie.examines });
         }
-        for (const constat of geometrie.recouvrements) {
+        // UN RECOUVREMENT N'EST UN DÉFAUT QUE SI RIEN NE L'ÉCARTE (cahier
+        // P2-3, contrat 1). On TENTE avant de constater : ce qui cède à un
+        // geste neutre est l'état normal du web, pas une panne, et seuls les
+        // restants deviennent des signaux. Le compte des écartés est déclaré
+        // au client (contrat 7) : le moteur a agi sur sa page.
+        let constats = geometrie.recouvrements;
+        if (constats.length > 0) {
+          const issue = await ecarterRecouvrements({
+            page,
+            constats,
+            config: config.detecteurs.recouvrement.fermeture,
+            filtreElement: (cible) => filtreElement(page, cible),
+            delaiMs: delai(),
+            geometrie: { max: exploration.elementsInteractifsMax, budgetMs: delai() },
+            mesurer: () => recouvrements(page, { max: exploration.elementsInteractifsMax, budgetMs: delai() }),
+            journaliser: (type, details) => contexte.journaliser(type, { viewport: viewport.nom, url, ...(details as object) }),
+            attendre,
+          });
+          constats = issue.restants;
+          nbRecouvrementsEcartes += issue.nbEcartes;
+        }
+        for (const constat of constats) {
           observateur.emettre({ type: 'interception-clic', horodatage, page: url, viewport: viewport.nom, ...constat, source: 'geometrie' });
         }
       }
@@ -1024,7 +1055,15 @@ export function creerExplorateur(dependances: DependancesExplorateur): Explorate
           parcours.arret = plusPrioritaire(parcours.arret, 'erreur');
         }
       }
-      contexte.journaliser('exploration.fin', { arret: parcours.arret, pages: parcours.pages.length, actions: parcours.actions.length });
+      // Ce que le moteur a FAIT sur la page du client remonte avec le reste :
+      // le rapport le déclarera (cahier P2-3, contrat 7).
+      parcours.nbRecouvrementsEcartes = nbRecouvrementsEcartes;
+      contexte.journaliser('exploration.fin', {
+        arret: parcours.arret,
+        pages: parcours.pages.length,
+        actions: parcours.actions.length,
+        recouvrementsEcartes: nbRecouvrementsEcartes,
+      });
       return parcours;
     },
   };

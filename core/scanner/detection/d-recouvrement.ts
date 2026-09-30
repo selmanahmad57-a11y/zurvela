@@ -39,16 +39,30 @@ function cleCible(signal: SignalInterception): string {
  *     boutons est un défaut, pas trois (expandtesting : six sections pour
  *     une iframe publicitaire). L'intercepteur devient l'élément en cause.
  * Sans intercepteur connu, l'élément ciblé reste la seule identité.
+ *
+ * TROISIÈME NIVEAU (cahier P2-3, contrat 4) : N intercepteurs de MÊME
+ * CONSTRUCTION sont une cause. Le critère est la signature structurelle
+ * calculée en page — balise, classes triées, chemin aux rangs de fratrie
+ * effacés — et rien d'autre. Sans signature, on NE FOND PAS : l'asymétrie
+ * est voulue, parce que les deux erreurs ne coûtent pas le même prix. Ne
+ * pas fondre publie une section en double, du bruit ; fondre à tort réunit
+ * deux défauts distincts sous un seul constat, et PERD un signal. Le
+ * différenciateur n°1 se paie en bruit, jamais en silence.
  */
 function cleCause(cibles: SignalInterception[]): string {
   const premier = cibles[0];
   if (premier === undefined) {
     return '';
   }
-  const intercepteur = cibles.find((signal) => signal.intercepteur !== null)?.intercepteur ?? null;
-  return intercepteur === null
-    ? `cible|${cleCible(premier)}`
-    : ['intercepteur', cheminDePage(premier.page), intercepteur.selecteur, premier.viewport].join('|');
+  const porteur = cibles.find((signal) => signal.intercepteur !== null);
+  const intercepteur = porteur?.intercepteur ?? null;
+  if (intercepteur === null) {
+    return `cible|${cleCible(premier)}`;
+  }
+  const signature = porteur?.signatureIntercepteur ?? null;
+  return signature === null
+    ? ['intercepteur', cheminDePage(premier.page), intercepteur.selecteur, premier.viewport].join('|')
+    : ['construction', cheminDePage(premier.page), signature, premier.viewport].join('|');
 }
 
 export function creerDetecteurRecouvrement(config: ConfigScanner['detecteurs']['recouvrement']): Detecteur {

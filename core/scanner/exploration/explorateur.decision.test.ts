@@ -27,7 +27,7 @@ import { lancerNavigateur } from '../navigateur.js';
 import { creerObservateur } from '../observation/observateur.js';
 import { COUCHE_ENUMERATION, COUCHE_FILTRE_DESTRUCTIF, EVENEMENT_COUCHE } from './couches.js';
 import { creerExplorateur, EVENEMENT_DECISION, EVENEMENT_ENUMERATION, RAISON_HORS_ENUMERATION } from './explorateur.js';
-import { creerFiltre, type FiltreActions } from './filtre-actions.js';
+import { creerFiltre, creerFiltreElement, type FiltreActions, type FiltreElement } from './filtre-actions.js';
 import { NOM_POLITIQUE_DETERMINISTE, politiqueDeterministe } from './politique.js';
 import { EVENEMENT_REPLI, NOM_POLITIQUE_IA, politiqueIa } from './politique-ia.js';
 
@@ -91,11 +91,14 @@ interface Resultat {
 
 let base: ConfigScanner;
 let filtre: FiltreActions;
+let filtreElement: FiltreElement;
 let navigateur: Browser;
 
 beforeAll(async () => {
   base = resserrer(await chargerConfigScanner());
-  filtre = creerFiltre(await chargerActionsInterdites());
+  const actionsInterdites = await chargerActionsInterdites();
+  filtre = creerFiltre(actionsInterdites);
+  filtreElement = creerFiltreElement(actionsInterdites);
   navigateur = await lancerNavigateur(base);
 }, 60_000);
 
@@ -111,6 +114,7 @@ async function explorer(url: string, politique: PolitiqueDecision, dureeMs = 20_
     politique,
     secours: politiqueDeterministe(),
     filtre,
+    filtreElement,
     navigateur,
   });
   const parcours = await explorateur.explorer(

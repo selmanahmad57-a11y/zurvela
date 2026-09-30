@@ -8,6 +8,7 @@ import type { Categorie, Gravite, Viewport } from '../types.js';
 import { depuisRacine } from '../outils/racine.js';
 import { chargerSchema, valider } from '../outils/schema.js';
 import { LANGUES_RAPPORT, estLangueRapport } from '../rapport/voix.js';
+import type { GesteFermeture } from './exploration/ecarter-recouvrement.js';
 
 export interface RegleRemplissage {
   types: string[];
@@ -120,7 +121,22 @@ export interface ConfigScanner {
     echecMuet: { confiance: number; gravite: Gravite; typesRequete: string[] };
     lenteur: { seuilMs: number; paliers: PalierConfiance[]; gravite: Gravite };
     image: { confianceSignalSimple: number; confianceSignalDouble: number; gravite: Gravite };
-    recouvrement: { confianceGeometrie: number; confianceGeometrieEtClic: number; gravite: Gravite };
+    recouvrement: {
+      confianceGeometrie: number;
+      confianceGeometrieEtClic: number;
+      /** Gravité de repli quand la nature de l'élément masqué n'a pas pu être établie (cahier P2-3, contrat 2). */
+      gravite: Gravite;
+      /** Le critère de gravité est CE QUI EST MASQUÉ, pas le fait de masquer (contrat 2, D4). */
+      graviteParNature: { actionCritique: Gravite; controleOrdinaire: Gravite; contenuSecondaire: Gravite };
+      /** Les gestes NEUTRES de fermeture : leur ordre et leur activation (contrat 1). L'ensemble possible vit en code. */
+      fermeture: {
+        gestes: readonly GesteFermeture[];
+        partMaxSurfaceControle: number;
+        partCoin: number;
+        delaiApresGesteMs: number;
+        recouvrementsMax: number;
+      };
+    };
     /**
      * Défaillance d'une DÉPENDANCE TIERCE — une ressource servie par une autre
      * origine que le site inspecté.

@@ -165,7 +165,7 @@ export function creerReexecuteur(dependances: DependancesReexecuteur): Reexecute
     async rejouer(reproduction, viewport: Viewport) {
       const debut = Date.now();
       const observateur = fabriqueObservateur();
-      const parcours: Parcours = { urlDepart: reproduction.url, pages: [], actions: [], arret: 'complet', enAttenteALArret: 0, pagesRestantesALArret: 0 };
+      const parcours: Parcours = { urlDepart: reproduction.url, pages: [], actions: [], arret: 'complet', enAttenteALArret: 0, pagesRestantesALArret: 0, nbRecouvrementsEcartes: 0 };
       let contexteNavigateur: BrowserContext | undefined;
       let page: Page | undefined;
       let branchee: PageBranchee | undefined;

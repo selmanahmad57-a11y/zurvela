@@ -29,7 +29,7 @@ import { creerAutoDiagnosticIa } from './confirmation/auto-diagnostic-ia.js';
 import { creerProtocole } from './confirmation/protocole.js';
 import { creerDetecteurs } from './detection/index.js';
 import { creerExplorateur } from './exploration/explorateur.js';
-import { creerFiltre } from './exploration/filtre-actions.js';
+import { creerFiltre, creerFiltreElement } from './exploration/filtre-actions.js';
 import { politiqueDeterministe } from './exploration/politique.js';
 import { politiqueIa } from './exploration/politique-ia.js';
 import { creerScanner, type SessionRejeu } from './index.js';
@@ -93,6 +93,7 @@ function choisirPolitique(
  */
 function explorateurAvecNavigateur(config: ConfigScanner, actionsInterdites: ActionsInterdites, ia: ClientIa): ExplorateurProfilant {
   const filtre = creerFiltre(actionsInterdites);
+  const filtreElement = creerFiltreElement(actionsInterdites);
   const deterministe = politiqueDeterministe();
   return {
     nom: NOM_EXPLORATEUR_NAVIGATEUR,
@@ -108,7 +109,7 @@ function explorateurAvecNavigateur(config: ConfigScanner, actionsInterdites: Act
         // `secours` est TOUJOURS la déterministe, même quand c'est elle qui
         // décide : la couche 1 doit pouvoir reprendre la main sans dépendre de
         // la politique qu'elle vient d'écarter.
-        const explorateur = creerExplorateur({ config, politique, secours: deterministe, filtre, navigateur });
+        const explorateur = creerExplorateur({ config, politique, secours: deterministe, filtre, filtreElement, navigateur });
         return await explorateur.explorer(contexte, observateur, collecte);
       } finally {
         clearTimeout(garde);

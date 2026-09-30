@@ -187,7 +187,7 @@ export function creerScanner(dependances: DependancesScanner): Scanner {
     const refus = refuserUrl(url);
     if (refus !== null) {
       journaliser('scan.erreur', { etape: 'url', message: refus });
-      const parcours: Parcours = { urlDepart: url, pages: [], actions: [], arret: 'erreur', enAttenteALArret: 0, pagesRestantesALArret: 0 };
+      const parcours: Parcours = { urlDepart: url, pages: [], actions: [], arret: 'erreur', enAttenteALArret: 0, pagesRestantesALArret: 0, nbRecouvrementsEcartes: 0 };
       const dureeMs = Date.now() - debut;
       journaliser('scan.fin', { dureeMs, coutApi: COUT_API_EXPLORATION_NUL, nbAnomalies: 0, arret: parcours.arret });
       return { url, anomalies: [], coutApi: COUT_API_EXPLORATION_NUL, dureeMs, journal, parcours, candidates: [], ecartees: [] };
@@ -233,7 +233,7 @@ export function creerScanner(dependances: DependancesScanner): Scanner {
       );
     } catch (cause: unknown) {
       journaliser('scan.erreur', { etape: 'exploration', message: messageErreur(cause) });
-      parcours = { urlDepart: url, pages: [], actions: [], arret: 'erreur', enAttenteALArret: 0, pagesRestantesALArret: 0 };
+      parcours = { urlDepart: url, pages: [], actions: [], arret: 'erreur', enAttenteALArret: 0, pagesRestantesALArret: 0, nbRecouvrementsEcartes: 0 };
     }
     journaliser('exploration.cout', { coutApi: coutExploration });
 

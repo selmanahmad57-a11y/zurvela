@@ -18,7 +18,7 @@ interface ResultatSonde {
   page: { liens: string[]; formulaires: { champs: { type: string }[]; declencheur: { balise: string; selecteur: string; attributs: Record<string, string> } | null }[] };
   texte: { titre: string; langueDeclaree: string | null; metadonnees: Record<string, string>; texteVisible: string; tronque: boolean };
   images: { complete: boolean; largeurNaturelle: number }[];
-  recouvrements: unknown[];
+  recouvrements: { element: { attributs: Record<string, string> }; intercepteur: { attributs: Record<string, string> } | null }[];
   mutations: { enZone: boolean }[];
   declencheur: { attributs: Record<string, string> } | null;
   validite: { validationActive: boolean; champsInvalides: string[] };
@@ -29,7 +29,7 @@ describe('script en page sous tsx', () => {
     const { stdout, stderr } = await executer(process.execPath, [CLI_TSX, SONDE], { timeout: 25_000 });
     expect(stderr).toBe('');
     const resultat = JSON.parse(stdout) as ResultatSonde;
-    expect(resultat.page.liens.map((lien) => new URL(lien).pathname)).toEqual(['/suite']);
+    expect(resultat.page.liens.map((lien) => new URL(lien).pathname)).toEqual(['/suite', '/produit']);
     expect(resultat.page.formulaires).toHaveLength(2);
     expect(resultat.page.formulaires[0]?.champs.map((champ) => champ.type)).toEqual(['email']);
     expect(resultat.page.formulaires[0]?.declencheur?.balise).toBe('button');
@@ -39,7 +39,14 @@ describe('script en page sous tsx', () => {
     expect(resultat.images).toHaveLength(1);
     expect(resultat.images[0]?.complete).toBe(true);
     expect(resultat.images[0]?.largeurNaturelle).toBeGreaterThan(0);
-    expect(resultat.recouvrements).toEqual([]);
+    // LE CALQUE DE SURVOL N'EST PAS UN RECOUVREMENT SUBI, et le contrôle est
+    // posé DANS LES DEUX SENS (cahier P2-3, contrat 3) : la page de sonde
+    // porte une carte marchande (calque DANS le lien de la carte : le clic
+    // aboutit, rien à signaler) et une bannière venue du dehors (le clic est
+    // vraiment barré). Un critère qui ne peut rater que d'un côté ne
+    // prouverait que la moitié.
+    expect(resultat.recouvrements.map((r) => r.element.attributs['id'])).toEqual(['barre']);
+    expect(resultat.recouvrements[0]?.intercepteur?.attributs['id']).toBe('banniere');
     expect(resultat.mutations.some((mutation) => mutation.enZone)).toBe(true);
     expect(resultat.declencheur?.attributs['name']).toBe('b');
     expect(resultat.validite.validationActive).toBe(true);

@@ -28,7 +28,19 @@ const HTML =
   '<input name="a" type="email"><button type="submit" name="b"></button></form></div>' +
   '<o:p><form id="g" method="post" action="/api2"><input name="c" type="text">' +
   '<input type="image" name="d" alt="x" src="/image.svg"></form></o:p>' +
-  '<a href="/suite">.</a><img id="i" src="/image.svg" width="10" height="10"></body></html>';
+  '<a href="/suite">.</a><img id="i" src="/image.svg" width="10" height="10">' +
+  // DEUX RECOUVREMENTS, UN DE CHAQUE CÔTÉ DU CRITÈRE (cahier P2-3, contrat 3).
+  // À gauche, la carte marchande : le calque est DANS le lien de la carte,
+  // donc le clic aboutit — aucune candidate attendue. À droite, la bannière
+  // : elle vient du dehors et barre le bouton — candidate attendue. Sans les
+  // deux, le critère ne pourrait rater que d'un côté.
+  '<a id="carte" href="/produit" style="position:relative;display:block;width:200px;height:60px">' +
+  '<button id="voir" style="position:absolute;left:10px;top:10px;width:80px;height:20px"></button>' +
+  '<span id="survol" style="position:absolute;inset:0;background:transparent"></span></a>' +
+  '<div style="position:relative;width:200px;height:60px">' +
+  '<button id="barre" style="position:absolute;left:10px;top:10px;width:80px;height:20px"></button>' +
+  '<div id="banniere" style="position:absolute;inset:0;background:#fff"></div></div>' +
+  '</body></html>';
 
 const IMAGE_SVG = '<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10"></svg>';
 

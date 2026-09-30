@@ -68,6 +68,12 @@ export type VerdictFiltre = { autorisee: true } | RefusMotif | RefusTechnique;
 
 export type FiltreActions = (action: Action, page: Page) => Promise<VerdictFiltre>;
 
+/** Le filtre appliqué à un ÉLÉMENT que le CODE s'apprête à activer (constitution §3, clause de P2-3). */
+export type FiltreElement = (page: Page, selecteur: string) => Promise<VerdictFiltre>;
+
+/** Le même, déjà lié à sa page : ce que reçoit un module qui agit sur une page donnée. */
+export type FiltreElementLie = (selecteur: string) => Promise<VerdictFiltre>;
+
 /** Valeurs lues sur l'action, réparties par canal. */
 export interface ValeursExaminees {
   texte: string[];
@@ -252,25 +258,65 @@ function selecteurBoutonParDefaut(selecteurFormulaire: string): string {
     .join(', ');
 }
 
-export function creerFiltre(actionsInterdites: ActionsInterdites): FiltreActions {
-  const { attributsTexte, attributsUrl, attributsIdentifiants, attributsDescendantsExamines, texteVisibleExamine } =
-    actionsInterdites;
-  const attributs = attributsLus(actionsInterdites);
-
-  // Un attribut est confronté à la liste de CHAQUE canal qui le revendique.
-  const repartir = (lus: Record<string, string>, valeurs: ValeursExaminees): void => {
-    for (const [nom, valeur] of Object.entries(lus)) {
-      if (attributsTexte.includes(nom)) {
-        valeurs.texte.push(valeur);
-      }
-      if (attributsUrl.includes(nom)) {
-        valeurs.url.push(valeur);
-      }
-      if (attributsIdentifiants.includes(nom)) {
-        valeurs.identifiant.push(valeur);
-      }
+/** Un attribut est confronté à la liste de CHAQUE canal qui le revendique. */
+function repartir(actionsInterdites: ActionsInterdites, lus: Record<string, string>, valeurs: ValeursExaminees): void {
+  for (const [nom, valeur] of Object.entries(lus)) {
+    if (actionsInterdites.attributsTexte.includes(nom)) {
+      valeurs.texte.push(valeur);
     }
-  };
+    if (actionsInterdites.attributsUrl.includes(nom)) {
+      valeurs.url.push(valeur);
+    }
+    if (actionsInterdites.attributsIdentifiants.includes(nom)) {
+      valeurs.identifiant.push(valeur);
+    }
+  }
+}
+
+/**
+ * LE FILTRE S'APPLIQUE AUSSI AUX GESTES QUE LE CODE CHOISIT SEUL
+ * (constitution §3, inscrite le 2026-09-30 à l'ouverture de P2-3). Un
+ * élément que le moteur s'apprête à activer pour ÉCARTER un recouvrement
+ * est lu et confronté aux mêmes listes qu'une action décidée par l'IA : un
+ * geste n'échappe pas au filtre parce qu'aucun modèle ne l'a demandé.
+ *
+ * FERMÉ comme le reste : un élément qu'on ne peut pas lire n'est pas activé.
+ */
+export async function filtrerElement(
+  page: Page,
+  selecteur: string,
+  actionsInterdites: ActionsInterdites,
+): Promise<VerdictFiltre> {
+  const valeurs: ValeursExaminees = { texte: [], url: [], identifiant: [] };
+  try {
+    const lu = await lireDeclencheur(
+      page,
+      selecteur,
+      attributsLus(actionsInterdites),
+      actionsInterdites.texteVisibleExamine,
+      actionsInterdites.attributsDescendantsExamines,
+    );
+    if (lu === null) {
+      return { autorisee: false, raison: RAISON_LECTURE_IMPOSSIBLE };
+    }
+    repartir(actionsInterdites, lu.attributs, valeurs);
+    if (lu.texte !== null) {
+      valeurs.texte.push(lu.texte);
+    }
+  } catch {
+    return { autorisee: false, raison: RAISON_LECTURE_IMPOSSIBLE };
+  }
+  return apparier(valeurs, actionsInterdites);
+}
+
+/** Le filtre d'élément, lié à sa liste : ce que l'assemblage injecte dans l'explorateur. */
+export function creerFiltreElement(actionsInterdites: ActionsInterdites): FiltreElement {
+  return (page, selecteur) => filtrerElement(page, selecteur, actionsInterdites);
+}
+
+export function creerFiltre(actionsInterdites: ActionsInterdites): FiltreActions {
+  const { attributsDescendantsExamines, texteVisibleExamine } = actionsInterdites;
+  const attributs = attributsLus(actionsInterdites);
 
   return async (action, page) => {
     switch (action.type) {
@@ -282,7 +328,7 @@ export function creerFiltre(actionsInterdites: ActionsInterdites): FiltreActions
         try {
           const formulaire = await lireDeclencheur(page, action.formulaire.selecteur, attributs, false);
           if (formulaire !== null) {
-            repartir(formulaire.attributs, valeurs);
+            repartir(actionsInterdites, formulaire.attributs, valeurs);
           }
           // Sans déclencheur extrait, c'est le bouton par défaut du navigateur qui serait activé : on le lit.
           const selecteurDeclencheur =
@@ -295,7 +341,7 @@ export function creerFiltre(actionsInterdites: ActionsInterdites): FiltreActions
             attributsDescendantsExamines,
           );
           if (declencheur !== null) {
-            repartir(declencheur.attributs, valeurs);
+            repartir(actionsInterdites, declencheur.attributs, valeurs);
             if (declencheur.texte !== null) {
               valeurs.texte.push(declencheur.texte);
             }

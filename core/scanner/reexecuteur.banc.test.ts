@@ -22,7 +22,7 @@ import { creerDetecteurs } from './detection/index.js';
 import { detecter } from './detection/index.js';
 import { NOM_DETECTEUR_INERTE } from './detection/d-inerte.js';
 import { creerExplorateur } from './exploration/explorateur.js';
-import { creerFiltre } from './exploration/filtre-actions.js';
+import { creerFiltre, creerFiltreElement } from './exploration/filtre-actions.js';
 import { politiqueDeterministe } from './exploration/politique.js';
 import { lancerNavigateur } from './navigateur.js';
 import { creerObservateur } from './observation/observateur.js';
@@ -56,6 +56,7 @@ beforeAll(async () => {
     politique: deterministe,
     secours: deterministe,
     filtre: creerFiltre(await chargerActionsInterdites()),
+    filtreElement: creerFiltreElement(await chargerActionsInterdites()),
     navigateur,
   });
   const parcours: Parcours = await explorateur.explorer(

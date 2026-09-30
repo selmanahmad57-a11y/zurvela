@@ -13,7 +13,7 @@ import { chargerActionsInterdites, chargerConfigScanner, type ConfigScanner } fr
 import { lancerNavigateur } from '../navigateur.js';
 import { creerObservateur } from '../observation/observateur.js';
 import { creerExplorateur } from './explorateur.js';
-import { creerFiltre, type FiltreActions } from './filtre-actions.js';
+import { creerFiltre, creerFiltreElement, type FiltreActions, type FiltreElement } from './filtre-actions.js';
 import { politiqueDeterministe } from './politique.js';
 
 export const ECHEANCE_TEST_MS = 40_000;
@@ -51,7 +51,9 @@ export async function preparerBanc(): Promise<BancEssai> {
       margeEcheanceMs: 0,
     },
   };
-  const filtre: FiltreActions = creerFiltre(await chargerActionsInterdites());
+  const actionsInterdites = await chargerActionsInterdites();
+  const filtre: FiltreActions = creerFiltre(actionsInterdites);
+  const filtreElement: FiltreElement = creerFiltreElement(actionsInterdites);
   const configBanc = await chargerConfig();
   const navigateur: Browser = await lancerNavigateur(config);
 
@@ -59,7 +61,7 @@ export async function preparerBanc(): Promise<BancEssai> {
     const journal: EntreeJournal[] = [];
     const observateur = creerObservateur();
     const deterministe = politiqueDeterministe();
-    const explorateur = creerExplorateur({ config, politique: deterministe, secours: deterministe, filtre, navigateur });
+    const explorateur = creerExplorateur({ config, politique: deterministe, secours: deterministe, filtre, filtreElement, navigateur });
     const parcours = await explorateur.explorer(
       { urlDepart: url, echeance, journaliser: (type, details) => journal.push({ horodatage: new Date().toISOString(), type, details }) },
       observateur,

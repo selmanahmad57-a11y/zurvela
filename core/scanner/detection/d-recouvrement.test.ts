@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import type { LocalisationElement, Signal } from '../../types.js';
 import { creerDetecteurRecouvrement, DESCRIPTION_CLIC_INTERCEPTE, NOM_DETECTEUR_RECOUVREMENT } from './d-recouvrement.js';
 import { CONFIG_TEST, contexte, DESKTOP, interception, MOBILE, signauxSains, soumission, URL_CONTACT } from './fabriques-test.js';
 
@@ -130,3 +131,70 @@ describe('D-RECOUVREMENT — paliers de confiance', () => {
     expect(detecteur.detecter(signaux, contexte())).toHaveLength(2);
   });
 });
+
+describe('N intercepteurs de MÊME CONSTRUCTION sont une cause (cahier P2-3, contrat 4)', () => {
+  /** Un intercepteur d'une grille : même construction, rang de fratrie différent. */
+  function carte(rang: number, classes = 'carte.voile'): { intercepteur: LocalisationElement; signature: string } {
+    const selecteur = `body > ul > li:nth-of-type(${rang}) > span`;
+    return {
+      intercepteur: { balise: 'span', selecteur, attributs: {} },
+      // Ce que la sonde calcule en page : balise | classes triées | chemin aux rangs effacés.
+      signature: `span|${classes}|body > ul > li:nth-of-type() > span`,
+    };
+  }
+
+  function interceptionDe(cible: string, rang: number, classes?: string): Signal {
+    const { intercepteur, signature } = carte(rang, classes);
+    return interception({
+      element: { balise: 'a', selecteur: cible, attributs: {} },
+      intercepteur,
+      signatureIntercepteur: signature,
+    });
+  }
+
+  it('SIX calques d’une même grille → UNE candidate, six preuves', () => {
+    // Le legs de P2-2 : six intercepteurs distincts sortaient en six
+    // sections. Ils sont la même construction répétée, donc un défaut.
+    const signaux = Array.from({ length: 6 }, (_, i) => interceptionDe(`body > ul > li:nth-of-type(${i + 1}) > a`, i + 1));
+    const candidates = detecteur.detecter(signaux, contexte([soumission('a1')]));
+    expect(candidates).toHaveLength(1);
+    expect(candidates[0]?.description).toBe(DESCRIPTION_CLIC_INTERCEPTE);
+    expect(candidates[0]?.preuves).toHaveLength(6);
+  });
+
+  it('… ET DANS L’AUTRE SENS : deux recouvrements RÉELLEMENT distincts ne fondent PAS', () => {
+    // LE SENS QUI PERD DES SIGNAUX, donc le plus grave. Deux calques sans
+    // rapport, posés côte à côte, partagent le même chemin générateur : c'est
+    // la CLASSE qui les sépare. Un critère qui ne regarderait que le chemin
+    // les fondrait en un seul constat et enterrerait un vrai défaut.
+    const signaux = [interceptionDe('#connexion', 1, 'bandeau-cookies'), interceptionDe('#panier', 2, 'encart-promo')];
+    const candidates = detecteur.detecter(signaux, contexte([soumission('a1')]));
+    expect(candidates).toHaveLength(2);
+  });
+
+  it('SANS signature, on NE FOND PAS : l’absence de preuve de répétition n’est pas une preuve de répétition', () => {
+    // Deux conteneurs sans classe sous `body`. Le chemin seul les
+    // confondrait ; la doctrine refuse, et publie deux sections plutôt que
+    // d'en perdre une.
+    const nu = (selecteur: string, cible: string): Signal =>
+      interception({
+        element: { balise: 'a', selecteur: cible, attributs: {} },
+        intercepteur: { balise: 'div', selecteur, attributs: {} },
+        signatureIntercepteur: null,
+      });
+    const candidates = detecteur.detecter(
+      [nu('body > div:nth-of-type(1)', '#a'), nu('body > div:nth-of-type(2)', '#b')],
+      contexte([soumission('a1')]),
+    );
+    expect(candidates).toHaveLength(2);
+  });
+
+  it('la même construction sur DEUX PAGES reste deux causes : une cause est locale à sa page', () => {
+    const { intercepteur, signature } = carte(1);
+    const surPage = (page: string, cible: string): Signal =>
+      interception({ page, element: { balise: 'a', selecteur: cible, attributs: {} }, intercepteur, signatureIntercepteur: signature });
+    const candidates = detecteur.detecter([surPage(URL_CONTACT, '#a'), surPage(`${URL_CONTACT}/autre`, '#b')], contexte([soumission('a1')]));
+    expect(candidates).toHaveLength(2);
+  });
+});
+

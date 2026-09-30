@@ -84,7 +84,7 @@ function rapport(options: OptionsRapport = {}): Rapport {
       urlDepart: 'http://127.0.0.1:1/',
       pages: (options.urls ?? ['/']).map((url) => pageVisitee(`http://127.0.0.1:1${url}`)),
       actions: options.actions ?? [],
-      arret: 'limite-pages', enAttenteALArret: 0, pagesRestantesALArret: 0,
+      arret: 'limite-pages', enAttenteALArret: 0, pagesRestantesALArret: 0, nbRecouvrementsEcartes: 0
     },
   };
 }

@@ -99,6 +99,7 @@ function parcoursSimule(urlDepart: string, viewport: string): Parcours {
       },
     ],
     arret: 'complet', enAttenteALArret: 0, pagesRestantesALArret: 0,
+  nbRecouvrementsEcartes: 0,
   };
 }
 
@@ -361,7 +362,7 @@ describe('creerScanner', () => {
 
     const rapport = await scanner(ORIGINE, { timeoutMs: 1000 });
 
-    expect(rapport.parcours).toEqual({ urlDepart: ORIGINE, pages: [], actions: [], arret: 'erreur', enAttenteALArret: 0, pagesRestantesALArret: 0 });
+    expect(rapport.parcours).toEqual({ urlDepart: ORIGINE, pages: [], actions: [], arret: 'erreur', enAttenteALArret: 0, pagesRestantesALArret: 0, nbRecouvrementsEcartes: 0 });
     const erreur = rapport.journal.find((entree) => entree.type === 'scan.erreur');
     expect(erreur?.details).toEqual({ etape: 'exploration', message: 'navigateur perdu' });
     expect(rapport.journal.map((entree) => entree.type)).toEqual([

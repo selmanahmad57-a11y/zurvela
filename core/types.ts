@@ -312,6 +312,14 @@ export interface Parcours {
   enAttenteALArret: number;
   /** Pages que le budget permettait encore à l'arrêt (somme sur les viewports). */
   pagesRestantesALArret: number;
+  /**
+   * Recouvrements ÉCARTÉS par un geste neutre, tous viewports et toutes
+   * pages confondus (cahier P2-3, contrats 1 et 7). Le moteur a AGI sur la
+   * page du client : le compte se dit au rapport, il ne se tait pas. Un
+   * silence qui ne se compte pas est un angle mort ; une action qui ne se
+   * déclare pas est pire.
+   */
+  nbRecouvrementsEcartes: number;
 }
 
 /** Ce que la politique de décision voit avant de choisir la prochaine action. */
@@ -526,6 +534,14 @@ export type Signal =
       element: LocalisationElement;
       /** Élément qui reçoit le point de clic à la place de la cible, ou null si inconnu. */
       intercepteur: LocalisationElement | null;
+      /**
+       * Signature de CONSTRUCTION de l'intercepteur (cahier P2-3, contrat 4),
+       * ou null quand l'élément n'offre rien de répétable. Deux intercepteurs
+       * de même signature sont la même construction répétée — une cause, pas
+       * N. C'est une comparaison de CHAÎNES : le code ne lit aucun nom, il
+       * constate une égalité (règle maîtresse §2, comme l'hôte en P2-2).
+       */
+      signatureIntercepteur?: string | null;
       /** `geometrie` : constaté par elementFromPoint ; `clic` : clic refusé par le navigateur. */
       source: 'geometrie' | 'clic';
     })

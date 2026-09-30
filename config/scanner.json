@@ -190,9 +190,26 @@
       "confianceSignalDouble": 0.95
     },
     "recouvrement": {
-      "gravite": "bloquant",
+      "gravite": "important",
       "confianceGeometrie": 0.8,
-      "confianceGeometrieEtClic": 0.95
+      "confianceGeometrieEtClic": 0.95,
+      "graviteParNature": {
+        "actionCritique": "bloquant",
+        "controleOrdinaire": "important",
+        "contenuSecondaire": "mineur"
+      },
+      "fermeture": {
+        "gestes": [
+          "echap",
+          "dialog-natif",
+          "controle-ferme",
+          "clic-hors-zone"
+        ],
+        "partMaxSurfaceControle": 0.15,
+        "partCoin": 0.25,
+        "delaiApresGesteMs": 300,
+        "recouvrementsMax": 10
+      }
     },
     "tiers": {
       "categorie": "fonctionnel",

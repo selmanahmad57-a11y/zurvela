@@ -17,7 +17,7 @@ import { lancerNavigateur } from '../navigateur.js';
 import { creerObservateur } from '../observation/observateur.js';
 import { COUCHE_FILTRE_DESTRUCTIF } from './couches.js';
 import { creerExplorateur } from './explorateur.js';
-import { creerFiltre, type FiltreActions } from './filtre-actions.js';
+import { creerFiltre, creerFiltreElement, type FiltreActions, type FiltreElement } from './filtre-actions.js';
 import { politiqueDeterministe } from './politique.js';
 
 /** Délais resserrés : ces tests n'attendent que des effets immédiats. */
@@ -90,11 +90,14 @@ interface Resultat {
 
 let base: ConfigScanner;
 let filtre: FiltreActions;
+let filtreElement: FiltreElement;
 let navigateur: Browser;
 
 beforeAll(async () => {
   base = await chargerConfigScanner();
-  filtre = creerFiltre(await chargerActionsInterdites());
+  const actionsInterdites = await chargerActionsInterdites();
+  filtre = creerFiltre(actionsInterdites);
+  filtreElement = creerFiltreElement(actionsInterdites);
   navigateur = await lancerNavigateur(base);
 });
 
@@ -106,7 +109,7 @@ async function explorer(url: string, config: ConfigScanner, dureeMs = 15_000): P
   const journal: EntreeJournal[] = [];
   const observateur = creerObservateur();
   const deterministe = politiqueDeterministe();
-  const explorateur = creerExplorateur({ config, politique: deterministe, secours: deterministe, filtre, navigateur });
+  const explorateur = creerExplorateur({ config, politique: deterministe, secours: deterministe, filtre, filtreElement, navigateur });
   const parcours = await explorateur.explorer(
     {
       urlDepart: url,

@@ -38,7 +38,19 @@ export const CONFIG_TEST: ConfigScanner['detecteurs'] = {
     ],
   },
   image: { confianceSignalSimple: 0.8, confianceSignalDouble: 0.95, gravite: 'mineur' },
-  recouvrement: { confianceGeometrie: 0.8, confianceGeometrieEtClic: 0.95, gravite: 'bloquant' },
+  recouvrement: {
+    confianceGeometrie: 0.8,
+    confianceGeometrieEtClic: 0.95,
+    gravite: 'important',
+    graviteParNature: { actionCritique: 'bloquant', controleOrdinaire: 'important', contenuSecondaire: 'mineur' },
+    fermeture: {
+      gestes: ['echap', 'dialog-natif', 'controle-ferme', 'clic-hors-zone'],
+      partMaxSurfaceControle: 0.15,
+      partCoin: 0.25,
+      delaiApresGesteMs: 300,
+      recouvrementsMax: 10,
+    },
+  },
   tiers: { categorie: 'fonctionnel', gravite: 'mineur', confiance: 0.7, fenetreErreurJsMs: 2000 },
 };
 
@@ -220,7 +232,7 @@ export function contexte(actions: ActionExecutee[] = [], viewports: Viewport[] =
   return {
     urlDepart: URL_ACCUEIL,
     viewports,
-    parcours: { urlDepart: URL_ACCUEIL, pages: [], actions, arret: 'complet', enAttenteALArret: 0, pagesRestantesALArret: 0 },
+    parcours: { urlDepart: URL_ACCUEIL, pages: [], actions, arret: 'complet', enAttenteALArret: 0, pagesRestantesALArret: 0, nbRecouvrementsEcartes: 0 },
   };
 }
 

@@ -30,7 +30,7 @@ import { chargerActionsInterdites, chargerConfigScanner, type ConfigScanner } fr
 import { creerDetecteurs, detecter } from '../detection/index.js';
 import { DESCRIPTION_DOCUMENT_INJOIGNABLE, NOM_DETECTEUR_HTTP } from '../detection/d-http.js';
 import { creerExplorateur } from '../exploration/explorateur.js';
-import { creerFiltre } from '../exploration/filtre-actions.js';
+import { creerFiltre, creerFiltreElement } from '../exploration/filtre-actions.js';
 import { politiqueDeterministe } from '../exploration/politique.js';
 import { lancerNavigateur } from '../navigateur.js';
 import { creerObservateur } from '../observation/observateur.js';
@@ -83,6 +83,7 @@ beforeAll(async () => {
     politique: deterministe,
     secours: deterministe,
     filtre: creerFiltre(await chargerActionsInterdites()),
+    filtreElement: creerFiltreElement(await chargerActionsInterdites()),
     navigateur,
   });
   const parcours: Parcours = await explorateur.explorer(

@@ -225,6 +225,18 @@ autres sont revenues par `git checkout`, sans un appel.
 Une cassette coûte de l'argent réel. Elle se committe le jour où elle est
 payée.
 
+**Étendu le 2026-10-01 (APPRENTISSAGES n°29) — ON COMMITTE AVANT TOUTE
+SESSION DE MUTATION-KILL.** La fenêtre de perte ne s'ouvre pas qu'à
+l'enregistrement d'une cassette : la mutation-kill est le seul moment où
+l'on casse VOLONTAIREMENT du code, donc le seul où l'on défera des
+modifications à la main, sous fatigue et en série. Et `git checkout --`
+opère sur l'unité FICHIER : une mutation et le travail légitime cohabitent
+dans le même fichier, la commande ne peut structurellement pas les séparer.
+L'utiliser pour défaire une mutation détruit le travail PAR CONSTRUCTION,
+pas par accident. Le filet est donc double, et aucun des deux ne passe par
+le dépôt : committer avant d'ouvrir la session, et défaire chaque mutation
+par la COPIE prise juste avant elle.
+
 ## 9. La revue de prose d'une nouvelle langue de rédaction
 
 Avant d'ajouter une langue à `LANGUES_RAPPORT`, deux relectures, et aucune

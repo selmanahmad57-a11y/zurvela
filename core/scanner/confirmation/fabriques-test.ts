@@ -109,11 +109,12 @@ export function reexecuteurFactice(scripts: RejeuScripte[]): ReexecuteurFactice 
         arret: 'complet' as const,
         enAttenteALArret: 0,
         pagesRestantesALArret: 0,
+        nbRecouvrementsEcartes: 0,
       };
       if (script.echecOutillage === true) {
         return Promise.resolve({
           signaux: [],
-          parcours: { ...parcours, actions: [], arret: 'erreur' as const, enAttenteALArret: 0, pagesRestantesALArret: 0 },
+          parcours: { ...parcours, actions: [], arret: 'erreur' as const, enAttenteALArret: 0, pagesRestantesALArret: 0, nbRecouvrementsEcartes: 0 },
           echecOutillage: true,
           ...(script.causeEchec === undefined ? {} : { causeEchec: script.causeEchec }),
           ...(script.erreur === undefined ? {} : { erreur: script.erreur }),
