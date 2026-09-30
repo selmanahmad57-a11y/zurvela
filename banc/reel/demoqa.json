@@ -1,0 +1,21 @@
+{
+  "id": "demoqa",
+  "url": "https://demoqa.com",
+  "role": "defaut",
+  "fiche": "08",
+  "defaut": "C-06",
+  "avant": {
+    "rejouabiliteGroupesPourcent": 4.5,
+    "candidates": 62,
+    "groupes": 22,
+    "retenues": 1,
+    "pages": 40,
+    "dureeMs": 289273
+  },
+  "attendus": {
+    "rejouabiliteGroupesMinPourcent": 50,
+    "dureeMaxMs": 300000,
+    "pagesMin": 20,
+    "candidatesMin": 10
+  }
+}

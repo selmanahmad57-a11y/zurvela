@@ -12,6 +12,7 @@ import { DESCRIPTION_IMAGE_CASSEE, creerDetecteurImage } from '../detection/d-im
 import { creerDetecteurInerte } from '../detection/d-inerte.js';
 import { creerDetecteurRecouvrement } from '../detection/d-recouvrement.js';
 import {
+  INTERCEPTEUR,
   BOUTON,
   CONFIG_TEST,
   DESKTOP,
@@ -132,7 +133,8 @@ describe('consolider', () => {
 
     expect(groupes.map((groupe) => groupe.cle)).toEqual([
       `d-inerte:element:${BOUTON.selecteur}`,
-      `d-recouvrement:element:${BOUTON.selecteur}:mobile`,
+      // Le recouvrement se nomme par son intercepteur (P2-2, contrat 4).
+      `d-recouvrement:element:${INTERCEPTEUR.selecteur}:mobile`,
     ]);
     // L'asymétrie « mobile uniquement » survit à la consolidation.
     expect(groupes[1]?.observations).toEqual([{ viewport: MOBILE.nom }]);

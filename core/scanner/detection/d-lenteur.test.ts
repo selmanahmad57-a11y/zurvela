@@ -14,7 +14,7 @@ import {
   URL_CONTACT,
 } from './fabriques-test.js';
 
-const detecteur = creerDetecteurLenteur(CONFIG_TEST.lenteur, CONFIG_TEST.tiers);
+const detecteur = creerDetecteurLenteur(CONFIG_TEST.lenteur);
 const seuil = CONFIG_TEST.lenteur.seuilMs;
 const [PALIER_BAS, PALIER_MOYEN, PALIER_HAUT] = CONFIG_TEST.lenteur.paliers;
 
@@ -84,13 +84,13 @@ describe('D-LENTEUR', () => {
 
   it('paliers donnés en DÉSORDRE dans la config → même résultat (ils sont triés à la construction)', () => {
     const paliers = CONFIG_TEST.lenteur.paliers;
-    const desordre = creerDetecteurLenteur({ ...CONFIG_TEST.lenteur, paliers: [...paliers].reverse() }, CONFIG_TEST.tiers);
+    const desordre = creerDetecteurLenteur({ ...CONFIG_TEST.lenteur, paliers: [...paliers].reverse() });
     const lente = reponse({ actionId: 'a1', dureeMs: seuil * 2 });
     expect(desordre.detecter([lente], contexte([soumission('a1')]))[0]?.confiance).toBe(PALIER_MOYEN?.confiance);
   });
 
   it('palier UNIQUE → toute lenteur porte cette confiance, quel que soit le dépassement', () => {
-    const unique = creerDetecteurLenteur({ ...CONFIG_TEST.lenteur, paliers: [{ ratioMin: 1, confiance: 0.6 }] }, CONFIG_TEST.tiers);
+    const unique = creerDetecteurLenteur({ ...CONFIG_TEST.lenteur, paliers: [{ ratioMin: 1, confiance: 0.6 }] });
     const durees = [seuil + 1, seuil * 2, seuil * 100];
     const confiances = durees.map((dureeMs) => unique.detecter([reponse({ actionId: 'a1', dureeMs })], contexte([soumission('a1')]))[0]?.confiance);
     expect(confiances).toEqual([0.6, 0.6, 0.6]);
@@ -103,12 +103,12 @@ describe('D-LENTEUR', () => {
         { ratioMin: 5, confiance: 0.5 },
         { ratioMin: 10, confiance: 0.9 },
       ],
-    }, CONFIG_TEST.tiers);
+    });
     expect(exigeant.detecter([reponse({ actionId: 'a1', dureeMs: seuil + 1 })], contexte([soumission('a1')]))[0]?.confiance).toBe(0.5);
   });
 
   it('le seuil vient de la config reçue', () => {
-    const strict = creerDetecteurLenteur({ ...CONFIG_TEST.lenteur, seuilMs: 10 }, CONFIG_TEST.tiers);
+    const strict = creerDetecteurLenteur({ ...CONFIG_TEST.lenteur, seuilMs: 10 });
     expect(strict.detecter([reponse({ actionId: 'a1', dureeMs: 11 })], contexte([soumission('a1')]))).toHaveLength(1);
   });
 });
@@ -121,7 +121,7 @@ describe('D-LENTEUR', () => {
 describe('D-LENTEUR — détecteur gradué', () => {
   it('expose le seuil de sa config comme seuilMesure', () => {
     expect(detecteur.seuilMesure).toBe(seuil);
-    expect(creerDetecteurLenteur({ ...CONFIG_TEST.lenteur, seuilMs: 42 }, CONFIG_TEST.tiers).seuilMesure).toBe(42);
+    expect(creerDetecteurLenteur({ ...CONFIG_TEST.lenteur, seuilMs: 42 }).seuilMesure).toBe(42);
   });
 
   it('mesureDe rend la durée observée de la candidate, réponse reçue comme requête encore en attente', () => {

@@ -211,6 +211,207 @@ les tiers sans effet comptés ; les neuf sites rejoués sur trois moteurs, avec
 le jugement humain des retenues ; les fiches annotées « revu après P2-2 » ;
 commit « P2-2 — la doctrine tierce » à la validation seulement.
 
+## 5.1 Ce qui est livré (2026-09-30)
+
+**Contrat 1 — l'effet visible.** `core/scanner/detection/effet-visible.ts` :
+image non rendue (`etat-image`, largeur naturelle nulle), sous-cadre visible
+(`etat-cadre`, nouveau signal), script suivi d'une erreur JavaScript dans la
+fenêtre d'observation. Tout le reste n'est pas jugé : marqué
+`sansEffetVisible`, écarté d'office au verdict `sans-effet`, journalisé
+(`tiers.sans-effet`, avec l'hôte et le type), compté dans la sortie du scan et
+dans la scorecard. Le contrôle est POSÉ DANS LES DEUX SENS au banc (W01 tu,
+W02 publié) et dans les deux sens en test (un seul membre à effet visible
+suffit à faire juger le groupe). Mutations tuées : critère retiré, tout jugé
+sans effet.
+
+**Contrat 2 — les deux axes.** Le contenu mixte se teste AVANT l'origine, sur
+les sous-ressources de toute page `https`, quel qu'en soit l'hôte : c'est un
+défaut de SÉCURITÉ du site (`contenu-mixte`), jamais un tiers en panne.
+Vérifié sur le réel : books publie `ajax.googleapis.com` en `Important ·
+Sécurité` là où P2-1 disait « un service extérieur ne répond pas » en
+`Mineur` ; automationexercise de même avec `fonts.googleapis.com` sur vingt
+pages. Le banc ne peut pas le reproduire (dette n°21, déclarée d'avance).
+
+**Contrat 3 — l'hôte, par la VOIE GRATUITE.** Deux versions de prompt ont
+essayé de faire écrire l'hôte par le modèle : v2 en le permettant (0 hôte
+nommé sur 5 appels mesurés — une permission perd contre deux interdictions
+fortes), v3 en l'exigeant (prose refusée pour cause de chiffre). Les deux sont
+abandonnées. Le RAPPORT pose l'hôte lui-même, à côté de la prose, dans la
+table de voix typée par langue — le patron savait déjà poser des phrases
+écrites par le code. Conséquences : le modèle ne voit plus l'hôte du tout,
+l'exemption aux chiffres disparaît (la règle redevient sans exception),
+l'hôte affiché est CELUI DE LA PREUVE, il est échappé comme un chemin, et il
+paraît même dans un rapport structurel sans aucune prose — ce que la voie
+modèle n'aurait jamais pu faire. Le prompt reste en **v1**, inchangé : le parc
+de cassettes tient, et son ré-enregistrement (1,40 USD) est annulé. Cinq
+mutations tuées : prompt qui redemande l'hôte, hôte montré au modèle, hôte
+divergent de la preuve, hôte non échappé, ligne supprimée.
+
+**Contrat 4 — une cause, un constat.** Regroupement à deux niveaux : les
+PREUVES par cible (page × élément × viewport), les CAUSES par intercepteur.
+La cible sert la haute confiance d'un clic refusé qui ne connaît pas son
+intercepteur ; la cause sert la publication. La ligne « une cause, un
+constat » du banc passe de 4 à **0** et devient une ALARME.
+
+**Contrat 5 — la lenteur tierce.** `d-lenteur` ignore les ressources d'une
+autre origine. Effet mesuré sur le réel : automationexercise passe de 1 157 à
+360 candidates à nombre de pages égal.
+
+**Contrat 6 — le gabarit à seconde origine.** `tiers-au-robot` : W01 (police
+servie au navigateur avec l'en-tête CORS, refusée au robot déclaré — silence
+attendu), W02 (script d'avis en panne que la page appelle — publication
+attendue). X01 change d'attendu comme déclaré : `confirmee` → `sans-effet`,
+0 section publiée, coût 0,035 → 0,001 USD.
+
+**Contrat 7 — la validation sur le réel** : §5.2.
+
+## 5.2 Les trois moteurs sur les neuf sites (2026-09-30, 1,1576 USD)
+
+Campagne (`e872872`), P2-1 (`7936175`) et P2-2, dans la même session, sur
+l'état vivant du jour. Sections publiées au client :
+
+| site | rôle | campagne | P2-1 | P2-2 |
+|---|---|---|---|---|
+| automationexercise | défaut | 24 | 29 | 29 |
+| books | défaut | 0 | 1 | 1 |
+| cutlybook | défaut | 0 | 5 | 0 |
+| demoqa | défaut | 0 | 3 | 6 |
+| expandtesting | défaut | 0 | 16 | 20 |
+| getlumavo | témoin | 1 | 1 | 0 |
+| quotes | témoin | 3 | 3 | 1 |
+| the-internet | témoin | 5 | 5 | 4 |
+| zurvela | témoin | 0 | 0 | 0 |
+| **total** | | **33** | **63** | **61** |
+
+**Jugement humain de chaque section publiée** — un tiers en échec sans effet
+visible est du bruit ; un tiers appelé en `http` depuis une page `https` est
+un vrai défaut du site, même quand le moteur le publiait sous une mauvaise
+étiquette :
+
+| moteur | vraies | fausses | taux de faux positifs |
+|---|---|---|---|
+| campagne | 6 | 27 | 82 % |
+| P2-1 | 12 | 51 | 81 % |
+| P2-2 | 24 | 37 | 61 % |
+| P2-2 + correctif §5.3 | 24 | 0 | **0 %** — RECALCULÉ, pas mesuré |
+
+**La dernière ligne est recalculée**, groupe par groupe, depuis les journaux
+du run : elle applique le correctif de §5.3 à des mesures faites avant lui.
+Elle ne comptera pour un chiffre qu'après un run de mesure, et elle reste
+marquée telle quelle jusque-là. Ce qu'elle dit déjà, et qui ne dépend pas du
+run : les VRAIES anomalies restent à **24** dans les deux dernières lignes.
+Le bruit est retiré sans qu'un seul signal soit perdu — réduire les faux
+positifs en jetant les vrais serait facile et sans valeur.
+
+**77 groupes tiers tus** sur les neuf sites, par hôte :
+`fundingchoicesmessages.google.com` (41), `fonts.gstatic.com` (29),
+`maps.googleapis.com`, `m.stripe.com`, `www.google-analytics.com`,
+`cdnjs.cloudflare.com`, `pagead2.googlesyndication.com`,
+`accounts.google.com`, `298279967.log.optimizely.com`. Par type : 45 `xhr`,
+29 `font`, 2 `script`, 1 `document` — dont 74 tus par DÉFAUT et non par
+mesure (dette n°22).
+
+**Témoins** : the-internet garde ses quatre retenues non tierces (deux images
+404, deux interceptions) et perd sa seule retenue tierce (Optimizely) —
+l'attendu exact. quotes garde son interception et perd ses deux polices.
+getlumavo et zurvela sortent NON TENU sur une rejouabilité « — » : ils n'ont
+plus rien à rejouer, ce qui était le résultat attendu, et le critère n'a pas
+de règle pour le dénominateur vide (dette n°23). Le seuil n'a pas bougé
+(METHODE §13).
+
+**Attendus non tenus, déclarés** : automationexercise sort à 7 sections utiles
+et non 5 — six intercepteurs distincts, donc six causes sous la règle du
+contrat 4, plus le contenu mixte ; les fondre demanderait une cause au-dessus
+des éléments (C-12, P2-3). Trois sites déclarés NON TENU par le dénominateur
+vide (dette n°23). Deux sites déclarés « structure changée », donc non jugés.
+
+## 5.3 Ce que le réel a trouvé, et que le banc ne pouvait pas voir
+
+Le contrat 1 était juste et ne gardait qu'une porte. Un groupe atteint le
+rapport par deux chemins — les candidates du scan et les DÉCOUVERTES du rejeu
+(P2-1, contrat 8) — et le filtre n'était posé que sur le premier :
+automationexercise a publié 22 sections « service extérieur » pour le
+gestionnaire de consentement de Google, expandtesting 14. Les deux contrats
+venaient de cahiers différents, et aucun scénario ne croisait les deux
+(APPRENTISSAGES n°25).
+
+**Réparé** par une fonction unique que les deux portes appellent
+(`tiersSansEffetVisible`), avec sa journalisation et sa trace d'écartée.
+Mutations tuées en test — filtre retiré de la seconde porte, seconde porte
+qui tait tout — et AU BANC, sur le gabarit qui manquait :
+
+- **W03 `mesure-tardive-au-rejeu`** : une balise de mesure tierce que rien
+  ne rappelle, servie normalement pendant l'exploration, en panne au-delà de
+  `visitesAvantPanne` — donc pendant le rejeu, donc en découverte, sans effet
+  visible. Attendu : `sans-effet`.
+- **W04 `logo-introuvable`** : l'image interne qu'on rejoue, et dont le rejeu
+  fait tomber la balise. Catégorie `visuel` — le manifeste refuse, à juste
+  titre, deux attendus de camps opposés sur la même catégorie et la même page.
+
+Mutations au banc : le filtre retiré de la seconde porte fait tomber les
+verdicts corrects de 100 % à 50 % (`fonctionnel` à 0 %) et le compte des
+tiers tus de 1 à 0 ; la seconde porte qui tait tout fait perdre la découverte
+à effet visible de `calque-au-rejeu` (1 anomalie perdue, 1 erreur, verdicts
+à 50 %).
+
+Le banc a lui-même trouvé un défaut dans le correctif : un silence de
+découverte n'apparaissait pas parmi les écartées, donc le correcteur ne
+pouvait l'apparier — et une revue n'aurait pas su de quoi le moteur s'était
+tu. La trace est posée, et le test unitaire l'exige désormais.
+
+Effet de bord réparé au passage : automationexercise passait 21 de ses 29
+sections sans prose (plafond de rédaction). À 7 sections, tout tient.
+
+**Le banc après correctif, 71 scénarios** (les quatre nouveaux : W03+W04 et
+W04 seul, en fr et en en) :
+
+| run | scénarios | détection | faux positifs | erreurs | verdicts corrects |
+|---|---|---|---|---|---|
+| déterministe | 71 | 55/57 (96,5 %) | 0 | 0 | 100 % |
+| cassettes (IA) | 71 | 55/57 (96,5 %) | 0 | 0 | 100 % |
+
+Profilage 35/35, inerties 8/8, **couverture de rédaction 100 % (43/43)**,
+zéro rapport sans prose, « une cause, un constat » à 0 sur 2 défauts déclarés,
+écart inter-langues 0,2 pt. Les deux ratés sont les connus : `mini-boutique`
+F01 en déterministe, `catalogue-boutons` K01 en IA (hors périmètre, §4).
+
+**Les 67 scénarios historiques ont une empreinte IDENTIQUE** — verdicts,
+groupes, sections, faux positifs — au run d'avant correctif. Le correctif est
+strictement additif au banc, et c'est le réel seul qui le mesure.
+
+**Coût du correctif : 0,00 USD.** Les deux scénarios neufs n'ont demandé
+aucune cassette : leur contexte de rédaction est celui, déjà enregistré sous
+P2-1, d'une vitrine à une image manquante (`calque-au-rejeu--d01`). Une
+cassette est adressée par son contenu ; deux situations que le modèle voit
+identiques partagent légitimement sa réponse.
+
+## 5.3bis État de la validation au commit (2026-09-30)
+
+Le cahier est committé avec sa **validation banc COMPLÈTE** (71 scénarios,
+déterministe et cassettes, empreintes historiques identiques, mutations
+tuées des deux côtés de chaque contrat) et **une passe de validation réelle
+restante** : le run de mesure du moteur d'après, qui fera passer la dernière
+ligne de §5.2 de recalculée à mesurée. L'état est dit ici pour qu'aucun
+lecteur ne prenne 0 % pour un chiffre mesuré avant qu'il le soit.
+
+## 5.4 Annotation des fiches — « revu après P2-2 »
+
+Le carnet figé vit hors du dépôt. Voici, site par site, ce qu'il y a à y
+reporter ; les cas `banc/reel/<site>.json` ne sont PAS modifiés (leurs
+attendus ont été écrits avant le run, METHODE §13).
+
+| fiche | site | revu après P2-2 |
+|---|---|---|
+| 01 | zurvela | inchangé : zéro candidate, rien à rejouer ; NON TENU par dénominateur vide (dette n°23) |
+| 02 | getlumavo | sa seule section (`accounts.google.com`, sans effet) disparaît ; rapport vide ; témoin « déplacé » pour la bonne raison |
+| 04 | cutlybook | ses cinq sections (quatre polices + télémétrie Stripe) disparaissent ; rapport vide |
+| 05 | books | jQuery en `http` requalifié : `contenu-mixte`, `Important · Sécurité`, hôte `ajax.googleapis.com` nommé, 20 pages |
+| 06 | the-internet | témoin tenu : garde ses deux 404 internes et ses deux interceptions, perd sa seule tierce (Optimizely) |
+| 07 | expandtesting | 26 groupes tiers tus ; 14 découvertes tierces restaient publiées avant le correctif de §5.3 ; rejouabilité 7,3 → 50 % ; structure changée (13 pages < 15), donc déclaré et non jugé |
+| 08 | demoqa | le bruit tiers ne consomme plus le budget de rejeu : 2 images cassées et 3 interceptions APPARAISSENT ; rejouabilité 41,7 → 100 % ; structure changée (16 pages < 20), déclaré et non jugé |
+| 09 | quotes | témoin tenu : garde son interception, perd ses deux polices |
+| 10 | automationexercise | 37 groupes tiers tus ; contenu mixte publié (`fonts.googleapis.com`, 20 pages) ; six intercepteurs distincts, donc six sections sous le contrat 4 ; rejouabilité 1,7 → 16,3 % ; candidates 1 157 → 360 à pages égales (contrat 5) |
+
 ## 6. Décisions à valider avant le code
 
 **Toutes tranchées le 2026-09-29.**

@@ -108,6 +108,13 @@ export interface ConfigScanner {
       graviteDocumentInjoignable: Gravite;
       /** Codes d'erreur réseau qui ne disent rien du site (annulation côté client). */
       erreursReseauIgnorees: string[];
+      /**
+       * CONTENU MIXTE (cahier P2-2, contrat 2) : une page `https` qui charge une
+       * ressource en `http` — le navigateur la bloque pour chaque visiteur. Un
+       * défaut de SÉCURITÉ du site, quel que soit l'hôte : c'est le site qui a
+       * écrit `http://`. `erreurs` : les codes du navigateur qui le signalent.
+       */
+      contenuMixte: { erreurs: string[]; categorie: Categorie; gravite: Gravite; confiance: number };
     };
     inerte: { confiance: number; gravite: Gravite };
     echecMuet: { confiance: number; gravite: Gravite; typesRequete: string[] };
@@ -125,7 +132,12 @@ export interface ConfigScanner {
      * le premier site réel venu. Mais le propriétaire mérite de le savoir, donc
      * la panne est signalée À PART.
      */
-    tiers: { categorie: Categorie; gravite: Gravite; confiance: number };
+    /**
+     * `fenetreErreurJsMs` (cahier P2-2, contrat 1) : l'écart maximal entre
+     * l'échec d'un script tiers et une erreur JavaScript de la même page pour
+     * que l'erreur compte comme son effet visible.
+     */
+    tiers: { categorie: Categorie; gravite: Gravite; confiance: number; fenetreErreurJsMs: number };
   };
   confirmation: ConfigConfirmation;
   ia: ConfigIa;

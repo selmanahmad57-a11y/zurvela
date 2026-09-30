@@ -40,7 +40,10 @@ import { anomalieDecouverte, collecterDecouvertes, MOTIF_CONSTATEE_AU_REJEU } fr
 import { detailsGroupe, TYPE_JOURNAL_GROUPE } from './extraits-journal.js';
 import { confianceMinoree } from './pont-vocabulaires.js';
 import { reexecuterGroupe, viewportDuGroupe } from './reexecution.js';
-import { juger, MOTIF_CONFIANCE_SUFFISANTE, MOTIF_ECHEANCE_ATTEINTE } from './verdict.js';
+import { juger, MOTIF_CONFIANCE_SUFFISANTE, MOTIF_ECHEANCE_ATTEINTE, MOTIF_TIERS_SANS_EFFET } from './verdict.js';
+
+/** Journal : un groupe de tiers sans effet visible, écarté d'office (P2-2, contrat 1). */
+export const EVENEMENT_TIERS_SANS_EFFET = 'tiers.sans-effet';
 
 export const NOM_PROTOCOLE_ANTI_FAUX_POSITIFS = 'protocole-anti-faux-positifs';
 
@@ -50,6 +53,15 @@ export interface DependancesProtocole {
 }
 
 /** Le groupe n'a pas été rejoué : ni tentative, ni taux, ni mesure. */
+/** L'hôte d'une URL de ressource, ou une chaîne vide si elle ne se lit pas. */
+function hoteDe(url: string): string {
+  try {
+    return new URL(url).host;
+  } catch {
+    return '';
+  }
+}
+
 function sansRejeu(groupe: GroupeCause, verdict: ResultatGroupe['verdict'], motif: string): ResultatGroupe {
   return {
     groupe,
@@ -61,6 +73,42 @@ function sansRejeu(groupe: GroupeCause, verdict: ResultatGroupe['verdict'], moti
     confianceFinale: groupe.confiance,
     coutApi: 0,
   };
+}
+
+/**
+ * LA DOCTRINE NE JUGE PAS CE QUI NE SE VOIT PAS (P2-2, contrat 1).
+ *
+ * Un groupe fait SEULEMENT de tiers sans effet visible n'est ni rejoué ni
+ * publié ; un seul membre à effet visible suffit à le faire juger
+ * normalement.
+ *
+ * UNE SEULE FONCTION POUR LES DEUX PORTES. Un groupe atteint le rapport par
+ * deux chemins — les candidates du scan, et les découvertes du rejeu — et la
+ * première écriture de cette doctrine ne gardait que le premier. Le réel l'a
+ * dit : automationexercise a publié vingt-deux sections de consentement
+ * publicitaire, et expandtesting treize, toutes entrées par la seconde
+ * porte. Une doctrine recopiée à deux endroits est une doctrine qui dérive ;
+ * celle-ci n'existe qu'ici.
+ */
+export function tiersSansEffetVisible(groupe: GroupeCause): boolean {
+  return groupe.membres.every((membre) => membre.sansEffetVisible === true);
+}
+
+/**
+ * Le silence se COMPTE : un silence qui ne se journalise pas est un angle
+ * mort (APPRENTISSAGES n°4). L'hôte et le type de ressource disent DE QUOI
+ * le moteur s'est tu, sans quoi la revue ne pourrait pas contrôler la
+ * doctrine sur le réel.
+ */
+function journaliserTiersSansEffet(contexte: ContexteConfirmation, groupe: GroupeCause): void {
+  const preuve = groupe.representant.preuves.find((signal) => signal.type === 'reponse-reseau' || signal.type === 'requete-echouee');
+  contexte.journaliser(EVENEMENT_TIERS_SANS_EFFET, {
+    cle: groupe.cle,
+    nbMembres: groupe.membres.length,
+    ...(preuve !== undefined && (preuve.type === 'reponse-reseau' || preuve.type === 'requete-echouee')
+      ? { hote: hoteDe(preuve.urlRessource), typeRessource: preuve.typeRessource }
+      : {}),
+  });
 }
 
 /**
@@ -143,7 +191,12 @@ export function creerProtocole(dependances: DependancesProtocole): ProtocoleConf
         contexte.journaliser(TYPE_JOURNAL_GROUPE, detailsGroupe(groupe, viewportDuGroupe(groupe).nom, config.rejeu));
 
         let resultat: ResultatGroupe;
-        if (config.politique === 'econome' && groupe.confiance >= config.seuilConfirmationDirecte) {
+        if (tiersSansEffetVisible(groupe)) {
+          // PREMIÈRE PORTE : les candidates du scan. Écarté d'office — ni
+          // rejoué, ni publié — mais journalisé et compté.
+          resultat = sansRejeu(groupe, 'sans-effet', MOTIF_TIERS_SANS_EFFET);
+          journaliserTiersSansEffet(contexte, groupe);
+        } else if (config.politique === 'econome' && groupe.confiance >= config.seuilConfirmationDirecte) {
           // Politique d'échelle : un constat déjà très sûr ne paie pas de rejeu.
           resultat = sansRejeu(groupe, 'confirmee', MOTIF_CONFIANCE_SUFFISANTE);
         } else if (!tempsRestant()) {
@@ -279,6 +332,20 @@ export function creerProtocole(dependances: DependancesProtocole): ProtocoleConf
       // Retenues sans calibration (elles n'ont pas été re-confirmées) et
       // journalisées à part : leur statut est « constatée une fois ».
       for (const groupe of collecterDecouvertes(candidatesRejeu, groupes)) {
+        if (tiersSansEffetVisible(groupe)) {
+          // SECONDE PORTE : la même doctrine, au même endroit du code. Une
+          // découverte tierce sans effet visible est tue, comptée et
+          // journalisée exactement comme une candidate — jusqu'à sa trace
+          // d'écartée. Sans elle, le silence n'aurait pas de PREUVE : ni le
+          // banc ni une revue ne pourraient dire de quoi le moteur s'est tu,
+          // et une doctrine dont on ne peut pas contrôler les silences n'est
+          // pas contrôlable du tout.
+          const resultatTu = sansRejeu(groupe, 'sans-effet', MOTIF_TIERS_SANS_EFFET);
+          journaliserTiersSansEffet(contexte, groupe);
+          resultats.push(resultatTu);
+          ecartees.push(...candidatesEcartees(resultatTu));
+          continue;
+        }
         const anomalie = anomalieDecouverte(groupe);
         contexte.journaliser('confirmation.decouverte', {
           cle: groupe.cle,

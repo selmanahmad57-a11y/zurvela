@@ -36,6 +36,7 @@ import type { VerdictConfirmation } from '../../types.js';
 import { MOTIF_CONSTATEE_AU_REJEU } from './decouvertes.js';
 
 const VERDICT_DECOUVERTE: VerdictConfirmation = 'decouverte';
+const VERDICT_SANS_EFFET: VerdictConfirmation = 'sans-effet';
 
 export interface Rejouabilite {
   candidates: number;
@@ -58,11 +59,20 @@ function estGroupeDecouverte(resultat: { verdict?: string; motif?: string }): bo
   return resultat.verdict === VERDICT_DECOUVERTE || resultat.motif === MOTIF_CONSTATEE_AU_REJEU;
 }
 
+/**
+ * Un groupe de tiers sans effet (P2-2, contrat 1) : écarté d'office, jamais
+ * destiné au rejeu. Le compter « non rejoué » ferait payer au protocole un
+ * rejeu que la doctrine lui interdit.
+ */
+function estGroupeSansEffet(resultat: { verdict?: string }): boolean {
+  return resultat.verdict === VERDICT_SANS_EFFET;
+}
+
 export function tauxRejouabilite(rapport: RapportPourRejouabilite): Rejouabilite {
   let candidates = 0;
   let candidatesRejouees = 0;
   let groupesRejoues = 0;
-  const groupes = (rapport.groupes ?? []).filter((resultat) => !estGroupeDecouverte(resultat));
+  const groupes = (rapport.groupes ?? []).filter((resultat) => !estGroupeDecouverte(resultat) && !estGroupeSansEffet(resultat));
   for (const resultat of groupes) {
     const membres = resultat.groupe.membres.length;
     candidates += membres;

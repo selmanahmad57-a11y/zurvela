@@ -102,10 +102,20 @@ function demandeUneOrigineTierce(scenario: Scenario, gabarit: Gabarit): boolean 
  */
 const STATUT_TIERS_EN_PANNE = 503;
 
-function gestionnaireTiers() {
+function gestionnaireTiers(actifs: { bugs: BugActif[] }) {
   return (req: IncomingMessage, res: ServerResponse): void => {
-    // Toute ressource de ce serveur est en panne, quelle qu'elle soit : c'est
-    // la dépendance tierce cassée que le gabarit vient chercher ici.
+    // Un bug actif peut décider de ce que sert la seconde origine (P2-2,
+    // contrat 6) ; le premier qui répond l'emporte. Sinon, toute ressource de
+    // ce serveur est en panne : c'est la dépendance cassée de X01.
+    const chemin = new URL(req.url ?? '/', 'http://tiers.invalid').pathname;
+    const requete = { methode: req.method ?? 'GET', entetes: Object.fromEntries(Object.entries(req.headers).map(([cle, valeur]) => [cle.toLowerCase(), Array.isArray(valeur) ? valeur.join(', ') : valeur])) };
+    for (const { bug, contexte } of actifs.bugs) {
+      const reponse = bug.servirTiers?.(chemin, requete, contexte) ?? null;
+      if (reponse !== null) {
+        envoyer(res, reponse.statut, reponse.entetes, reponse.corps, req.method === 'HEAD');
+        return;
+      }
+    }
     envoyer(res, STATUT_TIERS_EN_PANNE, { 'content-type': 'text/plain; charset=utf-8' }, 'tiers en panne', req.method === 'HEAD');
   };
 }
@@ -389,8 +399,12 @@ export async function demarrerServeur(
 ): Promise<ServeurScenario> {
   // L'ORDRE EST CONTRAINT : le tiers d'abord (son port n'existe qu'une fois
   // écouté), les contextes de bug ensuite (ils ont besoin de son origine).
-  const tiers = demandeUneOrigineTierce(scenario, gabarit) ? await ecouterSurUnPortLibre(gestionnaireTiers(), config) : null;
+  // Le gestionnaire tiers lit les bugs actifs par référence : ils ne sont
+  // résolus qu'une fois son port connu.
+  const actifsTiers: { bugs: BugActif[] } = { bugs: [] };
+  const tiers = demandeUneOrigineTierce(scenario, gabarit) ? await ecouterSurUnPortLibre(gestionnaireTiers(actifsTiers), config) : null;
   const bugsActifs = resoudreBugsActifs(scenario, gabarit, config, options.attendre ?? attendreReellement, tiers?.url ?? null);
+  actifsTiers.bugs = bugsActifs;
   const dicoSite = await chargerDictionnaire(path.join(gabarit.dossierSite, gabarit.dossierLocales), scenario.langue);
   const pipelines = construirePipelines(scenario, gabarit, config, dicoSite, bugsActifs);
   await pipelines.verifier();

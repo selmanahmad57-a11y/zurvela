@@ -1,0 +1,16 @@
+{
+  "langue": "en",
+  "site": { "nom": "Brune Soapworks", "slogan": "Cold-process soaps, made in Brittany" },
+  "nav": { "libelle": "Main navigation", "accueil": "Home", "atelier": "The workshop" },
+  "accueil": {
+    "titre": "Brune Soapworks",
+    "intro": "Cold-process soaps, palm-oil free, cut by hand.",
+    "avis": "Customer reviews"
+  },
+  "atelier": {
+    "titre": "The workshop",
+    "texte": "We make every soap in our Morlaix workshop, in batches of sixty.",
+    "retour": "Back to the home page"
+  },
+  "pied": { "mentions": "Brune Soapworks — soap maker" }
+}

@@ -38,6 +38,12 @@
           "D01",
           "D02"
         ]
+      ],
+      "tiers-au-robot": [
+        [
+          "W03",
+          "W04"
+        ]
       ]
     },
     "contraintes": {
@@ -120,6 +126,15 @@
     },
     "D02": {
       "visitesAvantCalque": 2
+    },
+    "W01": {
+      "enTeteRobot": "X-Zurvela-Scan"
+    },
+    "W03": {
+      "visitesAvantPanne": 2
+    },
+    "W04": {
+      "cheminRessourceIntrouvable": "/statique/images/logo-v2.svg"
     }
   }
 }

@@ -17,10 +17,13 @@
  *
  * Trois précautions, toutes tranchées le 2026-09-29 :
  *  - l'« avant » se mesure dans la même session que l'« après » (`--avant`
- *    nomme le dossier d'un moteur d'avant — un worktree de la version de la
- *    campagne — et la commande y lance le MÊME scan, à quelques minutes
+ *    nomme le dossier d'un moteur d'avant — un worktree d'une version
+ *    antérieure — et la commande y lance le MÊME scan, à quelques minutes
  *    d'écart) ; sans `--avant`, l'avant est celui de la fiche, et la commande
- *    le dit ;
+ *    le dit. `--avant` est RÉPÉTABLE : plusieurs moteurs d'avant se mesurent
+ *    dans la même session, ce qui donne le seul tableau comparable quand les
+ *    cibles sont vivantes — un cahier isole ainsi son propre écart, et la
+ *    somme des cahiers se lit d'un coup (P2-2, décision D4) ;
  *  - un site indisponible, ou dont la structure a changé (moins de pages ou
  *    de candidates que le seuil du cas), est DÉCLARÉ, jamais comparé — le
  *    fantôme de troisième espèce appliqué à la validation réelle ;
@@ -101,7 +104,8 @@ export type VerdictReel =
 
 export interface OptionsReel {
   sites: string[];
-  avant?: string;
+  /** Moteurs d'avant, dans l'ordre donné : chacun scanne le même site, dans la même session. */
+  avant: string[];
 }
 
 const DECIMALES = 1;
@@ -135,11 +139,11 @@ export function lireOptions(args?: string[]): OptionsReel | null {
   try {
     const { values } = parseArgs({
       args,
-      options: { site: { type: 'string', multiple: true }, avant: { type: 'string' } },
+      options: { site: { type: 'string', multiple: true }, avant: { type: 'string', multiple: true } },
       allowPositionals: false,
       strict: true,
     });
-    return { sites: values.site ?? [], ...(values.avant === undefined ? {} : { avant: values.avant }) };
+    return { sites: values.site ?? [], avant: values.avant ?? [] };
   } catch {
     return null;
   }
@@ -266,7 +270,8 @@ async function scannerAvec(moteur: string, url: string, dossierTravail: string, 
 interface ResultatCas {
   cas: CasReel;
   disponibilite: number | null;
-  avant?: MesuresScan | { echec: string };
+  /** Un relevé par moteur d'avant, dans l'ordre de `--avant`. */
+  avant: { moteur: string; mesures: MesuresScan | { echec: string } }[];
   apres?: MesuresScan | { echec: string };
   verdict: VerdictReel;
 }
@@ -311,24 +316,29 @@ async function principal(): Promise<void> {
     if (statut !== 200) {
       const detail = traduire(dico, 'reel.indisponible', { id: cas.id, statut: statut === null ? traduire(dico, 'scorecard.nonApplicable') : rendu.entier(statut) });
       console.log(detail);
-      resultats.push({ cas, disponibilite: statut, verdict: { statut: 'declare', motif: 'indisponible', detail } });
+      resultats.push({ cas, disponibilite: statut, avant: [], verdict: { statut: 'declare', motif: 'indisponible', detail } });
       continue;
     }
-    const resultat: ResultatCas = { cas, disponibilite: statut, verdict: { statut: 'declare', motif: 'echec-scan', detail: '' } };
+    const resultat: ResultatCas = { cas, disponibilite: statut, avant: [], verdict: { statut: 'declare', motif: 'echec-scan', detail: '' } };
+    // Les moteurs d'avant, dans l'ordre : le DERNIER sert de référence au
+    // témoin (c'est le plus proche de l'après), les précédents donnent la
+    // profondeur historique du tableau.
     let mesuresAvant: MesuresScan | undefined;
-    if (options.avant !== undefined) {
-      const avant = await scannerAvec(options.avant, cas.url, path.join(dossierTravail), `${cas.id}.avant`);
+    for (const moteur of options.avant) {
+      const nom = path.basename(moteur);
+      const avant = await scannerAvec(moteur, cas.url, dossierTravail, `${cas.id}.${nom}`);
       if (avant.ok) {
-        mesuresAvant = mesuresDe(avant.rapport, avant.tailleJournalOctets);
-        coutTotal += mesuresAvant.coutApi;
-        resultat.avant = mesuresAvant;
-        console.log(ligneScan(rendu, momentAvant, mesuresAvant));
+        const mesures = mesuresDe(avant.rapport, avant.tailleJournalOctets);
+        coutTotal += mesures.coutApi;
+        mesuresAvant = mesures;
+        resultat.avant.push({ moteur: nom, mesures });
+        console.log(ligneScan(rendu, `${momentAvant} ${nom}`, mesures));
       } else {
-        resultat.avant = { echec: avant.message };
-        console.log(traduire(dico, 'reel.echecScan', { moment: momentAvant, message: avant.message }));
+        resultat.avant.push({ moteur: nom, mesures: { echec: avant.message } });
+        console.log(traduire(dico, 'reel.echecScan', { moment: `${momentAvant} ${nom}`, message: avant.message }));
       }
     }
-    const apres = await scannerAvec(depuisRacine(), cas.url, path.join(dossierTravail), `${cas.id}.apres`);
+    const apres = await scannerAvec(depuisRacine(), cas.url, dossierTravail, `${cas.id}.apres`);
     if (!apres.ok) {
       resultat.apres = { echec: apres.message };
       resultat.verdict = { statut: 'declare', motif: 'echec-scan', detail: apres.message };

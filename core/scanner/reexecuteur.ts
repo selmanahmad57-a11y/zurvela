@@ -48,6 +48,7 @@ import type {
 import type { ConfigScanner } from './config.js';
 import {
   derniereMutation,
+  etatsCadres,
   etatsImages,
   extrairePage,
   lireMutations,
@@ -234,6 +235,9 @@ export function creerReexecuteur(dependances: DependancesReexecuteur): Reexecute
           const horodatage = new Date().toISOString();
           for (const image of await etatsImages(ouverte, delai())) {
             observateur.emettre({ type: 'etat-image', horodatage, page: url, viewport: viewport.nom, ...image });
+          }
+          for (const cadre of await etatsCadres(ouverte, delai())) {
+            observateur.emettre({ type: 'etat-cadre', horodatage, page: url, viewport: viewport.nom, ...cadre });
           }
           const geometrie = await recouvrements(ouverte, { max: exploration.elementsInteractifsMax, budgetMs: delai() });
           for (const constat of geometrie.recouvrements) {

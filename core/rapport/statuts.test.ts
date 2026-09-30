@@ -53,10 +53,12 @@ describe('statutDe — l’ordre de lecture est une décision de sécurité', ()
     expect(statutDe(sansVerdict)).toBeNull();
   });
 
-  it('la table couvre les SIX verdicts : un septième casserait la compilation ici', () => {
+  it('la table couvre les SEPT verdicts : un huitième casserait la compilation ici', () => {
     expect(Object.keys(STATUT_PAR_VERDICT).sort()).toEqual(
-      ['basse-confiance', 'confirmee', 'decouverte', 'intermittente', 'limite-automatisation', 'non-reproduite'].sort(),
+      ['basse-confiance', 'confirmee', 'decouverte', 'intermittente', 'limite-automatisation', 'non-reproduite', 'sans-effet'].sort(),
     );
+    // Un tiers sans effet n'a AUCUNE formulation client (P2-2, contrat 1).
+    expect(STATUT_PAR_VERDICT['sans-effet']).toBeNull();
   });
 
   it('une DÉCOUVERTE sans motif reconnu reste une découverte : jamais le statut « confirmee » (P2-1, contrat 8)', () => {

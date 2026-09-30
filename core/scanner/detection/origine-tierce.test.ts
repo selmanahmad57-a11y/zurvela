@@ -24,7 +24,7 @@ import { creerDetecteurEchecMuet } from './d-echec-muet.js';
 
 const URL_TIERCE = 'https://widget-de-chat.invalid/bundle.js';
 const http = creerDetecteurHttp(CONFIG_TEST.http, CONFIG_TEST.tiers);
-const lenteur = creerDetecteurLenteur(CONFIG_TEST.lenteur, CONFIG_TEST.tiers);
+const lenteur = creerDetecteurLenteur(CONFIG_TEST.lenteur);
 const echecMuet = creerDetecteurEchecMuet(CONFIG_TEST.echecMuet);
 
 describe('D-HTTP — un 5xx TIERS n’est pas un 5xx du site', () => {
@@ -71,18 +71,12 @@ describe('D-LENTEUR — une lenteur TIERCE n’est pas la lenteur du site', () =
   const lente = (surcharges: Record<string, unknown>) =>
     reponse({ actionId: 'a1', dureeMs: CONFIG_TEST.lenteur.seuilMs * 2, ...surcharges });
 
-  it('la requête tierce lente est signalée À PART, en mineur et hors performance', () => {
-    const candidates = lenteur.detecter([lente({ urlRessource: URL_TIERCE, interne: false })], contexte());
-    expect(candidates).toHaveLength(1);
-    expect(candidates[0]).toMatchObject({
-      description: DESCRIPTION_TIERCE_EN_ECHEC,
-      categorie: CONFIG_TEST.tiers.categorie,
-      graviteEstimee: CONFIG_TEST.tiers.gravite,
-    });
-    // Le propriétaire ne peut pas accélérer le serveur d'un tiers ; lui
-    // présenter cela comme une performance de SON site l'enverrait corriger ce
-    // qu'il ne contrôle pas.
-    expect(candidates[0]?.categorie).not.toBe('performance');
+  it('la requête tierce lente N’EST PLUS une candidate (cahier P2-2, contrat 5)', () => {
+    // Un tiers lent vu par le robot déclaré n'est pas forcément lent pour le
+    // visiteur (APPRENTISSAGES n°19), et le propriétaire ne peut pas accélérer
+    // le serveur d'un tiers. S'il casse la page, c'est son effet qui se
+    // constate (contrat 1), pas sa durée.
+    expect(lenteur.detecter([lente({ urlRessource: URL_TIERCE, interne: false })], contexte())).toEqual([]);
   });
 
   it('la MÊME lenteur en interne reste une performance importante', () => {

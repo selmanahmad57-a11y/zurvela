@@ -106,7 +106,9 @@
     "rejouabiliteParGabarit": "Rejouabilité par gabarit — le périmètre qui dit OÙ le protocole cesse de rejouer",
     "syntheseRejouabilite": "Rejouabilité : {{candidatesRejouees}}/{{candidatesRejouables}} candidate(s) rejouée(s), {{groupesRejoues}}/{{groupesRejouables}} groupe(s) rejoué(s) — {{taux}} par groupes ; une candidate non rejouée n'est ni confirmée ni écartée, elle est non mesurée",
     "alarmeRejouabilite": "⚠ ALARME REJOUABILITÉ : {{taux}} des groupes rejoués, sous le seuil de {{seuil}} — un protocole qui n'atteint pas ses candidates n'est pas un protocole, c'est un tri par hasard (APPRENTISSAGES n°18)",
-    "syntheseCauseUnique": "Une cause, un constat : {{doubles}} constat(s) publié(s) en double sur {{causes}} défaut(s) déclaré(s) de cause unique — ligne de base de C-16, que P2-2 devra ramener à zéro"
+    "syntheseCauseUnique": "Une cause, un constat : {{doubles}} constat(s) publié(s) en double sur {{causes}} défaut(s) déclaré(s) de cause unique — invariant depuis P2-2 (C-16)",
+    "syntheseSansEffet": "Tiers sans effet visible : {{groupes}} groupe(s) écarté(s) d’office sur {{ecartes}} écarté(s) — vus, comptés, jamais publiés (doctrine tierce, APPRENTISSAGES n°19)",
+    "alarmeCauseUnique": "⚠ ALARME CAUSE UNIQUE : {{doubles}} constat(s) en double sur une cause déclarée unique — le client lirait plusieurs défauts là où il n’y en a qu’un (C-16)"
   },
   "serveur": {
     "usage": "Usage : pnpm banc:servir --scenario <id>",
@@ -129,7 +131,7 @@
     "redactionIncomplete": "⚠ {{sansProse}} rapport(s) sur {{total}} publié(s) SANS PROSE alors qu'ils avaient des sections à rédiger : le parc de cassettes de RÉDACTION est incomplet — la scorecard afficherait des rapports « justes » sans avoir mesuré une seule rédaction"
   },
   "varianceIa": {
-    "usage": "Usage : pnpm banc:variance-ia [--mesure profil|decision] --scenario <id> [--scenario <id>…] [--appels <N>] | --mesure diagnostic [--cas <id>…] [--appels <N>]",
+    "usage": "Usage : pnpm banc:variance-ia [--mesure profil|decision|redaction] --scenario <id> [--scenario <id>…] [--appels <N>] | --mesure diagnostic [--cas <id>…] [--appels <N>]",
     "demarrage": "Variance du modèle — mesure « {{mesure}} », politique {{politique}}, {{nombre}} scénario(s) × {{appels}} appel(s) RÉELS, modèle {{modele}}",
     "appel": "  appel {{appel}}/{{appels}} : {{valeurs}}",
     "accord": "{{id}} [{{mesure}}] : {{accords}} — {{mesures}} appel(s) exploitable(s) sur {{appels}}, coût : {{cout}}",

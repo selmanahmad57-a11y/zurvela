@@ -210,3 +210,22 @@ describe('on ne demande JAMAIS une prose pour une section effacée par la tronca
     expect(contexteRedaction(faits).sections.map((section) => section.id)).toEqual(['s1']);
   });
 });
+
+describe('ce que le modèle NE voit PAS : l’hôte du service en cause (cahier P2-2, contrat 3)', () => {
+  it('aucune ligne « origine » dans les faits, même sur une anomalie d’une autre origine', () => {
+    // Le contrat 3 est tenu par le RENDU, pas par le prompt : montrer l'hôte au
+    // modèle l'inviterait à le recopier, donc à écrire un fait — et à écrire
+    // des chiffres, puisqu'un hôte peut n'être que cela (`127.0.0.1`).
+    // Le contrôle qui peut échouer : la ligne réapparaîtrait ici.
+    const base = anomalie('g1');
+    const rapport = rapportTechnique({
+      anomalies: [{ ...base, preuves: [{ type: 'requete-echouee', horodatage: '2026-09-30T10:00:00.000Z', page: '/contact', viewport: 'desktop', urlRessource: 'https://298279967.log.optimizely.com/event', methode: 'GET', typeRessource: 'script', erreur: 'net::ERR_FAILED', cadrePrincipal: false, interne: false }] } as typeof base],
+      groupes: [resultatGroupe('g1', [tentative(1, true), tentative(2, true)])],
+    });
+    const { faits } = faitsDe(rapport);
+    const bloc = serialiserContexteRedaction(contexteRedaction(faits));
+    expect(bloc).not.toContain('origine');
+    expect(bloc).not.toContain('optimizely');
+    expect(bloc).not.toContain('298279967');
+  });
+});

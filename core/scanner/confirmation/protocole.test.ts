@@ -9,11 +9,12 @@ import { creerDetecteurHttp } from '../detection/d-http.js';
 import { creerDetecteurLenteur } from '../detection/d-lenteur.js';
 import { creerDetecteurRecouvrement } from '../detection/d-recouvrement.js';
 import {
-  BOUTON,
+  INTERCEPTEUR,
   CONFIG_TEST,
   DESKTOP,
   MOBILE,
   URL_CONTACT,
+  etatImage,
   interception,
   reponse,
   soumission,
@@ -27,8 +28,8 @@ import {
   reexecuteurFactice,
   type RejeuScripte,
 } from './fabriques-test.js';
-import { NOM_PROTOCOLE_ANTI_FAUX_POSITIFS, creerProtocole } from './protocole.js';
-import { MOTIF_MESURE_SOUS_SEUIL, MOTIF_NON_MESUREE } from './verdict.js';
+import { EVENEMENT_TIERS_SANS_EFFET, NOM_PROTOCOLE_ANTI_FAUX_POSITIFS, creerProtocole } from './protocole.js';
+import { MOTIF_MESURE_SOUS_SEUIL, MOTIF_NON_MESUREE, MOTIF_TIERS_SANS_EFFET } from './verdict.js';
 import {
   MOTIF_CONFIANCE_SUFFISANTE,
   MOTIF_ECHEANCE_ATTEINTE,
@@ -40,7 +41,7 @@ import {
 
 const DETECTEURS = [
   creerDetecteurHttp(CONFIG_TEST.http, CONFIG_TEST.tiers),
-  creerDetecteurLenteur(CONFIG_TEST.lenteur, CONFIG_TEST.tiers),
+  creerDetecteurLenteur(CONFIG_TEST.lenteur),
   creerDetecteurRecouvrement(CONFIG_TEST.recouvrement),
 ];
 
@@ -129,6 +130,80 @@ describe('creerProtocole — verdicts', () => {
     const petit = await poids(10);
     const grand = await poids(40);
     expect(grand / petit).toBeLessThan(6);
+  });
+
+  it('un groupe fait SEULEMENT de tiers sans effet est écarté d’office : verdict sans-effet, aucun rejeu, journalisé (P2-2, contrat 1)', async () => {
+    const tiers = candidateSimulee({ description: 'dependance-tierce-en-echec', graviteEstimee: 'mineur', sansEffetVisible: true, preuves: [reponse({ statut: 503, actionId: 'a1', urlRessource: 'https://widget.tiers.invalid/chat.js', interne: false })] });
+    const { resultat, journal, rejeu } = await confirmer([tiers], [{ enEchec: true }]);
+    expect(rejeu.appels).toEqual([]);
+    expect(resultat.retenues).toEqual([]);
+    expect(resultat.groupes?.[0]).toMatchObject({ verdict: 'sans-effet', motif: MOTIF_TIERS_SANS_EFFET, tentatives: [] });
+    expect(resultat.ecartees[0]).toMatchObject({ verdict: 'sans-effet', raison: MOTIF_TIERS_SANS_EFFET });
+    expect(details(journal, EVENEMENT_TIERS_SANS_EFFET)).toMatchObject({ nbMembres: 1, hote: 'widget.tiers.invalid' });
+  });
+
+  it('un seul membre à effet visible suffit : le groupe est jugé normalement — le silence ne gagne pas par majorité', async () => {
+    const preuve = reponse({ statut: 503, actionId: 'a1', urlRessource: 'https://widget.tiers.invalid/chat.js', interne: false });
+    const sans = candidateSimulee({ description: 'dependance-tierce-en-echec', sansEffetVisible: true, preuves: [preuve] });
+    const avec = candidateSimulee({ description: 'dependance-tierce-en-echec', viewport: 'mobile', preuves: [preuve] });
+    const { resultat, rejeu } = await confirmer([sans, avec], [{ enEchec: true }]);
+    expect(rejeu.appels.length).toBeGreaterThan(0);
+    expect(resultat.groupes?.every((groupe) => groupe.verdict !== 'sans-effet')).toBe(true);
+  });
+
+  it('la SECONDE PORTE : une découverte tierce sans effet visible est tue, comptée et journalisée (P2-2, contrat 1)', async () => {
+    // LE DÉFAUT QUE LE RÉEL A TROUVÉ. La doctrine ne filtrait que les
+    // candidates du scan. Les découvertes du rejeu entraient par une autre
+    // porte, sans être jugées : automationexercise a publié vingt-deux
+    // sections « service extérieur » pour le gestionnaire de consentement de
+    // Google, expandtesting treize, toutes en découvertes. Le contrôle qui
+    // peut échouer : retirer le filtre de la boucle des découvertes.
+    const tiers = reponse({
+      statut: 503,
+      urlRessource: 'https://consentement.tiers.invalid/cs.js',
+      methode: 'GET',
+      typeRessource: 'script',
+      interne: false,
+    });
+    const { resultat, journal } = await confirmer([candidateSimulee()], [{ enEchec: true, signauxEnPlus: [tiers] }]);
+    // Le groupe d'origine, lui, est confirmé : la découverte est bien née.
+    expect(resultat.retenues.map((anomalie) => anomalie.verdict)).toEqual(['confirmee']);
+    expect(resultat.decouvertes).toEqual([]);
+    // Tue, mais PAS invisible : le silence se compte comme les autres.
+    expect(resultat.groupes?.filter((groupe) => groupe.verdict === 'sans-effet')).toHaveLength(1);
+    expect(details(journal, EVENEMENT_TIERS_SANS_EFFET)).toMatchObject({
+      hote: 'consentement.tiers.invalid',
+      typeRessource: 'script',
+    });
+    // … et sa PREUVE reste, parmi les écartées, comme pour une candidate tue
+    // par la première porte. Le banc l'a exigé avant ce test : sans cette
+    // trace, le correcteur ne pouvait apparier aucun silence de découverte,
+    // et une revue n'aurait pas su DE QUOI le moteur s'était tu.
+    const tues = resultat.ecartees.filter((ecartee) => ecartee.verdict === 'sans-effet');
+    // Une preuve par rejeu : le groupe est un, ses constats sont deux.
+    expect(tues).toHaveLength(CONFIG_CONFIRMATION_TEST.reExecutions);
+    expect(tues.every((ecartee) => ecartee.raison === MOTIF_TIERS_SANS_EFFET)).toBe(true);
+    expect(new Set(tues.map((ecartee) => ecartee.cle)).size).toBe(1);
+  });
+
+  it('… et DANS L’AUTRE SENS : une découverte tierce à effet visible est publiée — un filtre qui ne peut pas rater n’en est pas un', async () => {
+    // Même porte, même doctrine : ce qui se VOIT passe. Sans ce second sens,
+    // « tout taire » ferait passer le test précédent.
+    const image = 'https://images.tiers.invalid/banniere.png';
+    const { resultat } = await confirmer(
+      [candidateSimulee()],
+      [
+        {
+          enEchec: true,
+          signauxEnPlus: [
+            reponse({ statut: 503, urlRessource: image, methode: 'GET', typeRessource: 'image', interne: false }),
+            etatImage({ ressource: image, complete: true, largeurNaturelle: 0, hauteurNaturelle: 0 }),
+          ],
+        },
+      ],
+    );
+    expect(resultat.decouvertes?.map((anomalie) => anomalie.verdict)).toEqual(['decouverte']);
+    expect(resultat.groupes?.some((groupe) => groupe.verdict === 'sans-effet')).toBe(false);
   });
 
   it('aucune tentative exploitable : limite-automatisation — distincte de non-reproduite', async () => {
@@ -286,7 +361,7 @@ describe('creerProtocole — détecteur gradué et contre-épreuve', () => {
       description: 'clic-intercepte',
       categorie: 'mobile',
       viewport: MOBILE.nom,
-      element: BOUTON,
+      element: INTERCEPTEUR,
       confiance: CONFIG_TEST.recouvrement.confianceGeometrie,
       observations: [{ viewport: MOBILE.nom }],
       preuves: [interception({ viewport: MOBILE.nom })],

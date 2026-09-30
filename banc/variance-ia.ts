@@ -35,7 +35,6 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
 import { chargerDictionnaire, traduire, type Dictionnaire } from '../core/i18n.js';
-import type { Rapport } from '../core/types.js';
 import type { ClientIa } from '../core/ia/index.js';
 import { chargerConfigProfilage, chargerConfigScanner } from '../core/scanner/config.js';
 import { chargerConfig } from './config.js';
@@ -46,13 +45,19 @@ import { obtenirGabarit } from './gabarits/index.js';
 import { creerClientIaBanc } from './ia.js';
 import { depuisRacine } from './outils/racine.js';
 import { chargerScenario } from './scenarios/charger.js';
-import { POLITIQUE_DETERMINISTE, POLITIQUE_IA, type ConfigBanc, type Scenario, type SujetNote } from './types.js';
+import type { Rapport } from '../core/types.js';
+import { POLITIQUE_DETERMINISTE, POLITIQUE_IA, type ConfigBanc, type ResultatScenario, type Scenario, type SujetNote } from './types.js';
 
 /**
  * Ce qu'on mesure. `profil` : la classification (brique 4a). `decision` :
- * l'élection au premier point de décision (brique 4b).
+ * l'élection au premier point de décision (brique 4b). `redaction` : la
+ * CONFORMITÉ de la prose (cahier P2-2, contrat 3) — un prompt de rédaction
+ * nouveau se mesure avant sa première cassette, et ce qui peut varier n'est
+ * pas le texte (il varie par construction) mais le fait qu'il respecte son
+ * contrat, qu'il rédige toutes ses sections, et qu'il nomme l'hôte quand les
+ * faits lui en donnent un.
  */
-export const MESURES = ['profil', 'decision', 'diagnostic'] as const;
+export const MESURES = ['profil', 'decision', 'diagnostic', 'redaction'] as const;
 export type Mesure = (typeof MESURES)[number];
 
 export function estMesure(nom: string): nom is Mesure {
@@ -94,7 +99,8 @@ export function lireOptions(args?: string[]): Options | null {
 }
 
 /** Valeur observée d'un appel : absente quand le profil n'a pas été produit. */
-const VALEUR_ABSENTE = '—';
+/** Ce qui remplace une valeur qu'aucun appel n'a produite : jamais une valeur plausible. */
+export const VALEUR_ABSENTE = '—';
 
 /**
  * Accord inter-appels sur une valeur : part de la modalité la plus fréquente.
@@ -161,6 +167,29 @@ interface Observation {
  * fonction décide, et « aucune mesure exploitable » est un échec bruyant quel
  * que soit ce qu'on mesurait.
  */
+/**
+ * Ce qu'une passe de RÉDACTION donne à comparer. Le texte n'est pas comparé —
+ * il varie par construction, et c'est normal. Ce qui doit être STABLE, c'est :
+ *  - `rapport` : la conformité de la réponse aux contrôles du banc (bijection,
+ *    statuts, langue, prose tenue). C'est la valeur qui porte la garde ;
+ *  - `redigees` : les sections effectivement rédigées sur celles attendues ;
+ *
+ * L'hôte du service en cause n'est PAS observé ici : depuis le cahier P2-2
+ * (contrat 3), c'est le RAPPORT qui le pose, pas le modèle qui le rédige — il
+ * n'y a plus rien à mesurer de ce côté, et c'est tout l'intérêt.
+ */
+export function valeursRedaction(resultat: ResultatScenario): Record<string, string> {
+  const rapports = resultat.rapports;
+  const premier = rapports[0];
+  if (premier === undefined || premier.nonMesure) {
+    return { rapport: VALEUR_ABSENTE, redigees: VALEUR_ABSENTE };
+  }
+  return {
+    rapport: premier.satisfait ? 'conforme' : 'non-conforme',
+    redigees: `${premier.nbSectionsRedigees}/${premier.nbSections}`,
+  };
+}
+
 async function mesurerScenario(
   scenario: Scenario,
   appels: number,
@@ -178,10 +207,12 @@ async function mesurerScenario(
     const valeurs: Record<string, string> =
       mesure === 'decision'
         ? { actionId: premierActionIdElu(resultat.rapport) ?? VALEUR_ABSENTE }
-        : {
-            typeSite: profil?.typeSite ?? VALEUR_ABSENTE,
-            langue: profil?.langue ?? VALEUR_ABSENTE,
-          };
+        : mesure === 'redaction'
+          ? valeursRedaction(resultat)
+          : {
+              typeSite: profil?.typeSite ?? VALEUR_ABSENTE,
+              langue: profil?.langue ?? VALEUR_ABSENTE,
+            };
     observations.push({ valeurs, cout: resultat.coutApi });
     console.log(
       traduire(dico, 'varianceIa.appel', {
@@ -319,6 +350,9 @@ async function principal(): Promise<void> {
   // La variance des DÉCISIONS n'a de sens que sous la politique IA : la
   // déterministe n'appelle aucun modèle, et publier « accord 5/5 » sur ses
   // choix mesurerait la stabilité d'un algorithme, pas celle d'un modèle.
+  // La variance des DÉCISIONS n'a de sens que sous la politique IA ; celle de
+  // la RÉDACTION se mesure sous la déterministe, pour que la seule chose qui
+  // varie d'un appel à l'autre soit la rédaction elle-même.
   const politique = options.mesure === 'decision' ? POLITIQUE_IA : POLITIQUE_DETERMINISTE;
 
   const dossierScenarios = depuisRacine(config.scenarios.dossier);

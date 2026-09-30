@@ -260,6 +260,7 @@ describe('noterScenario', () => {
       nbGroupes: 3,
       nbGroupesRetenus: 1,
       nbGroupesEcartes: 2,
+      nbGroupesSansEffet: 0,
       nbFaussesAlertesEvitees: 0,
       nbPertesProtocole: 1,
       nbEcartesNonApparies: 1,

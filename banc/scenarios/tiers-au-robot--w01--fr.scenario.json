@@ -1,0 +1,8 @@
+{
+  "id": "tiers-au-robot--w01--fr",
+  "gabarit": "tiers-au-robot",
+  "langue": "fr",
+  "bugsActifs": [
+    "W01"
+  ]
+}

@@ -204,3 +204,47 @@ describe('compterEcartes — le chiffre NEUTRE de la brique 3', () => {
     expect(compterEcartes(rapport, new Set())).toBeNull();
   });
 });
+
+describe('un groupe « sans-effet » n’entre dans aucun compte du rapport (cahier P2-2, contrat 1)', () => {
+  it('ni écarté par nos re-vérifications, ni laissé sans vérification : la doctrine ne le juge pas', () => {
+    // Le contrôle qui peut échouer : compté « non re-vérifié », chaque police
+    // servie autrement au robot gonflerait la phrase « N signalements n'ont
+    // pas pu être re-vérifiés » — un aveu d'échec pour ce qui n'en est pas un.
+    const rapport = rapportTechnique({
+      anomalies: [],
+      groupes: [
+        resultatGroupe('verifie', [tentative(1, false), tentative(2, false)], 'non-reproduite'),
+        resultatGroupe('abandonne', [], 'limite-automatisation'),
+        resultatGroupe('tiers-1', [], 'sans-effet'),
+        resultatGroupe('tiers-2', [], 'sans-effet'),
+      ],
+    });
+    expect(compterEcartes(rapport, new Set())).toBe(1);
+    expect(compterNonVerifies(rapport, new Set())).toBe(1);
+  });
+});
+
+describe('l’HÔTE du service en cause est POSÉ PAR LE CODE (cahier P2-2, contrat 3)', () => {
+  const avecPreuve = (urlRessource: string, interne: boolean) => {
+    const base = anomalie('g1');
+    return rapportTechnique({
+      anomalies: [{ ...base, preuves: [{ type: 'requete-echouee', horodatage: '2026-09-30T10:00:00.000Z', page: '/contact', viewport: 'desktop', urlRessource, methode: 'GET', typeRessource: 'script', erreur: 'net::ERR_FAILED', cadrePrincipal: false, interne }] } as typeof base],
+      groupes: [resultatGroupe('g1', [tentative(1, true), tentative(2, true)])],
+    });
+  };
+
+  it('la section porte l’hôte de sa preuve, exactement — chiffres compris', () => {
+    const { rapportBusiness } = construireStructure(avecPreuve('https://298279967.log.optimizely.com/event?a=1', false), 'fr');
+    expect(rapportBusiness.sections[0]?.origine).toBe('298279967.log.optimizely.com');
+  });
+
+  it('une ressource DU SITE n’a pas de service extérieur à nommer', () => {
+    // Le contrôle qui peut échouer : sans le filtre sur l'origine, le rapport
+    // nommerait le site lui-même comme « service extérieur ».
+    expect(construireStructure(avecPreuve('https://site-du-client.invalid/app.js', true), 'fr').rapportBusiness.sections[0]?.origine).toBeUndefined();
+  });
+
+  it('une anomalie sans preuve réseau (bouton mort) n’en a pas non plus', () => {
+    expect(construireStructure(rapportTechnique(), 'fr').rapportBusiness.sections[0]?.origine).toBeUndefined();
+  });
+});

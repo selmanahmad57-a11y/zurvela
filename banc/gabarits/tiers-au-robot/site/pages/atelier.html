@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="{{langue}}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{atelier.titre}} — {{site.nom}}</title>
+  <meta name="description" content="{{atelier.texte}}">
+  <link rel="stylesheet" href="/statique/style.css">
+  <link rel="icon" href="/statique/images/logo.svg" type="image/svg+xml">
+</head>
+<body>
+  <header class="entete">
+    <a class="marque" href="/">
+      <img data-role="logo" src="/statique/images/logo.svg" alt="{{site.nom}}" width="40" height="40">
+      <span>{{site.nom}}</span>
+    </a>
+  </header>
+  <main class="contenu">
+    <h1>{{atelier.titre}}</h1>
+    <p>{{atelier.texte}}</p>
+    <p><a href="/">{{atelier.retour}}</a></p>
+  </main>
+  <footer class="pied">
+    <p>{{pied.mentions}}</p>
+  </footer>
+</body>
+</html>

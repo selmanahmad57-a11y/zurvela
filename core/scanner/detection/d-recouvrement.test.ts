@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { creerDetecteurRecouvrement, DESCRIPTION_CLIC_INTERCEPTE, NOM_DETECTEUR_RECOUVREMENT } from './d-recouvrement.js';
-import { BOUTON, CONFIG_TEST, contexte, DESKTOP, interception, MOBILE, signauxSains, soumission, URL_CONTACT } from './fabriques-test.js';
+import { CONFIG_TEST, contexte, DESKTOP, interception, MOBILE, signauxSains, soumission, URL_CONTACT } from './fabriques-test.js';
 
 const detecteur = creerDetecteurRecouvrement(CONFIG_TEST.recouvrement);
 
@@ -26,7 +26,9 @@ describe('D-RECOUVREMENT', () => {
       confiance: CONFIG_TEST.recouvrement.confianceGeometrie,
       urlOuEtape: URL_CONTACT,
       viewport: MOBILE.nom,
-      element: BOUTON,
+      // L'élément EN CAUSE est celui qui reçoit le clic, quand il est connu
+      // (P2-2, contrat 4) ; l'élément ciblé reste dans la preuve.
+      element: (signal as Extract<typeof signal, { type: 'interception-clic' }>).intercepteur,
       reproduction: { url: URL_CONTACT, pageDepart: URL_CONTACT, viewport: MOBILE, action: null, actionsPrealables: [] },
       preuves: [signal],
     });
@@ -87,7 +89,10 @@ describe('D-RECOUVREMENT — paliers de confiance', () => {
     ];
     const candidates = detecteur.detecter(signaux, contexte());
 
-    expect(candidates.map((candidate) => candidate.element?.selecteur)).toEqual([BOUTON.selecteur, autre.selecteur]);
+    // La géométrie connaît son intercepteur, le clic refusé non : deux causes
+    // distinctes, l'une nommée par son intercepteur, l'autre par sa cible.
+    const intercepteur = (signaux[0] as Extract<(typeof signaux)[number], { type: 'interception-clic' }>).intercepteur;
+    expect(candidates.map((candidate) => candidate.element?.selecteur)).toEqual([intercepteur?.selecteur, autre.selecteur]);
     expect(candidates.every((candidate) => candidate.confiance === CONFIG_TEST.recouvrement.confianceGeometrie)).toBe(true);
   });
 
@@ -101,5 +106,27 @@ describe('D-RECOUVREMENT — paliers de confiance', () => {
       CONFIG_TEST.recouvrement.confianceGeometrie,
       CONFIG_TEST.recouvrement.confianceGeometrie,
     ]);
+  });
+
+  it('UNE CAUSE, UN CONSTAT : trois cibles recouvertes par le MÊME intercepteur → une candidate, trois preuves (P2-2, contrat 4)', () => {
+    // Le calque de « calque-au-rejeu », l'iframe publicitaire d'expandtesting.
+    // Le contrôle qui peut échouer : regroupées par cible, ces trois preuves
+    // faisaient trois candidates, donc trois sections.
+    const calque = { balise: 'div', selecteur: 'section.offres > div', attributs: {} };
+    const cibles = ['a.offre-1', 'a.offre-2', 'a.offre-3'].map((selecteur) => ({ balise: 'a', selecteur, attributs: {} }));
+    const signaux = cibles.map((element) => interception({ element, intercepteur: calque }));
+    const candidates = detecteur.detecter(signaux, contexte());
+    expect(candidates).toHaveLength(1);
+    expect(candidates[0]?.element).toEqual(calque);
+    expect(candidates[0]?.preuves).toHaveLength(3);
+  });
+
+  it('deux intercepteurs distincts restent deux causes, même sur la même page', () => {
+    const cibles = ['a.offre-1', 'a.offre-2'].map((selecteur) => ({ balise: 'a', selecteur, attributs: {} }));
+    const signaux = [
+      interception({ element: cibles[0]!, intercepteur: { balise: 'div', selecteur: 'div.bandeau', attributs: {} } }),
+      interception({ element: cibles[1]!, intercepteur: { balise: 'iframe', selecteur: 'iframe#pub', attributs: {} } }),
+    ];
+    expect(detecteur.detecter(signaux, contexte())).toHaveLength(2);
   });
 });

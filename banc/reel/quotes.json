@@ -1,0 +1,21 @@
+{
+  "id": "quotes",
+  "url": "https://quotes.toscrape.com",
+  "role": "temoin",
+  "fiche": "09",
+  "defaut": null,
+  "avant": {
+    "rejouabiliteGroupesPourcent": 100,
+    "candidates": 38,
+    "groupes": 3,
+    "retenues": 3,
+    "pages": 40,
+    "dureeMs": 160640
+  },
+  "attendus": {
+    "rejouabiliteGroupesMinPourcent": 100,
+    "dureeMaxMs": 300000,
+    "pagesMin": 20,
+    "candidatesMin": 5
+  }
+}

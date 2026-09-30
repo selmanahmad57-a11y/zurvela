@@ -26,6 +26,7 @@
 import type { AnomalieCandidate, Detecteur, Signal } from '../../types.js';
 import type { ConfigScanner } from '../config.js';
 import { construireCandidate, declencheurDe, estSoumission, localiserRessource, trouverAction } from './commun.js';
+import { effetVisible } from './effet-visible.js';
 
 export const NOM_DETECTEUR_HTTP = 'd-http';
 export const DESCRIPTION_5XX = 'reponse-5xx';
@@ -38,6 +39,13 @@ export const DESCRIPTION_5XX = 'reponse-5xx';
 export const DESCRIPTION_TIERCE_EN_ECHEC = 'dependance-tierce-en-echec';
 export const DESCRIPTION_404_INTERNE = 'ressource-interne-404';
 export const DESCRIPTION_DOCUMENT_INJOIGNABLE = 'document-injoignable';
+/**
+ * CONTENU MIXTE (cahier P2-2, contrat 2) : une page `https` charge une
+ * ressource en `http`, et le navigateur la bloque. Défaut de sécurité du
+ * SITE — jamais « tiers » : le jQuery de books est servi par le CDN de
+ * Google, mais c'est le site qui l'appelle en clair.
+ */
+export const DESCRIPTION_CONTENU_MIXTE = 'contenu-mixte';
 
 /** Premier statut de la classe « erreur serveur » (RFC 9110). */
 const STATUT_ERREUR_SERVEUR = 500;
@@ -57,6 +65,14 @@ export function creerDetecteurHttp(
       const candidates: AnomalieCandidate[] = [];
       for (const signal of signaux) {
         if (signal.type === 'requete-echouee') {
+          // LE CONTENU MIXTE D'ABORD, QUEL QUE SOIT L'HÔTE (P2-2, contrat 2).
+          // C'est la page qui a demandé du `http` : la faute est au site, pas à
+          // l'hôte au bout. Une sous-ressource seulement — le cadre principal
+          // n'a pas de page appelante.
+          if (!signal.cadrePrincipal && config.contenuMixte.erreurs.includes(signal.erreur)) {
+            candidates.push(candidateContenuMixte(signal));
+            continue;
+          }
           if (config.erreursReseauIgnorees.includes(signal.erreur)) {
             continue;
           }
@@ -153,7 +169,37 @@ export function creerDetecteurHttp(
        * PARTAGÉE `detecteurs.tiers` : la règle ne dépend pas du détecteur qui
        * a vu la panne, mais de l'origine de la ressource.
        */
+      function candidateContenuMixte(signal: SignalRequeteEchouee): AnomalieCandidate {
+        return construireCandidate(
+          {
+            detecteur: NOM_DETECTEUR_HTTP,
+            description: DESCRIPTION_CONTENU_MIXTE,
+            categorie: config.contenuMixte.categorie,
+            gravite: config.contenuMixte.gravite,
+            confiance: config.contenuMixte.confiance,
+            page: signal.page,
+            viewport: signal.viewport,
+            dependDuViewport: false,
+            action: trouverAction(contexte.parcours, signal.actionId),
+            element: localiserRessource(signal),
+            preuves: [signal],
+          },
+          contexte,
+        );
+      }
+
+      /**
+       * Sans effet visible dans la page, la candidate tierce est MARQUÉE et
+       * non retenue (P2-2, contrat 1) : elle existe pour être comptée et
+       * journalisée, le protocole l'écarte d'office. Avec effet visible, elle
+       * suit le chemin ordinaire et, confirmée, s'impute au site.
+       */
       function candidateTierce(signal: SignalReponse | SignalRequeteEchouee): AnomalieCandidate {
+        const candidate = candidateTierceBrute(signal);
+        return effetVisible(signal, signaux, configTiers.fenetreErreurJsMs) ? candidate : { ...candidate, sansEffetVisible: true };
+      }
+
+      function candidateTierceBrute(signal: SignalReponse | SignalRequeteEchouee): AnomalieCandidate {
         return construireCandidate(
           {
             detecteur: NOM_DETECTEUR_HTTP,

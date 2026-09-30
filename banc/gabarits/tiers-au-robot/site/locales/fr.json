@@ -1,0 +1,16 @@
+{
+  "langue": "fr",
+  "site": { "nom": "Savonnerie Brune", "slogan": "Savons à froid, fabriqués en Bretagne" },
+  "nav": { "libelle": "Navigation principale", "accueil": "Accueil", "atelier": "L’atelier" },
+  "accueil": {
+    "titre": "Savonnerie Brune",
+    "intro": "Des savons saponifiés à froid, sans huile de palme, coupés à la main.",
+    "avis": "Avis de nos clients"
+  },
+  "atelier": {
+    "titre": "L’atelier",
+    "texte": "Nous fabriquons chaque savon dans notre atelier de Morlaix, par lots de soixante.",
+    "retour": "Retour à l’accueil"
+  },
+  "pied": { "mentions": "Savonnerie Brune — artisan savonnier" }
+}

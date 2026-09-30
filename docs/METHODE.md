@@ -271,6 +271,18 @@ brique 5, où un sceptique a supprimé deux appels fraîchement ajoutés et rela
 369 tests sans en tuer un seul : les bornes ajoutées étaient des no-op, et la
 suite entière le taisait.
 
+**Étendu le 2026-09-30 (cahier P2-2) — la REDONDANCE ne dispense pas de
+prouver chaque brin.** Une mutation qui SURVIT ne prouve jamais la
+robustesse : elle dit que le contrôle ne mesure pas ce qu'on croit. Quand
+deux mécanismes protègent le même contrat — au contrat 4 de P2-2, le
+regroupement par intercepteur ET l'élément en cause publié —, en retirer un
+seul ne fait rien tomber, et la mesure reste muette sur celui qui tient
+vraiment. Le geste : tuer chaque brin PAR SON PROPRE contrôle, puis les deux
+ENSEMBLE pour vérifier que le contrat est bien mesuré. Un contrat protégé
+par deux mécanismes dont aucun n'est individuellement nécessaire est un
+contrat dont personne ne sait lequel le tient — et le jour où l'un disparaît
+dans une refonte, rien ne rougit.
+
 **Étendu le 2026-09-29 (cahier P2-1, APPRENTISSAGES n°20) — la mutation
 AVANT la cassette, sous les conditions du réel.** Un scénario neuf ne
 s'enregistre pas tant qu'il n'a pas tué la mutation du contrat qu'il prétend
@@ -281,6 +293,20 @@ ordre des actions —, pas seulement l'anomalie finale : deux gabarits de P2-1
 sur trois passaient verts avec et sans leur contrat, jusqu'à ce qu'on leur
 rende ces conditions. Un kill se lit sur trois colonnes de la scorecard
 (détection, verdicts corrects, rejouabilité), jamais sur la première seule.
+
+**Étendu le 2026-09-30 (cahier P2-2, APPRENTISSAGES n°25) — une RÈGLE DE
+SILENCE se mute sur CHAQUE porte, et le croisement de deux cahiers est un
+gabarit à part.** Quand un cahier décide que le moteur se taira sur une
+famille de faits, la question n'est pas « le code applique-t-il la règle ? »
+mais « combien de chemins mènent au rapport, et la règle est-elle sur chacun
+? ». Le contrat 1 de P2-2 était vert partout et laissait passer 36 sections
+sur le réel : il gardait les candidates du scan, pas les découvertes du
+rejeu — l'autre porte, ouverte par un contrat de P2-1. La règle s'écrit donc
+UNE fois, en une fonction que tous les chemins appellent (une doctrine
+recopiée dérive), et le gabarit qui la mesure fait se RENCONTRER les deux
+conditions : ici W03 (un tiers qui ne tombe qu'au rejeu) et W04 (le défaut
+interne dont le rejeu le fait tomber). Une suite de tests par cahier vérifie
+des contrats, jamais leur composition.
 
 ## 11. L'instrument refuse de piloter un scan plutôt que d'inventer un défaut
 

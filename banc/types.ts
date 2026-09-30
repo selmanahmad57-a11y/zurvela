@@ -192,6 +192,12 @@ export interface RequeteApi {
 }
 
 /** Réponse HTTP produite par un gabarit (puis transformée par les bugs). */
+/** Une requête reçue par le serveur tiers : sa méthode, et ses en-têtes en minuscules. */
+export interface RequeteTiers {
+  methode: string;
+  entetes: Record<string, string | undefined>;
+}
+
 export interface ReponseHttp {
   statut: number;
   entetes: Record<string, string>;
@@ -310,6 +316,14 @@ export interface BugInjectable {
    * dépendent vraiment.
    */
   besoinOrigineTierce?: boolean;
+  /**
+   * Ce que la SECONDE ORIGINE sert pour ce bug (cahier P2-2, contrat 6), ou
+   * `null` pour laisser la main — par défaut, le serveur tiers rend une panne
+   * (503) à toute requête, ce dont X01 a besoin. C'est par là qu'un gabarit
+   * fabrique un tiers qui répond AUTREMENT au robot déclaré qu'au navigateur
+   * d'un visiteur : des anomalies fausses par construction (n°17).
+   */
+  servirTiers?(chemin: string, requete: RequeteTiers, contexte: ContexteBug): ReponseHttp | null;
   /** Gravité attendue du point de vue métier. */
   gravite: Gravite;
   /** Chemins d'URL des pages où l'anomalie est constatable (clé d'appariement avec le rapport). */
@@ -673,6 +687,12 @@ export interface ComptesProtocole {
    */
   nbGroupesRetenus: number;
   nbGroupesEcartes: number;
+  /**
+   * Parmi les groupes écartés, ceux écartés d'office comme tiers SANS EFFET
+   * visible (cahier P2-2, contrat 1) : le silence de la doctrine, compté —
+   * un silence qui ne se compte pas est un angle mort (n°4).
+   */
+  nbGroupesSansEffet: number;
   /** Attendus NON retenus par le manifeste dont au moins un groupe a été écarté. */
   nbFaussesAlertesEvitees: number;
   /** Attendus À RETENIR écartés sans qu'aucune anomalie retenue ne les couvre. */
@@ -984,6 +1004,8 @@ export interface Agregat {
   nbGroupesRetenus: number;
   /** Groupes dont le verdict n'est pas retenu : les alertes que le protocole a tues. */
   nbGroupesEcartes: number;
+  /** Parmi les écartés : les groupes de tiers SANS EFFET, écartés d’office (P2-2, contrat 1). */
+  nbGroupesSansEffet: number;
   /**
    * ATTENDUS DISTINCTS que le manifeste ne voulait PAS voir retenus et dont
    * au moins un groupe a été écarté. C'est la mesure de l'argument central :

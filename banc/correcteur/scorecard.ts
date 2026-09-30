@@ -75,6 +75,7 @@ function agregerProtocole(scenarios: ResultatScenario[]): ComptesProtocole {
     nbGroupes: somme(comptes.map((compte) => compte.nbGroupes)),
     nbGroupesRetenus: somme(comptes.map((compte) => compte.nbGroupesRetenus)),
     nbGroupesEcartes: somme(comptes.map((compte) => compte.nbGroupesEcartes)),
+    nbGroupesSansEffet: somme(comptes.map((compte) => compte.nbGroupesSansEffet)),
     nbFaussesAlertesEvitees: somme(comptes.map((compte) => compte.nbFaussesAlertesEvitees)),
     nbPertesProtocole: somme(comptes.map((compte) => compte.nbPertesProtocole)),
     nbEcartesNonApparies: somme(comptes.map((compte) => compte.nbEcartesNonApparies)),
@@ -1044,14 +1045,27 @@ export function rendreScorecardConsole(
     '',
     syntheseRejouabilite,
     ...alarmeRejouabilite,
-    // Une cause, un constat : ligne de base de C-16, dite seulement quand un
-    // attendu la déclare — muette sinon, elle ne mesurerait rien.
+    // Le silence de la doctrine tierce, compté (P2-2, contrat 1) : toujours
+    // dit, zéro compris — un silence qui ne se compte pas est un angle mort.
+    traduire(dico, 'scorecard.syntheseSansEffet', {
+      groupes: formateurs.entier.format(scorecard.global.nbGroupesSansEffet),
+      ecartes: formateurs.entier.format(scorecard.global.nbGroupesEcartes),
+    }),
+    // Une cause, un constat : dite seulement quand un attendu la déclare —
+    // muette sinon, elle ne mesurerait rien. Ligne de base à la clôture de
+    // P2-1 (4 en double), ramenée à zéro par P2-2 (contrat 4) : elle est
+    // désormais un INVARIANT, et un seul double fait sonner l'alarme. Une
+    // ligne de base qui ne devient pas un invariant après correction n'aurait
+    // rien protégé.
     ...(scorecard.global.nbAttendusCauseUnique > 0
       ? [
           traduire(dico, 'scorecard.syntheseCauseUnique', {
             doubles: formateurs.entier.format(scorecard.global.nbConstatsEnDouble),
             causes: formateurs.entier.format(scorecard.global.nbAttendusCauseUnique),
           }),
+          ...(scorecard.global.nbConstatsEnDouble > 0
+            ? [traduire(dico, 'scorecard.alarmeCauseUnique', { doubles: formateurs.entier.format(scorecard.global.nbConstatsEnDouble) })]
+            : []),
         ]
       : []),
     '',

@@ -197,7 +197,7 @@ export function ecartesAttendus(rapport: Rapport): number | null {
 function groupesEcartes(rapport: Rapport) {
   const surAvis = new Set((rapport.decouvertes ?? []).map((anomalie) => anomalie.groupe));
   return (rapport.groupes ?? []).filter(
-    (resultat) => !VERDICTS_RETENUS.includes(resultat.verdict) && !surAvis.has(resultat.groupe.cle),
+    (resultat) => !VERDICTS_RETENUS.includes(resultat.verdict) && resultat.verdict !== 'sans-effet' && !surAvis.has(resultat.groupe.cle),
   );
 }
 

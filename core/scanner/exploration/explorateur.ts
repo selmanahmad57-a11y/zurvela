@@ -37,6 +37,7 @@ import { composerContexteProfilage, type CollecteProfilage, type ExplorateurProf
 import { brancherPage, type OptionsFenetre, type PageBranchee } from '../observation/observateur.js';
 import {
   derniereMutation,
+  etatsCadres,
   etatsImages,
   extrairePage,
   extraireTexte,
@@ -492,6 +493,9 @@ export function creerExplorateur(dependances: DependancesExplorateur): Explorate
         const horodatage = new Date().toISOString();
         for (const image of await etatsImages(page, delai())) {
           observateur.emettre({ type: 'etat-image', horodatage, page: url, viewport: viewport.nom, ...image });
+        }
+        for (const cadre of await etatsCadres(page, delai())) {
+          observateur.emettre({ type: 'etat-cadre', horodatage, page: url, viewport: viewport.nom, ...cadre });
         }
         const geometrie = await recouvrements(page, { max: exploration.elementsInteractifsMax, budgetMs: delai() });
         if (geometrie.tronque) {

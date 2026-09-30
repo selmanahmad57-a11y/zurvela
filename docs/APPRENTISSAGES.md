@@ -840,3 +840,31 @@ regardé.
   noms, de « la prose ne porte aucun chiffre que le code n'a pas posé » ; et
   c'est l'apprentissage n°19 appliqué à la rédaction : ne pas publier ce que
   notre fenêtre suppose.
+
+## 25. Une doctrine a autant de portes que le rapport a d'entrées, et le banc n'en connaissait qu'une (2026-09-30, cahier P2-2, validation sur le réel)
+
+- **Le fait** : le contrat 1 de P2-2 écarte les tiers sans effet visible.
+  Écrit, testé, muté, vert au banc, vert sur les scénarios historiques. Sur
+  le réel, automationexercise a publié vingt-deux sections « service
+  extérieur » pour le gestionnaire de consentement publicitaire de Google,
+  et expandtesting quatorze. La doctrine était juste ; elle ne gardait
+  qu'une porte. Un groupe atteint le rapport par DEUX chemins — les
+  candidates du scan, et les découvertes du rejeu (P2-1, contrat 8) — et le
+  filtre n'était posé que sur le premier.
+- **Pourquoi aucun test ne l'a vu** : les deux contrats venaient de cahiers
+  différents. Le banc de P2-1 n'avait pas de tiers, celui de P2-2 pas de
+  découverte, et aucun scénario ne croisait les deux. Chaque cahier était
+  complet ; leur INTERSECTION ne l'était pas. Une suite de tests par cahier
+  vérifie des contrats, pas leur composition.
+- **Ce que ça change** : quand un cahier pose une RÈGLE DE SILENCE, la
+  question n'est pas « le code l'applique-t-il ? » mais « combien de chemins
+  mènent au rapport, et la règle est-elle sur chacun ? ». La réponse s'écrit
+  une seule fois, en une fonction que les deux chemins appellent : une
+  doctrine recopiée à deux endroits est une doctrine qui dérive. Et le
+  contrôle se pose sur le CROISEMENT, pas sur chaque contrat pris seul.
+- **Corollaire sur le réel** : c'est la validation §12 qui l'a trouvé, pas
+  le banc. Le banc a raison sur ce qu'il contient ; il ne dit rien de ce
+  qu'il ne contient pas. L'apprentissage n°20 disait qu'un contrat n'est
+  éprouvé que si son gabarit reproduit les conditions du réel ; celui-ci
+  ajoute : encore faut-il qu'un gabarit reproduise la RENCONTRE de deux
+  conditions.

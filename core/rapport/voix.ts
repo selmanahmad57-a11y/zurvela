@@ -174,6 +174,14 @@ export const LIBELLES_RAPPORT: Readonly<
       titre: string;
       sansAnomalie: string;
       pagesConcernees: string;
+      /**
+       * TEXTE À GARANTIE SÉMANTIQUE (cahier P2-2, contrat 3) : l'étiquette de
+       * l'hôte en cause. Elle dit l'hôte ET l'imputation — c'est le SITE qui
+       * appelle ce service, donc c'est à lui que la correction revient
+       * (APPRENTISSAGES n°19). « Un service extérieur » sans nom envoyait
+       * chercher au mauvais endroit (C-03).
+       */
+      serviceExterieur: string;
       constat: string;
       impact: string;
       action: string;
@@ -216,6 +224,7 @@ export const LIBELLES_RAPPORT: Readonly<
     titre: 'Rapport de vérification',
     sansAnomalie: 'Aucune anomalie n’a été retenue à l’issue de nos vérifications.',
     pagesConcernees: 'Pages concernées',
+    serviceExterieur: 'Service extérieur appelé par le site',
     constat: 'Ce que nous avons constaté',
     impact: 'Conséquence',
     action: 'Ce qu’il faut faire corriger',
@@ -268,6 +277,7 @@ export const LIBELLES_RAPPORT: Readonly<
     titre: 'Verification report',
     sansAnomalie: 'No issue was retained after our verification pass.',
     pagesConcernees: 'Pages affected',
+    serviceExterieur: 'External service called by the site',
     constat: 'What we observed',
     impact: 'Consequence',
     action: 'What to have fixed',

@@ -162,6 +162,9 @@ function rendreSection(section: SectionRapport, langue: LangueRapport, rang: num
     // l'échapper abîmerait une phrase que nous écrivons nous-mêmes.
     `**${libelles.statut}** : ${section.statutFormule}`,
     `**${libelles.pagesConcernees}** : ${pages}`,
+    // L'HÔTE, posé par le code et non par le modèle (P2-2, contrat 3). Il vient
+    // de la page, donc il s'échappe, exactement comme un chemin.
+    ...(section.origine === undefined ? [] : [`**${libelles.serviceExterieur}** : ${echapper(section.origine)}`]),
     '',
   ];
   if (section.constat !== '') {

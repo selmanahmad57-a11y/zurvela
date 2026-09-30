@@ -23,6 +23,7 @@ export const CONFIG_TEST: ConfigScanner['detecteurs'] = {
     confianceDocumentInjoignable: 0.9,
     graviteDocumentInjoignable: 'bloquant',
     erreursReseauIgnorees: ['net::ERR_ABORTED'],
+    contenuMixte: { erreurs: ['mixed-content'], categorie: 'securite', gravite: 'important', confiance: 0.85 },
   },
   inerte: { confiance: 0.75, gravite: 'bloquant' },
   echecMuet: { confiance: 0.8, gravite: 'bloquant', typesRequete: ['document', 'xhr', 'fetch'] },
@@ -38,7 +39,7 @@ export const CONFIG_TEST: ConfigScanner['detecteurs'] = {
   },
   image: { confianceSignalSimple: 0.8, confianceSignalDouble: 0.95, gravite: 'mineur' },
   recouvrement: { confianceGeometrie: 0.8, confianceGeometrieEtClic: 0.95, gravite: 'bloquant' },
-  tiers: { categorie: 'fonctionnel', gravite: 'mineur', confiance: 0.7 },
+  tiers: { categorie: 'fonctionnel', gravite: 'mineur', confiance: 0.7, fenetreErreurJsMs: 2000 },
 };
 
 export const DESKTOP: Viewport = { nom: 'desktop', largeur: 1280, hauteur: 800, mobile: false };
@@ -147,12 +148,15 @@ export function etatImage(surcharges: Surcharges<'etat-image'> = {}): Signal {
   };
 }
 
+/** L'élément qui intercepte le clic dans les fabriques : la cause, depuis P2-2 (contrat 4). */
+export const INTERCEPTEUR: LocalisationElement = { balise: 'span', selecteur: 'form[action="/api/contact"] > span:nth-of-type(1)', attributs: {} };
+
 export function interception(surcharges: Surcharges<'interception-clic'> = {}): Signal {
   return {
     type: 'interception-clic',
     ...base(0),
     element: BOUTON,
-    intercepteur: { balise: 'span', selecteur: 'form[action="/api/contact"] > span:nth-of-type(1)', attributs: {} },
+    intercepteur: INTERCEPTEUR,
     source: 'geometrie',
     ...surcharges,
   };

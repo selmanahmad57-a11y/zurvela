@@ -315,7 +315,8 @@
             "categorieParDefaut",
             "confianceDocumentInjoignable",
             "graviteDocumentInjoignable",
-            "erreursReseauIgnorees"
+            "erreursReseauIgnorees",
+            "contenuMixte"
           ],
           "properties": {
             "confiance5xx": {
@@ -362,6 +363,38 @@
                 "type": "string"
               },
               "description": "Codes d'erreur réseau du navigateur qui ne sont PAS un constat sur le site : l'annulation d'une requête par le client (net::ERR_ABORTED) vient du robot lui-même, pas du serveur. La liste évoluera avec les navigateurs."
+            },
+            "contenuMixte": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "erreurs",
+                "categorie",
+                "gravite",
+                "confiance"
+              ],
+              "description": "Contenu mixte (cahier P2-2, contrat 2) : une page https qui charge une ressource en http, bloquée par le navigateur pour chaque visiteur. Défaut de sécurité du SITE, quel que soit l'hôte de la ressource — c'est le site qui a écrit http://. Jamais classé tiers.",
+              "properties": {
+                "erreurs": {
+                  "type": "array",
+                  "minItems": 1,
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "description": "Codes du navigateur (standard technique) qui signalent un blocage de contenu mixte."
+                },
+                "categorie": {
+                  "$ref": "#/definitions/categorie"
+                },
+                "gravite": {
+                  "$ref": "#/definitions/gravite"
+                },
+                "confiance": {
+                  "$ref": "#/definitions/confiance",
+                  "description": "Le navigateur a lui-même refusé la ressource : le signal est franc, mais il se rejoue comme tout constat."
+                }
+              }
             }
           }
         },
@@ -500,9 +533,10 @@
           "required": [
             "categorie",
             "gravite",
-            "confiance"
+            "confiance",
+            "fenetreErreurJsMs"
           ],
-          "description": "Défaillance d'une DÉPENDANCE TIERCE : une ressource servie par une autre origine que le site inspecté. Partagé par tous les détecteurs, parce que la règle est la même pour tous — une panne tierce n'est jamais imputée au site dans sa catégorie ni sa gravité d'origine. Un chat mort n'est pas un site mort ; mais le propriétaire mérite de le savoir, donc elle est signalée à part.",
+          "description": "Défaillance d'une DÉPENDANCE TIERCE : une ressource servie par une autre origine que le site inspecté. Depuis le cahier P2-2, elle n'est jugée que si son EFFET est visible dans la page (image non rendue, sous-cadre visible échoué, script échoué suivi d'une erreur JavaScript) ; sans effet visible, elle est écartée d'office, comptée, jamais publiée — le robot déclaré ne voit pas le même web que le visiteur (APPRENTISSAGES n°19).",
           "properties": {
             "categorie": {
               "$ref": "#/definitions/categorie"
@@ -515,6 +549,11 @@
               "minimum": 0,
               "maximum": 1,
               "description": "Confiance d'un constat de dépendance tierce. Le signal est franc (la requête a bien échoué) mais son IMPUTATION ne l'est pas : un tiers peut échouer pour des raisons qui ne regardent ni le site ni son propriétaire."
+            },
+            "fenetreErreurJsMs": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Écart maximal (ms) entre l'échec d'un script tiers et une erreur JavaScript de la même page et du même viewport pour que l'erreur compte comme son EFFET VISIBLE (cahier P2-2, contrat 1). Le message de l'erreur n'est jamais lu."
             }
           }
         }

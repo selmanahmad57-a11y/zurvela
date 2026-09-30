@@ -34,3 +34,10 @@ describe('tauxRejouabilite', () => {
     expect(tauxRejouabilite({})).toEqual({ candidates: 0, candidatesRejouees: 0, groupes: 0, groupesRejoues: 0 });
   });
 });
+
+describe('tauxRejouabilite — les groupes « sans-effet » (cahier P2-2, contrat 1)', () => {
+  it('un tiers écarté d’office n’est pas un groupe que le protocole devait rejouer', () => {
+    const taux = tauxRejouabilite({ groupes: [groupe(2, [false]), groupe(5, [], 'sans-effet', 'tiers-sans-effet')] });
+    expect(taux).toEqual({ candidates: 2, candidatesRejouees: 2, groupes: 1, groupesRejoues: 1 });
+  });
+});

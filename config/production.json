@@ -143,7 +143,15 @@
       "graviteDocumentInjoignable": "bloquant",
       "erreursReseauIgnorees": [
         "net::ERR_ABORTED"
-      ]
+      ],
+      "contenuMixte": {
+        "erreurs": [
+          "mixed-content"
+        ],
+        "categorie": "securite",
+        "gravite": "important",
+        "confiance": 0.85
+      }
     },
     "inerte": {
       "confiance": 0.75,
@@ -189,7 +197,8 @@
     "tiers": {
       "categorie": "fonctionnel",
       "gravite": "mineur",
-      "confiance": 0.7
+      "confiance": 0.7,
+      "fenetreErreurJsMs": 2000
     }
   },
   "ia": {

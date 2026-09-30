@@ -60,6 +60,13 @@ export interface RejeuScripte {
    */
   causeEchec?: CauseEchecRejeu;
   erreur?: string;
+  /**
+   * Ce que le rejeu voit EN PLUS de ce qu'il venait vérifier. Un rejeu ouvre
+   * une page et l'observe : sans ce canal, le factice ne saurait produire
+   * aucune DÉCOUVERTE, et la moitié du protocole resterait hors de portée
+   * des tests.
+   */
+  signauxEnPlus?: Signal[];
 }
 
 export interface AppelRejeu {
@@ -79,6 +86,7 @@ function signauxDuRejeu(script: RejeuScripte, page: string, viewport: string): S
       statut: script.enEchec === true ? 500 : 200,
       ...(script.dureeMs === undefined ? {} : { dureeMs: script.dureeMs }),
     }),
+    ...(script.signauxEnPlus ?? []).map((signal) => ({ ...signal, page, viewport })),
   ];
 }
 

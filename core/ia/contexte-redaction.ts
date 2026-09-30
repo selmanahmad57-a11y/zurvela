@@ -124,7 +124,7 @@ export function bornerContexteRedaction(contexte: ContexteRedaction, config: Con
  * Empreinte de ce qui compose le PROMPT et l'APPEL au-delà du fichier de
  * prompt.
  *
- * `VERSION` ne protège que `prompts/redaction/v1.ts`. Deux autres sources
+ * `VERSION` ne protège que le fichier de prompt de rédaction en service (`prompts/redaction/v1.ts`). Deux autres sources
  * composent l'appel sans y figurer : les BORNES de config, qui décident de ce
  * que le modèle voit, et la liste des CHAMPS DE PROSE, qui vit en code et
  * s'écrit en toutes lettres dans les instructions comme dans le contrat de

@@ -1,0 +1,21 @@
+{
+  "id": "zurvela",
+  "url": "https://zurvela.com",
+  "role": "temoin",
+  "fiche": "01",
+  "defaut": null,
+  "avant": {
+    "rejouabiliteGroupesPourcent": 0,
+    "candidates": 0,
+    "groupes": 0,
+    "retenues": 0,
+    "pages": 4,
+    "dureeMs": 14101
+  },
+  "attendus": {
+    "rejouabiliteGroupesMinPourcent": 100,
+    "dureeMaxMs": 300000,
+    "pagesMin": 2,
+    "candidatesMin": 0
+  }
+}

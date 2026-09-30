@@ -405,3 +405,25 @@ describe('rendreRapport — rien vérifié n’est pas rien trouvé (cahier P2-1
     expect(rendreRapport(rapport({ langue: 'en', sections: [], synthese: '', nbNonVerifies: 3, rejouabilite: { groupes: 3, groupesRejoues: 0 } }))).toContain('Nothing could be verified on this site');
   });
 });
+
+describe('l’hôte du service en cause est RENDU par le code, à côté de la prose (cahier P2-2, contrat 3)', () => {
+  const avecOrigine = (origine: string, langue: 'fr' | 'en' = 'fr') => {
+    const base = rapport({ langue });
+    return rendreRapport({ ...base, sections: [{ ...base.sections[0]!, origine }] });
+  };
+
+  it('la ligne nomme l’hôte ET dit qui l’appelle, dans les deux langues', () => {
+    expect(avecOrigine('298279967.log.optimizely.com')).toContain('**Service extérieur appelé par le site** : 298279967.log.optimizely.com');
+    expect(avecOrigine('298279967.log.optimizely.com', 'en')).toContain('**External service called by the site** : 298279967.log.optimizely.com');
+  });
+
+  it('l’hôte est échappé comme un chemin : il vient de la page', () => {
+    // Le contrôle qui peut échouer : un hôte porteur de balisage sortirait tel
+    // quel et pourrait déformer le rapport rendu.
+    expect(avecOrigine('faux*hote_[x].invalid')).toContain('faux\\*hote\\_\\[x\\].invalid');
+  });
+
+  it('sans service extérieur, aucune ligne — le rapport ne nomme pas ce qu’il n’a pas constaté', () => {
+    expect(rendreRapport(rapport())).not.toContain('Service extérieur');
+  });
+});

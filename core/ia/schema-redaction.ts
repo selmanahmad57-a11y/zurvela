@@ -243,17 +243,20 @@ function constatsBijection(redaction: Redaction, identifiants: readonly string[]
 function constatsProse(redaction: Redaction): ConstatInvalidite[] {
   const valeurs: { champ: string; valeur: string }[] = [
     ...CHAMPS_PROSE_GLOBAUX.map((champ) => ({ champ, valeur: redaction[champ] })),
-    ...redaction.sections.flatMap((section) =>
-      CHAMPS_PROSE_SECTION.map((champ) => ({ champ, valeur: section[champ] })),
-    ),
+    ...redaction.sections.flatMap((section) => CHAMPS_PROSE_SECTION.map((champ) => ({ champ, valeur: section[champ] }))),
   ];
   const constats: ConstatInvalidite[] = [];
   if (valeurs.some((entree) => entree.valeur.trim() === '')) {
     constats.push({ champ: '', defaut: DEFAUT_PROSE_VIDE, attendu: 'chaque champ de prose non vide' });
   }
-  if (valeurs.some((entree) => CHIFFRE.test(entree.valeur))) {
+  // Les CHAMPS fautifs sont nommés — leurs NOMS, jamais leur contenu. Un
+  // constat qui ne dit pas où est le défaut fait relancer à l'aveugle, et
+  // laisse celui qui lit le journal deviner. Les noms de champs viennent du
+  // contrat, pas de la réponse : les citer ne réinjecte rien.
+  const chiffres = [...new Set(valeurs.filter((entree) => CHIFFRE.test(entree.valeur)).map((entree) => entree.champ))];
+  if (chiffres.length > 0) {
     constats.push({
-      champ: '',
+      champ: chiffres.join(', '),
       defaut: DEFAUT_PROSE_CHIFFREE,
       attendu: 'aucun chiffre dans la prose : les nombres sont posés par le moteur, à côté du texte',
     });

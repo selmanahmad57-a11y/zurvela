@@ -104,6 +104,19 @@ export interface ExtractionPage {
   champsIgnores: number;
 }
 
+/**
+ * État d'un SOUS-CADRE de la page (cahier P2-2, contrat 1) : sa ressource et
+ * la surface qu'il occupe. Un sous-cadre dont le document a échoué n'a d'effet
+ * visible que s'il occupe une surface — un iframe de mesure caché n'en a pas.
+ */
+export interface EtatCadre {
+  /** URL demandée par le sous-cadre ; vide sans source. */
+  ressource: string;
+  element: LocalisationElement;
+  largeur: number;
+  hauteur: number;
+}
+
 export interface EtatImage {
   /** URL de la ressource chargée ; vide si l'image n'a aucune source (aucune requête n'a eu lieu). */
   ressource: string;
@@ -159,6 +172,7 @@ type Commande =
   | { commande: 'page'; attributsConserves: string[]; attributsNommage: string[] }
   | { commande: 'texte'; maxChars: number; metadonnees: string[] }
   | { commande: 'images'; attributsConserves: string[] }
+  | { commande: 'cadres'; attributsConserves: string[] }
   | {
       commande: 'geometrie';
       attributsConserves: string[];
@@ -490,6 +504,21 @@ function enPage(arg: Commande): unknown {
       });
       return etats;
     }
+    case 'cadres': {
+      // La surface RENDUE du sous-cadre, pas ses attributs : un iframe de
+      // 0 × 0 ou masqué par la feuille de style n'occupe rien à l'écran.
+      const etats: EtatCadre[] = Array.from(document.querySelectorAll('iframe')).map((cadre) => {
+        const src = cadre.getAttribute('src');
+        const rect = cadre.getBoundingClientRect();
+        return {
+          ressource: src !== null && src !== '' ? aide.resoudre(src) : '',
+          element: aide.localiser(cadre, arg.attributsConserves),
+          largeur: Math.round(rect.width),
+          hauteur: Math.round(rect.height),
+        };
+      });
+      return etats;
+    }
     case 'geometrie': {
       // Point de clic = centre du rectangle après défilement ; couvert si un
       // autre élément reçoit ce point. Ne comptent pas : la cible, un de ses
@@ -663,6 +692,10 @@ export async function extraireTexte(page: Page, maxChars: number, delaiMs?: numb
 
 export async function etatsImages(page: Page, delaiMs?: number): Promise<EtatImage[]> {
   return (await evaluer(page, { commande: 'images', attributsConserves: ATTRIBUTS_CONSERVES }, delaiMs)) as EtatImage[];
+}
+
+export async function etatsCadres(page: Page, delaiMs?: number): Promise<EtatCadre[]> {
+  return (await evaluer(page, { commande: 'cadres', attributsConserves: ATTRIBUTS_CONSERVES }, delaiMs)) as EtatCadre[];
 }
 
 export interface OptionsGeometrie {

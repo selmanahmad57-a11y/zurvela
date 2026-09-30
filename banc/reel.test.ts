@@ -36,9 +36,12 @@ function mesures(surcharges: Partial<MesuresScan> = {}): MesuresScan {
 }
 
 describe('lireOptions', () => {
-  it('accepte plusieurs --site et un --avant ; refuse un positionnel', () => {
-    expect(lireOptions(['--site', 'a', '--site', 'b', '--avant', '../avant'])).toEqual({ sites: ['a', 'b'], avant: '../avant' });
-    expect(lireOptions([])).toEqual({ sites: [] });
+  it('accepte plusieurs --site et PLUSIEURS --avant ; refuse un positionnel', () => {
+    // Plusieurs moteurs d'avant dans la même session : le seul tableau
+    // comparable quand les cibles sont vivantes (P2-2, D4).
+    expect(lireOptions(['--site', 'a', '--site', 'b', '--avant', '../campagne', '--avant', '../p2-1'])).toEqual({ sites: ['a', 'b'], avant: ['../campagne', '../p2-1'] });
+    expect(lireOptions(['--avant', '../un'])).toEqual({ sites: [], avant: ['../un'] });
+    expect(lireOptions([])).toEqual({ sites: [], avant: [] });
     expect(lireOptions(['https://x.invalid'])).toBeNull();
   });
 });
@@ -142,9 +145,9 @@ describe('juger — tenu, non tenu, ou déclaré', () => {
 });
 
 describe('les cas de validation réelle du cahier P2-1', () => {
-  it('quatre sites de la campagne, trois où le défaut a mordu et un témoin, tous en https, avec leurs attendus', async () => {
+  it('les NEUF sites distincts de la campagne, défauts et témoins, tous en https, avec leurs attendus', async () => {
     const tous = await chargerCas();
-    expect(tous.map((c) => c.id)).toEqual(['books', 'cutlybook', 'expandtesting', 'the-internet']);
+    expect(tous.map((c) => c.id)).toEqual(['automationexercise', 'books', 'cutlybook', 'demoqa', 'expandtesting', 'getlumavo', 'quotes', 'the-internet', 'zurvela']);
     for (const c of tous) {
       expect(c.url.startsWith('https://')).toBe(true);
       expect(c.attendus.rejouabiliteGroupesMinPourcent).toBeGreaterThan(0);
@@ -153,9 +156,10 @@ describe('les cas de validation réelle du cahier P2-1', () => {
       // AVANT l'échéance, jamais après.
       expect(c.attendus.dureeMaxMs).toBe(300_000);
     }
-    expect(tous.filter((c) => c.role === 'temoin').map((c) => c.id)).toEqual(['the-internet']);
-    // Les trois défauts qui ont mordu, chacun à sa fiche.
-    expect(tous.filter((c) => c.role === 'defaut').map((c) => c.defaut).sort()).toEqual(['C-06', 'C-09', 'C-10']);
+    expect(tous.filter((c) => c.role === 'temoin').map((c) => c.id)).toEqual(['getlumavo', 'quotes', 'the-internet', 'zurvela']);
+    // Chaque défaut nomme l'entrée du carnet qu'il éprouve, et chaque cas sa fiche.
+    expect(tous.filter((c) => c.role === 'defaut').map((c) => c.defaut).sort()).toEqual(['C-05', 'C-06', 'C-06', 'C-09', 'C-10']);
+    expect(new Set(tous.map((c) => c.fiche)).size).toBe(tous.length);
   });
 
   it('« pnpm banc:reel » charge la clé comme les autres commandes de mesure', async () => {

@@ -66,6 +66,9 @@ export const STATUT_PAR_VERDICT: Readonly<Record<VerdictConfirmation, StatutSect
   // Une découverte sans motif connu reste une découverte : le statut le moins
   // affirmatif des deux qui la décrivent, jamais « confirmee ».
   decouverte: 'constatee-au-rejeu',
+  // Un tiers sans effet visible n'a aucune formulation client : il n'est
+  // jamais publié (P2-2, contrat 1).
+  'sans-effet': null,
 };
 
 /**

@@ -42,7 +42,7 @@ import { creerProtocole } from './protocole.js';
 
 const DETECTEURS = [
   creerDetecteurHttp(CONFIG_TEST.http, CONFIG_TEST.tiers),
-  creerDetecteurLenteur(CONFIG_TEST.lenteur, CONFIG_TEST.tiers),
+  creerDetecteurLenteur(CONFIG_TEST.lenteur),
   creerDetecteurRecouvrement(CONFIG_TEST.recouvrement),
 ];
 

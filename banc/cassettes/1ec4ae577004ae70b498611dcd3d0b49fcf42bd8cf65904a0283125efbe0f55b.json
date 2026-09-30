@@ -1,0 +1,12 @@
+{
+  "cle": "1ec4ae577004ae70b498611dcd3d0b49fcf42bd8cf65904a0283125efbe0f55b",
+  "metadonnees": {
+    "date": "2026-09-30T13:40:13.705Z",
+    "modeleDemande": "claude-haiku-4-5",
+    "modeleServi": "claude-haiku-4-5-20251001",
+    "versionPrompt": "v2",
+    "coutApi": 0.0020829999999999998,
+    "apresRelance": false
+  },
+  "reponse": "{\"actionId\": \"c1\", \"raison\": \"Le site est une boutique (profil détecté). La page d'accueil a déjà été visitée. L'action c1 propose de naviguer vers /atelier (The workshop), qui est une section fonctionnelle où un visiteur peut explorer des produits ou services. Cela a plus de valeur de test qu'une terminaison immédiate. Il reste 19 pages à explorer dans le budget.\"}"
+}

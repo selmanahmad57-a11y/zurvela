@@ -12,7 +12,19 @@
  *
  * Ce bug est la seconde origine du banc, et il est le premier à l'utiliser.
  *
- * ── CE QUI EST ATTENDU, ET CE QUI NE L'EST PAS ──────────────────────────────
+ * ── REQUALIFIÉ PAR LE CAHIER P2-2 (contrat 1, décision D2) ──────────────────
+ *
+ * Le script tiers en panne n'est utilisé par RIEN dans la page : son échec n'a
+ * aucun effet visible. Depuis P2-2, il n'est plus publié — un seul critère,
+ * l'effet visible, sans exception pour la panne franche. X01 ne disparaît
+ * pas pour autant : il CHANGE D'ATTENDU. Le moteur doit le VOIR (une
+ * candidate existe, marquée sans effet) et S'EN TAIRE (écartée d'office au
+ * verdict `sans-effet`). Un X01 qui disparaîtrait pour une mauvaise raison
+ * — tiers jamais chargé, candidate jamais produite — serait un attendu RATÉ :
+ * le banc vérifie le silence, pas l'absence. Le tiers à effet visible a son
+ * propre bug, W02 (gabarit « tiers-au-robot »).
+ *
+ * ── CE QUI ÉTAIT ATTENDU AVANT P2-2 ─────────────────────────────────────────
  *
  * Une anomalie DISTINCTE — catégorie et gravité de `detecteurs.tiers`, jamais
  * celles d'un 5xx du site. Un chat mort n'est pas un site mort. Mais le
@@ -48,6 +60,8 @@ export const X01: BugInjectable = {
   // ce que le client lit doit être ce que le banc mesure.
   categorie: 'fonctionnel',
   gravite: 'mineur',
+  // Vu et tu : écarté d'office, jamais publié (P2-2, D2).
+  verdictAttendu: 'sans-effet',
   pages,
   besoinOrigineTierce: true,
   transformerHtml(html, chemin, contexte) {

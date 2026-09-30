@@ -159,6 +159,7 @@ async function principal(): Promise<void> {
       `candidates   : ${rapport.candidates?.length ?? 0}`,
       `retenues     : ${rapport.anomalies.length}`,
       `rejouables   : ${rejouabilite.candidatesRejouees}/${rejouabilite.candidates} candidates (${rejouabilite.groupesRejoues}/${rejouabilite.groupes} groupes)`,
+      `sans effet   : ${(rapport.groupes ?? []).filter((groupe) => groupe.verdict === 'sans-effet').length} groupe(s) tiers écarté(s) d’office`,
     ].join('\n'),
   );
 }

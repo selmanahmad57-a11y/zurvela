@@ -499,3 +499,59 @@ dette est levée (le commit qui la lève renvoie à ce fichier).
   auto-signé sur le serveur du banc, navigateur du banc qui l'accepte), avec
   un contenu mixte attendu publié et sa mutation tuée — dès que ce moyen
   existe, et au plus tard avant tout cahier qui touche au contenu mixte.
+
+## 22. Le critère d'effet visible est AVEUGLE à trois types de ressource sur quatre (2026-09-30, cahier P2-2, validation sur le réel)
+
+- **Le fait** : `effetVisible` sait juger trois types — une image non
+  rendue, un sous-cadre visible, un script suivi d'une erreur JavaScript.
+  Pour tout le reste, il répond « pas d'effet », par DÉFAUT et non par
+  mesure. Sur les neuf sites, 77 groupes ont été tus : 45 `xhr`, 29 `font`,
+  2 `script`, 1 `document`. Seuls trois l'ont été après un contrôle ; les 74
+  autres l'ont été parce que le critère ne sait pas les regarder.
+- **Pourquoi ça a bien marché ici** : les hôtes tus sont
+  `fundingchoicesmessages.google.com` (41), `fonts.gstatic.com` (29),
+  `maps.googleapis.com`, `m.stripe.com`, `www.google-analytics.com`,
+  `cdnjs.cloudflare.com`, `pagead2.googlesyndication.com`,
+  `accounts.google.com`, `298279967.log.optimizely.com` — consentement,
+  polices, télémétrie. Aucun n'était un défaut du site. Le silence était
+  juste, mais pour la bonne raison par accident.
+- **Pourquoi c'est une dette** : un `xhr` tiers en échec PEUT casser une
+  fonction réelle (une recherche servie par une API tierce, un paiement).
+  Le critère le tairait sans le voir. C'est un faux NÉGATIF possible, et il
+  est structurel : la doctrine tierce échange du faux positif contre du faux
+  négatif, et nous ne mesurons aujourd'hui qu'un côté de l'échange.
+- **Condition de levée** : un signal d'effet pour au moins la famille `xhr`
+  — une action dont le résultat attendu n'arrive pas dans la fenêtre
+  d'observation, ou un état de page qui ne change pas après un clic dont la
+  requête tierce a échoué — avec son gabarit et sa mutation tuée dans les
+  deux sens.
+- **ÉCHÉANCE FERME (propriétaire, 2026-09-30)** : cette dette se lève AVANT
+  que le « sans effet visible » ne serve d'argument commercial. Le jour où
+  nous dirons « Zurvela ne fait pas de faux positifs », il faudra que le
+  silence soit MESURÉ et non supposé — aujourd'hui, « sans effet visible »
+  veut souvent dire « nous n'avons pas regardé cet axe ». Sur les neuf sites,
+  le silence était juste par chance de CONTENU (consentement, télémétrie,
+  polices), pas par mesure. C'est le prochain grand sujet de justesse après
+  P2-2, avant tout cahier qui élargit la doctrine tierce. En attendant, le
+  compte par TYPE est journalisé à chaque scan, et toute revue doit le lire.
+
+## 23. La rejouabilité n'a pas de règle pour le dénominateur vide (2026-09-30, cahier P2-2, validation sur le réel)
+
+- **Le fait** : la rejouabilité est « groupes rejoués / groupes jugeables ».
+  Quand un scan ne retient plus AUCUN groupe jugeable, le rapport affiche
+  « — » et le comparateur de `banc:reel` lit ce « — » comme un échec.
+  Trois sites ont été déclarés NON TENU pour cette raison — cutlybook (ses
+  cinq retenues étaient toutes des polices et de la télémétrie), getlumavo
+  (sa seule retenue de même), zurvela (zéro candidate depuis toujours) —
+  alors que le résultat attendu de P2-2 était précisément qu'il ne leur
+  reste rien à rejouer.
+- **Pourquoi c'est une dette et pas un correctif** : définir la règle
+  MAINTENANT, après avoir vu les résultats, est exactement ce que la
+  méthode §13 interdit — on ne touche pas au critère pour faire passer une
+  mesure. L'échec reste rouge (n°22 des apprentissages) et la règle se
+  décide à froid, avant le prochain run.
+- **Condition de levée** : une décision du propriétaire sur ce que vaut un
+  scan sans groupe jugeable — un `tenu` de plein droit, un état distinct
+  (`sans objet`), ou un seuil sur un autre chiffre (par exemple « zéro
+  section publiée à tort ») —, inscrite dans les fiches AVANT le run qui la
+  mesurera.

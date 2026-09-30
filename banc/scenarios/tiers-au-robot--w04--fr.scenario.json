@@ -1,0 +1,8 @@
+{
+  "id": "tiers-au-robot--w04--fr",
+  "gabarit": "tiers-au-robot",
+  "langue": "fr",
+  "bugsActifs": [
+    "W04"
+  ]
+}

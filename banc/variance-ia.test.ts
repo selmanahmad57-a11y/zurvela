@@ -7,8 +7,9 @@
  * mesuré) doublé du n°6 (un diagnostic faux est cru).
  */
 import { describe, expect, it } from 'vitest';
+import type { ResultatScenario } from './types.js';
 import type { ActionExecutee, Rapport } from '../core/types.js';
-import { MESURES, accord, estMesure, lireOptions, nbMesuresExploitables, premierActionIdElu } from './variance-ia.js';
+import { MESURES, accord, estMesure, lireOptions, nbMesuresExploitables, premierActionIdElu, valeursRedaction, VALEUR_ABSENTE } from './variance-ia.js';
 
 const ABSENTE = '—';
 
@@ -71,11 +72,11 @@ function provenance(actionId: string): NonNullable<ActionExecutee['decision']> {
 }
 
 describe('variance des décisions : le premier actionId ÉLU', () => {
-  it('connaît les trois mesures, et elles seules', () => {
-    expect([...MESURES]).toEqual(['profil', 'decision', 'diagnostic']);
-    expect(estMesure('profil')).toBe(true);
-    expect(estMesure('decision')).toBe(true);
-    expect(estMesure('diagnostic')).toBe(true);
+  it('connaît les quatre mesures, et elles seules', () => {
+    expect([...MESURES]).toEqual(['profil', 'decision', 'diagnostic', 'redaction']);
+    for (const mesure of MESURES) {
+      expect(estMesure(mesure)).toBe(true);
+    }
     expect(estMesure('deciiision')).toBe(false);
   });
 
@@ -119,5 +120,27 @@ describe('variance des décisions : le premier actionId ÉLU', () => {
     expect(accord(muet).occurrences).toBe(3);
     expect(nbMesuresExploitables(muet)).toBe(0);
     expect(nbMesuresExploitables(['c1', ABSENTE, 'c2'])).toBe(2);
+  });
+});
+
+describe('variance de la RÉDACTION : la conformité, pas le texte', () => {
+  const resultat = (surcharges: Partial<ResultatScenario>): ResultatScenario =>
+    ({ scenarioId: 'x', gabarit: 'g', langue: 'fr', politique: 'deterministe', statut: 'ok', attendus: [], profils: [], cibles: [], rapports: [], nbReplisDecision: 0, fauxPositifs: [], coutApi: 0, coutApiParFamille: { exploration: 0, profilage: 0, confirmation: 0, redaction: 0 }, dureeMs: 0, ...surcharges }) as ResultatScenario;
+  const rapportBanc = (surcharges: Record<string, unknown>) => ({ attendu: { nature: 'rapport' }, nonMesure: false, controles: {}, satisfait: true, nbSections: 2, nbSectionsRedigees: 2, ...surcharges }) as never;
+
+  it('un rapport non mesuré vaut « absente » : rien à comparer', () => {
+    expect(valeursRedaction(resultat({ rapports: [rapportBanc({ nonMesure: true })] }))).toEqual({ rapport: VALEUR_ABSENTE, redigees: VALEUR_ABSENTE });
+  });
+
+  it('publie la conformité de la réponse et la couverture des sections', () => {
+    expect(valeursRedaction(resultat({ rapports: [rapportBanc({ nbSections: 3, nbSectionsRedigees: 3 })] }))).toEqual({ rapport: 'conforme', redigees: '3/3' });
+  });
+
+  it('une réponse refusée se voit, et une section muette aussi — le contrôle qui peut échouer', () => {
+    expect(valeursRedaction(resultat({ rapports: [rapportBanc({ satisfait: false, nbSections: 1, nbSectionsRedigees: 0 })] }))).toEqual({ rapport: 'non-conforme', redigees: '0/1' });
+  });
+
+  it('sans rapport noté, la mesure ne prétend rien', () => {
+    expect(valeursRedaction(resultat({}))).toEqual({ rapport: VALEUR_ABSENTE, redigees: VALEUR_ABSENTE });
   });
 });

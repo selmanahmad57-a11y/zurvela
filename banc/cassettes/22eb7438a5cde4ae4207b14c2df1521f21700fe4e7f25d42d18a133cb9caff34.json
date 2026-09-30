@@ -1,0 +1,12 @@
+{
+  "cle": "22eb7438a5cde4ae4207b14c2df1521f21700fe4e7f25d42d18a133cb9caff34",
+  "metadonnees": {
+    "date": "2026-09-30T13:40:06.971Z",
+    "modeleDemande": "claude-haiku-4-5",
+    "modeleServi": "claude-haiku-4-5-20251001",
+    "versionPrompt": "v2",
+    "coutApi": 0.002002,
+    "apresRelance": false
+  },
+  "reponse": "{\"actionId\": \"c1\", \"raison\": \"La page /atelier a été visitée mais aucune action utilisateur (formulaire, appel, devis, contact) n'y est disponible selon l'état fourni. Avec seulement une action possible (terminer) et un budget de 18 pages restantes après 2 visites sans interactions significatives, l'exploration du site s'arrête ici.\"}"
+}

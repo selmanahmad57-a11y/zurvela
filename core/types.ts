@@ -506,6 +506,14 @@ export type Signal =
       nbZone: number;
     })
   | (SignalBase & {
+      /** État d'un sous-cadre au chargement : sa ressource et sa surface rendue (P2-2, contrat 1). */
+      type: 'etat-cadre';
+      ressource: string;
+      element: LocalisationElement;
+      largeur: number;
+      hauteur: number;
+    })
+  | (SignalBase & {
       type: 'etat-image';
       ressource: string;
       element: LocalisationElement;
@@ -580,6 +588,13 @@ export interface AnomalieCandidate extends Anomalie {
   reproduction: ContexteReproduction;
   /** Signaux qui fondent la candidate. */
   preuves: Signal[];
+  /**
+   * Une ressource TIERCE en échec dont aucun effet n'est visible dans la page
+   * (cahier P2-2, contrat 1) : la candidate existe pour être COMPTÉE et
+   * journalisée, et le protocole l'écarte d'office, sans rejeu, au verdict
+   * `sans-effet`. Elle n'est jamais publiée.
+   */
+  sansEffetVisible?: boolean;
 }
 
 export interface ContexteDetection {
@@ -695,7 +710,16 @@ export type VerdictConfirmation =
    * gravité du détecteur ouvrait le rapport (expandtesting : six sections
    * « Bloquant » pour une iframe publicitaire vue pendant un rejeu).
    */
-  | 'decouverte';
+  | 'decouverte'
+  /**
+   * SANS EFFET (cahier P2-2, contrat 1) : un groupe fait uniquement de
+   * ressources TIERCES en échec dont aucun effet n'est visible dans la page.
+   * Écarté d'office, sans rejeu — rejouer ce que le robot voit autrement que
+   * le visiteur ne dirait rien de plus —, compté, jamais publié. Ce n'est ni
+   * un écart par re-vérification ni un signalement non vérifié : c'est un
+   * constat que la doctrine ne juge pas (APPRENTISSAGES n°19).
+   */
+  | 'sans-effet';
 
 /** Verdicts dont les anomalies sont RETENUES dans le rapport final APRÈS re-vérification. */
 export const VERDICTS_RETENUS: readonly VerdictConfirmation[] = ['confirmee', 'intermittente'];
@@ -1010,6 +1034,19 @@ export interface ImpactChiffre {
  * altérer un fait est un rapport où il l'a peut-être fait.
  */
 export interface SectionRapport {
+  /**
+   * L'HÔTE du service d'une autre origine en cause (cahier P2-2, contrat 3),
+   * lu dans la preuve et POSÉ PAR LE CODE — jamais rédigé par le modèle.
+   *
+   * C'est la réponse à un défaut que la mesure a montré : demander au modèle
+   * d'écrire un hôte exigeait de lui ouvrir une exception dans l'interdiction
+   * des chiffres (`127.0.0.1` est un nom fait de chiffres), et une exception
+   * dans une garde est une brèche. Le rapport pose déjà des faits que le
+   * modèle ne produit pas — gravité, statut, pages, comptes de vérification —
+   * et l'hôte en est un : il s'affiche à côté de la prose, exact, sans que
+   * personne ait à faire confiance à un modèle pour le recopier.
+   */
+  origine?: string;
   /**
    * Identifiant OPAQUE attribué par le moteur (`s1`, `s2`…), dans l'ordre des
    * anomalies retenues.

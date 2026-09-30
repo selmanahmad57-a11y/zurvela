@@ -36,6 +36,7 @@ import {
   type StatutSection,
 } from '../types.js';
 import { tauxRejouabilite } from '../scanner/confirmation/rejouabilite.js';
+import { hoteDePreuve } from './faits.js';
 import { AUCUNE_VERIFICATION, chiffresDe, statutDe, type ChiffresStatut } from './statuts.js';
 import { formulerStatut, type LangueRapport } from './voix.js';
 
@@ -199,8 +200,11 @@ export function compterEcartes(rapport: Rapport, clesPubliees: Set<string>): num
 
 /** Les groupes écartés qui n'ont produit aucune section : le domaine des deux comptes. */
 function groupesEcartes(rapport: Rapport, clesPubliees: Set<string>): ResultatGroupe[] {
+  // Un groupe `sans-effet` n'entre dans aucun des deux comptes : il n'a été
+  // ni tranché par nos re-vérifications ni laissé sans vérification — la
+  // doctrine ne le juge pas (P2-2, contrat 1).
   return (rapport.groupes ?? []).filter(
-    (resultat) => !VERDICTS_RETENUS.includes(resultat.verdict) && !clesPubliees.has(resultat.groupe.cle),
+    (resultat) => !VERDICTS_RETENUS.includes(resultat.verdict) && resultat.verdict !== 'sans-effet' && !clesPubliees.has(resultat.groupe.cle),
   );
 }
 
@@ -263,6 +267,9 @@ export function construireStructure(rapport: Rapport, langue: LangueRapport): St
 
   const sections: SectionRapport[] = triees.map(({ anomalie, statut }, rang) => ({
     id: `s${rang + 1}`,
+    // L'hôte du service extérieur en cause, quand il y en a un : un fait de la
+    // preuve, posé ici et rendu à côté de la prose (P2-2, contrat 3).
+    ...(hoteDePreuve(anomalie) === undefined ? {} : { origine: hoteDePreuve(anomalie) }),
     ...(anomalie.groupe === undefined ? {} : { groupe: anomalie.groupe }),
     categorie: anomalie.categorie,
     gravite: anomalie.graviteEstimee,

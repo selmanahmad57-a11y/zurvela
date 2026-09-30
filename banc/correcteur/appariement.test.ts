@@ -342,6 +342,7 @@ describe('calculerComptesProtocole', () => {
       nbGroupes: 2,
       nbGroupesRetenus: 2,
       nbGroupesEcartes: 0,
+      nbGroupesSansEffet: 0,
       nbFaussesAlertesEvitees: 0,
       nbPertesProtocole: 0,
       nbEcartesNonApparies: 0,
@@ -405,6 +406,7 @@ describe('calculerComptesProtocole', () => {
       nbGroupes: 4,
       nbGroupesRetenus: 1,
       nbGroupesEcartes: 3,
+      nbGroupesSansEffet: 0,
       nbFaussesAlertesEvitees: 0,
       nbPertesProtocole: 1,
       nbEcartesNonApparies: 2,
@@ -500,6 +502,7 @@ describe('calculerComptesProtocole', () => {
     ];
     expect(comptesDe(rapportProtocole(troisGroupes, 3), manifesteT01)).toMatchObject({
       nbGroupesEcartes: 3,
+      nbGroupesSansEffet: 0,
       nbFaussesAlertesEvitees: 1,
       nbPertesProtocole: 0,
       nbEcartesNonApparies: 0,
@@ -507,6 +510,7 @@ describe('calculerComptesProtocole', () => {
     // Symétrie : trois groupes écartés sur un même attendu à RETENIR = 1 perte.
     expect(comptesDe(rapportProtocole(troisGroupes, 3), manifeste)).toMatchObject({
       nbGroupesEcartes: 3,
+      nbGroupesSansEffet: 0,
       nbFaussesAlertesEvitees: 0,
       nbPertesProtocole: 1,
     });
@@ -566,6 +570,7 @@ describe('statutSelonPertes — l’invariant, posé directement', () => {
       nbGroupes: 10,
       nbGroupesRetenus: 9,
       nbGroupesEcartes: 1,
+      nbGroupesSansEffet: 0,
       nbFaussesAlertesEvitees: 8,
       nbPertesProtocole: 1,
       nbEcartesNonApparies: 0,

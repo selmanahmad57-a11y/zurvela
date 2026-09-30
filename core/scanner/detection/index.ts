@@ -114,7 +114,7 @@ export function creerDetecteurs(config: ConfigScanner['detecteurs']): Detecteur[
     creerDetecteurHttp(config.http, config.tiers),
     creerDetecteurInerte(config.inerte),
     creerDetecteurEchecMuet(config.echecMuet),
-    creerDetecteurLenteur(config.lenteur, config.tiers),
+    creerDetecteurLenteur(config.lenteur),
     creerDetecteurImage(config.image),
     creerDetecteurRecouvrement(config.recouvrement),
   ];

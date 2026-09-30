@@ -18,6 +18,8 @@ import type { ConfigConfirmation } from '../config.js';
 
 /** Motifs de verdict (identifiants techniques stables, jamais de prose). */
 export const MOTIF_REJEU_IMPOSSIBLE = 'rejeu-impossible';
+/** Groupe de ressources tierces sans effet visible, écarté d'office (P2-2, contrat 1). */
+export const MOTIF_TIERS_SANS_EFFET = 'tiers-sans-effet';
 export const MOTIF_REPRODUITE = 'reproduite';
 export const MOTIF_REPRODUCTION_PARTIELLE = 'reproduction-partielle';
 export const MOTIF_JAMAIS_REPRODUITE = 'jamais-reproduite';

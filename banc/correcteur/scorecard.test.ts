@@ -97,6 +97,7 @@ function protocole(
     nbGroupes,
     nbGroupesRetenus,
     nbGroupesEcartes,
+    nbGroupesSansEffet: 0,
     nbFaussesAlertesEvitees,
     nbPertesProtocole,
     nbEcartesNonApparies,
@@ -161,6 +162,7 @@ describe('calculerScorecard', () => {
       nbGroupes: 8,
       nbGroupesRetenus: 4,
       nbGroupesEcartes: 4,
+      nbGroupesSansEffet: 0,
       nbFaussesAlertesEvitees: 2,
       nbPertesProtocole: 1,
       nbEcartesNonApparies: 1,
@@ -409,6 +411,7 @@ describe('agrégats du protocole anti-faux-positifs', () => {
       nbGroupes: 7,
       nbGroupesRetenus: 3,
       nbGroupesEcartes: 4,
+      nbGroupesSansEffet: 0,
       nbFaussesAlertesEvitees: 2,
       nbPertesProtocole: 1,
       nbEcartesNonApparies: 1,
@@ -419,6 +422,7 @@ describe('agrégats du protocole anti-faux-positifs', () => {
       nbGroupes: 1,
       nbGroupesRetenus: 1,
       nbGroupesEcartes: 0,
+      nbGroupesSansEffet: 0,
       nbFaussesAlertesEvitees: 0,
       nbPertesProtocole: 0,
       nbEcartesNonApparies: 0,
@@ -443,6 +447,7 @@ describe('agrégats du protocole anti-faux-positifs', () => {
       nbGroupes: 3,
       nbGroupesRetenus: 2,
       nbGroupesEcartes: 1,
+      nbGroupesSansEffet: 0,
       nbFaussesAlertesEvitees: 1,
       nbPertesProtocole: 0,
       nbEcartesNonApparies: 0,
@@ -452,6 +457,7 @@ describe('agrégats du protocole anti-faux-positifs', () => {
       nbGroupes: 2,
       nbGroupesRetenus: 1,
       nbGroupesEcartes: 1,
+      nbGroupesSansEffet: 0,
       nbFaussesAlertesEvitees: 0,
       nbPertesProtocole: 1,
       nbEcartesNonApparies: 0,
@@ -494,6 +500,7 @@ describe('agrégats du protocole anti-faux-positifs', () => {
         nbGroupes: 0,
         nbGroupesRetenus: 0,
         nbGroupesEcartes: 0,
+        nbGroupesSansEffet: 0,
         nbFaussesAlertesEvitees: 0,
         nbPertesProtocole: 0,
         nbEcartesNonApparies: 0,
@@ -1010,6 +1017,13 @@ describe('scorecard — une cause, un constat : la ligne de base de C-16 (clôtu
       POLITIQUE_DETERMINISTE,
     );
     expect(scorecard.global).toMatchObject({ nbAttendusCauseUnique: 1, nbConstatsEnDouble: 2 });
+  });
+
+  it('un seul double sur une cause déclarée unique fait sonner l’ALARME ; zéro double la tait (invariant depuis P2-2)', () => {
+    const doubles = calculerScorecard([resultat({ scenarioId: 'a--fr', langue: 'fr', attendus: [causeUnique(2)] })], config, HORODATAGE, POLITIQUE_DETERMINISTE);
+    expect(rendreScorecardConsole(doubles, dico, config.langueConsole)).toContain('ALARME CAUSE UNIQUE');
+    const tenu = calculerScorecard([resultat({ scenarioId: 'a--fr', langue: 'fr', attendus: [causeUnique(1)] })], config, HORODATAGE, POLITIQUE_DETERMINISTE);
+    expect(rendreScorecardConsole(tenu, dico, config.langueConsole)).not.toContain('ALARME CAUSE UNIQUE');
   });
 
   it('la ligne se dit quand une cause unique est déclarée, et se tait sinon', () => {

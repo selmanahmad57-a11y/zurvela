@@ -54,7 +54,7 @@
  * Les catégories et gravités restent des valeurs d'énumération et les viewports
  * viennent de la configuration : ceux-là, le type les tient.
  */
-import type { Anomalie, Rapport, RapportBusiness, SectionRapport } from '../types.js';
+import type { Anomalie, Rapport, RapportBusiness, SectionRapport, Signal } from '../types.js';
 import type { ConfigRapport } from '../scanner/config.js';
 import type { ContexteRedaction } from '../ia/index.js';
 
@@ -160,6 +160,34 @@ export function normaliserFaits(
     typeSite: rapport.profil?.typeSite ?? null,
     sections,
   };
+}
+
+/**
+ * L'hôte de la ressource d'une autre origine qui fonde l'anomalie, lu dans sa
+ * preuve réseau — SEULE source de cet hôte dans tout le moteur.
+ *
+ * Il ne figure PAS dans ce que le modèle voit (cahier P2-2, contrat 3) : le
+ * rapport le pose lui-même à côté de la prose. Le lui montrer l'aurait invité
+ * à le recopier, donc à écrire un fait — et à écrire des chiffres, puisqu'un
+ * hôte peut n'être que cela (`127.0.0.1`). `URL` le normalise (minuscules, punycode) : c'est un nom
+ * d'hôte, jamais une phrase. Il reste une donnée NON FIABLE — le site l'a
+ * choisi — et passe par le même bloc balisé que les chemins.
+ */
+export function hoteDePreuve(anomalie: Anomalie): string | undefined {
+  const preuves = (anomalie as { preuves?: readonly Signal[] }).preuves ?? [];
+  const reseau = preuves.find(
+    (preuve): preuve is Extract<Signal, { type: 'reponse-reseau' | 'requete-echouee' }> =>
+      (preuve.type === 'reponse-reseau' || preuve.type === 'requete-echouee') && !preuve.interne,
+  );
+  if (reseau === undefined) {
+    return undefined;
+  }
+  try {
+    const hote = new URL(reseau.urlRessource).hostname;
+    return hote === '' ? undefined : hote;
+  } catch {
+    return undefined;
+  }
 }
 
 function localisationsMontrees(section: SectionRapport, config: ConfigRapport): string[] {

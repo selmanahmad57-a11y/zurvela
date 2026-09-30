@@ -188,6 +188,7 @@ export function comptesProtocoleZero(): ComptesProtocole {
     nbGroupes: 0,
     nbGroupesRetenus: 0,
     nbGroupesEcartes: 0,
+    nbGroupesSansEffet: 0,
     nbFaussesAlertesEvitees: 0,
     nbPertesProtocole: 0,
     nbEcartesNonApparies: 0,
@@ -267,6 +268,9 @@ export function calculerComptesProtocole(
       continue;
     }
     comptes.nbGroupesEcartes += 1;
+    if (resultat.verdict === 'sans-effet') {
+      comptes.nbGroupesSansEffet += 1;
+    }
     const indices = [...new Set(resultat.groupe.membres.map(indiceAttendu))].filter((indice) => indice !== -1);
     if (indices.length === 0) {
       comptes.nbEcartesNonApparies += 1;

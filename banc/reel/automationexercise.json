@@ -1,0 +1,21 @@
+{
+  "id": "automationexercise",
+  "url": "https://automationexercise.com",
+  "role": "defaut",
+  "fiche": "10",
+  "defaut": "C-05",
+  "avant": {
+    "rejouabiliteGroupesPourcent": 1,
+    "candidates": 1649,
+    "groupes": 410,
+    "retenues": 19,
+    "pages": 40,
+    "dureeMs": 337936
+  },
+  "attendus": {
+    "rejouabiliteGroupesMinPourcent": 10,
+    "dureeMaxMs": 300000,
+    "pagesMin": 20,
+    "candidatesMin": 50
+  }
+}
