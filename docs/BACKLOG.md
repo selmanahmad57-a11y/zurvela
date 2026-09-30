@@ -112,11 +112,14 @@ entrée indique la brique ou la phase où elle a vocation à être traitée.
   expandtesting 0 → 7,3 → 50 % ; getlumavo 100 → 100 → — ; quotes
   100 → 100 → 100 % ; the-internet 100 → 100 → 100 % ; zurvela — partout.
   Le chiffre qui compte est au cahier P2-2 §5.2 : le taux de FAUX POSITIFS
-  des sections publiées, 82 % (campagne) → 81 % (P2-1) → 61 % (P2-2), et 0 %
-  recalculé après le correctif de la seconde porte (§5.3) — à MESURER, pas
-  recalculer, au prochain run. Deux suites ouvertes : les dettes n°22
-  (l'effet visible est aveugle aux `xhr` et aux polices) et n°23 (la
-  rejouabilité n'a pas de règle pour le dénominateur vide).
+  des sections publiées, 82 % (campagne) → 81 % (P2-1) → 61 % (P2-2) →
+  **0 % MESURÉ** au run de 20 h (§5.5, 0,3376 USD), 14 sections publiées,
+  14 vraies, zéro bruit, 75 groupes tiers tus, zéro découverte publiée.
+  Que le bruit soit retiré SANS perte de signal est établi sur les mêmes
+  candidates au §5.2 (24 vraies avant comme après le correctif). Deux suites
+  ouvertes : les dettes n°22 (l'effet visible est aveugle aux `xhr` et aux
+  polices — à lever avant tout argument commercial) et n°23 (la rejouabilité
+  n'a pas de règle pour le dénominateur vide).
 
 - **Mesurer la répétabilité inter-scans des états énumérés d'un même site
   AVANT de concevoir le cache de décisions.** Le coût IA d'un scan vit dans

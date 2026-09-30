@@ -293,15 +293,16 @@ un vrai défaut du site, même quand le moteur le publiait sous une mauvaise
 | campagne | 6 | 27 | 82 % |
 | P2-1 | 12 | 51 | 81 % |
 | P2-2 | 24 | 37 | 61 % |
-| P2-2 + correctif §5.3 | 24 | 0 | **0 %** — RECALCULÉ, pas mesuré |
+| P2-2 + correctif §5.3 | 24 | 0 | **0 %** — recalculé sur ce run |
+| **P2-2 + correctif, RUN DE MESURE** | **14** | **0** | **0 % — MESURÉ** |
 
-**La dernière ligne est recalculée**, groupe par groupe, depuis les journaux
-du run : elle applique le correctif de §5.3 à des mesures faites avant lui.
-Elle ne comptera pour un chiffre qu'après un run de mesure, et elle reste
-marquée telle quelle jusque-là. Ce qu'elle dit déjà, et qui ne dépend pas du
-run : les VRAIES anomalies restent à **24** dans les deux dernières lignes.
-Le bruit est retiré sans qu'un seul signal soit perdu — réduire les faux
-positifs en jetant les vrais serait facile et sans valeur.
+La ligne « recalculé » applique le correctif de §5.3 aux journaux du run de
+16 h, groupe par groupe. Ce qu'elle établit, et qui ne dépend d'aucun autre
+run : sur les MÊMES candidates, les vraies anomalies restent à **24** avant
+et après le correctif — le bruit est retiré sans qu'un seul signal soit
+perdu. Réduire les faux positifs en jetant les vrais serait facile et sans
+valeur. La ligne « mesuré » est le run de 20 h ; son écart de vraies
+anomalies est expliqué au §5.5.
 
 **77 groupes tiers tus** sur les neuf sites, par hôte :
 `fundingchoicesmessages.google.com` (41), `fonts.gstatic.com` (29),
@@ -387,12 +388,17 @@ identiques partagent légitimement sa réponse.
 
 ## 5.3bis État de la validation au commit (2026-09-30)
 
-Le cahier est committé avec sa **validation banc COMPLÈTE** (71 scénarios,
-déterministe et cassettes, empreintes historiques identiques, mutations
-tuées des deux côtés de chaque contrat) et **une passe de validation réelle
-restante** : le run de mesure du moteur d'après, qui fera passer la dernière
-ligne de §5.2 de recalculée à mesurée. L'état est dit ici pour qu'aucun
-lecteur ne prenne 0 % pour un chiffre mesuré avant qu'il le soit.
+Le cahier a été committé (`4a2deb1`) avec sa **validation banc COMPLÈTE**
+(71 scénarios, déterministe et cassettes, empreintes historiques
+identiques, mutations tuées des deux côtés de chaque contrat) et une passe
+de validation réelle restante. **Cette passe est faite** : §5.5. Les 0 % ne
+sont plus une projection.
+
+**Budget P2-2** : 1,14 (voie prompt abandonnée) + 0,169 (cassettes du
+gabarit) + 1,1576 (trois moteurs) + 0,3376 (run de mesure) = **2,80 USD**,
+sous les 3,25 annoncés et loin du plafond de 4,50. Les 1,40 de
+ré-enregistrement du parc ont été annulés par la voie gratuite du contrat 3,
+et les cassettes de W03/W04 n'ont rien coûté.
 
 ## 5.4 Annotation des fiches — « revu après P2-2 »
 
@@ -411,6 +417,45 @@ attendus ont été écrits avant le run, METHODE §13).
 | 08 | demoqa | le bruit tiers ne consomme plus le budget de rejeu : 2 images cassées et 3 interceptions APPARAISSENT ; rejouabilité 41,7 → 100 % ; structure changée (16 pages < 20), déclaré et non jugé |
 | 09 | quotes | témoin tenu : garde son interception, perd ses deux polices |
 | 10 | automationexercise | 37 groupes tiers tus ; contenu mixte publié (`fonts.googleapis.com`, 20 pages) ; six intercepteurs distincts, donc six sections sous le contrat 4 ; rejouabilité 1,7 → 16,3 % ; candidates 1 157 → 360 à pages égales (contrat 5) |
+
+## 5.5 Le run de mesure (2026-09-30 20 h, 0,3376 USD)
+
+Le seul moteur d'après, sur les neuf sites, trois heures après les deux
+moteurs de référence — écart DÉCLARÉ (§5.3bis). Ce qui doit être simultané,
+c'est l'avant et l'après du moteur qu'on répare ; les moteurs figés de 16 h
+restent la comparaison.
+
+| site | publiées | vraies | bruit | groupes tiers tus | verdict |
+|---|---|---|---|---|---|
+| automationexercise | 3 | 3 | 0 | 42 | NON TENU (rejouabilité 8,8 % < 10 %) |
+| books | 1 | 1 | 0 | 0 | TENU |
+| cutlybook | 0 | 0 | 0 | 5 | NON TENU (dénominateur vide, dette n°23) |
+| demoqa | 5 | 5 | 0 | 4 | TENU |
+| expandtesting | 0 | 0 | 0 | 20 | déclaré (8 pages < 15) |
+| getlumavo | 0 | 0 | 0 | 1 | NON TENU (dénominateur vide) |
+| quotes | 1 | 1 | 0 | 2 | TENU |
+| the-internet | 4 | 4 | 0 | 1 | TENU |
+| zurvela | 0 | 0 | 0 | 0 | NON TENU (rien à scanner) |
+| **total** | **14** | **14** | **0** | **75** | 4 tenus, 4 non tenus, 1 déclaré |
+
+**Zéro découverte publiée sur les neuf sites** : la seconde porte est
+fermée, mesurée, et non plus recalculée. **Zéro section sans prose** :
+l'effet de bord du volume a disparu. Deux hôtes nommés par le code,
+`ajax.googleapis.com` (books) et `fonts.googleapis.com`
+(automationexercise), tous deux en contenu mixte, `Important · Sécurité`.
+
+**L'écart de vraies anomalies, 24 → 14, n'est PAS imputable au correctif**
+et se lit site par site. Quatre sites rendent exactement les mêmes
+anomalies qu'à 16 h : books (1), demoqa (5), quotes (1), the-internet (4) —
+onze sur onze. Les dix manquantes sont sur les deux seuls sites dont
+l'exploration a été moins profonde ce soir : automationexercise (3 au lieu
+de 7 — 2 intercepteurs atteints au lieu de 6, rejouabilité 16,3 → 8,8 %) et
+expandtesting (0 au lieu de 6 — 8 pages explorées au lieu de 13,
+1 groupe rejoué sur 7). Ce sont précisément les deux sites du **coût d'un
+rejeu par groupe**, déclaré hors périmètre au §4 et renvoyé au cahier de
+performance : le moteur n'a pas jugé autrement, il a eu moins de budget pour
+atteindre. Le seuil d'automationexercise n'a pas bougé (METHODE §13) et son
+échec reste rouge.
 
 ## 6. Décisions à valider avant le code
 
