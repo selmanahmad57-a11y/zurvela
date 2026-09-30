@@ -39,6 +39,15 @@ export interface EntreeCalibration {
   motif: string;
   tauxReproduction: number | null;
   contreEpreuve?: ContreEpreuve;
+  /**
+   * La symétrie inattendue a été RÉSOLUE par une fusion (cahier P2-3,
+   * contrat 5) : les deux groupes de viewport n'en font plus qu'un, avec
+   * deux observations. Le malus ne s'applique alors pas — il payait un
+   * DOUTE sur l'attribution au viewport, et la fusion supprime ce doute au
+   * lieu de l'escompter. Une confiance qui baisse après une confirmation
+   * doit changer quelque chose de visible, ou ne pas baisser (carnet C-11).
+   */
+  symetrieResolue?: boolean;
 }
 
 export interface SortieCalibration {
@@ -62,19 +71,32 @@ function facteurVerdict(verdict: VerdictConfirmation, config: ConfigConfirmation
  * L'asymétrie ATTENDUE (l'anomalie de viewport ne se reproduit pas dans
  * l'autre viewport) renforce ; la symétrie inattendue dégrade.
  */
-function facteurContreEpreuve(contreEpreuve: ContreEpreuve | undefined, config: ConfigConfirmation['calibration']): number {
+function facteurContreEpreuve(
+  contreEpreuve: ContreEpreuve | undefined,
+  symetrieResolue: boolean,
+  config: ConfigConfirmation['calibration'],
+): number {
   // Une contre-épreuve qui n'a pas pu s'exécuter n'apprend rien : ni bonus ni malus.
   if (contreEpreuve === undefined || contreEpreuve.echecOutillage) {
     return 1;
   }
-  return contreEpreuve.attendue ? 1 + config.bonusContreEpreuve : 1 - config.malusSymetrieInattendue;
+  if (contreEpreuve.attendue) {
+    return 1 + config.bonusContreEpreuve;
+  }
+  // La symétrie inattendue a été FONDUE en un seul constat : le doute qu'elle
+  // portait n'existe plus, le malus n'a plus d'objet. Il reste entier quand
+  // la fusion n'a pas pu avoir lieu — le doute, lui, est toujours là.
+  return symetrieResolue ? 1 : 1 - config.malusSymetrieInattendue;
 }
 
 export function calculerConfiance(entree: EntreeCalibration, config: ConfigConfirmation['calibration']): number {
   const facteurTaux =
     entree.tauxReproduction === null ? 1 : 1 + config.poidsTauxReproduction * (entree.tauxReproduction - 1);
   const brute =
-    entree.confianceInitiale * facteurVerdict(entree.verdict, config) * facteurTaux * facteurContreEpreuve(entree.contreEpreuve, config);
+    entree.confianceInitiale *
+    facteurVerdict(entree.verdict, config) *
+    facteurTaux *
+    facteurContreEpreuve(entree.contreEpreuve, entree.symetrieResolue === true, config);
   const bornee = Math.min(config.confianceMax, Math.max(config.confianceMin, brute));
   return Math.min(CONFIANCE_PLAFOND, Math.max(CONFIANCE_PLANCHER, bornee));
 }

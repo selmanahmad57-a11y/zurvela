@@ -17,6 +17,7 @@
 import type { AnomalieCandidate, Detecteur, Signal } from '../../types.js';
 import type { ConfigScanner } from '../config.js';
 import { cheminDePage, construireCandidate, trouverAction, trouverViewport } from './commun.js';
+import { graviteRecouvrement, natureMasquee, naturePlusGrave } from './nature-masquee.js';
 
 export const NOM_DETECTEUR_RECOUVREMENT = 'd-recouvrement';
 export const DESCRIPTION_CLIC_INTERCEPTE = 'clic-intercepte';
@@ -104,7 +105,9 @@ export function creerDetecteurRecouvrement(config: ConfigScanner['detecteurs']['
               detecteur: NOM_DETECTEUR_RECOUVREMENT,
               description: DESCRIPTION_CLIC_INTERCEPTE,
               categorie: viewport.mobile ? 'mobile' : 'fonctionnel',
-              gravite: config.gravite,
+              // LA GRAVITÉ SE LIT SUR CE QUI EST MASQUÉ (P2-3, contrat 2) :
+              // une cause vaut ce que vaut le pire de ce qu'elle couvre.
+              gravite: graviteRecouvrement(naturePlusGrave(groupe.map((signal) => natureMasquee(signal.element))), config),
               confiance: geometrieEtClic ? config.confianceGeometrieEtClic : config.confianceGeometrie,
               page: premier.page,
               viewport: premier.viewport,

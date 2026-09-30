@@ -251,6 +251,10 @@ export function rendreRapport(rapportBusiness: RapportBusiness, options: Options
   if (nbDecouvertes > 0) {
     methode.push(libelles.ligneDecouvertes(nbDecouvertes));
   }
+  // CE QUE LE MOTEUR A FAIT, pas seulement ce qu'il a vu (P2-3, contrat 7).
+  if (rapportBusiness.nbRecouvrementsEcartes > 0) {
+    methode.push(libelles.ligneEcartements(rapportBusiness.nbRecouvrementsEcartes));
+  }
   // CE QUE NOUS N'AVONS PAS ESSAYÉ. Sans cette phrase, « aucune anomalie
   // retenue » se lirait « votre formulaire fonctionne » — alors que personne
   // ne l'a envoyé. Elle a sa place dans la méthode : c'est une limite de ce

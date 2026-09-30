@@ -215,6 +215,14 @@ export const LIBELLES_RAPPORT: Readonly<
        * fait surtout de découvertes ne se lise pas comme un rapport vérifié.
        */
       ligneDecouvertes: (nbDecouvertes: number) => string;
+      /**
+       * CE QUE LE MOTEUR A FAIT, et non ce qu'il a vu. Texte à garantie
+       * sémantique : il énonce un ACTE sur la page du client, et une
+       * formulation qui l'adoucirait — « certains éléments ont été
+       * ignorés » — cacherait que nous avons cliqué. En code typé, sous
+       * revue (constitution §2).
+       */
+      ligneEcartements: (nbEcartements: number) => string;
       /** TEXTE À GARANTIE SÉMANTIQUE : quand aucun groupe n'a pu être rejoué, le rapport ne peut pas se lire comme « le site va bien ». */
       rienVerifie: (nbNonVerifies: number) => string;
     }
@@ -268,6 +276,10 @@ export const LIBELLES_RAPPORT: Readonly<
       nbDecouvertes === 1
         ? '1 constat de ce rapport a été vu pendant nos vérifications sans pouvoir être re-testé : il est présenté comme une observation, pas comme un défaut établi.'
         : `${nbDecouvertes} constats de ce rapport ont été vus pendant nos vérifications sans pouvoir être re-testés : ils sont présentés comme des observations, pas comme des défauts établis.`,
+    ligneEcartements: (nbEcartements) =>
+      nbEcartements === 1
+        ? '1 élément recouvrait l’interface : nous l’avons écarté comme l’aurait fait un visiteur, afin de poursuivre la vérification.'
+        : `${nbEcartements} éléments recouvraient l’interface : nous les avons écartés comme l’aurait fait un visiteur, afin de poursuivre la vérification.`,
     rienVerifie: (nbNonVerifies) =>
       nbNonVerifies === 1
         ? 'Rien n’a pu être vérifié sur ce site : notre seul signalement n’a pas pu être rejoué, et aucun n’est publié. Ce rapport ne dit pas que le site va bien ; il dit que nous n’avons pas pu le vérifier.'
@@ -309,6 +321,10 @@ export const LIBELLES_RAPPORT: Readonly<
       nbDecouvertes === 1
         ? '1 finding in this report was seen during our verification pass and could not be re-tested: it is presented as an observation, not as an established defect.'
         : `${nbDecouvertes} findings in this report were seen during our verification pass and could not be re-tested: they are presented as observations, not as established defects.`,
+    ligneEcartements: (nbEcartements) =>
+      nbEcartements === 1
+        ? '1 element was covering the interface: we dismissed it as a visitor would have, in order to continue the check.'
+        : `${nbEcartements} elements were covering the interface: we dismissed them as a visitor would have, in order to continue the check.`,
     rienVerifie: (nbNonVerifies) =>
       nbNonVerifies === 1
         ? 'Nothing could be verified on this site: our 1 report could not be replayed, and none is published. This report does not say the site is fine; it says we could not check it.'

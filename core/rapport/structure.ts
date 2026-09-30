@@ -290,6 +290,8 @@ export function construireStructure(rapport: Rapport, langue: LangueRapport): St
       langue,
       synthese: '',
       sections,
+      // Ce que le moteur a FAIT sur la page du client (P2-3, contrat 7).
+      nbRecouvrementsEcartes: rapport.parcours?.nbRecouvrementsEcartes ?? 0,
       nbEcartes: compterEcartes(rapport, clesPubliees),
       nbNonVerifies: compterNonVerifies(rapport, clesPubliees),
       // Ce que le protocole a rejoué, en groupes : null sans consolidation,

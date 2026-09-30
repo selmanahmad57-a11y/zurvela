@@ -20,6 +20,7 @@ function rapport(surcharges: Partial<RapportBusiness> = {}): RapportBusiness {
     ligneMethode: 'Chaque signalement est re-vérifié avant d’être publié.',
     nbEcartes: 4,
     nbNonVerifies: 0,
+    nbRecouvrementsEcartes: 0,
     rejouabilite: { groupes: 5, groupesRejoues: 5 },
     sansProse: false,
     sections: [
@@ -427,3 +428,28 @@ describe('l’hôte du service en cause est RENDU par le code, à côté de la p
     expect(rendreRapport(rapport())).not.toContain('Service extérieur');
   });
 });
+
+describe('ce que le moteur a FAIT sur la page du client (cahier P2-3, contrat 7)', () => {
+  it('déclare les recouvrements écartés dans « Notre méthode », en fr comme en en', () => {
+    // Taire un jugement, c'est ne pas publier ; fermer un bandeau, c'est
+    // avoir AGI sur la page de quelqu'un. Le contrôle qui peut échouer :
+    // supprimer la ligne — le rapport tairait un acte.
+    const fr = rendreRapport(rapport({ nbRecouvrementsEcartes: 3 }));
+    expect(fr).toContain('3 éléments recouvraient l’interface');
+    expect(fr).toContain('comme l’aurait fait un visiteur');
+    const en = rendreRapport(rapport({ langue: 'en', nbRecouvrementsEcartes: 1 }));
+    expect(en).toContain('1 element was covering the interface');
+  });
+
+  it('ne dit rien quand le moteur n’a rien fait : on ne déclare pas un acte qui n’a pas eu lieu', () => {
+    const rendu = rendreRapport(rapport({ nbRecouvrementsEcartes: 0 }));
+    expect(rendu).not.toContain('recouvraient l’interface');
+    expect(rendu).not.toContain('recouvrait l’interface');
+  });
+
+  it('le SINGULIER et le PLURIEL sont deux phrases, pas un « (s) »', () => {
+    expect(rendreRapport(rapport({ nbRecouvrementsEcartes: 1 }))).toContain('1 élément recouvrait l’interface');
+    expect(rendreRapport(rapport({ nbRecouvrementsEcartes: 2 }))).toContain('2 éléments recouvraient l’interface');
+  });
+});
+

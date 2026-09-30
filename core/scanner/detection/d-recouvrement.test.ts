@@ -23,7 +23,11 @@ describe('D-RECOUVREMENT', () => {
       detecteur: NOM_DETECTEUR_RECOUVREMENT,
       description: DESCRIPTION_CLIC_INTERCEPTE,
       categorie: 'mobile',
-      graviteEstimee: CONFIG_TEST.recouvrement.gravite,
+      // CE QUI EST MASQUÉ décide (P2-3, contrat 2) : la cible des fabriques
+      // est le bouton de soumission du formulaire de contact, donc une
+      // action critique — « le parcours s'arrête là » est ici vrai. Ce
+      // n'est plus la gravité de repli de la config.
+      graviteEstimee: CONFIG_TEST.recouvrement.graviteParNature.actionCritique,
       confiance: CONFIG_TEST.recouvrement.confianceGeometrie,
       urlOuEtape: URL_CONTACT,
       viewport: MOBILE.nom,

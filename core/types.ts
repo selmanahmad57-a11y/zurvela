@@ -1102,6 +1102,14 @@ export interface SectionRapport {
 export interface RapportBusiness {
   /** Langue du rapport, indépendante de celle du site : c'est la langue du CLIENT. */
   langue: string;
+  /**
+   * Recouvrements que le moteur a ÉCARTÉS pour poursuivre la vérification
+   * (cahier P2-3, contrat 7). Le rapport ne dit plus seulement ce que le
+   * moteur a VU, il dit ce qu'il a FAIT sur la page du client : taire un
+   * jugement, c'est ne pas publier ; agir sur la page de quelqu'un sans le
+   * lui dire, c'est autre chose (constitution §3).
+   */
+  nbRecouvrementsEcartes: number;
   /** État global en une phrase (prose). */
   synthese: string;
   sections: SectionRapport[];

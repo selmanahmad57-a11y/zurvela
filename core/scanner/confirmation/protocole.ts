@@ -37,6 +37,7 @@ import type { ConfigConfirmation } from '../config.js';
 import { calibrer } from './calibration.js';
 import { consolider } from './consolidation.js';
 import { anomalieDecouverte, collecterDecouvertes, MOTIF_CONSTATEE_AU_REJEU } from './decouvertes.js';
+import { EVENEMENT_FUSION_VIEWPORTS, fusionnerParContreEpreuve } from './fusion-viewports.js';
 import { detailsGroupe, TYPE_JOURNAL_GROUPE } from './extraits-journal.js';
 import { confianceMinoree } from './pont-vocabulaires.js';
 import { reexecuterGroupe, viewportDuGroupe } from './reexecution.js';
@@ -168,7 +169,7 @@ export function creerProtocole(dependances: DependancesProtocole): ProtocoleConf
       const tempsRestant = (): boolean =>
         Date.now() + config.rejeu.margeEcheanceMs + config.rejeu.budgetMinimalMs < contexte.echeance;
 
-      const resultats: ResultatGroupe[] = [];
+      let resultats: ResultatGroupe[] = [];
       /** Tout ce que les rejeux ont relevé, groupes d'origine compris : le tri vient après. */
       const candidatesRejeu: AnomalieCandidate[] = [];
       /**
@@ -287,6 +288,32 @@ export function creerProtocole(dependances: DependancesProtocole): ProtocoleConf
         });
         resultats.push(resultat);
       }
+
+      // UN DÉFAUT, UNE SECTION (P2-3, contrat 5). La contre-épreuve a prouvé
+      // que le même défaut vit dans les deux viewports : les deux groupes
+      // n'en font plus qu'un, et le malus de symétrie inattendue tombe — une
+      // preuve ne se solde pas par un escompte. La fusion vient APRÈS le
+      // jugement (elle ne change aucun verdict) et AVANT le tri : ce qui est
+      // absorbé ne doit jamais atteindre le rapport.
+      const fusion = fusionnerParContreEpreuve(resultats);
+      for (const { survivant, absorbees } of fusion.fusions) {
+        contexte.journaliser(EVENEMENT_FUSION_VIEWPORTS, { cle: survivant.groupe.cle, absorbees });
+        const recalibre = calibrer(
+          {
+            confianceInitiale: survivant.confianceInitiale,
+            verdict: survivant.verdict,
+            motif: survivant.motif,
+            tauxReproduction: survivant.tauxReproduction,
+            ...(survivant.contreEpreuve === undefined ? {} : { contreEpreuve: survivant.contreEpreuve }),
+            symetrieResolue: true,
+          },
+          config,
+        );
+        survivant.verdict = recalibre.verdict;
+        survivant.motif = recalibre.motif;
+        survivant.confianceFinale = recalibre.confianceFinale;
+      }
+      resultats = fusion.resultats;
 
       const retenues: Anomalie[] = [];
       const ecartees: CandidateEcartee[] = [];
