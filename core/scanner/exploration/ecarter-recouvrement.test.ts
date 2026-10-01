@@ -374,5 +374,25 @@ describe('la voie C — essayer, pas reconnaître : ses trois gardes', () => {
     expect(issue.nbEcartes).toBe(0);
     expect(issue.restants).toHaveLength(1);
   });
-});
 
+  it('journalise combien de candidats ont été proposés, refusés, activés', async () => {
+    // LE DÉFAUT QUE LE RÉEL A MONTRÉ : sur the-internet, le journal disait
+    // `indisponible` sans dire si c'était « aucun candidat » ou « douze
+    // essayés, aucun n'a fermé ». Les deux appellent des corrections
+    // opposées, et rien ne permettait de trancher. Un moteur qui agit sans
+    // laisser trace de ce qu'il a fait n'est pas relisible
+    // (constitution §3).
+    const faux = pageVoieC({ candidats: ['#a', '#supprimer', '#b'], quiFerme: null, refuses: ['#supprimer'] });
+    await faux.executer();
+    const trace = faux.journal.find((e) => e.type === EVENEMENT_TENTATIVE_FERMETURE && e.details['geste'] === 'descendant-essaye');
+    expect(trace?.details['issue']).toBe('indisponible');
+    expect(trace?.details['essais']).toEqual({ candidats: 3, refuses: 1, actives: 2 });
+  });
+
+  it('distingue « aucun candidat » de « des candidats, mais aucun ne ferme »', async () => {
+    const vide = pageVoieC({ candidats: [], quiFerme: null });
+    await vide.executer();
+    const trace = vide.journal.find((e) => e.type === EVENEMENT_TENTATIVE_FERMETURE && e.details['geste'] === 'descendant-essaye');
+    expect(trace?.details['essais']).toEqual({ candidats: 0, refuses: 0, actives: 0 });
+  });
+});

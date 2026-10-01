@@ -831,9 +831,18 @@ function enPage(arg: Commande): unknown {
       // dire « le recouvrement a disparu ET rien d'autre n'a changé » : un
       // clic qui ferme le modal en naviguant n'est pas une fermeture, c'est
       // une action aux conséquences. Même rigueur que l'effet visible.
+      //
+      // `present` se lit sur le RENDU, jamais sur la présence du nœud. Un
+      // modal qui se ferme par `display:none` reste dans le DOM : juger à
+      // l'existence, c'est juger à l'identité au lieu de juger à l'effet,
+      // et the-internet l'a prouvé — son `<p>Close</p>` était bien cliqué,
+      // le modal bien fermé, et le moteur concluait qu'il n'avait rien
+      // écarté parce que le nœud était toujours là.
+      const cible = document.querySelector(arg.selecteurIntercepteur);
+      const boite = cible === null ? null : cible.getBoundingClientRect();
       return {
         url: location.href,
-        present: document.querySelector(arg.selecteurIntercepteur) !== null,
+        present: boite !== null && boite.width > 0 && boite.height > 0,
         nbFormulaires: document.forms.length,
       };
     }

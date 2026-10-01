@@ -100,6 +100,15 @@ export interface TentativeFermeture {
   issue: IssueTentative;
   /** Motif du filtre d'actions destructives, ou raison technique. */
   motif?: string;
+  /**
+   * Ce que la VOIE C a réellement fait : combien de candidats proposés,
+   * combien refusés par le filtre, combien activés. Sans ces comptes,
+   * `indisponible` couvre aussi bien « aucun candidat » que « douze
+   * essayés, aucun n'a fermé » — et l'on ne peut rien diagnostiquer. Un
+   * moteur qui agit sans laisser trace de ce qu'il a fait n'est pas
+   * relisible (constitution §3).
+   */
+  essais?: { candidats: number; refuses: number; actives: number };
 }
 
 export interface ConfigFermeture {
@@ -203,6 +212,7 @@ export async function ecarterRecouvrements(options: OptionsEcartement): Promise<
         point: tentative.point,
         issue: tentative.issue,
         ...(tentative.motif === undefined ? {} : { motif: tentative.motif }),
+        ...(tentative.essais === undefined ? {} : { essais: tentative.essais }),
       });
       tentatives.push(tentative);
       if (tentative.issue !== 'ecarte') {
@@ -288,16 +298,19 @@ async function executerGeste(options: OptionsGeste): Promise<TentativeFermeture>
         // contrôle, et non l'inverse.
         const candidats = await descendantsActivables(page, intercepteur.selecteur, config.descendantsEssayesMax, delaiMs);
         const avant = await empreintePage(page, intercepteur.selecteur, delaiMs);
+        const essais = { candidats: candidats.length, refuses: 0, actives: 0 };
         for (const candidat of candidats) {
           // LE FILTRE SUR CHAQUE CANDIDAT, pas seulement sur le geste
           // final : un « supprimer mon compte » dans un modal ne se clique
           // pas pour voir s'il ferme (D1, constitution §3).
           const verdict = await filtreElement(candidat.selecteur);
           if (!verdict.autorisee) {
+            essais.refuses += 1;
             continue;
           }
           try {
             await page.click(candidat.selecteur, { timeout: delaiMs, noWaitAfter: true });
+            essais.actives += 1;
           } catch {
             continue;
           }
@@ -311,11 +324,11 @@ async function executerGeste(options: OptionsGeste): Promise<TentativeFermeture>
             // IL A FERMÉ, MAIS IL A FAIT AUTRE CHOSE. Ce n'est pas un
             // écartement, c'est une action aux conséquences : on ne la
             // revendique pas, et on le dit.
-            return { ...base, cible: candidat, issue: 'sans-effet', motif: RAISON_EFFET_DE_BORD };
+            return { ...base, cible: candidat, issue: 'sans-effet', motif: RAISON_EFFET_DE_BORD, essais };
           }
-          return { ...base, cible: candidat, issue: 'execute' };
+          return { ...base, cible: candidat, issue: 'execute', essais };
         }
-        return base;
+        return { ...base, essais };
       }
       default: {
         // Un geste que la config nomme mais que le code ne connaît pas

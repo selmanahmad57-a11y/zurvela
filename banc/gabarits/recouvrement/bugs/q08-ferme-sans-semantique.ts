@@ -13,6 +13,13 @@
  * contient le voile ET la boîte. C'est ce que le réel a imposé, et ce que
  * la première version de ce gabarit ne reproduisait pas.
  *
+ * Et la fermeture se fait par `display:none`, comme the-internet — PAS par
+ * `remove()`. Le nœud RESTE dans le DOM. Un moteur qui vérifierait la
+ * disparition du nœud conclurait qu'il n'a rien écarté alors que le modal
+ * est fermé : juger à l'identité au lieu de juger à l'effet. La deuxième
+ * version de ce gabarit retirait le nœud, et c'est pourquoi elle passait
+ * au vert pendant que le réel restait rouge.
+ *
  * Attendu : ÉCARTÉ par le cinquième geste, la VOIE C — on n'identifie pas
  * la prise, on l'essaie. Le libellé du `<p>` est volontairement un mot qui
  * n'existe dans aucune langue : si quelqu'un se mettait un jour à LIRE le
@@ -36,7 +43,7 @@ import { PAGE_ACCUEIL, ROLE_CALQUE, SELECTEUR_PRODUITS } from '../structure.js';
  * de ce gabarit la trahissait en logeant la prise DANS le voile — le banc
  * passait au vert pendant que the-internet restait rouge.
  */
-const FRAGMENT = `<div id="modal-nu" style="position:absolute;inset:0;z-index:10"><div data-role="${ROLE_CALQUE}" id="voile-nu" style="position:absolute;inset:0;background:transparent"></div><div id="boite-nue" style="position:absolute;left:0;bottom:0;width:100%;height:20px"><p id="prise-nue">qwzx</p></div></div><script>document.getElementById('boite-nue').addEventListener('click',function(){document.getElementById('modal-nu').remove();});</script>`;
+const FRAGMENT = `<div id="modal-nu" style="position:absolute;inset:0;z-index:10"><div data-role="${ROLE_CALQUE}" id="voile-nu" style="position:absolute;inset:0;background:transparent"></div><div id="boite-nue" style="position:absolute;left:0;bottom:0;width:100%;height:20px"><p id="prise-nue">qwzx</p></div></div><script>document.getElementById('boite-nue').addEventListener('click',function(){document.getElementById('modal-nu').style.display='none';});</script>`;
 
 export const Q08: BugInjectable = {
   id: 'Q08',
