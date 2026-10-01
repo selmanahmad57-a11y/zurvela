@@ -27,10 +27,15 @@
          et le geste du clic hors zone deviendrait indisponible pour une raison
          qui n'a rien à voir avec ce qu'on veut mesurer. -->
     <div data-role="zone-produits" style="position:relative">
-      <section data-role="produits" class="produits" aria-label="{{accueil.produits}}">
-        <article class="carte"><a class="bouton" data-role="produit-1" href="/panier">{{produit.nom1}}</a></article>
-        <article class="carte"><a class="bouton" data-role="produit-2" href="/panier">{{produit.nom2}}</a></article>
-        <article class="carte"><a class="bouton" data-role="produit-3" href="/panier">{{produit.nom3}}</a></article>
+      <!-- GÉOMÉTRIE POSÉE EN DUR, et c'est délibéré : les calques des bugs
+           s'alignent sur ces rangées de 30 pixels. Sans hauteurs connues, un
+           calque censé couvrir la deuxième carte peut n'en couvrir aucune —
+           le gabarit passe alors au vert en ne mesurant rien, et c'est
+           exactement ce qui est arrivé à Q10. -->
+      <section data-role="produits" class="produits" aria-label="{{accueil.produits}}" style="display:block">
+        <article class="carte" style="display:block;height:30px;margin:0"><a class="bouton" data-role="produit-1" href="/panier" style="display:block;height:30px">{{produit.nom1}}</a></article>
+        <article class="carte" style="display:block;height:30px;margin:0"><a class="bouton" data-role="produit-2" href="/panier" style="display:block;height:30px">{{produit.nom2}}</a></article>
+        <article class="carte" style="display:block;height:30px;margin:0"><a class="bouton" data-role="produit-3" href="/panier" style="display:block;height:30px">{{produit.nom3}}</a></article>
       </section>
     </div>
   </main>

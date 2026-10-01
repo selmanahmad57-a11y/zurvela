@@ -322,13 +322,43 @@ function enPage(arg: Commande): unknown {
      * la même frontière que l'hôte en P2-2 — constater une égalité n'est
      * pas connaître un sens.
      */
-    signatureConstruction(el: Element): string | null {
+    signatureConstruction(el: Element, conserves: string[]): string | null {
+      const balise = el.tagName.toLowerCase();
+      // Le chemin dont les rangs de fratrie sont effacés : deux éléments
+      // d'une même série le partagent par construction.
+      const generateur = aide.selecteurDe(el).replace(/:nth-of-type\(\d+\)/g, ':nth-of-type()');
       const classes = Array.from(el.classList).sort().join('.');
-      if (classes === '') {
+      if (classes !== '') {
+        return [balise, classes, generateur].join('|');
+      }
+      // SECONDE VOIE DE FUSION — les FRÈRES IMMÉDIATS DE MÊME BALISE.
+      //
+      // Le réel l'a imposée : automationexercise publiait six sections pour
+      // six `<li>` d'un même `<ul>`, sans classe, donc sans signature. Or
+      // six `<li>` enfants directs du même `<ul>` ne sont pas deux
+      // conteneurs fortuits posés côte à côte — ce sont les éléments d'une
+      // SÉRIE, et c'est le balisage lui-même qui le déclare par la relation
+      // `ul`/`li`. Fondre ne départage rien : cela lit une répétition
+      // écrite dans le document.
+      //
+      // La garde qui empêche de fondre à tort : les attributs CONSERVÉS
+      // doivent coïncider. Deux frères que le document distingue — par un
+      // `id`, un `role`, un `aria-*` — ne sont pas la même construction, et
+      // ils ne fondent pas. Deux frères que rien ne distingue hors leur
+      // rang sont, par définition, la même chose répétée.
+      const parent = el.parentElement;
+      if (parent === null) {
         return null;
       }
-      const generateur = aide.selecteurDe(el).replace(/:nth-of-type\(\d+\)/g, ':nth-of-type()');
-      return [el.tagName.toLowerCase(), classes, generateur].join('|');
+      const freres = Array.from(parent.children).filter((frere) => frere.tagName === el.tagName);
+      if (freres.length < 2) {
+        return null;
+      }
+      const attributs = Object.entries(aide.attributsDe(el, conserves))
+        .sort(([a], [b]) => (a < b ? -1 : 1))
+        .map(([nom, valeur]) => `${nom}=${valeur}`)
+        .join(',');
+      return [balise, 'freres', attributs, generateur].join('|');
     },
 
     /**
@@ -675,7 +705,7 @@ function enPage(arg: Commande): unknown {
         recouvrements.push({
           element: aide.localiser(el, arg.attributsConserves),
           intercepteur: aide.localiser(recu, arg.attributsConserves),
-          signatureIntercepteur: aide.signatureConstruction(recu),
+          signatureIntercepteur: aide.signatureConstruction(recu, arg.attributsConserves),
         });
       }
       window.scrollTo(0, 0);
