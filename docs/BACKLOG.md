@@ -103,6 +103,20 @@ entrée indique la brique ou la phase où elle a vocation à être traitée.
 
 ## Phase 2
 
+- **C-11 ÉTENDU — la fusion INTER-PAGES d'une même cause.** Isolé le
+  2026-10-01 à la clôture de P2-3, et délibérément laissé hors du cahier.
+  Le dialogue de consentement Google d'automationexercise produit deux
+  sections pour la même construction, l'une sur `/`, l'autre sur
+  `/products` : le contrat 4 fond par cause, et « une cause est locale à sa
+  page » est un invariant posé exprès, que son propre test exige. Un bandeau
+  présent sur dix pages ne devrait pourtant pas produire dix sections.
+  **Condition pour ouvrir** : savoir distinguer « le MÊME défaut récurrent »
+  (un bandeau unique, servi partout) de « le même TYPE de défaut à plusieurs
+  endroits » (un formulaire cassé par page, qui fait bien N défauts). Ce
+  départage n'est pas trivial, et le trancher à la légère réunirait des
+  défauts distincts sous un seul constat — le sens qui perd des signaux.
+  Cahier à part, pas un correctif.
+
 - ~~**Bilan de rejouabilité sur les dix scans de la campagne**~~ — **FAIT le
   2026-09-30**, fondu dans la validation de P2-2 (D4) : neuf sites, trois
   moteurs dans la même session (campagne `e872872`, P2-1 `7936175`, P2-2),

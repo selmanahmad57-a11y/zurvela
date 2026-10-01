@@ -1002,6 +1002,20 @@ regardé.
   était sous les yeux au moment d'écrire Q08, et la prise a quand même été
   mise dans le voile. C'est le pendant, côté banc, de la dérivation des
   cassettes « du réel, jamais de zéro ».
+- **CLÔTURE DE LA SÉRIE, le 2026-10-01** : la cinquième occurrence n'a pas
+  eu lieu. Au bord d'un quatrième scan payant d'automationexercise, la
+  tentation était d'élargir la garde du contrat 4 sur une HYPOTHÈSE — « ces
+  `<li>` portent sans doute des attributs distincts ». La lecture du DOM
+  réel, gratuite, a montré que l'hypothèse était fausse DANS LES DEUX SENS :
+  ils n'ont aucun attribut, et ce n'est pas la signature qui les sépare mais
+  trois règles délibérées du cahier (une cause par viewport, une cause par
+  page, les découvertes à part). La « correction » aurait cassé un contrat
+  qui fonctionnait.
+  La discipline ne se prouve donc pas en corrigeant ses suppositions après
+  coup, mais en S'ARRÊTANT AVANT DE CORRIGER sur une supposition. Son prix :
+  une requête DOM, contre un scan payant et un contrat cassé. Les quatre
+  premières occurrences ont coûté des scans parce qu'on supposait ; la
+  cinquième a coûté une lecture parce qu'on a regardé.
 - **Corollaire** : le réel reste le seul juge sans angle mort PARTAGÉ. Le
   banc a raison sur ce qu'il contient, et il contient ce que nous y avons
   mis — donc nos hypothèses. C'est pourquoi la validation §12 n'est pas une
