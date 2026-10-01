@@ -16,6 +16,7 @@
     "rejouabiliteGroupesMinPourcent": 50,
     "dureeMaxMs": 300000,
     "pagesMin": 20,
-    "candidatesMin": 10
+    "candidatesMin": 10,
+    "ecartementsMin": 1
   }
 }

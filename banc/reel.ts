@@ -60,7 +60,20 @@ export interface CasReel {
   defaut: string | null;
   /** L'« avant » de la fiche : ce que le moteur de la campagne a produit. */
   avant: { rejouabiliteGroupesPourcent: number; candidates: number; groupes: number; retenues: number; pages: number; dureeMs: number };
-  attendus: { rejouabiliteGroupesMinPourcent: number; dureeMaxMs: number; pagesMin: number; candidatesMin: number };
+  attendus: {
+    rejouabiliteGroupesMinPourcent: number;
+    dureeMaxMs: number;
+    pagesMin: number;
+    candidatesMin: number;
+    /**
+     * Recouvrements que le scan doit avoir ÉCARTÉS (cahier P2-3, contrat 1).
+     * Absent : le site n'en porte pas, et l'on n'en exige aucun. Présent :
+     * c'est un attendu POSITIF — « zéro section de recouvrement » se produit
+     * aussi quand le moteur n'a rien tenté, et seule une page traversée
+     * distingue le silence de l'absence. Écrit AVANT le run (METHODE §13).
+     */
+    ecartementsMin?: number;
+  };
 }
 
 export interface MesuresScan {
@@ -85,6 +98,8 @@ export interface MesuresScan {
    * posait `confirmee` sur ses découvertes : c'est l'écart que l'on montre.
    */
   decouvertesAffirmees: number;
+  /** Recouvrements écartés par un geste neutre : un ACTE, pas un jugement. */
+  ecartements: number;
 }
 
 /** Une découverte se reconnaît à son verdict (moteur P2-1) ou à son motif (tout moteur). */
@@ -167,6 +182,8 @@ export function mesuresDe(rapport: Rapport, tailleJournalOctets: number): Mesure
     tailleJournalOctets,
     decouvertes: decouvertes.length,
     decouvertesAffirmees: decouvertes.filter(estAffirmee).length,
+    // Ce que le moteur a FAIT sur la page du client (P2-3, contrats 1 et 7).
+    ecartements: rapport.parcours?.nbRecouvrementsEcartes ?? 0,
   };
 }
 
@@ -200,6 +217,13 @@ export function juger(cas: CasReel, apres: MesuresScan, rendu: Rendu, avant?: Me
   // un défaut vérifié. Pas de seuil : un seul cas suffit à ne pas tenir.
   if (apres.decouvertesAffirmees > 0) {
     raisons.push(traduire(dico, 'reel.raisonDecouvertes', { nombre: rendu.entier(apres.decouvertesAffirmees) }));
+  }
+  // UN SILENCE VÉRIFIÉ (P2-3, contrat 1) : sur un site qui porte un
+  // recouvrement écartable, le scan doit l'avoir écarté. Sans cet attendu,
+  // un moteur qui aurait cessé de tenter rendrait le même rapport vide.
+  const ecartementsMin = cas.attendus.ecartementsMin ?? 0;
+  if (ecartementsMin > 0 && apres.ecartements < ecartementsMin) {
+    raisons.push(traduire(dico, 'reel.raisonEcartements', { nombre: rendu.entier(apres.ecartements), min: rendu.entier(ecartementsMin) }));
   }
   if (apres.dureeMs > cas.attendus.dureeMaxMs) {
     raisons.push(traduire(dico, 'reel.raisonDuree', { dureeMs: rendu.entier(apres.dureeMs), dureeMaxMs: rendu.entier(cas.attendus.dureeMaxMs) }));

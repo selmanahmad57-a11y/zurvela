@@ -181,6 +181,7 @@
     "momentAvant": "avant",
     "momentApres": "après",
     "separateur": " ; ",
-    "raisonDecouvertes": "{{nombre}} découverte(s) publiée(s) comme vérifiée(s) ou au-delà de la gravité permise sans re-test (contrat 8)"
+    "raisonDecouvertes": "{{nombre}} découverte(s) publiée(s) comme vérifiée(s) ou au-delà de la gravité permise sans re-test (contrat 8)",
+    "raisonEcartements": "{nombre} recouvrement(s) écarté(s), {min} attendu(s) au minimum — le moteur n’a pas traversé ce qu’il devait écarter"
   }
 }

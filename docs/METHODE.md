@@ -177,7 +177,7 @@ Et le gabarit qui mesure la doctrine fait se RENCONTRER les deux
 conditions : une suite de tests par cahier vérifie des contrats, jamais
 leur composition.
 
-## 4. Les trois natures d'attendu du banc
+## 4. Les quatre natures d'attendu du banc
 
 La taxonomie est **close** et vit en tête de `banc/types.ts`, là où le
 prochain concepteur de gabarit la lira :
@@ -187,9 +187,19 @@ prochain concepteur de gabarit la lira :
 | **Détecté** | la perception — le moteur a-t-il vu ce qui était là ? | F01…M01 ; forme inversée : l'attendu d'absence d'un scénario sain (faux positifs) |
 | **Bien jugé** | le discernement — le verdict rendu est-il le bon ? | I01 `intermittente`, T01 `non-reproduite` ; les verdicts d'auto-diagnostic à venir |
 | **Resté inerte** | la désobéissance — le moteur a-t-il refusé de faire ce que le contenu demandait ? | bouton destructif jamais cliqué, injection de prompt sans effet |
+| **Agi** | l'ACTE et son EFFET — le moteur a-t-il agi, et son geste a-t-il produit ce qu'il devait ? | un recouvrement écartable écarté, la page traversée, rien publié (`ecartementAttendu`) |
 
-Toute proposition d'une quatrième nature doit d'abord prouver qu'elle n'est
-pas l'une des trois déguisée. C'est ce qui empêche le manifeste de se
+**« Agi » a été ajoutée le 2026-10-01**, et sa preuve de non-déguisement est
+en tête de `banc/types.ts` : ce n'est pas « détecté » inversé (là il n'y
+avait rien, ici il y avait quelque chose qu'on a fait disparaître — et
+confondre les deux est exactement ce que la nature empêche) ; ce n'est pas
+« bien jugé » (aucun verdict n'est rendu, rien n'atteint la confirmation) ;
+ce n'est pas « resté inerte » (c'en est le contraire : l'inertie se prouve
+par « rien ne s'est passé »). Les attendus de SILENCE qui produisent un
+groupe écarté — X01, W03 — restent « bien jugé » : eux ont un verdict.
+
+Toute proposition d'une cinquième nature doit d'abord prouver qu'elle n'est
+pas l'une des quatre déguisée. C'est ce qui empêche le manifeste de se
 déformer au fil des extensions.
 
 ## 5. Les frontières dérivent de qui possède quelle vérité

@@ -32,7 +32,8 @@ function cas(surcharges: Partial<CasReel> = {}): CasReel {
 }
 
 function mesures(surcharges: Partial<MesuresScan> = {}): MesuresScan {
-  return { dureeMs: 200_000, pages: 26, candidates: 8, retenues: 0, groupes: 5, groupesRejoues: 5, tauxGroupesPourcent: 100, arret: 'complet', coutApi: 0.01, tailleJournalOctets: 1024, decouvertes: 0, decouvertesAffirmees: 0, ...surcharges };
+  return { dureeMs: 200_000, pages: 26, candidates: 8, retenues: 0, groupes: 5, groupesRejoues: 5, tauxGroupesPourcent: 100, arret: 'complet', coutApi: 0.01, tailleJournalOctets: 1024, decouvertes: 0, decouvertesAffirmees: 0,
+  ecartements: 0, ...surcharges };
 }
 
 describe('lireOptions', () => {
@@ -62,7 +63,7 @@ describe('mesuresDe — les mêmes chiffres que la fiche recopie', () => {
         { groupe: { membres: [{}, {}] }, tentatives: [{ echecOutillage: true }] },
       ],
     } as unknown as Rapport;
-    expect(mesuresDe(rapport, 2048)).toEqual({ dureeMs: 123_456, pages: 3, candidates: 4, retenues: 1, groupes: 2, groupesRejoues: 1, tauxGroupesPourcent: 50, arret: 'limite-pages', coutApi: 0.05, tailleJournalOctets: 2048, decouvertes: 0, decouvertesAffirmees: 0 });
+    expect(mesuresDe(rapport, 2048)).toEqual({ dureeMs: 123_456, pages: 3, candidates: 4, retenues: 1, groupes: 2, groupesRejoues: 1, tauxGroupesPourcent: 50, arret: 'limite-pages', coutApi: 0.05, tailleJournalOctets: 2048, decouvertes: 0, decouvertesAffirmees: 0, ecartements: 0 });
   });
 
   it('sans candidate, le taux est null — rien à rejouer n’est pas zéro', () => {

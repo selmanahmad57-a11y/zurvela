@@ -5,9 +5,9 @@
  * bugs injectables, scénarios, manifestes de vérité terrain, correcteur et
  * scorecard. Tout ce qui relie ces pièces entre elles est déclaré ici.
  *
- * ## Les TROIS natures d'attendu — la taxonomie est CLOSE
+ * ## Les QUATRE natures d'attendu — la taxonomie est CLOSE
  *
- * Un manifeste n'exprime jamais que l'une de ces trois choses :
+ * Un manifeste n'exprime jamais que l'une de ces quatre choses :
  *
  * 1. **DÉTECTÉ** — éprouve la PERCEPTION : le moteur a-t-il vu ce qui était
  *    là ? Sa forme inversée est l'attendu d'ABSENCE : sur un scénario sain,
@@ -27,6 +27,35 @@
  *    l'attendu n'a de valeur que si le MOYEN existait : une page jamais liée
  *    n'est pas une page respectée, c'est une page hors d'atteinte. C'est une
  *    propriété de sécurité et de conduite, jamais de détection.
+ *
+ * 4. **AGI** — éprouve ce que le moteur FAIT, et l'EFFET de ce qu'il fait.
+ *    Un recouvrement écartable doit être écarté, la page traversée, et RIEN
+ *    publié (`ecartementAttendu`, cahier P2-3, contrat 1). L'attendu porte
+ *    sur un COMPTE D'ACTES à l'effet mesuré, jamais sur un verdict.
+ *
+ *    AJOUTÉE LE 2026-10-01, avec sa preuve de non-déguisement — la clause de
+ *    fermeture l'exige, et les trois candidates ont été examinées :
+ *    - ce n'est pas **détecté** sous sa forme inversée : l'attendu d'absence
+ *      d'un scénario sain dit « il n'y avait rien ». Ici il y avait quelque
+ *      chose, et le moteur l'a fait disparaître. Les deux situations rendent
+ *      le même rapport vide, et c'est précisément la confusion que cette
+ *      nature existe pour empêcher — le silence n'est pas l'absence ;
+ *    - ce n'est pas **bien jugé** : aucun verdict n'est rendu. Rien
+ *      n'atteint la confirmation, il n'y a pas de `verdictRendu` à
+ *      comparer. L'y ranger obligerait à inventer un pseudo-verdict, c'est-
+ *      à-dire à déguiser le neuf en ancien — le piège de la clause pris à
+ *      l'envers. Et le coût serait réel : la colonne « verdicts corrects »
+ *      compterait comme juste un scénario où le moteur n'a rien fait et
+ *      n'a rien publié ;
+ *    - ce n'est pas **resté inerte** : c'en est l'exact contraire. L'inertie
+ *      se prouve par « rien ne s'est passé » ; celle-ci par « quelque chose
+ *      s'est passé, et voici son effet ». Même forme de rapport, substance
+ *      opposée.
+ *
+ *    La parenté réelle est ailleurs : avec X01 (P2-2) et W03 (P2-3), qui
+ *    vérifient un SILENCE plutôt qu'une absence. Mais eux produisent un
+ *    groupe écarté, donc un verdict — ils sont « bien jugé ». L'écartement
+ *    n'en produit aucun : c'est bien une quatrième chose.
  *
  * La taxonomie est close. Toute proposition d'une quatrième nature doit
  * d'abord prouver qu'elle n'est pas l'une des trois déguisée — c'est ce qui

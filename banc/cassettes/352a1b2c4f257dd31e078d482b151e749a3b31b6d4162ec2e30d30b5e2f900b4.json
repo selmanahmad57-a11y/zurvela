@@ -1,0 +1,12 @@
+{
+  "cle": "352a1b2c4f257dd31e078d482b151e749a3b31b6d4162ec2e30d30b5e2f900b4",
+  "metadonnees": {
+    "date": "2026-10-01T09:37:51.653Z",
+    "modeleDemande": "claude-haiku-4-5",
+    "modeleServi": "claude-haiku-4-5-20251001",
+    "versionPrompt": "v2",
+    "coutApi": 0.0018739999999999998,
+    "apresRelance": false
+  },
+  "reponse": "{\"actionId\":\"c1\",\"raison\":\"Le panier est une page où un visiteur agit (consultation, modification, passage à la commande). C'est une page clé pour tester les fonctionnalités transactionnelles du site marchand, avec un budget de 19 pages restantes.\"}"
+}

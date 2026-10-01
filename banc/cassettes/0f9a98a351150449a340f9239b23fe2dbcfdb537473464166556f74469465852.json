@@ -1,0 +1,12 @@
+{
+  "cle": "0f9a98a351150449a340f9239b23fe2dbcfdb537473464166556f74469465852",
+  "metadonnees": {
+    "date": "2026-10-01T09:37:58.258Z",
+    "modeleDemande": "claude-haiku-4-5",
+    "modeleServi": "claude-haiku-4-5-20251001",
+    "versionPrompt": "v2",
+    "coutApi": 0.001919,
+    "apresRelance": false
+  },
+  "reponse": "{\"actionId\":\"c1\",\"raison\":\"Un visiteur sur une boutique accède généralement au panier pour consulter ou valider son achat. C'est une action d'interaction significative qu'il est pertinent de tester. Le budget permet encore 19 pages, il faut explorer les chemins d'action réels du site.\"}"
+}
