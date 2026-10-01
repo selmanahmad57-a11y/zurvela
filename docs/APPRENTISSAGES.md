@@ -1071,3 +1071,31 @@ regardé.
   ses cas extrêmes ne mesure pas la même chose en plus petit — il mesure
   autre chose. Et la raison de l'amputation est souvent le prochain sujet.
 
+## 33. Un gain ne se mesure qu'entre deux exécutions prouvées ÉQUIVALENTES (2026-10-02, ouverture de P2-4)
+
+- **Le fait** : P2-4 optimise, et une optimisation de performance peut
+  changer un RÉSULTAT sans changer un seul VERDICT — un cache qui sert une
+  décision périmée, un rejeu sélectionné qui saute la mauvaise candidate,
+  un budget réalloué qui explore moins. Chaque verdict reste localement
+  correct ; le scan, lui, n'est plus le même.
+- **Ce que cela impose, et qui est plus fort que « viser l'équivalence »** :
+  un chiffre de vitesse mesuré sur un scan qu'on n'a pas PROUVÉ identique
+  ne compare pas deux vitesses, il compare deux comportements. Il ne dit
+  donc rien du gain. L'ordre des preuves est l'invariant : **équivalence
+  établie d'abord — mêmes candidates, mêmes groupes, mêmes verdicts, mêmes
+  sections —, vitesse mesurée ensuite, sur deux exécutions désormais
+  connues identiques.**
+- **Parenté** : c'est le pendant « performance » du n°26. Là-bas, une
+  affirmation ne combine que ce qu'un seul run a mesuré ensemble ; ici, un
+  gain ne se lit qu'entre deux runs dont on a prouvé qu'ils font la même
+  chose. Dans les deux cas, l'erreur consiste à rapprocher deux mesures qui
+  ne portent pas sur le même objet.
+- **Règle** : toute optimisation se clôt sur « plus rapide ET équivalent »,
+  jamais sur « plus rapide ». Et une optimisation qui déplace une empreinte
+  n'est pas une optimisation : c'est un changement de comportement déguisé
+  en gain de vitesse, à déclarer et à arbitrer comme tel.
+- **Corollaire de déploiement** : la vitesse ne décide jamais du
+  déploiement d'une politique de confirmation. Seul le signal perdu le
+  décide. Mesurer une politique économe et la déployer sont deux décisions
+  séparées, prises sur deux critères différents.
+
