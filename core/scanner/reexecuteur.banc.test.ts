@@ -88,6 +88,7 @@ afterAll(async () => {
 async function rejouer(): Promise<{ journal: EntreeJournal[]; signaux: Signal[]; parcours: Parcours; echecOutillage: boolean }> {
   const journal: EntreeJournal[] = [];
   const reexecuteur: Reexecuteur = creerReexecuteur({
+    filtreElement: creerFiltreElement(await chargerActionsInterdites()),
     navigateur,
     config,
     journaliser: (type, details) => journal.push({ horodatage: new Date().toISOString(), type, details }),

@@ -62,6 +62,8 @@ import {
   TYPES_SOUMISSION_IMPLICITE,
 } from './exploration/explorateur.js';
 import { creerContexte, NOM_TAMPON } from './navigateur.js';
+import { ecarterRecouvrements } from './exploration/ecarter-recouvrement.js';
+import type { FiltreElement } from './exploration/filtre-actions.js';
 import { brancherPage, creerObservateur, type OptionsFenetre, type PageBranchee } from './observation/observateur.js';
 
 /** Identifiants techniques stables des échecs de rejeu (journalisés). */
@@ -145,6 +147,14 @@ export interface DependancesReexecuteur {
    * tentative, mais une tentative lancée ne doit pas non plus déborder.
    */
   echeance?: number;
+  /**
+   * Le filtre d'actions destructives appliqué à un élément que le CODE
+   * s'apprête à activer. REQUIS, jamais optionnel, et pour la même raison
+   * qu'à l'exploration : le rejeu écarte les recouvrements comme elle, donc
+   * il doit filtrer comme elle. Un moteur sans son filtre ne compile pas
+   * (APPRENTISSAGES n°28).
+   */
+  filtreElement: FiltreElement;
 }
 
 export function creerReexecuteur(dependances: DependancesReexecuteur): Reexecuteur {
@@ -165,6 +175,9 @@ export function creerReexecuteur(dependances: DependancesReexecuteur): Reexecute
     async rejouer(reproduction, viewport: Viewport) {
       const debut = Date.now();
       const observateur = fabriqueObservateur();
+      // Ce que le rejeu a écarté sur la page du client : remonté avec le
+      // reste, et déclaré au rapport comme celui de l'exploration.
+      let nbRecouvrementsEcartes = 0;
       const parcours: Parcours = { urlDepart: reproduction.url, pages: [], actions: [], arret: 'complet', enAttenteALArret: 0, pagesRestantesALArret: 0, nbRecouvrementsEcartes: 0 };
       let contexteNavigateur: BrowserContext | undefined;
       let page: Page | undefined;
@@ -240,7 +253,31 @@ export function creerReexecuteur(dependances: DependancesReexecuteur): Reexecute
             observateur.emettre({ type: 'etat-cadre', horodatage, page: url, viewport: viewport.nom, ...cadre });
           }
           const geometrie = await recouvrements(ouverte, { max: exploration.elementsInteractifsMax, budgetMs: delai() });
-          for (const constat of geometrie.recouvrements) {
+          // ON TENTE AU REJEU COMME À L'EXPLORATION (cahier P2-3, contrat 1).
+          // Un recouvrement qui n'apparaît qu'au rejeu — le calque de
+          // `calque-au-rejeu`, l'iframe publicitaire d'expandtesting — serait
+          // sinon publié « non écartable » sans qu'on ait essayé de
+          // l'écarter, et ce serait le mensonge exact que le contrat
+          // interdit. La doctrine a autant de portes que le rapport a
+          // d'entrées (APPRENTISSAGES n°25) : l'exploration et le rejeu sont
+          // deux portes, et la même fonction garde les deux.
+          let constats = geometrie.recouvrements;
+          if (constats.length > 0) {
+            const issue = await ecarterRecouvrements({
+              page: ouverte,
+              constats,
+              config: config.detecteurs.recouvrement.fermeture,
+              filtreElement: (cible) => dependances.filtreElement(ouverte, cible),
+              delaiMs: delai(),
+              geometrie: { max: exploration.elementsInteractifsMax, budgetMs: delai() },
+              mesurer: () => recouvrements(ouverte, { max: exploration.elementsInteractifsMax, budgetMs: delai() }),
+              journaliser: (type, details) => journaliser(type, { viewport: viewport.nom, url, rejeu: true, ...(details as object) }),
+              attendre: (ms) => new Promise<void>((resoudre) => setTimeout(resoudre, ms)),
+            });
+            constats = issue.restants;
+            nbRecouvrementsEcartes += issue.nbEcartes;
+          }
+          for (const constat of constats) {
             observateur.emettre({ type: 'interception-clic', horodatage, page: url, viewport: viewport.nom, ...constat, source: 'geometrie' });
           }
         }
@@ -427,12 +464,16 @@ export function creerReexecuteur(dependances: DependancesReexecuteur): Reexecute
 
       const signaux = observateur.signaux();
       const dureeMs = Date.now() - debut;
+      // Ce que le rejeu a FAIT sur la page : il remonte avec le parcours,
+      // et le rapport l'additionne à celui de l'exploration (contrat 7).
+      parcours.nbRecouvrementsEcartes = nbRecouvrementsEcartes;
       journaliser('rejeu.fin', {
         viewport: viewport.nom,
         echecOutillage: echec !== undefined,
         ...(echec === undefined ? {} : { causeEchec: echec.cause }),
         nbActions: parcours.actions.length,
         nbSignaux: signaux.length,
+        recouvrementsEcartes: nbRecouvrementsEcartes,
         dureeMs,
       });
       return {

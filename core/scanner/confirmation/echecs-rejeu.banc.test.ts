@@ -111,7 +111,9 @@ async function confirmer(): Promise<{ resultat: ResultatConfirmation; journal: E
     options: { timeoutMs: ECHEANCE_MS },
     echeance: Date.now() + ECHEANCE_MS,
     journaliser,
-    reexecuteur: creerReexecuteur({ navigateur, config, journaliser }),
+    reexecuteur: creerReexecuteur({
+    filtreElement: creerFiltreElement(await chargerActionsInterdites()),
+    navigateur, config, journaliser }),
     detecteurs: creerDetecteurs(config.detecteurs),
     viewports: config.viewports,
   });

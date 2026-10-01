@@ -131,9 +131,13 @@ function explorateurAvecNavigateur(config: ConfigScanner, actionsInterdites: Act
  */
 function sessionRejeu(
   config: ConfigScanner,
+  actionsInterdites: ActionsInterdites,
   journaliser: (type: string, details?: unknown) => void,
   echeance: number,
 ): SessionRejeu {
+  // Le rejeu écarte les recouvrements comme l'exploration, donc il filtre
+  // comme elle (constitution §3, clause de P2-3).
+  const filtreElement = creerFiltreElement(actionsInterdites);
   let navigateur: Browser | undefined;
   let garde: NodeJS.Timeout | undefined;
   return {
@@ -148,7 +152,7 @@ function sessionRejeu(
           }, Math.max(0, echeance - Date.now()));
           garde.unref();
         }
-        return creerReexecuteur({ navigateur, config, journaliser, echeance }).rejouer(reproduction, viewport);
+        return creerReexecuteur({ filtreElement, navigateur, config, journaliser, echeance }).rejouer(reproduction, viewport);
       },
     },
     async fermer() {
@@ -286,7 +290,7 @@ export async function creerScannerParDefaut(options: OptionsAssemblage = {}): Pr
         budgetsRejeu: config.confirmation.rejeu,
       }),
     }),
-    ouvrirRejeu: (journaliser, echeance) => sessionRejeu(config, journaliser, echeance),
+    ouvrirRejeu: (journaliser, echeance) => sessionRejeu(config, actionsInterdites, journaliser, echeance),
     ia,
     // Le profilage est TOUJOURS assemblé : c'est le client IA, et lui seul,
     // qui décide s'il peut répondre. Un scan sans clé n'a donc pas de profil,

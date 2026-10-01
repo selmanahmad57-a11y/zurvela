@@ -41,10 +41,20 @@ describe('natureMasquee — des signaux du WEB, jamais du monde', () => {
     expect(natureMasquee(element('a', 'body > nav > ul > li > a', { href: '/panier' }))).toBe('actionCritique');
   });
 
-  it('le MÊME lien hors navigation est du CONTENU SECONDAIRE : c’est le contexte qui décide, pas la balise', () => {
+  it('un lien du PIED DE PAGE est du CONTENU SECONDAIRE : c’est le landmark qui décide, pas la balise', () => {
     // Le cas exact de la fiche 09 : un lien de mot-clé recouvert par le pied
     // de page, publié « Bloquant · les clics n'aboutissent pas ».
     expect(natureMasquee(element('a', 'body > footer > p > a', { href: '/mot-cle' }))).toBe('contenuSecondaire');
+    expect(natureMasquee(element('a', 'body > aside > a', { href: '/promo' }))).toBe('contenuSecondaire');
+  });
+
+  it('… mais un lien du CORPS de la page ne l’est PAS : c’est par lui que le visiteur avance', () => {
+    // Le contrôle qui peut échouer, et que le témoin d'intersection a
+    // trouvé : trois liens d'offre recouverts par un calque valent plus
+    // qu'un lien de mot-clé en pied de page. Sans landmark, on ne descend
+    // pas au plus bas — supposer « secondaire » enterrerait un vrai défaut.
+    expect(natureMasquee(element('a', 'body > main > section > a', { href: '/offre/1' }))).toBe('controleOrdinaire');
+    expect(natureMasquee(element('a', 'body > div > a', { href: '/produit' }))).toBe('controleOrdinaire');
   });
 
   it('un contrôle interactif ordinaire n’est ni l’un ni l’autre', () => {

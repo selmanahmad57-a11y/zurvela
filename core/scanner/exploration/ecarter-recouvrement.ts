@@ -50,7 +50,12 @@ export const EVENEMENT_FERMETURE_BORNEE = 'recouvrement.borne-atteinte';
 /** Pourquoi un geste n'a pas été exécuté, quand ce n'est pas un motif de config. */
 export const RAISON_GESTE_INDISPONIBLE = 'geste-indisponible';
 
-export type IssueTentative = 'ecarte' | 'sans-effet' | 'indisponible' | 'interdite' | 'echec';
+/**
+ * `execute` est un état INTERMÉDIAIRE, jamais journalisé : il dit que le
+ * geste a eu lieu, pas qu'il a produit un effet. La re-mesure le remplace
+ * par `ecarte` ou `sans-effet` avant que quoi que ce soit ne soit écrit.
+ */
+export type IssueTentative = 'execute' | 'ecarte' | 'sans-effet' | 'indisponible' | 'interdite' | 'echec';
 
 export interface TentativeFermeture {
   geste: GesteFermeture;
@@ -145,6 +150,16 @@ export async function ecarterRecouvrements(options: OptionsEcartement): Promise<
     }
     for (const geste of config.gestes) {
       const tentative = await executerGeste({ geste, intercepteur, page, config, filtreElement, delaiMs });
+      // LE GESTE A EU LIEU : on re-mesure AVANT de conclure, et avant même
+      // de journaliser. « Écarté » est une propriété de la PAGE, pas du
+      // geste (APPRENTISSAGES n°27) — et une trace qui dirait « écarté »
+      // puis se corrigerait à la ligne suivante ferait au journal
+      // exactement l'erreur que le code refuse de faire au rapport.
+      if (tentative.issue === 'execute') {
+        await attendre(config.delaiApresGesteMs);
+        restants = (await mesurer()).recouvrements;
+        tentative.issue = recouvreEncore(restants, intercepteur.selecteur) ? 'sans-effet' : 'ecarte';
+      }
       journaliser(EVENEMENT_TENTATIVE_FERMETURE, {
         geste: tentative.geste,
         intercepteur: intercepteur.selecteur,
@@ -155,16 +170,6 @@ export async function ecarterRecouvrements(options: OptionsEcartement): Promise<
       });
       tentatives.push(tentative);
       if (tentative.issue !== 'ecarte') {
-        continue;
-      }
-      // LE GESTE A EU LIEU : on re-mesure avant de conclure. « Écarté » est
-      // une propriété de la PAGE, pas du geste — un clic qui ne lève rien
-      // n'écarte rien.
-      await attendre(config.delaiApresGesteMs);
-      restants = (await mesurer()).recouvrements;
-      if (recouvreEncore(restants, intercepteur.selecteur)) {
-        tentative.issue = 'sans-effet';
-        journaliser(EVENEMENT_TENTATIVE_FERMETURE, { geste, intercepteur: intercepteur.selecteur, issue: 'sans-effet' });
         continue;
       }
       nbEcartes += 1;
@@ -186,7 +191,7 @@ interface OptionsGeste {
 }
 
 /**
- * UN geste, tenté. Rend `ecarte` quand le geste a pu être EXÉCUTÉ — c'est
+ * UN geste, tenté. Rend `execute` quand le geste a pu avoir lieu — c'est
  * l'appelant qui re-mesure et tranche si la page a changé.
  */
 async function executerGeste(options: OptionsGeste): Promise<TentativeFermeture> {
@@ -197,13 +202,13 @@ async function executerGeste(options: OptionsGeste): Promise<TentativeFermeture>
       case 'echap': {
         // Ne vise aucun élément : rien à filtrer, rien à activer.
         await page.keyboard.press('Escape');
-        return { ...base, issue: 'ecarte' };
+        return { ...base, issue: 'execute' };
       }
       case 'dialog-natif': {
         // L'API du standard, pas un clic : aucun gestionnaire de la page
         // n'est déclenché, donc aucune conséquence à filtrer.
         const ferme = await fermerDialog(page, intercepteur.selecteur, delaiMs);
-        return { ...base, issue: ferme ? 'ecarte' : 'indisponible' };
+        return { ...base, issue: ferme ? 'execute' : 'indisponible' };
       }
       case 'controle-ferme': {
         const prises = await prisesFermeture(page, {
@@ -222,7 +227,7 @@ async function executerGeste(options: OptionsGeste): Promise<TentativeFermeture>
           return { ...base, cible: prises.controle, issue: 'interdite', motif };
         }
         await page.click(prises.controle.selecteur, { timeout: delaiMs, noWaitAfter: true });
-        return { ...base, cible: prises.controle, issue: 'ecarte' };
+        return { ...base, cible: prises.controle, issue: 'execute' };
       }
       case 'clic-hors-zone': {
         const prises = await prisesFermeture(page, {
@@ -237,7 +242,7 @@ async function executerGeste(options: OptionsGeste): Promise<TentativeFermeture>
           return base;
         }
         await page.mouse.click(prises.pointVide.x, prises.pointVide.y);
-        return { ...base, point: prises.pointVide, issue: 'ecarte' };
+        return { ...base, point: prises.pointVide, issue: 'execute' };
       }
       default: {
         // Un geste que la config nomme mais que le code ne connaît pas

@@ -21,11 +21,12 @@ import { createServer, type Server, type ServerResponse } from 'node:http';
 import type { Browser } from 'playwright';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { ContexteReproduction, ResultatRejeu, Signal, Viewport } from '../types.js';
-import { chargerConfigScanner, type ConfigScanner } from './config.js';
+import { chargerActionsInterdites, chargerConfigScanner, type ConfigScanner } from './config.js';
 import { DESCRIPTION_DOCUMENT_INJOIGNABLE } from './detection/d-http.js';
 import { creerDetecteurs, detecter } from './detection/index.js';
 import { lancerNavigateur } from './navigateur.js';
 import { creerReexecuteur, ERREUR_BUDGET_INSUFFISANT, ERREUR_PAGE_INCHARGEABLE, ERREUR_RECETTE_INCOHERENTE } from './reexecuteur.js';
+import { creerFiltreElement } from './exploration/filtre-actions.js';
 
 /** Chargement raccourci : seules les ATTENTES sont resserrées, jamais la classification. */
 const CHARGEMENT_MS = 4000;
@@ -89,6 +90,7 @@ function reproduction(url: string): ContexteReproduction {
 
 async function rejouer(url: string, echeance?: number): Promise<ResultatRejeu> {
   const reexecuteur = creerReexecuteur({
+    filtreElement: creerFiltreElement(await chargerActionsInterdites()),
     navigateur,
     config,
     ...(echeance === undefined ? {} : { echeance }),
@@ -121,7 +123,9 @@ describe('re-exécuteur — la recette est vérifiée avant d’ouvrir quoi que 
       fin: new Date().toISOString(),
       resultat: 'ok' as const,
     };
-    const rejeu = await creerReexecuteur({ navigateur, config }).rejouer({ ...reproduction(url), actionsPrealables: [prealable] }, viewport);
+    const rejeu = await creerReexecuteur({
+    filtreElement: creerFiltreElement(await chargerActionsInterdites()),
+    navigateur, config }).rejouer({ ...reproduction(url), actionsPrealables: [prealable] }, viewport);
     await serveur.arreter();
     expect(rejeu).toMatchObject({ echecOutillage: true, causeEchec: 'outil', erreur: ERREUR_RECETTE_INCOHERENTE });
     expect(rejeu.parcours.pages).toEqual([]);

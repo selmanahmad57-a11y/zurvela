@@ -82,9 +82,16 @@ export function natureMasquee(element: LocalisationElement): NatureMasquee {
     return 'controleOrdinaire';
   }
 
-  // CONTENU SECONDAIRE : un lien hors navigation principale.
+  // UN LIEN SE JUGE SUR SON LANDMARK, pas sur sa balise. Le carnet portait
+  // les deux cas, et ils ne valent pas le même prix : un lien de mot-clé
+  // dans un PIED DE PAGE (fiche 09) est du contenu secondaire ; un lien
+  // d'offre dans le CORPS de la page est ce par quoi le visiteur avance.
+  // Les landmarks HTML (`footer`, `aside`) sont universels — c'est du web,
+  // jamais du monde —, et sans landmark on ne descend pas au plus bas :
+  // supposer « secondaire » sans preuve enterrerait un vrai défaut.
   if (balise === 'a' || role === 'link') {
-    return 'contenuSecondaire';
+    const chromeSecondaire = chemin.includes('footer') || chemin.includes('aside');
+    return chromeSecondaire ? 'contenuSecondaire' : 'controleOrdinaire';
   }
   return 'indeterminee';
 }
