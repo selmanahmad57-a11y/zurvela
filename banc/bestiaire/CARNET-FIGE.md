@@ -127,14 +127,42 @@ contre-épreuve réunit, et les ressources d'une même cause sur une page).
 **Ce qui le clôt** : the-internet, demoqa, quotes re-scannés sans
 « bloquant » injustifié ; une section par cause.
 
-### Cahier P2-4 — La lenteur
+### Cahier P2-4 — La PERFORMANCE : pouvoir juger du tout
+
+**PROMU EN TÊTE le 2026-10-01**, devant la lenteur et le périmètre, par le
+grand tableau campagne contre P2-3 (`docs/bilan-reel-2026-10-01.md`,
+APPRENTISSAGES n°32). Quatre sites sur neuf sont sortis « déclarés, pas
+jugés » — et ce sont exactement ceux qui portaient la masse du bruit :
+automationexercise publiait à lui seul 22 sections dont 21 fausses, quand
+les cinq sites comparables réunis n'en publiaient que 4. La corrélation est
+CAUSALE : la lourdeur publicitaire produit le bruit tiers ET sature le
+budget de rejeu. Tant que le second défaut tient, le premier ne se mesure
+pas là où il est le plus fort.
+
+**Objectif, et il est nouveau** : non pas « juger juste », mais **pouvoir
+juger du tout** là où le bruit se cache. Ce n'est pas un cahier de confort.
+
+**Périmètre pressenti** : le coût d'un rejeu par groupe (29 s la tentative,
+déclaré hors périmètre de P2-1 et repoussé deux fois) · le rejeu
+SÉLECTIONNÉ · le cache de décisions, dont le facteur 14 entre profilage et
+décisions de navigation donne depuis longtemps le chiffre justificatif
+(0,041 contre 0,583 USD sur 34 scans, brique 4b) · la répétabilité
+inter-scans des états énumérés, à mesurer AVANT de concevoir le cache
+(backlog).
+
+**Ce qui le clôt** : le grand tableau refait sur les neuf sites, avec
+automationexercise, demoqa et expandtesting enfin COMPARABLES — le bilan de
+Phase 2 que le run du 2026-10-01 n'a pas pu porter, et dont il devient la
+ligne « avant ».
+
+### Cahier P2-5 — La lenteur
 
 **Périmètre** : **C-02** (un flux média 206 et une requête en attente ne sont
 pas des lenteurs ; mesurer le document et les ressources bloquantes) ·
 **C-04** (partagé avec P2-1 : la mesure au rejeu). 3 sites. Clôture :
 getlumavo re-scanné publie l'accueil lent et pas la vidéo.
 
-### Cahier P2-5 — Périmètre, politesse, sécurité de base
+### Cahier P2-6 — Périmètre, politesse, sécurité de base
 
 **Périmètre** : **C-15** (une page du même hôte servie en http depuis https
 est interne ET rétrogradée : à extraire, à compter, à signaler) · **C-14**

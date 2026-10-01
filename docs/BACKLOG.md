@@ -103,6 +103,15 @@ entrée indique la brique ou la phase où elle a vocation à être traitée.
 
 ## Phase 2
 
+- **Le grand tableau du 2026-10-01 est écrit** (`docs/bilan-reel-2026-10-01.md`)
+  et il ne porte PAS le bilan de la Phase 2 : quatre sites sur neuf sortis
+  « déclarés, pas jugés », et ce sont ceux qui portaient le bruit. Sur les
+  cinq comparables : la campagne publiait 3 sections fausses sur 4, P2-3 en
+  publie 0 sur 3 — juste, mais sur un dénominateur trop étroit pour être dit
+  à voix haute. **Ne pas relancer à une autre heure** : seul the-internet
+  tenait à l'horaire ; l'instabilité des trois autres est le budget de
+  rejeu, pas l'horloge. Le déblocage est P2-4.
+
 - **C-11 ÉTENDU — la fusion INTER-PAGES d'une même cause.** Isolé le
   2026-10-01 à la clôture de P2-3, et délibérément laissé hors du cahier.
   Le dialogue de consentement Google d'automationexercise produit deux

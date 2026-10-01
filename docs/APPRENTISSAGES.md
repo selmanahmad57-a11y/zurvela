@@ -1045,3 +1045,29 @@ regardé.
   modal sur un site vivant sans en garder trace : c'est précisément ce que
   la clause interdit.
 
+## 32. Le bruit se cache là où l'on ne peut pas encore mesurer — et ce n'est pas une coïncidence (2026-10-01, grand tableau campagne contre P2-3)
+
+- **Le fait** : le run qui devait clore la première moitié de la Phase 2 n'a
+  rendu que cinq sites comparables sur neuf. Quatre sont sortis « déclarés,
+  pas jugés » pour structure changée. Et les quatre exclus sont PRÉCISÉMENT
+  ceux qui portaient la masse du bruit : automationexercise publiait à lui
+  seul 22 sections dont 21 fausses, quand les cinq sites comparables réunis
+  n'en publiaient que 4.
+- **Ce que cela dit, et qu'aucun cahier isolé ne pouvait voir** : la
+  corrélation est CAUSALE, pas accidentelle. Le bruit tiers et l'instabilité
+  d'exploration ont la même origine — la lourdeur publicitaire. Un site
+  chargé de régies produit beaucoup de requêtes tierces (donc du bruit) ET
+  sature le budget de rejeu (donc une exploration qui varie d'un run à
+  l'autre). Tant que le second défaut tient, le premier ne peut pas se
+  mesurer là où il est le plus fort.
+- **Conséquence sur l'ordre des cahiers** : la dette du coût de rejeu sur
+  les sites lourds — déclarée hors périmètre de P2-1, repoussée deux fois —
+  n'est pas un sujet de confort. Elle bloque la MESURABILITÉ du produit.
+  Elle devient P2-4, avant la lenteur et le périmètre, et son objectif n'est
+  pas « aller plus vite » mais « pouvoir juger du tout » là où le bruit se
+  cache.
+- **Règle générale** : quand un bilan ne peut pas se prononcer, regarder
+  QUI manque avant de conclure que le reste suffit. Un échantillon amputé de
+  ses cas extrêmes ne mesure pas la même chose en plus petit — il mesure
+  autre chose. Et la raison de l'amputation est souvent le prochain sujet.
+
