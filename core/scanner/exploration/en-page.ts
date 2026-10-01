@@ -784,16 +784,34 @@ function enPage(arg: Commande): unknown {
       if (intercepteur === null) {
         return [] as LocalisationElement[];
       }
-      // Les candidats sont les descendants qui portent un GESTIONNAIRE
-      // plausible : interactifs du standard, ou simplement tout élément
-      // feuille visible — un `<p>` cliquable n'est reconnaissable par
-      // aucune sémantique, c'est précisément le cas qui nous occupe.
-      const interactifs = Array.from(intercepteur.querySelectorAll(arg.selecteursInteractifs));
-      const feuilles = Array.from(intercepteur.querySelectorAll('*')).filter(
-        (el) => el.children.length === 0 && (el.textContent ?? '').trim() !== '',
-      );
+      // OÙ CHERCHER. D'abord dans l'intercepteur, puis — et c'est le réel
+      // qui l'a imposé — dans le sous-arbre de son PARENT.
+      //
+      // La construction conventionnelle d'un modal sépare le voile et la
+      // boîte : `<div id="modal"><div class="underlay"></div><div
+      // class="modal">…<p>Close</p></div></div>`. Ce qui recouvre est le
+      // VOILE, et il est VIDE ; la prise vit dans son FRÈRE. Chercher dans
+      // le seul intercepteur ne trouve donc jamais rien, et the-internet
+      // l'a montré : cinq gestes tentés, zéro écarté, parce que le bon
+      // sous-arbre commençait un cran plus haut.
+      //
+      // On ne remonte QUE D'UN CRAN, et jamais jusqu'à `body` : au-delà,
+      // « les descendants du recouvrement » deviendrait « les éléments de
+      // la page », et l'on cliquerait le site au lieu d'écarter ce qui le
+      // couvre. La borne de config reste, le filtre destructif reste, et
+      // la vérification d'effet de bord reste.
+      const parent = intercepteur.parentElement;
+      const racine = parent !== null && parent !== document.body && parent !== document.documentElement ? parent : intercepteur;
+      // Les candidats portent un GESTIONNAIRE plausible : interactifs du
+      // standard, ou tout élément feuille visible — un `<p>` cliquable
+      // n'est reconnaissable par aucune sémantique, c'est le cas qui nous
+      // occupe. L'intercepteur d'abord : le plus spécifique en premier.
+      const dans = (hote: Element): Element[] => [
+        ...Array.from(hote.querySelectorAll(arg.selecteursInteractifs)),
+        ...Array.from(hote.querySelectorAll('*')).filter((el) => el.children.length === 0 && (el.textContent ?? '').trim() !== ''),
+      ];
       const candidats: Element[] = [];
-      for (const el of [...interactifs, ...feuilles]) {
+      for (const el of [...dans(intercepteur), ...dans(racine)]) {
         if (candidats.includes(el)) {
           continue;
         }

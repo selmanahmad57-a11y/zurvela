@@ -110,12 +110,19 @@ describe('recouvrement — les deux faces du contrat 1, et un geste par gabarit'
     // `<button>` ou un `aria-label`, la croix ARIA le fermerait et la voie
     // C cesserait d'être mesurée sans que rien ne rougisse.
     const accueil = await (await fetch((await servir(['Q08'])).url + PAGE_ACCUEIL)).text();
-    const calque = accueil.slice(accueil.indexOf('id="calque-nu"'), accueil.indexOf('</script>'));
+    const calque = accueil.slice(accueil.indexOf('id="modal-nu"'), accueil.indexOf('</script>'));
     expect(calque).toContain('<p id="prise-nue">');
+    // LE VOILE EST VIDE, et la prise est dans son FRÈRE : la structure
+    // conventionnelle d'un modal, et celle de the-internet. Si la prise
+    // revenait DANS le voile, le gabarit cesserait d'éprouver la remontée
+    // d'un cran — il passerait au vert en mesurant autre chose.
+    expect(calque).toContain('id="voile-nu" style="position:absolute;inset:0;background:transparent"></div>');
+    expect(calque.indexOf('id="voile-nu"')).toBeLessThan(calque.indexOf('id="boite-nue"'));
     expect(calque).not.toContain('<button');
     expect(calque).not.toContain('<a ');
     expect(calque).not.toContain('aria-');
-    expect(calque).not.toContain('role=');
+    //  avec son espace :  est un repère du gabarit, pas un rôle ARIA.
+    expect(calque).not.toContain(' role=');
     expect(calque).not.toContain('<dialog');
     // Le libellé ne veut rien dire dans aucune langue : un code qui se
     // mettrait à LIRE le texte ne trouverait rien ici.
