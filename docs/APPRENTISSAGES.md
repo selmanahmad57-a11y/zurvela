@@ -978,3 +978,56 @@ regardé.
   la maîtrise tenait à une mémoire, pas à un mécanisme. C'est exactement ce
   que le n°28 dit d'une garde : elle vaut ce que vaut son automatisme.
 
+## 30. Un gabarit écrit par la main qui écrit le code ne teste pas sa compréhension — il la confirme (2026-10-01, cahier P2-3, trois infidélités sur un seul site)
+
+- **Le fait** : le gabarit Q08 devait reproduire le modal d'entrée de
+  the-internet. Il l'a trahi TROIS FOIS de suite, et chaque fois le banc
+  était vert pendant que le réel était rouge :
+  1. la prise de fermeture logée DANS le voile, alors que le voile réel est
+     vide et que la prise vit dans son FRÈRE ;
+  2. la fermeture par `remove()`, alors que le site ferme par
+     `display:none` et que le nœud reste dans le DOM ;
+  3. aucune trace des essais, donc aucun moyen de diagnostiquer les deux
+     premières.
+- **Ce que cela dit, et qui est plus dur que « trois erreurs »** : ce ne
+  sont pas des étourderies, ce sont des HYPOTHÈSES sur la structure d'un
+  modal, écrites deux fois — dans le détecteur et dans le gabarit. Le
+  gabarit ne pouvait donc pas attraper l'erreur du détecteur, puisqu'il la
+  PARTAGEAIT. Quand la même main écrit le code et le cas qui l'éprouve, à
+  partir de la même compréhension, le cas ne teste pas cette compréhension :
+  il la confirme. C'est la même famille de fantôme que le n°15 — ce qui
+  fournit la pièce ne peut pas révéler son absence.
+- **Règle** : **quand un gabarit reproduit un cas réel, son balisage se
+  COPIE de la source ; il ne se réinvente pas.** Le HTML de the-internet
+  était sous les yeux au moment d'écrire Q08, et la prise a quand même été
+  mise dans le voile. C'est le pendant, côté banc, de la dérivation des
+  cassettes « du réel, jamais de zéro ».
+- **Corollaire** : le réel reste le seul juge sans angle mort PARTAGÉ. Le
+  banc a raison sur ce qu'il contient, et il contient ce que nous y avons
+  mis — donc nos hypothèses. C'est pourquoi la validation §12 n'est pas une
+  formalité de clôture : c'est le seul contrôle que notre compréhension ne
+  peut pas biaiser.
+
+## 31. Un run qu'on ne pourra pas lire est un run qu'on ne doit pas lancer (2026-10-01, cahier P2-3, deux scans perdus)
+
+- **Le fait** : deux runs payants sur the-internet (0,10 USD) n'ont rien pu
+  apprendre, parce que le journal disait `indisponible` sans distinguer
+  « aucun candidat proposé » de « douze essayés, aucun n'a fermé ». Les deux
+  situations appellent des corrections OPPOSÉES — élargir la recherche, ou
+  corriger la vérification d'effet. La première correction a été faite au
+  jugé, et elle ne pouvait pas marcher : le vrai défaut était la seconde.
+- **Ce que cela dit** : un run payant n'achète pas un verdict, il achète une
+  INFORMATION. Un verdict qu'on ne peut pas expliquer n'est pas une
+  information, c'est une dépense. Et la tentation est forte de « relancer
+  pour voir », qui est exactement la façon de dépenser sans apprendre.
+- **Règle, avant tout run payant** : vérifier que son journal permettra de
+  comprendre son résultat, QUEL QU'IL SOIT. Pour chaque issue possible, se
+  demander « si elle sort, saurai-je pourquoi ? ». Si la réponse est non
+  pour une seule issue, la trace se complète AVANT de lancer, pas après.
+- **Et la traçabilité se doit à chaque TENTATIVE, pas au seul geste final.**
+  La clause de la constitution §3 avait été posée sur le geste retenu et
+  oubliée sur les essais intermédiaires — qui sont les plus nombreux et les
+  plus intrusifs. Le moteur a pu cliquer jusqu'à douze descendants d'un
+  modal sur un site vivant sans en garder trace : c'est précisément ce que
+  la clause interdit.
+

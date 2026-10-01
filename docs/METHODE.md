@@ -333,6 +333,16 @@ par deux mécanismes dont aucun n'est individuellement nécessaire est un
 contrat dont personne ne sait lequel le tient — et le jour où l'un disparaît
 dans une refonte, rien ne rougit.
 
+**Étendu le 2026-10-01 (APPRENTISSAGES n°30) — un gabarit tiré d'un cas réel
+se COPIE de la source.** Son balisage ne se réinvente pas : quand la même
+main écrit le détecteur et le cas qui l'éprouve, elle y met les mêmes
+hypothèses, et le cas confirme la compréhension au lieu de la tester. Q08 a
+trahi le modal de the-internet trois fois de suite — prise dans le voile au
+lieu du frère, nœud retiré au lieu d'être masqué, essais sans trace — et le
+banc est resté vert pendant que le réel restait rouge. Le HTML de la source
+se relit au moment d'écrire le gabarit, et le test du gabarit affirme les
+traits qui comptent (ici : le voile est VIDE, et il précède la boîte).
+
 **Étendu le 2026-09-29 (cahier P2-1, APPRENTISSAGES n°20) — la mutation
 AVANT la cassette, sous les conditions du réel.** Un scénario neuf ne
 s'enregistre pas tant qu'il n'a pas tué la mutation du contrat qu'il prétend
@@ -416,6 +426,21 @@ plus à clore un cahier qui corrige ce que le réel a cassé.
   du défaut que la réparation vient de démasquer, le cahier s'élargit d'un
   contrat étroit. Honnête et incomplet est acceptable ; faux et affirmatif
   ne l'est pas.
+
+## 12bis. Un run payant qu'on ne pourra pas LIRE ne se lance pas
+
+**Ajoutée le 2026-10-01 (APPRENTISSAGES n°31).** Un run payant n'achète pas
+un verdict, il achète une information — et un verdict qu'on ne peut pas
+expliquer n'est pas une information, c'est une dépense. Avant de lancer,
+on parcourt les issues possibles et l'on se demande, pour chacune : « si
+elle sort, saurai-je pourquoi ? ». Une seule réponse négative suffit à
+compléter la trace AVANT de lancer. Deux scans de the-internet ont été
+perdus faute de distinguer, au journal, « aucun candidat » de « douze
+essayés, aucun n'a fermé » — deux situations qui appellent des corrections
+opposées.
+
+Corollaire, qui prolonge la constitution §3 : la traçabilité due au geste
+RETENU est due à chaque TENTATIVE, et d'abord aux intrusives.
 
 ## 13. Un seuil ne se déplace jamais pour que la mesure passe
 
