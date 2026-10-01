@@ -31,6 +31,7 @@ const CONFIG: ConfigFermeture = {
   partCoin: 0.25,
   delaiApresGesteMs: 0,
   recouvrementsMax: 10,
+  descendantsEssayesMax: 12,
 };
 
 function element(selecteur: string): LocalisationElement {
@@ -84,6 +85,14 @@ function fauxContexte(scenario: Scenario, constats: Recouvrement[]): Faux & { ex
       if (commande.commande === 'prises-fermeture') {
         return Promise.resolve(prises);
       }
+      if (commande.commande === 'descendants-activables') {
+        // La voie C : la page offre un descendant, et c'est son ACTIVATION
+        // qui décidera — rien dans ce descendant ne le désigne.
+        return Promise.resolve(scenario.cede === 'descendant-essaye' ? [element('#ferme')] : []);
+      }
+      if (commande.commande === 'empreinte-page') {
+        return Promise.resolve({ url: 'http://exemple.invalid/', present: !leve, nbFormulaires: 1 });
+      }
       if (commande.commande === 'fermer-dialog') {
         const ouvert = prises.dialogOuvert;
         if (ouvert) {
@@ -108,6 +117,10 @@ function fauxContexte(scenario: Scenario, constats: Recouvrement[]): Faux & { ex
       },
     },
     click: (selecteur: string) => {
+      if (selecteur === '#ferme') {
+        noter('descendant-essaye');
+        return Promise.resolve();
+      }
       expect(selecteur).toBe('#croix');
       noter('controle-ferme');
       return Promise.resolve();
@@ -261,3 +274,105 @@ describe('les gardes de sécurité du geste', () => {
     expect(issue.nbEcartes).toBe(0);
   });
 });
+
+describe('la voie C — essayer, pas reconnaître : ses trois gardes', () => {
+  /** Une page qui offre plusieurs descendants, dont un seul ferme. */
+  function pageVoieC(options: {
+    candidats: string[];
+    quiFerme: string | null;
+    refuses?: string[];
+    effetDeBord?: boolean;
+  }): { page: Page; clics: string[]; journal: { type: string; details: Record<string, unknown> }[]; executer: () => ReturnType<typeof ecarterRecouvrements> } {
+    const clics: string[] = [];
+    const journal: { type: string; details: Record<string, unknown> }[] = [];
+    let present = true;
+    let url = 'http://exemple.invalid/';
+    const page = {
+      evaluate: (_fn: unknown, commande: { commande: string }) => {
+        if (commande.commande === 'descendants-activables') {
+          return Promise.resolve(options.candidats.map((selecteur) => element(selecteur)));
+        }
+        if (commande.commande === 'empreinte-page') {
+          return Promise.resolve({ url, present, nbFormulaires: 1 });
+        }
+        return Promise.resolve(commande.commande === 'fermer-dialog' ? false : { dialogOuvert: false, controle: null, pointVide: null });
+      },
+      keyboard: { press: () => Promise.resolve() },
+      mouse: { click: () => Promise.resolve() },
+      click: (selecteur: string) => {
+        clics.push(selecteur);
+        if (selecteur === options.quiFerme) {
+          present = false;
+          if (options.effetDeBord === true) {
+            url = 'http://exemple.invalid/ailleurs';
+          }
+        }
+        return Promise.resolve();
+      },
+    } as unknown as Page;
+    const constats = [recouvrement('#cible', '#bandeau')];
+    return {
+      page,
+      clics,
+      journal,
+      executer: () =>
+        ecarterRecouvrements({
+          page,
+          constats,
+          config: { ...CONFIG, gestes: ['descendant-essaye'] },
+          filtreElement: (selecteur) =>
+            Promise.resolve(
+              (options.refuses ?? []).includes(selecteur)
+                ? { autorisee: false, canal: 'texte', categorie: 'destruction', langue: 'fr', motif: 'suppr' }
+                : { autorisee: true },
+            ),
+          delaiMs: 100,
+          geometrie: { max: 10, budgetMs: 100 },
+          journaliser: (type, details) => journal.push({ type, details: (details ?? {}) as Record<string, unknown> }),
+          attendre: () => Promise.resolve(),
+          mesurer: () => Promise.resolve({ recouvrements: present ? constats : [], tronque: false, examines: 0 }),
+        }),
+    };
+  }
+
+  it('trouve le contrôle de fermeture SANS le reconnaître : il essaie, et garde celui qui ferme', async () => {
+    // Le cas the-internet : un `<p>Close</p>` sans rôle, sans ARIA, pleine
+    // largeur. Aucune des quatre premières prises ne le voit. La voie C le
+    // trouve en l'activant — et elle traiterait de même un « Später », un
+    // « 关闭 » ou une icône muette : aucune langue n'est lue.
+    const faux = pageVoieC({ candidats: ['#titre', '#texte', '#p-close'], quiFerme: '#p-close' });
+    const issue = await faux.executer();
+    expect(issue.nbEcartes).toBe(1);
+    expect(faux.clics).toEqual(['#titre', '#texte', '#p-close']);
+    expect(faux.journal.some((e) => e.type === EVENEMENT_RECOUVREMENT_ECARTE && e.details['geste'] === 'descendant-essaye')).toBe(true);
+  });
+
+  it('GARDE 1 — le filtre destructif passe sur CHAQUE candidat : un « supprimer » n’est jamais essayé', async () => {
+    // Le contrôle qui peut échouer : n'appliquer le filtre qu'au geste
+    // final. Ici le candidat refusé est AVANT celui qui ferme, donc un
+    // code qui ne filtrerait pas le cliquerait.
+    const faux = pageVoieC({ candidats: ['#supprimer', '#p-close'], quiFerme: '#p-close', refuses: ['#supprimer'] });
+    const issue = await faux.executer();
+    expect(faux.clics).toEqual(['#p-close']);
+    expect(issue.nbEcartes).toBe(1);
+  });
+
+  it('GARDE 2 — un essai qui ferme MAIS navigue n’est pas un écartement : on ne le revendique pas', async () => {
+    // « Écarté » = le recouvrement a disparu ET rien d'autre n'a changé.
+    // Un clic qui ferme en naviguant est une action aux conséquences.
+    const faux = pageVoieC({ candidats: ['#lien'], quiFerme: '#lien', effetDeBord: true });
+    const issue = await faux.executer();
+    expect(issue.nbEcartes).toBe(0);
+    const trace = faux.journal.find((e) => e.type === EVENEMENT_TENTATIVE_FERMETURE && e.details['geste'] === 'descendant-essaye');
+    expect(trace?.details).toMatchObject({ issue: 'sans-effet', motif: 'effet-de-bord' });
+  });
+
+  it('GARDE 3 — aucun candidat ne ferme : le recouvrement reste, et rien n’est revendiqué', async () => {
+    const faux = pageVoieC({ candidats: ['#a', '#b'], quiFerme: null });
+    const issue = await faux.executer();
+    expect(faux.clics).toEqual(['#a', '#b']);
+    expect(issue.nbEcartes).toBe(0);
+    expect(issue.restants).toHaveLength(1);
+  });
+});
+

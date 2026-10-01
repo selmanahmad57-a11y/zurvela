@@ -135,6 +135,7 @@ export interface ConfigScanner {
         partCoin: number;
         delaiApresGesteMs: number;
         recouvrementsMax: number;
+        descendantsEssayesMax: number;
       };
     };
     /**

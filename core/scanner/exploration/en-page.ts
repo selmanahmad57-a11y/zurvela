@@ -213,6 +213,14 @@ type Commande =
       partCoin: number;
     }
   | { commande: 'fermer-dialog'; selecteurIntercepteur: string }
+  | {
+      commande: 'descendants-activables';
+      attributsConserves: string[];
+      selecteursInteractifs: string;
+      selecteurIntercepteur: string;
+      max: number;
+    }
+  | { commande: 'empreinte-page'; selecteurIntercepteur: string }
   | { commande: 'mutations.lire'; nomTampon: string; selecteurZone: string | null }
   | { commande: 'mutations.derniere'; nomTampon: string }
   | { commande: 'mutations.vider'; nomTampon: string }
@@ -761,6 +769,56 @@ function enPage(arg: Commande): unknown {
       dialog.close();
       return true;
     }
+    case 'descendants-activables': {
+      // LA VOIE C : on ne RECONNAÎT pas le contrôle de fermeture, on
+      // l'ESSAIE (cahier P2-3, contrat 1, geste `descendant-essaye`). Le
+      // contrôle de fermeture est, par définition, ce dont l'activation
+      // ferme — on le trouve donc en agissant et en mesurant l'effet, pas
+      // en lisant un rôle ni un mot. Un `<p>Close</p>` sans rôle ni ARIA
+      // (the-internet) est ainsi couvert, comme le serait un « Später »,
+      // un « 关闭 » ou une icône muette : aucune langue n'est lue.
+      //
+      // Ici on ne fait que LISTER, dans l'ordre du document. Le filtre
+      // d'actions destructives et la décision d'activer restent en Node.
+      const intercepteur = document.querySelector(arg.selecteurIntercepteur);
+      if (intercepteur === null) {
+        return [] as LocalisationElement[];
+      }
+      // Les candidats sont les descendants qui portent un GESTIONNAIRE
+      // plausible : interactifs du standard, ou simplement tout élément
+      // feuille visible — un `<p>` cliquable n'est reconnaissable par
+      // aucune sémantique, c'est précisément le cas qui nous occupe.
+      const interactifs = Array.from(intercepteur.querySelectorAll(arg.selecteursInteractifs));
+      const feuilles = Array.from(intercepteur.querySelectorAll('*')).filter(
+        (el) => el.children.length === 0 && (el.textContent ?? '').trim() !== '',
+      );
+      const candidats: Element[] = [];
+      for (const el of [...interactifs, ...feuilles]) {
+        if (candidats.includes(el)) {
+          continue;
+        }
+        const r = el.getBoundingClientRect();
+        if (r.width === 0 || r.height === 0) {
+          continue;
+        }
+        candidats.push(el);
+        if (candidats.length >= arg.max) {
+          break;
+        }
+      }
+      return candidats.map((el) => aide.localiser(el, arg.attributsConserves));
+    }
+    case 'empreinte-page': {
+      // CE QUI DOIT RESTER INCHANGÉ quand un essai réussit. « Écarté » veut
+      // dire « le recouvrement a disparu ET rien d'autre n'a changé » : un
+      // clic qui ferme le modal en naviguant n'est pas une fermeture, c'est
+      // une action aux conséquences. Même rigueur que l'effet visible.
+      return {
+        url: location.href,
+        present: document.querySelector(arg.selecteurIntercepteur) !== null,
+        nbFormulaires: document.forms.length,
+      };
+    }
     case 'mutations.lire': {
       const t = aide.tampon(arg.nomTampon);
       if (t === undefined) {
@@ -933,6 +991,40 @@ export async function prisesFermeture(page: Page, options: OptionsPrises): Promi
     },
     options.delaiMs,
   )) as PrisesFermeture;
+}
+
+/**
+ * État de la page qui doit rester INCHANGÉ quand un essai réussit : l'URL,
+ * la présence du recouvrement, le nombre de formulaires. Un clic qui ferme
+ * le modal en naviguant n'est pas un écartement (cahier P2-3, voie C).
+ */
+export interface EmpreintePage {
+  url: string;
+  present: boolean;
+  nbFormulaires: number;
+}
+
+/** L'empreinte de la page, autour d'un recouvrement donné. */
+export async function empreintePage(page: Page, selecteurIntercepteur: string, delaiMs?: number): Promise<EmpreintePage> {
+  return (await evaluer(page, { commande: 'empreinte-page', selecteurIntercepteur }, delaiMs)) as EmpreintePage;
+}
+
+/**
+ * Les descendants d'un recouvrement qu'on peut ESSAYER d'activer (voie C).
+ * Aucune sémantique n'est exigée d'eux : le contrôle de fermeture est ce
+ * dont l'activation ferme, et on le trouve en essayant.
+ */
+export async function descendantsActivables(
+  page: Page,
+  selecteurIntercepteur: string,
+  max: number,
+  delaiMs?: number,
+): Promise<LocalisationElement[]> {
+  return (await evaluer(
+    page,
+    { commande: 'descendants-activables', attributsConserves: ATTRIBUTS_CONSERVES, selecteursInteractifs: SELECTEURS_INTERACTIFS, selecteurIntercepteur, max },
+    delaiMs,
+  )) as LocalisationElement[];
 }
 
 /** Fermeture NATIVE d'un `<dialog open>` : l'API du standard. Rend true si elle a eu lieu. */

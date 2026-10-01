@@ -169,3 +169,24 @@ describe('les cas de validation réelle du cahier P2-1', () => {
     expect(paquet.scripts['banc:reel']).toContain('banc/reel.ts');
   });
 });
+
+describe('les raisons d’un verdict sont INTERPOLÉES, pas affichées brutes', () => {
+  it('toute raison rendue contient ses valeurs, jamais un emplacement resté en place', () => {
+    // LE DÉFAUT QUE LE RÉEL A MONTRÉ : une raison écrite avec `{nombre}` au
+    // lieu de `{{nombre}}` traverse l'interpolation sans erreur et sort
+    // telle quelle. Le verdict était juste, son libellé illisible — et un
+    // rapport client au libellé cassé fait douter de tout le reste.
+    const verdict = juger(
+      cas({ attendus: { rejouabiliteGroupesMinPourcent: 0, dureeMaxMs: 10, pagesMin: 0, candidatesMin: 0, ecartementsMin: 3 } }),
+      mesures({ dureeMs: 999_999, ecartements: 0, decouvertesAffirmees: 1 }),
+      rendu,
+    );
+    expect(verdict.statut).toBe('non-tenu');
+    const raisons = verdict.statut === 'non-tenu' ? verdict.raisons : [];
+    expect(raisons.length).toBeGreaterThan(1);
+    for (const raison of raisons) {
+      expect(raison, raison).not.toMatch(/\{\{?[a-zA-Z]+\}?\}/);
+    }
+  });
+});
+

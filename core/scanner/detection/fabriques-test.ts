@@ -49,6 +49,7 @@ export const CONFIG_TEST: ConfigScanner['detecteurs'] = {
       partCoin: 0.25,
       delaiApresGesteMs: 300,
       recouvrementsMax: 10,
+      descendantsEssayesMax: 12,
     },
   },
   tiers: { categorie: 'fonctionnel', gravite: 'mineur', confiance: 0.7, fenetreErreurJsMs: 2000 },

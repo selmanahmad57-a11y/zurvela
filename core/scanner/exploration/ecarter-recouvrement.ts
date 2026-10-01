@@ -23,6 +23,33 @@
  *     sur la page d'autrui sans laisser trace de ce qu'il a fait n'est pas
  *     relisible.
  *
+ * LA VOIE C — ESSAYER, PAS RECONNAÎTRE. Les quatre premiers gestes
+ * cherchent des prises CONNUES D'AVANCE : une touche, un `<dialog>`, une
+ * croix ARIA dans un coin, un point vide. Le réel a montré leur frontière :
+ * le modal de the-internet se ferme par un `<p>Close</p>` sans rôle, sans
+ * ARIA, pleine largeur — reconnaissable par son seul TEXTE, que la règle
+ * maîtresse §2 interdit de lire en détection. Le cinquième geste renverse
+ * la question : le contrôle de fermeture EST, par définition, ce dont
+ * l'activation ferme. On ne le nomme pas, on l'essaie et on mesure l'effet
+ * — c'est « écarté est une propriété de la page, pas du geste »
+ * (APPRENTISSAGES n°27) poussé à sa conclusion. Un « Später », un « 关闭 »
+ * ou une icône muette sont traités à l'identique : aucune langue n'est lue,
+ * aucun modèle n'est appelé.
+ *
+ * TROIS GARDES LUI SONT PROPRES, sans quoi essayer serait dangereux :
+ *  - le filtre d'actions destructives passe sur CHAQUE candidat, pas
+ *    seulement sur le geste final : un « supprimer mon compte » dans un
+ *    modal ne se clique pas « pour voir s'il ferme » ;
+ *  - les candidats sont les descendants du RECOUVREMENT, jamais de la
+ *    page, et leur nombre est borné par la config ;
+ *  - l'effet se vérifie dans les DEUX sens : le recouvrement a disparu ET
+ *    rien d'autre n'a changé (même URL, même nombre de formulaires). Un
+ *    clic qui ferme en naviguant n'est pas un écartement, c'est une action
+ *    aux conséquences : il est compté `sans-effet`, jamais revendiqué.
+ * Ce qu'aucun essai ne ferme reste « non écartable par un geste neutre » —
+ * le résidu de C est plus petit que celui de A, mais il existe, et il tombe
+ * dans le constat déjà validé.
+ *
  * LE MOTEUR NE CONSENT JAMAIS POUR AUTRUI, et n'a pas besoin de reconnaître
  * un bandeau de consentement pour cela : on tente les gestes neutres, et
  * s'ils échouent tous l'élément est « non écartable par un geste neutre ».
@@ -33,11 +60,11 @@
  */
 import type { Page } from 'playwright';
 import type { LocalisationElement } from '../../types.js';
-import { fermerDialog, prisesFermeture, type Recouvrement, type ResultatGeometrie } from './en-page.js';
+import { descendantsActivables, empreintePage, fermerDialog, prisesFermeture, type Recouvrement, type ResultatGeometrie } from './en-page.js';
 import type { FiltreElementLie } from './filtre-actions.js';
 
 /** L'ensemble FERMÉ des gestes neutres. Invariant de sécurité : il vit en code. */
-export const GESTES_FERMETURE = ['echap', 'dialog-natif', 'controle-ferme', 'clic-hors-zone'] as const;
+export const GESTES_FERMETURE = ['echap', 'dialog-natif', 'controle-ferme', 'clic-hors-zone', 'descendant-essaye'] as const;
 export type GesteFermeture = (typeof GESTES_FERMETURE)[number];
 
 /** Journal : une tentative d'écartement, quelle qu'en soit l'issue. */
@@ -49,6 +76,13 @@ export const EVENEMENT_FERMETURE_BORNEE = 'recouvrement.borne-atteinte';
 
 /** Pourquoi un geste n'a pas été exécuté, quand ce n'est pas un motif de config. */
 export const RAISON_GESTE_INDISPONIBLE = 'geste-indisponible';
+
+/**
+ * Un essai a bien fait disparaître le recouvrement, mais il a CHANGÉ AUTRE
+ * CHOSE — navigué, soumis. Ce n'est pas une fermeture, c'est une action aux
+ * conséquences : on la journalise et on ne la revendique jamais (voie C).
+ */
+export const RAISON_EFFET_DE_BORD = 'effet-de-bord';
 
 /**
  * `execute` est un état INTERMÉDIAIRE, jamais journalisé : il dit que le
@@ -74,6 +108,8 @@ export interface ConfigFermeture {
   partCoin: number;
   delaiApresGesteMs: number;
   recouvrementsMax: number;
+  /** Descendants d'un recouvrement qu'on peut ESSAYER d'activer (voie C) : borne la dépense. */
+  descendantsEssayesMax: number;
 }
 
 export interface OptionsEcartement {
@@ -243,6 +279,43 @@ async function executerGeste(options: OptionsGeste): Promise<TentativeFermeture>
         }
         await page.mouse.click(prises.pointVide.x, prises.pointVide.y);
         return { ...base, point: prises.pointVide, issue: 'execute' };
+      }
+      case 'descendant-essaye': {
+        // LA VOIE C. On essaie les descendants du recouvrement, un par un,
+        // et l'on garde celui dont l'activation le fait disparaître SANS
+        // rien changer d'autre. Ce geste tranche lui-même son issue — il
+        // mesure après chaque essai, parce que c'est l'essai qui désigne le
+        // contrôle, et non l'inverse.
+        const candidats = await descendantsActivables(page, intercepteur.selecteur, config.descendantsEssayesMax, delaiMs);
+        const avant = await empreintePage(page, intercepteur.selecteur, delaiMs);
+        for (const candidat of candidats) {
+          // LE FILTRE SUR CHAQUE CANDIDAT, pas seulement sur le geste
+          // final : un « supprimer mon compte » dans un modal ne se clique
+          // pas pour voir s'il ferme (D1, constitution §3).
+          const verdict = await filtreElement(candidat.selecteur);
+          if (!verdict.autorisee) {
+            continue;
+          }
+          try {
+            await page.click(candidat.selecteur, { timeout: delaiMs, noWaitAfter: true });
+          } catch {
+            continue;
+          }
+          const apres = await empreintePage(page, intercepteur.selecteur, delaiMs);
+          if (apres.present) {
+            // Le recouvrement est toujours là : ce candidat n'était pas la
+            // prise. On continue, sans rien revendiquer.
+            continue;
+          }
+          if (apres.url !== avant.url || apres.nbFormulaires !== avant.nbFormulaires) {
+            // IL A FERMÉ, MAIS IL A FAIT AUTRE CHOSE. Ce n'est pas un
+            // écartement, c'est une action aux conséquences : on ne la
+            // revendique pas, et on le dit.
+            return { ...base, cible: candidat, issue: 'sans-effet', motif: RAISON_EFFET_DE_BORD };
+          }
+          return { ...base, cible: candidat, issue: 'execute' };
+        }
+        return base;
       }
       default: {
         // Un geste que la config nomme mais que le code ne connaît pas

@@ -203,12 +203,14 @@
           "echap",
           "dialog-natif",
           "controle-ferme",
-          "clic-hors-zone"
+          "clic-hors-zone",
+          "descendant-essaye"
         ],
         "partMaxSurfaceControle": 0.15,
         "partCoin": 0.25,
         "delaiApresGesteMs": 300,
-        "recouvrementsMax": 10
+        "recouvrementsMax": 10,
+        "descendantsEssayesMax": 12
       }
     },
     "tiers": {

@@ -560,7 +560,8 @@
                 "partMaxSurfaceControle",
                 "partCoin",
                 "delaiApresGesteMs",
-                "recouvrementsMax"
+                "recouvrementsMax",
+                "descendantsEssayesMax"
               ],
               "description": "Les gestes NEUTRES par lesquels le moteur tente d'écarter un recouvrement, et rien d'autre (cahier P2-3, contrat 1, D1/D2). L'ENSEMBLE des gestes possibles vit en code — c'est un invariant de sécurité, pas un réglage ; la config en choisit l'ordre et l'activation. Un geste absent de cette liste n'est jamais tenté.",
               "properties": {
@@ -574,10 +575,11 @@
                       "echap",
                       "dialog-natif",
                       "controle-ferme",
-                      "clic-hors-zone"
+                      "clic-hors-zone",
+                      "descendant-essaye"
                     ]
                   },
-                  "description": "Ordre d'essai. « echap » : la touche Échap. « dialog-natif » : la fermeture standard d'un <dialog open>. « controle-ferme » : un descendant activable, petit, dans un coin, porteur d'un aria-label — sa FORME, jamais son texte —, soumis au filtre d'actions destructives avant tout clic. « clic-hors-zone » : un clic sur un point vérifié sans élément interactif, indisponible si aucun point sûr n'existe."
+                  "description": "Ordre d'essai. « echap » : la touche Échap. « dialog-natif » : la fermeture standard d'un <dialog open>. « controle-ferme » : un descendant activable, petit, dans un coin, porteur d'un aria-label — sa FORME, jamais son texte —, soumis au filtre d'actions destructives avant tout clic. « clic-hors-zone » : un clic sur un point vérifié sans élément interactif, indisponible si aucun point sûr n'existe. « descendant-essaye » : la VOIE C — on n'identifie pas le contrôle de fermeture, on essaie les descendants du recouvrement et l'on garde celui dont l'activation le fait disparaître sans rien changer d'autre. Aucune langue lue, aucun modèle appelé ; le filtre d'actions destructives passe sur chaque candidat."
                 },
                 "partMaxSurfaceControle": {
                   "type": "number",
@@ -600,6 +602,11 @@
                   "type": "integer",
                   "minimum": 0,
                   "description": "Nombre maximal de recouvrements DISTINCTS qu'une page tente d'écarter. Borne la dépense d'une page pathologique ; au-delà, les restants sont jugés sans tentative et le journal le dit."
+                },
+                "descendantsEssayesMax": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "description": "Nombre maximal de descendants d'un recouvrement que la voie C essaie d'activer. Borne la dépense : un modal a une poignée de descendants, pas deux cents."
                 }
               }
             }

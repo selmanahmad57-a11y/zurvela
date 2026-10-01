@@ -105,11 +105,37 @@ describe('recouvrement — les deux faces du contrat 1, et un geste par gabarit'
     expect(classes.length).toBeGreaterThan(1);
   });
 
+  it('Q08 n’offre AUCUNE sémantique : ni bouton, ni lien, ni rôle, ni aria — seulement un `<p>` pleine largeur', async () => {
+    // LE CAS the-internet, reproduit. Si ce gabarit gagnait un jour un
+    // `<button>` ou un `aria-label`, la croix ARIA le fermerait et la voie
+    // C cesserait d'être mesurée sans que rien ne rougisse.
+    const accueil = await (await fetch((await servir(['Q08'])).url + PAGE_ACCUEIL)).text();
+    const calque = accueil.slice(accueil.indexOf('id="calque-nu"'), accueil.indexOf('</script>'));
+    expect(calque).toContain('<p id="prise-nue">');
+    expect(calque).not.toContain('<button');
+    expect(calque).not.toContain('<a ');
+    expect(calque).not.toContain('aria-');
+    expect(calque).not.toContain('role=');
+    expect(calque).not.toContain('<dialog');
+    // Le libellé ne veut rien dire dans aucune langue : un code qui se
+    // mettrait à LIRE le texte ne trouverait rien ici.
+    expect(accueil).toContain('qwzx');
+    // La prise occupe toute la largeur : hors de tout « coin ».
+    expect(calque).toContain('width:100%');
+  });
+
   it('chaque geste de la liste a SON gabarit, et chaque gabarit a SON geste', async () => {
     // L'invariant de couverture : si un geste était ajouté au code sans son
     // gabarit, la face « un geste par gabarit » aurait un trou silencieux.
     const nomsGestes = bugs.filter((bug) => bug.ecartementAttendu === true).map((bug) => bug.nom);
-    expect([...nomsGestes].sort()).toEqual([...GESTES_FERMETURE].map((geste) => (geste === 'echap' ? 'modal-echap' : geste === 'controle-ferme' ? 'croix-aria' : geste)).sort());
+    const gabaritDuGeste: Record<string, string> = {
+      echap: 'modal-echap',
+      'dialog-natif': 'dialog-natif',
+      'controle-ferme': 'croix-aria',
+      'clic-hors-zone': 'clic-hors-zone',
+      'descendant-essaye': 'ferme-sans-semantique',
+    };
+    expect([...nomsGestes].sort()).toEqual([...GESTES_FERMETURE].map((geste) => gabaritDuGeste[geste]).sort());
   });
 
   it('les gestes du gabarit sont ceux que la CONFIG active : un geste désactivé n’aurait plus de mesure', async () => {
