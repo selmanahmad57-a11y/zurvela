@@ -862,6 +862,12 @@ regardé.
   une seule fois, en une fonction que les deux chemins appellent : une
   doctrine recopiée à deux endroits est une doctrine qui dérive. Et le
   contrôle se pose sur le CROISEMENT, pas sur chaque contrat pris seul.
+- **PROMU EN GARDE DE PROCESSUS le 2026-10-01 (METHODE §3bis), après une
+  TROISIÈME occurrence** : le geste de fermeture de P2-3 n'était câblé qu'à
+  l'exploration, donc un recouvrement apparu au rejeu aurait été publié
+  « non écartable » sans qu'on ait essayé de l'écarter. Tant qu'on attrape
+  ces défauts un par un sur le réel, chaque cahier paie le même angle mort.
+  La question des deux portes se pose désormais À L'OUVERTURE, par écrit.
 - **Corollaire sur le réel** : c'est la validation §12 qui l'a trouvé, pas
   le banc. Le banc a raison sur ce qu'il contient ; il ne dit rien de ce
   qu'il ne contient pas. L'apprentissage n°20 disait qu'un contrat n'est

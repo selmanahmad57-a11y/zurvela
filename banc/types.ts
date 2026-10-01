@@ -367,6 +367,16 @@ export interface BugInjectable {
    */
   seulementEnCombinaison?: boolean;
   /**
+   * true si ce bug pose un recouvrement que le moteur doit ÉCARTER par un
+   * geste neutre (cahier P2-3, contrat 1, face 1). Il ne produit alors
+   * AUCUN attendu d'anomalie — il n'y a rien à percevoir, le recouvrement
+   * n'atteint jamais la détection — mais un attendu POSITIF d'une autre
+   * nature : le scan doit compter au moins un écartement. Sans cela, un
+   * gabarit qui disparaîtrait pour une mauvaise raison (calque jamais posé,
+   * donc rien à écarter) passerait pour un succès.
+   */
+  ecartementAttendu?: boolean;
+  /**
    * true si toutes les anomalies que ce bug produit relèvent d'UNE cause —
    * un calque qui intercepte trois boutons est un défaut, pas trois. Le banc
    * compte les constats publiés au-delà du premier (« constats en double ») :

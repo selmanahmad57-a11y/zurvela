@@ -555,3 +555,27 @@ dette est levée (le commit qui la lève renvoie à ce fichier).
   (`sans objet`), ou un seuil sur un autre chiffre (par exemple « zéro
   section publiée à tort ») —, inscrite dans les fiches AVANT le run qui la
   mesurera.
+
+## 24. Le banc ne sait pas exprimer « deux causes distinctes sur une même page » (2026-10-01, cahier P2-3, contrat 4)
+
+- **Le fait** : le contrat 4 fond N intercepteurs de même construction en une
+  cause. Le gabarit `recouvrement` mesure ce sens (Q07, `causeUnique`, la
+  ligne « une cause, un constat » à zéro). Le sens INVERSE — deux calques
+  réellement distincts qui ne doivent PAS fondre — n'est pas exprimable :
+  l'appariement du correcteur est STRUCTUREL, catégorie × page, et deux
+  causes distinctes sur une même page lui sont indiscernables. Lui donner
+  deux attendus serait lui demander de noter au hasard, ce que le manifeste
+  refuse à juste titre.
+- **Pourquoi ce n'est pas bloquant** : le sens inverse est éprouvé par les
+  tests de `d-recouvrement`, dans les deux sens, et par une mutation
+  CHIRURGICALE — la signature réduite au chemin seul fait fondre deux
+  calques que leurs classes séparent, et tue exactement ce test. C'est le
+  sens qui perd des signaux, donc le plus grave, et il est couvert.
+- **Pourquoi c'est tout de même une dette** : la leçon de la dette n°20 est
+  qu'un contrat vérifié hors du banc finit par dériver. Et celle du n°25 est
+  que le banc ne voit pas ce qu'il ne contient pas.
+- **Condition de levée** : un appariement qui sait distinguer deux causes sur
+  une même page — par exemple un attendu qui porte un repère STRUCTUREL de
+  l'intercepteur (son `data-role`), et non seulement sa catégorie et sa
+  page. À faire avant tout cahier qui élargit le regroupement par cause.
+

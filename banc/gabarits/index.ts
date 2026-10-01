@@ -6,6 +6,7 @@ import { formulairePuisNavigation } from './formulaire-puis-navigation/index.js'
 import { catalogueBoutons } from './catalogue-boutons/index.js';
 import { siteLent } from './site-lent/index.js';
 import { calqueAuRejeu } from './calque-au-rejeu/index.js';
+import { recouvrement } from './recouvrement/index.js';
 import { tiersAuRobot } from './tiers-au-robot/index.js';
 
 export const gabarits: Record<string, Gabarit> = {
@@ -16,6 +17,7 @@ export const gabarits: Record<string, Gabarit> = {
   [catalogueBoutons.nom]: catalogueBoutons,
   [siteLent.nom]: siteLent,
   [calqueAuRejeu.nom]: calqueAuRejeu,
+  [recouvrement.nom]: recouvrement,
   [tiersAuRobot.nom]: tiersAuRobot,
 };
 

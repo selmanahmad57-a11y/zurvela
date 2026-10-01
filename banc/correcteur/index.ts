@@ -52,6 +52,7 @@ import {
 import {
   RAISON_PROSE_NON_MESUREE,
   RAISON_RAPPORTS_NON_MESURES,
+  RAISON_AUCUN_ECARTEMENT,
   RAISON_RAPPORT_SCENARIO_EN_ERREUR,
   noterRapports,
   prosesNonMesureesSubies,
@@ -232,6 +233,17 @@ export async function noterScenario(scenario: Scenario, params: ParametresNotati
     if (statut === 'ok' && profilsNonMesuresSubis(profils, params.iaDeclareeAbsente === true) > 0) {
       statut = 'erreur';
       raison = RAISON_PROFILS_NON_MESURES;
+    }
+    // UN SILENCE VÉRIFIÉ, PAS UNE ABSENCE (cahier P2-3, contrat 1, face 1).
+    // Un gabarit qui pose un recouvrement écartable ne publie rien — et c'est
+    // l'attendu. Mais « rien publié » se produit aussi quand le recouvrement
+    // n'a jamais été posé : le scan doit donc avoir COMPTÉ au moins un
+    // écartement. C'est l'attendu POSITIF qui distingue le silence de
+    // l'absence, comme X01 sous P2-2.
+    const ecartementsAttendus = gabarit.bugs.some((bug) => scenario.bugsActifs.includes(bug.id) && bug.ecartementAttendu === true);
+    if (statut === 'ok' && ecartementsAttendus && (rapport.parcours?.nbRecouvrementsEcartes ?? 0) === 0) {
+      statut = 'erreur';
+      raison = RAISON_AUCUN_ECARTEMENT;
     }
     const appliquee = politiqueAppliquee(rapport);
     const contextePolitique = { demandee: politique, ...(appliquee === undefined ? {} : { appliquee }) };

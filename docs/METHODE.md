@@ -149,6 +149,34 @@ que de tourner en un seul workflow de plusieurs heures.
 - **Juger une correction dans les deux sens** : le défaut qu'elle corrige et
   celui qu'elle réintroduit (voir `docs/APPRENTISSAGES.md` n°2).
 
+## 3bis. LA QUESTION DES DEUX PORTES — à cocher à l'ouverture de tout cahier
+
+**Ajoutée le 2026-10-01, après la TROISIÈME occurrence du même angle mort**
+(APPRENTISSAGES n°25) : le filtre tierce de P2-2 posé sur une seule porte,
+le geste de fermeture de P2-3 posé sur une seule porte, et le croisement
+W03/W04 qu'aucun gabarit ne portait. Trois fois suffisent à faire d'une
+leçon rétrospective une garde de processus.
+
+Un groupe atteint le rapport par DEUX chemins : les candidates du SCAN, et
+les découvertes du REJEU. C'est une loi du système, pas une particularité
+d'un cahier. Dès qu'un cahier ajoute une DOCTRINE — un filtre, un geste, un
+jugement, un regroupement —, son ouverture répond par écrit à :
+
+> **Cette doctrine s'applique-t-elle aux candidates du scan ET aux
+> découvertes du rejeu ? Où est-elle écrite, et combien de fois ?**
+
+Trois réponses acceptables, et une seule inacceptable :
+- elle s'applique aux deux, et elle est écrite UNE fois, dans une fonction
+  que les deux chemins appellent (une doctrine recopiée dérive) ;
+- elle ne concerne qu'un chemin, et le cahier dit POURQUOI ;
+- le cahier la déclare en dette, avec sa condition de levée.
+- *Inacceptable* : la question n'est pas posée. C'est ainsi que les trois
+  occurrences sont nées, chacune verte au banc jusqu'au réel.
+
+Et le gabarit qui mesure la doctrine fait se RENCONTRER les deux
+conditions : une suite de tests par cahier vérifie des contrats, jamais
+leur composition.
+
 ## 4. Les trois natures d'attendu du banc
 
 La taxonomie est **close** et vit en tête de `banc/types.ts`, là où le

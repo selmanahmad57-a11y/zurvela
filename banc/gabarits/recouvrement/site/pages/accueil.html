@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="{{langue}}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{site.nom}}</title>
+  <meta name="description" content="{{site.slogan}}">
+  <link rel="stylesheet" href="/statique/style.css">
+</head>
+<body>
+  <header class="entete">
+    <a class="marque" href="/"><span>{{site.nom}}</span></a>
+    <nav aria-label="{{nav.libelle}}">
+      <ul>
+        <li><a href="/" aria-current="page">{{nav.accueil}}</a></li>
+        <li><a href="/panier">{{nav.panier}}</a></li>
+      </ul>
+    </nav>
+  </header>
+  <main class="contenu">
+    <h1>{{accueil.titre}}</h1>
+    <p class="intro">{{accueil.intro}}</p>
+    <!-- Le bloc est enveloppé d'un conteneur POSITIONNÉ : les calques des bugs
+         s'insèrent après la section, donc dans ce conteneur, et leur `inset:0`
+         se résout contre LUI. Sans l'enveloppe, un calque absolu couvrirait la
+         fenêtre entière — il n'y aurait plus un seul point vide sur la page,
+         et le geste du clic hors zone deviendrait indisponible pour une raison
+         qui n'a rien à voir avec ce qu'on veut mesurer. -->
+    <div data-role="zone-produits" style="position:relative">
+      <section data-role="produits" class="produits" aria-label="{{accueil.produits}}">
+        <article class="carte"><a class="bouton" data-role="produit-1" href="/panier">{{produit.nom1}}</a></article>
+        <article class="carte"><a class="bouton" data-role="produit-2" href="/panier">{{produit.nom2}}</a></article>
+        <article class="carte"><a class="bouton" data-role="produit-3" href="/panier">{{produit.nom3}}</a></article>
+      </section>
+    </div>
+  </main>
+  <footer data-role="pied" class="pied" style="position:relative">
+    <p>{{pied.mentions}} — <a data-role="lien-pied" href="/panier">{{pied.lien}}</a></p>
+  </footer>
+</body>
+</html>

@@ -220,8 +220,13 @@ export function deriverManifeste(scenario: Scenario, gabarit: Gabarit): Manifest
   // interdit de regarder, et confondre les deux ferait chuter le taux de
   // détection pour une raison qui n'est pas une défaillance.
   const soumissionInterdite = scenario.contraintes?.soumission === 'aucune';
+  // Un bug dont le recouvrement doit être ÉCARTÉ ne produit aucun attendu
+  // d'anomalie : le moteur le fait disparaître avant toute détection, et lui
+  // garder un attendu produirait un « raté » qui ne mesure rien. Son attendu
+  // POSITIF vit ailleurs — le compte des écartements (cahier P2-3, contrat 1).
   const attendusBug = bugsActifs
     .filter((bug) => bug.eprouve !== 'inertie')
+    .filter((bug) => bug.ecartementAttendu !== true)
     .filter((bug) => !(soumissionInterdite && bug.exigeSoumission === true))
     .map((bug): AttenduBug => ({
       nature: 'bug',

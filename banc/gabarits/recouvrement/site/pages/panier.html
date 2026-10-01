@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="{{langue}}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{panier.titre}}</title>
+  <meta name="description" content="{{site.slogan}}">
+  <link rel="stylesheet" href="/statique/style.css">
+</head>
+<body>
+  <header class="entete">
+    <a class="marque" href="/"><span>{{site.nom}}</span></a>
+    <nav aria-label="{{nav.libelle}}">
+      <ul>
+        <li><a href="/">{{nav.accueil}}</a></li>
+        <li><a href="/panier" aria-current="page">{{nav.panier}}</a></li>
+      </ul>
+    </nav>
+  </header>
+  <main class="contenu">
+    <h1>{{panier.titre}}</h1>
+    <form id="commande" method="post" action="/api/contact" style="position:relative">
+      <label for="courriel">{{panier.courriel}}</label>
+      <input id="courriel" name="courriel" type="email" required>
+      <button data-role="commander" type="submit">{{panier.commander}}</button>
+    </form>
+  </main>
+  <footer data-role="pied" class="pied">
+    <p>{{pied.mentions}}</p>
+  </footer>
+</body>
+</html>

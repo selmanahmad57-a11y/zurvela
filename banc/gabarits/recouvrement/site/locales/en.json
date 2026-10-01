@@ -1,0 +1,40 @@
+{
+  "langue": "en",
+  "site": {
+    "nom": "Lumen Shop",
+    "slogan": "Handmade lighting, shipped across Europe"
+  },
+  "accueil": {
+    "titre": "Lumen Shop",
+    "intro": "Three lights made in our workshop.",
+    "produits": "Our products"
+  },
+  "offre": {
+    "nom1": "Pendant lights",
+    "nom2": "Table lamps",
+    "nom3": "Wall lights",
+    "texte1": "Brass and blown-glass pendant lights, for dining rooms and kitchens.",
+    "texte2": "Bedside and desk lamps, in solid oak and linen.",
+    "texte3": "Adjustable wall lights, for hallways and bedrooms.",
+    "retour": "Back to the home page"
+  },
+  "pied": {
+    "mentions": "Lumen Shop — lighting maker",
+    "lien": "Legal notice"
+  },
+  "nav": {
+    "libelle": "Main navigation",
+    "accueil": "Home",
+    "panier": "Basket"
+  },
+  "produit": {
+    "nom1": "Pendant light",
+    "nom2": "Table lamp",
+    "nom3": "Wall light"
+  },
+  "panier": {
+    "titre": "Your basket",
+    "courriel": "Your email address",
+    "commander": "Place order"
+  }
+}

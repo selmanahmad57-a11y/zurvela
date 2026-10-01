@@ -74,6 +74,14 @@ export const RAISON_RAPPORTS_NON_MESURES = 'rapports-non-mesures';
  */
 export const RAISON_PROSE_NON_MESUREE = 'prose-non-mesuree';
 
+/**
+ * Raison technique : un gabarit déclarait un recouvrement à écarter, et le
+ * scan n'en a compté AUCUN. « Rien publié » se produit aussi quand rien n'a
+ * été posé : sans ce contrôle, le silence et l'absence se confondraient
+ * (cahier P2-3, contrat 1).
+ */
+export const RAISON_AUCUN_ECARTEMENT = 'aucun-ecartement';
+
 /** Résultats « non mesurés » pour tous les attendus de rapport d'un manifeste. */
 export function rapportsNonMesures(manifeste: Manifeste, raison: string): ResultatRapport[] {
   return attendusRapport(manifeste).map((attendu) => ({
