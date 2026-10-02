@@ -1258,3 +1258,43 @@ regardé.
   aucune variation. Corollaire de méthode : une règle qu'aucune variation
   n'exerce n'est pas éprouvée, elle est seulement non contredite.
 
+## 38. Un levier d'optimisation est une HYPOTHÈSE MESURABLE — et l'intuition diverge de la réalité là, précisément, où ça compte (2026-10-02, les deux postes morts de P2-4)
+
+- **Le fait, deux fois** : P2-4 s'est ouvert sur deux leviers qui semblaient
+  évidents. Le CACHE de décisions, justifié par un facteur 14 mesuré entre
+  le coût des décisions et celui du profilage. Le REJEU SÉLECTIONNÉ,
+  justifié par l'évidence qu'un groupe à 0,95 n'a pas besoin d'autant de
+  re-tests qu'un groupe à 0,75. Les deux sont morts d'une mesure faite
+  AVANT la première ligne de code, et aucune des deux mesures n'était celle
+  qui semblait nécessaire.
+- **Deux fantômes de natures différentes** :
+  - le cache était un **fantôme de configuration** — la bonne mesure du
+    mauvais système. Le facteur 14 était vrai, mais sous une politique que
+    la production n'emprunte pas : la clé de décision ne se forme jamais.
+    Le chemin optimisé n'existait pas.
+  - la sélection était un **fantôme de corrélation supposée** — le chemin
+    existe, c'est le CRITÈRE qui n'existe pas. La confiance initiale ne
+    prédit le verdict du rejeu qu'à 86 % : 8 groupes sur 57 au-dessus du
+    seuil ont vu leur sort changé par le rejeu.
+- **POURQUOI la corrélation manque, et c'est le cœur** : la confiance
+  initiale mesure la FORCE DU SIGNAL au premier regard ; le rejeu mesure la
+  REPRODUCTIBILITÉ. Ce sont deux grandeurs orthogonales, et les
+  intermittents — un `POST` qui ne casse qu'une fois sur deux, une lenteur
+  qui redescend sous son seuil — vivent exactement dans l'angle où elles
+  divergent. Or les intermittents sont le cœur de ce que le protocole
+  anti-faux-positifs existe pour attraper. **Sélectionner sur la confiance,
+  c'est renoncer à rejouer précisément les cas qui en ont le plus besoin.**
+- **La règle** : un levier d'optimisation est une hypothèse, et l'hypothèse
+  porte sur une GRANDEUR. On mesure cette grandeur avant d'écrire
+  l'architecture qui en dépend — pas la grandeur qui se mesure facilement,
+  celle dont le levier dépend. Pour un cache : la clé se forme-t-elle ?
+  Pour une sélection : le critère prédit-il le résultat qu'il remplace ?
+- **Et la garde jumelle, pour ne pas tomber de l'autre côté** : un critère
+  sûr qui ne sélectionne rien n'est pas un critère. Le troisième essai de
+  la sélection — exclure les causes réseau — protégeait les huit groupes
+  menacés, et ne laissait que 6 groupes sélectionnables sur 185. C'est n°35
+  retourné vers l'optimisation : un instrument qui ne peut pas échouer ne
+  vérifie rien, un critère qui ne sélectionne rien n'optimise rien. Toute
+  proposition d'optimisation se juge sur les DEUX conditions à la fois, sa
+  sûreté et son rendement, jamais sur l'une puis l'autre.
+

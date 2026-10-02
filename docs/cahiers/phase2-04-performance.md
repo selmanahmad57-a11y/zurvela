@@ -355,6 +355,84 @@ pas de rejeu) est le contrat suivant. Les deux se composent — moins de
 rejeux inutiles ET mieux répartis — mais se mesurent séparément, sans quoi
 on ne saurait pas lequel porte le gain.
 
+## 2ter. LE REJEU SÉLECTIONNÉ, ouvert par ses contrats — et sa garde le condamne dans ses formes connues (2026-10-02)
+
+### S1 — LA GARDE CARDINALE, et pourquoi elle est à DEUX SENS
+
+Le rejeu sélectionné se mesure contre le rejeu complet sur le même jeu, et
+l'oracle doit sortir **0 identité PERDUE et 0 identité GAGNÉE**.
+
+Les deux sens, et c'est propre à ce contrat. Pour le budget réparti, une
+identité gagnée était le résultat recherché : on vérifie PLUS, donc on
+publie ce qu'on ne pouvait pas vérifier avant. Pour le rejeu sélectionné,
+une identité gagnée est une ALARME : elle signifie que la sélection retient
+quelque chose que le rejeu complet écartait, donc qu'elle JUGE autrement.
+Ce contrat ne touche pas à *comment* on confirme, il touche à *quoi* on
+confirme — il doit donc être strictement équivalent en identité, dans les
+deux sens. Le même oracle, lu différemment selon ce que le contrat promet.
+
+### S2 — LES FAITS, mesurés sur le banc entier (run `9e33624`, 185 groupes)
+
+| | |
+|---|---|
+| Groupes à confiance 0,95 | **141 / 185 (76,2 %)** — bien au-dessus de `seuilConfirmationDirecte: 0.9` |
+| Groupes à confiance ≥ 0,9 effectivement REJOUÉS | 57 |
+| … et dont le rejeu a changé le sort | **8** : 4 `intermittente` (reproduction partielle), 4 `non-reproduite` (dont 2 par mesure sous seuil) |
+
+**LA CONFIANCE INITIALE NE PRÉDIT PAS LE VERDICT DU REJEU : 8 sur 57, soit
+14 %.** Ces huit-là sont exactement ceux que le protocole existe pour
+attraper — un `POST /api/contact` qui ne se reproduit qu'une fois sur deux,
+une lenteur qui redescend sous son seuil à la re-mesure.
+
+### S3 — LES TROIS FORMES ENVISAGEABLES, et pourquoi chacune tombe
+
+1. **Le seuil de confiance** (la politique `econome` telle qu'écrite en
+   brique 3 : au-dessus de `seuilConfirmationDirecte`, confirmer sans
+   rejeu). Elle publierait les 8 groupes ci-dessus avec un statut faux —
+   quatre « confirmé » pour des défauts intermittents, quatre pour des
+   défauts qui ne se reproduisent pas. 14 % de mauvaise publication sur les
+   groupes qu'elle sélectionne. L'oracle la refuse, et il a raison. Elle
+   change aussi le MOTIF (`confiance-suffisante` au lieu de `reproduite`),
+   donc l'identité, donc elle est refusée deux fois.
+
+2. **Réduire deux re-exécutions à une** pour les groupes très sûrs. Même
+   défaut, par construction : `reproduction-partielle` SIGNIFIE reproduit
+   une fois sur deux. Avec une seule tentative, ces quatre groupes sortent
+   `confirmee` (si la tentative conservée reproduit) ou `non-reproduite`
+   (sinon) — jamais `intermittente`. L'identité bascule dans les deux cas,
+   et dans le sens qui sur-promet une fois sur deux.
+
+3. **Exclure de la sélection les causes fragiles** — les huit sauvés ont
+   tous une clé `reseau:`, donc « ne jamais sélectionner une cause réseau »
+   les protégerait tous. Mais la mesure tue le remède : il resterait **6
+   groupes sélectionnables sur 185**. Le gain serait de six rejeux sur tout
+   le banc, et le critère serait taillé sur ce corpus précis — exactement
+   la faute que la dette n°20 et l'apprentissage n°32 interdisent.
+
+### S4 — CE QUI EST DONC TRANCHÉ, et à quelle condition cela se rouvre
+
+**Le rejeu sélectionné n'est pas livrable sous sa garde cardinale, et le
+poste est suspendu — pas abandonné.** C'est le deuxième fantôme de P2-4
+après le cache de décisions, et il tombe de la même manière : une mesure
+faite AVANT la construction dissout le levier. La différence avec le cache
+est importante : le cache optimisait un chemin que la production n'emprunte
+pas ; ici le chemin existe, c'est le CRITÈRE de sélection qui n'existe pas.
+
+**Condition de réveil, écrite pour que personne ne le reconstruise au
+jugé** : un critère de sélection ne se propose qu'accompagné de sa mesure
+sur le banc entier, montrant 0 identité perdue ET 0 identité gagnée contre
+le rejeu complet, et il doit sélectionner assez de groupes pour que le gain
+existe. Les deux conditions ensemble : un critère sûr qui ne sélectionne
+rien n'est pas un critère.
+
+**Et la redirection que la mesure impose** : ce qui bloque les sites lourds
+n'est pas le NOMBRE de rejeux — le budget réparti vient d'en servir 14 de
+plus à budget constant — mais le COÛT d'un rejeu (8,7 s au banc, 29 s sur
+expandtesting). La question à poser au prochain cahier de performance n'est
+donc pas « lesquels ne pas rejouer » mais « pourquoi un rejeu coûte un
+chargement de page entier ». Elle n'est pas ouverte ici : elle est nommée,
+chiffrée, et rangée.
+
 ## 3. Budget
 
 **Le piège propre à ce cahier : les sites qui valident sont les plus
