@@ -563,6 +563,66 @@ le journal y répond. APPRENTISSAGES n°40.
 - Laisser la mémoire survivre au scan : deux scans successifs du même
   gabarit ne doivent pas différer.
 
+## 2quinquies. LE DÉPOUILLEMENT DU GRAND TABLEAU, posé AVANT le run
+
+### L'instrument, éprouvé avant de lui confier le bilan
+
+`pnpm banc:scorecard-reelle <sortie.json> <journal...>` enveloppe les
+journaux de scan réel en pseudo-scénarios, nommés par l'HÔTE du site, pour
+que `banc:equivalence-optimisation` les lise sans modification. Sans ce
+pont, le dépouillement serait manuel sur neuf sites × des dizaines de
+sections, à la fin d'un cahier, sur des runs coûteux — la situation exacte
+où l'attention cède (n°34).
+
+Il a été **éprouvé par un ROUGE avant d'être cru** : une anomalie retirée à
+la main d'une copie de journal lui fait déclarer 4 identités perdues et
+sortir en 1. Un adaptateur qui n'a jamais rougi ne peut pas être cru quand
+il dira « 0 perdue » sur les sites lourds. Contre-épreuves : le même journal
+contre lui-même sort ÉQUIVALENT ; une anomalie ajoutée sort en identité
+gagnée sans perte ; deux journaux du MÊME site dans une scorecard sont
+REFUSÉS — l'erreur de manipulation la plus facile du soir du tableau, qui
+aurait fait apparier un moteur au hasard et déclarer une équivalence qui ne
+compare rien. Trois mutations tuées.
+
+### DEUX USAGES, DEUX COMPARAISONS, qu'on ne croise jamais
+
+La jambe « avant » de ce soir n'est PAS la référence du 2026-10-01 : c'est
+un nouveau run du moteur campagne sur les sites **d'aujourd'hui**.
+
+- **Mesurer P2-4** : les deux jambes de CE SOIR, l'une contre l'autre. Même
+  session, mêmes sites, même état du monde — c'est la seule comparaison qui
+  mesure ce que le moteur change.
+- **Raconter le chemin** : les chiffres du 2026-10-01 et des campagnes
+  précédentes (82 % → 81 % → 61 % → 0 %). Ils disent d'où l'on vient, et
+  rien d'autre.
+
+Croiser les deux — comparer la jambe « avant » de ce soir aux chiffres de
+l'autre nuit — mélangerait deux états du monde (n°26). Interdit.
+
+### LE CRITÈRE DE DÉCISION DE `the-internet`, posé avant de voir le résultat
+
+Il passe en premier, seul. S'il ne tient pas, deux causes et deux suites
+OPPOSÉES, distinguées MAINTENANT pour que le résultat ne décide pas de sa
+propre lecture :
+
+- **Indisponibilité du site** (lenteur, pages non rendues, comme le
+  2026-10-01) : ce n'est pas un échec de P2-4. Le site est déclaré
+  « non mesurable ce soir » et les autres suivent.
+- **Régression du moteur** (le site répond, et le modal n'est plus fermé) :
+  le témoin rougit, **tout s'arrête**, et c'est le sujet.
+
+### Comment chaque ligne se lit
+
+1. **L'oracle trie, le jugement tranche.** Aucune identité gagnée n'est
+   bénigne par défaut : chacune est tracée à sa cause dans le journal —
+   `echeance-atteinte` levée, arrêt `reserve-confirmation` disparu — PUIS
+   jugée vraie ou bruit, section par section (n°40, METHODE §14).
+2. **Une identité perdue arrête tout** et devient le sujet.
+3. **Les cibles qui dérivent sont déclarées, pas moyennées.**
+4. **Le bilan se lit sur les faux positifs JUGÉS**, jamais sur un total —
+   la leçon du tableau maigre du 2026-10-01.
+5. **Deux runs, deux phrases** (n°26).
+
 ## 3. Budget
 
 **Le piège propre à ce cahier : les sites qui valident sont les plus

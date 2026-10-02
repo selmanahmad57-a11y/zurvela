@@ -17,6 +17,78 @@
     "resultatsPurges": "{{nombre}} ancienne(s) scorecard(s) purgée(s) (rétention : {{retention}})",
     "politiqueInconnue": "Politique de décision inconnue : {{politique}} (politiques connues : {{politiques}})"
   },
+  "enregistrerDiagnostic": {
+    "usage": "Usage : pnpm banc:enregistrer-diagnostic [--cas <id>]… (sans --cas : tout le corpus)",
+    "aucunCas": "ÉCHEC : aucun cas du corpus ne correspond à « {{cas}} »",
+    "demarrage": "Enregistrement des cassettes de diagnostic — {{nombre}} cas du corpus, modèle {{modele}}, dossier {{dossier}} — APPELS RÉELS au modèle",
+    "cas": "  {{id}} : attendu {{attendu}}, rendu {{rendu}} — {{verdict}} — coût {{cout}}",
+    "termine": "Corpus : {{corrects}}/{{total}} avis corrects sur {{mesures}} cas mesuré(s) — coût total {{cout}}",
+    "incomplet": "ÉCHEC : {{nombre}} cas sur {{total}} n'ont produit aucun avis — le parc de cassettes est incomplet, l'absence de donnée n'est pas un résultat",
+    "desaccord": "ÉCHEC : {{nombre}} avis ne correspondent pas à l'attendu du corpus : {{cas}} — ce n'est PAS un parc incomplet, c'est un désaccord du modèle"
+  },
+  "enregistrerIa": {
+    "usage": "Usage : pnpm banc:enregistrer-ia [--politique deterministe|ia] --scenario <id> | --tous",
+    "demarrage": "Enregistrement des cassettes — {{nombre}} scénario(s), modèle {{modele}}, dossier {{dossier}} — APPELS RÉELS au modèle",
+    "cassette": "  cassette {{cle}} : {{metadonnees}}",
+    "termine": "{{ecrites}} cassette(s) écrite(s), {{total}} au total — DÉPENSE de cette exécution : {{depense}} (somme des cassettes réellement écrites) — coût des {{scenarios}} scan(s) au tarif enregistré : {{coutRejeu}} — {{nonMesures}} attendu(s) de profil non mesuré(s)",
+    "incomplet": "ÉCHEC : des attendus de profil sont restés non mesurés — le parc de cassettes est incomplet",
+    "provenance": "Provenance du parc : {{couples}} — modèle demandé ≠ modèle servi sur {{distincts}}/{{total}} cassette(s)",
+    "provenanceSuspecte": "ATTENTION : sur TOUTES les cassettes, le modèle servi est identique au modèle demandé. Un alias se résout normalement vers une forme datée : c'est le symptôme d'une recopie de l'alias, pas d'une coïncidence — une estampille que rien ne distingue de sa voisine n'estampille rien.",
+    "sansCapacite": "ÉCHEC : le client IA est en mode dégradé ({{raison}}) — aucun appel n'aura lieu et aucune cassette de décision ne sera écrite. L'enregistrement s'arrête plutôt que de rejouer les cassettes existantes et de sortir en succès sur un parc incomplet.",
+    "politiqueNonAppliquee": "ÉCHEC : la politique « {{demandee}} » a été demandée mais le moteur en a appliqué une autre sur : {{scenarios}} — le parc enregistré ne couvre pas la politique annoncée",
+    "scenariosEnErreur": "ÉCHEC : {{nombre}} scénario(s) en erreur pendant l'enregistrement : {{scenarios}} — le parc est incomplet",
+    "redactionIncomplete": "⚠ {{sansProse}} rapport(s) sur {{total}} publié(s) SANS PROSE alors qu'ils avaient des sections à rédiger : le parc de cassettes de RÉDACTION est incomplet — la scorecard afficherait des rapports « justes » sans avoir mesuré une seule rédaction"
+  },
+  "equivalence": {
+    "apparu": "   APPARU  {{element}}",
+    "bilanPerdus": "{{nombre}} identité(s) PERDUE(S) : un gain payé en signal est l’erreur cardinale.",
+    "entete": "Référence : {{reference}} scénario(s) · Optimisé : {{optimise}}",
+    "equivalent": "ÉQUIVALENT — {{nombre}} scénario(s) : identité ET effort identiques.",
+    "gainMesurable": "Le gain de vitesse peut maintenant se mesurer : il compare désormais deux exécutions dont on a PROUVÉ qu’elles font la même chose (APPRENTISSAGES n°33).",
+    "gainNonComparable": "Le gain de vitesse ne se compare PAS tel quel : sur ces scénarios, l’exécution optimisée en a fait DAVANTAGE, et une durée qui tombe pendant qu’on en fait plus ne mesure rien. Mesurez-le sur les scénarios dont l’identité n’a pas bougé (APPRENTISSAGES n°33).",
+    "identiteGagnee": "IDENTITÉ GAGNÉE — {{nombre}} élément(s) apparaissent sur {{scenarios}} scénario(s) sans qu’aucun ne disparaisse. Ce n’est pas une équivalence : c’est une CORRECTION. Elle doit être expliquée par écrit, jamais supposée bénigne — et le banc reste seul juge de savoir si ce qui apparaît est un vrai défaut ou un faux positif.",
+    "identitePreservee": "ÉQUIVALENT SUR L’IDENTITÉ — {{nombre}} scénario(s) voient leur EFFORT changer, et aucun ne voit changer ce que le rapport dit du site. C’est précisément ce qu’une optimisation de budget doit faire.",
+    "nonEquivalent": "NON ÉQUIVALENT — {{nombre}} scénario(s) divergent. Ce n’est pas une optimisation, c’est un changement de comportement déguisé en gain de vitesse.",
+    "perdu": "   PERDU   {{element}}",
+    "scenario": "▶ {{id}}",
+    "titreEffort": "   EFFORT — ce que le rapport dit de NOUS (affiché, non bloquant)",
+    "titreIdentite": "   IDENTITÉ — ce que le rapport dit du SITE (égalité exigée)",
+    "usage": "Usage : pnpm banc:equivalence-optimisation <reference.json> <optimise.json>"
+  },
+  "generer": {
+    "termine": "{{nombre}} scénario(s) écrit(s) dans {{dossier}}"
+  },
+  "rapportExemple": {
+    "usage": "Usage : pnpm rapport:exemple --scenario <id> [--politique deterministe|ia] [--sortie <fichier>] [--sans-ia]",
+    "absent": "Aucun rapport business produit pour {{scenario}} ({{erreur}}) — le scan n’a pas abouti.",
+    "ecrit": "Rapport écrit : {{fichier}}",
+    "statut": "[{{scenario}}] statut {{statut}} · politique {{politique}} · langue {{langue}} · {{sections}} section(s) · sans prose : {{sansProse}}"
+  },
+  "reel": {
+    "usage": "Usage : pnpm banc:reel [--site <id>]… [--avant <dossier du moteur d’avant>]",
+    "casInconnu": "Cas de validation réelle inconnu : {{id}} (connus : {{connus}})",
+    "sansCle": "Validation réelle refusée : aucune clé dans {{variable}}. Elle mesure le moteur de production ; sans clé elle ne mesurerait qu’un silence de plus.",
+    "entete": "⚠ Validation sur le RÉEL (METHODE §12) : {{nombre}} site(s) vivant(s), scans payants et non déterministes, dans la même session — l’avant et l’après à quelques minutes d’écart.",
+    "debut": "▶ {{id}} ({{role}}, fiche {{fiche}}) : {{url}}",
+    "indisponible": "  {{id}} : INDISPONIBLE (HTTP {{statut}}) — déclaré, pas comparé",
+    "scan": "  {{moment}} : {{dureeMs}} ms · pages {{pages}} · candidates {{candidates}} · retenues {{retenues}} (dont {{decouvertes}} découvertes non re-testées, {{affirmees}} affirmées) · rejouables {{groupesRejoues}}/{{groupes}} groupes ({{taux}}) · arrêt {{arret}} · journal {{journalKo}} Ko · {{cout}} USD",
+    "structureChangee": "  {{id}} : STRUCTURE CHANGÉE depuis la fiche (pages {{pages}} < {{pagesMin}} ou candidates {{candidates}} < {{candidatesMin}}) — déclaré, pas jugé",
+    "tenu": "  {{id}} : TENU — rejouabilité {{taux}} ≥ {{min}}, durée {{dureeMs}} ≤ {{dureeMaxMs}} ms{{temoin}}",
+    "nonTenu": "  {{id}} : NON TENU — {{raisons}}",
+    "temoinStable": ", témoin stable",
+    "temoinBouge": "le témoin a bougé : {{avant}} → {{apres}}",
+    "raisonRejouabilite": "rejouabilité {{taux}} < {{min}}",
+    "raisonDuree": "durée {{dureeMs}} > {{dureeMaxMs}} ms",
+    "resultatsEcrits": "Résultats écrits : {{fichier}}",
+    "bilan": "Bilan : {{tenus}} tenu(s), {{nonTenus}} non tenu(s), {{declares}} déclaré(s) sur {{total}} — coût total {{cout}} USD",
+    "echecScan": "  {{moment}} : le scan a échoué ({{message}})",
+    "momentAvant": "avant",
+    "momentApres": "après",
+    "separateur": " ; ",
+    "raisonDecouvertes": "{{nombre}} découverte(s) publiée(s) comme vérifiée(s) ou au-delà de la gravité permise sans re-test (contrat 8)",
+    "raisonEcartements": "{{nombre}} recouvrement(s) écarté(s), {{min}} attendu(s) au minimum — le moteur n’a pas traversé ce qu’il devait écarter",
+    "dossier": "Journaux et rapports : {{dossier}}"
+  },
   "scorecard": {
     "titre": "SCORECARD",
     "global": "Global",
@@ -110,25 +182,17 @@
     "syntheseSansEffet": "Tiers sans effet visible : {{groupes}} groupe(s) écarté(s) d’office sur {{ecartes}} écarté(s) — vus, comptés, jamais publiés (doctrine tierce, APPRENTISSAGES n°19)",
     "alarmeCauseUnique": "⚠ ALARME CAUSE UNIQUE : {{doubles}} constat(s) en double sur une cause déclarée unique — le client lirait plusieurs défauts là où il n’y en a qu’un (C-16)"
   },
+  "scorecardReelle": {
+    "ecrite": "Scorecard réelle écrite : {{fichier}} — {{nombre}} site(s) : {{sites}}",
+    "siteEnDouble": "Refus : deux journaux pour le même site « {{site}} ». Une scorecard ne contient qu'un moteur ; les deux moteurs se comparent entre DEUX scorecards.",
+    "usage": "Usage : pnpm banc:scorecard-reelle <sortie.json> <journal.json...>"
+  },
   "serveur": {
     "usage": "Usage : pnpm banc:servir --scenario <id>",
     "demarre": "Scénario {{id}} servi sur {{url}} (langue : {{langue}}, bugs actifs : {{bugs}}) — Ctrl+C pour arrêter",
     "aucunBug": "aucun",
     "arrete": "Serveur arrêté",
     "aucunPortLibre": "Aucun port libre entre {{premier}} et {{dernier}}"
-  },
-  "enregistrerIa": {
-    "usage": "Usage : pnpm banc:enregistrer-ia [--politique deterministe|ia] --scenario <id> | --tous",
-    "demarrage": "Enregistrement des cassettes — {{nombre}} scénario(s), modèle {{modele}}, dossier {{dossier}} — APPELS RÉELS au modèle",
-    "cassette": "  cassette {{cle}} : {{metadonnees}}",
-    "termine": "{{ecrites}} cassette(s) écrite(s), {{total}} au total — DÉPENSE de cette exécution : {{depense}} (somme des cassettes réellement écrites) — coût des {{scenarios}} scan(s) au tarif enregistré : {{coutRejeu}} — {{nonMesures}} attendu(s) de profil non mesuré(s)",
-    "incomplet": "ÉCHEC : des attendus de profil sont restés non mesurés — le parc de cassettes est incomplet",
-    "provenance": "Provenance du parc : {{couples}} — modèle demandé ≠ modèle servi sur {{distincts}}/{{total}} cassette(s)",
-    "provenanceSuspecte": "ATTENTION : sur TOUTES les cassettes, le modèle servi est identique au modèle demandé. Un alias se résout normalement vers une forme datée : c'est le symptôme d'une recopie de l'alias, pas d'une coïncidence — une estampille que rien ne distingue de sa voisine n'estampille rien.",
-    "sansCapacite": "ÉCHEC : le client IA est en mode dégradé ({{raison}}) — aucun appel n'aura lieu et aucune cassette de décision ne sera écrite. L'enregistrement s'arrête plutôt que de rejouer les cassettes existantes et de sortir en succès sur un parc incomplet.",
-    "politiqueNonAppliquee": "ÉCHEC : la politique « {{demandee}} » a été demandée mais le moteur en a appliqué une autre sur : {{scenarios}} — le parc enregistré ne couvre pas la politique annoncée",
-    "scenariosEnErreur": "ÉCHEC : {{nombre}} scénario(s) en erreur pendant l'enregistrement : {{scenarios}} — le parc est incomplet",
-    "redactionIncomplete": "⚠ {{sansProse}} rapport(s) sur {{total}} publié(s) SANS PROSE alors qu'ils avaient des sections à rédiger : le parc de cassettes de RÉDACTION est incomplet — la scorecard afficherait des rapports « justes » sans avoir mesuré une seule rédaction"
   },
   "varianceIa": {
     "usage": "Usage : pnpm banc:variance-ia [--mesure profil|decision|redaction] --scenario <id> [--scenario <id>…] [--appels <N>] | --mesure diagnostic [--cas <id>…] [--appels <N>]",
@@ -141,64 +205,5 @@
     "demarrageCorpus": "Variance du modèle — mesure « {{mesure}} », {{nombre}} cas du corpus × {{appels}} appel(s) RÉELS, modèle {{modele}}",
     "accordCorpus": "{{id}} [diagnostic] : avis « {{modalite}} » {{occurrences}}/{{appels}} ({{distinctes}} valeur(s) distincte(s)), attendu {{attendu}} — {{mesures}} appel(s) exploitable(s), coût : {{cout}}",
     "aucuneMesureCorpus": "⚠ {{id}} [diagnostic] : AUCUN avis sur {{appels}} appel(s) — il n'y a pas d'accord à publier : l'absence de donnée n'est pas un résultat."
-  },
-  "generer": {
-    "termine": "{{nombre}} scénario(s) écrit(s) dans {{dossier}}"
-  },
-  "enregistrerDiagnostic": {
-    "usage": "Usage : pnpm banc:enregistrer-diagnostic [--cas <id>]… (sans --cas : tout le corpus)",
-    "aucunCas": "ÉCHEC : aucun cas du corpus ne correspond à « {{cas}} »",
-    "demarrage": "Enregistrement des cassettes de diagnostic — {{nombre}} cas du corpus, modèle {{modele}}, dossier {{dossier}} — APPELS RÉELS au modèle",
-    "cas": "  {{id}} : attendu {{attendu}}, rendu {{rendu}} — {{verdict}} — coût {{cout}}",
-    "termine": "Corpus : {{corrects}}/{{total}} avis corrects sur {{mesures}} cas mesuré(s) — coût total {{cout}}",
-    "incomplet": "ÉCHEC : {{nombre}} cas sur {{total}} n'ont produit aucun avis — le parc de cassettes est incomplet, l'absence de donnée n'est pas un résultat",
-    "desaccord": "ÉCHEC : {{nombre}} avis ne correspondent pas à l'attendu du corpus : {{cas}} — ce n'est PAS un parc incomplet, c'est un désaccord du modèle"
-  },
-  "rapportExemple": {
-    "usage": "Usage : pnpm rapport:exemple --scenario <id> [--politique deterministe|ia] [--sortie <fichier>] [--sans-ia]",
-    "absent": "Aucun rapport business produit pour {{scenario}} ({{erreur}}) — le scan n’a pas abouti.",
-    "ecrit": "Rapport écrit : {{fichier}}",
-    "statut": "[{{scenario}}] statut {{statut}} · politique {{politique}} · langue {{langue}} · {{sections}} section(s) · sans prose : {{sansProse}}"
-  },
-  "reel": {
-    "usage": "Usage : pnpm banc:reel [--site <id>]… [--avant <dossier du moteur d’avant>]",
-    "casInconnu": "Cas de validation réelle inconnu : {{id}} (connus : {{connus}})",
-    "sansCle": "Validation réelle refusée : aucune clé dans {{variable}}. Elle mesure le moteur de production ; sans clé elle ne mesurerait qu’un silence de plus.",
-    "entete": "⚠ Validation sur le RÉEL (METHODE §12) : {{nombre}} site(s) vivant(s), scans payants et non déterministes, dans la même session — l’avant et l’après à quelques minutes d’écart.",
-    "debut": "▶ {{id}} ({{role}}, fiche {{fiche}}) : {{url}}",
-    "indisponible": "  {{id}} : INDISPONIBLE (HTTP {{statut}}) — déclaré, pas comparé",
-    "scan": "  {{moment}} : {{dureeMs}} ms · pages {{pages}} · candidates {{candidates}} · retenues {{retenues}} (dont {{decouvertes}} découvertes non re-testées, {{affirmees}} affirmées) · rejouables {{groupesRejoues}}/{{groupes}} groupes ({{taux}}) · arrêt {{arret}} · journal {{journalKo}} Ko · {{cout}} USD",
-    "structureChangee": "  {{id}} : STRUCTURE CHANGÉE depuis la fiche (pages {{pages}} < {{pagesMin}} ou candidates {{candidates}} < {{candidatesMin}}) — déclaré, pas jugé",
-    "tenu": "  {{id}} : TENU — rejouabilité {{taux}} ≥ {{min}}, durée {{dureeMs}} ≤ {{dureeMaxMs}} ms{{temoin}}",
-    "nonTenu": "  {{id}} : NON TENU — {{raisons}}",
-    "temoinStable": ", témoin stable",
-    "temoinBouge": "le témoin a bougé : {{avant}} → {{apres}}",
-    "raisonRejouabilite": "rejouabilité {{taux}} < {{min}}",
-    "raisonDuree": "durée {{dureeMs}} > {{dureeMaxMs}} ms",
-    "resultatsEcrits": "Résultats écrits : {{fichier}}",
-    "bilan": "Bilan : {{tenus}} tenu(s), {{nonTenus}} non tenu(s), {{declares}} déclaré(s) sur {{total}} — coût total {{cout}} USD",
-    "echecScan": "  {{moment}} : le scan a échoué ({{message}})",
-    "momentAvant": "avant",
-    "momentApres": "après",
-    "separateur": " ; ",
-    "raisonDecouvertes": "{{nombre}} découverte(s) publiée(s) comme vérifiée(s) ou au-delà de la gravité permise sans re-test (contrat 8)",
-    "raisonEcartements": "{{nombre}} recouvrement(s) écarté(s), {{min}} attendu(s) au minimum — le moteur n’a pas traversé ce qu’il devait écarter",
-    "dossier": "Journaux et rapports : {{dossier}}"
-  },
-  "equivalence": {
-    "apparu": "   APPARU  {{element}}",
-    "bilanPerdus": "{{nombre}} identité(s) PERDUE(S) : un gain payé en signal est l’erreur cardinale.",
-    "entete": "Référence : {{reference}} scénario(s) · Optimisé : {{optimise}}",
-    "equivalent": "ÉQUIVALENT — {{nombre}} scénario(s) : identité ET effort identiques.",
-    "gainMesurable": "Le gain de vitesse peut maintenant se mesurer : il compare désormais deux exécutions dont on a PROUVÉ qu’elles font la même chose (APPRENTISSAGES n°33).",
-    "gainNonComparable": "Le gain de vitesse ne se compare PAS tel quel : sur ces scénarios, l’exécution optimisée en a fait DAVANTAGE, et une durée qui tombe pendant qu’on en fait plus ne mesure rien. Mesurez-le sur les scénarios dont l’identité n’a pas bougé (APPRENTISSAGES n°33).",
-    "identiteGagnee": "IDENTITÉ GAGNÉE — {{nombre}} élément(s) apparaissent sur {{scenarios}} scénario(s) sans qu’aucun ne disparaisse. Ce n’est pas une équivalence : c’est une CORRECTION. Elle doit être expliquée par écrit, jamais supposée bénigne — et le banc reste seul juge de savoir si ce qui apparaît est un vrai défaut ou un faux positif.",
-    "identitePreservee": "ÉQUIVALENT SUR L’IDENTITÉ — {{nombre}} scénario(s) voient leur EFFORT changer, et aucun ne voit changer ce que le rapport dit du site. C’est précisément ce qu’une optimisation de budget doit faire.",
-    "nonEquivalent": "NON ÉQUIVALENT — {{nombre}} scénario(s) divergent. Ce n’est pas une optimisation, c’est un changement de comportement déguisé en gain de vitesse.",
-    "perdu": "   PERDU   {{element}}",
-    "scenario": "▶ {{id}}",
-    "titreEffort": "   EFFORT — ce que le rapport dit de NOUS (affiché, non bloquant)",
-    "titreIdentite": "   IDENTITÉ — ce que le rapport dit du SITE (égalité exigée)",
-    "usage": "Usage : pnpm banc:equivalence-optimisation <reference.json> <optimise.json>"
   }
 }

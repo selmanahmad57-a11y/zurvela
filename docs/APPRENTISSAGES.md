@@ -1365,3 +1365,30 @@ regardé.
   `reserve-confirmation` qui l'explique. C'est la même scission qu'au n°35 :
   on ne desserre pas la garde, on la braque sur ce qui compte.
 
+## 41. Un instrument qui ne peut pas détecter sa propre MAUVAISE ALIMENTATION ne doit pas juger (2026-10-02, épreuve de l'adaptateur avant le grand tableau)
+
+- **Le fait** : l'adaptateur qui enveloppe les journaux réels pour l'oracle
+  acceptait deux journaux du MÊME site dans une même scorecard. L'oracle
+  en aurait apparié un au hasard et déclaré « équivalent » — vert, confiant,
+  sur une comparaison d'un moteur avec lui-même.
+- **Le scénario qu'il faut imaginer en entier** : le soir du bilan de la
+  Phase 2, neuf sites, deux moteurs, dix-huit journaux à ranger dans deux
+  scorecards. Un geste de trop, deux journaux du moteur campagne atterrissent
+  dans la scorecard « après ». L'oracle sort ÉQUIVALENT. On lit « P2-4 ne
+  change rien », ou pire « tout est équivalent, le tableau est bon ». Aucune
+  ligne de code n'est fautive ; le bilan d'une phase entière est faux.
+- **La règle** : un instrument doit refuser ce qu'on ne peut pas lui donner,
+  et pas seulement calculer juste sur ce qu'on lui donne. C'est n°31 poussé
+  d'un cran — « un run qu'on ne pourra pas lire ne se lance pas » devient
+  « un instrument qui ne peut pas détecter qu'il est mal alimenté ne doit
+  pas juger ». La garde contre l'erreur HUMAINE du soir le plus dangereux
+  vaut plus que trois gardes contre des bugs de code, parce que le code ne
+  se fatigue pas.
+- **Et comment on la trouve** : pas en concevant, en ÉPROUVANT. Je
+  cherchais seulement à vérifier que l'oracle rougit quand une anomalie
+  disparaît ; j'ai découvert qu'il se laissait tromper par une
+  double-alimentation. **L'épreuve cherche une chose et en trouve une
+  autre — c'est exactement pour cela qu'on éprouve.** Un instrument validé
+  « il tourne sans erreur » est vert sans être éprouvé ; c'est le fantôme
+  du gabarit (n°30) sous sa forme instrumentale.
+
