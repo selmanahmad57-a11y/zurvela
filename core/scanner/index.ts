@@ -23,6 +23,7 @@ import { detecter } from './detection/index.js';
 import { ouvrirProfilage, type ExplorateurProfilant, type OptionsProfilage } from './profilage.js';
 import { redigerRapportBusiness, type ResultatRapportBusiness } from '../rapport/index.js';
 import type { RepartitionEcheance } from './config.js';
+import { creerMemoireFermeture, type MemoireFermeture } from './exploration/memoire-fermeture.js';
 
 /**
  * Ressource de rejeu d'un scan : le protocole de confirmation re-exécute
@@ -44,7 +45,11 @@ export interface DependancesScanner {
   detecteurs: Detecteur[];
   protocole: ProtocoleConfirmation;
   /** Ouvre la capacité de rejeu du scan ; elle reçoit le journal et l'échéance du scan en cours. */
-  ouvrirRejeu: (journaliser: (type: string, details?: unknown) => void, echeance: number) => SessionRejeu;
+  ouvrirRejeu: (
+    journaliser: (type: string, details?: unknown) => void,
+    echeance: number,
+    memoireFermeture: MemoireFermeture,
+  ) => SessionRejeu;
   ia: ClientIa;
   /**
    * Ouvre la portée de BUDGET d'un scan : remet le compteur de dépense à zéro
@@ -141,6 +146,10 @@ export function creerScanner(dependances: DependancesScanner): Scanner {
   return async function scanner(url, options): Promise<Rapport> {
     const debut = Date.now();
     const echeance = debut + options.timeoutMs;
+    // LA MÉMOIRE DE FERMETURE naît ICI, dans le scan, et meurt avec lui :
+    // c'est la portée qui tient l'invariant, pas une discipline d'appelant
+    // (cahier P2-4, F2).
+    const memoireFermeture = creerMemoireFermeture();
     // L'ÉCHÉANCE EST RÉPARTIE, RÉSERVÉE ET APPLIQUÉE (cahier P2-1, contrat 2).
     // Quatre sites de la campagne 6b ont vu l'exploration manger le temps de
     // la confirmation — 0/13, 0/187, 1/22 groupes rejoués —, et un cinquième
@@ -226,7 +235,7 @@ export function creerScanner(dependances: DependancesScanner): Scanner {
     let parcours: Parcours;
     try {
       parcours = await explorateur.explorer(
-        { urlDepart: url, echeance: phases.exploration, arretEcheance: 'reserve-confirmation', journaliser },
+        { urlDepart: url, echeance: phases.exploration, arretEcheance: 'reserve-confirmation', memoireFermeture, journaliser },
         observateur,
         dependances.profilage === undefined ? undefined : profilageOuvert.collecte,
         compteurCout,
@@ -259,7 +268,7 @@ export function creerScanner(dependances: DependancesScanner): Scanner {
     // sont écartées avec leur raison plutôt que signalées sans preuve.
     // La confirmation s'arrête avant la réserve de rédaction : la rédaction
     // est la dernière phase et la seule qui n'avait pas de filet de temps.
-    const session = ouvrirRejeu(journaliser, phases.confirmation);
+    const session = ouvrirRejeu(journaliser, phases.confirmation, memoireFermeture);
     let confirmation: ResultatConfirmation;
     try {
       confirmation = await protocole.confirmer(candidates, {

@@ -23,6 +23,7 @@ import {
   type GesteFermeture,
 } from './ecarter-recouvrement.js';
 import type { PrisesFermeture, Recouvrement, ResultatGeometrie } from './en-page.js';
+import { creerMemoireFermeture, EVENEMENT_MEMOIRE_FERMETURE, type MemoireLiee } from './memoire-fermeture.js';
 import type { VerdictFiltre } from './filtre-actions.js';
 
 const CONFIG: ConfigFermeture = {
@@ -66,7 +67,11 @@ interface Faux {
  * qu'au geste déclaré. Playwright n'est pas monté — seuls les cinq points de
  * contact du module sont fournis.
  */
-function fauxContexte(scenario: Scenario, constats: Recouvrement[]): Faux & { executer: () => ReturnType<typeof ecarterRecouvrements> } {
+function fauxContexte(
+  scenario: Scenario,
+  constats: Recouvrement[],
+  memoire?: MemoireLiee,
+): Faux & { executer: () => ReturnType<typeof ecarterRecouvrements> } {
   const faux: Faux = { page: {} as Page, journal: [], gestesExecutes: [], clics: [], delaisClic: [], appelsFiltre: [] };
   let leve = false;
   const prises: PrisesFermeture = {
@@ -144,6 +149,7 @@ function fauxContexte(scenario: Scenario, constats: Recouvrement[]): Faux & { ex
         },
         delaiMs: 100,
         clicMs: 30,
+        ...(memoire === undefined ? {} : { memoire }),
         geometrie: { max: 10, budgetMs: 100 },
         journaliser: (type, details) => faux.journal.push({ type, details: (details ?? {}) as Record<string, unknown> }),
         attendre: () => Promise.resolve(),
@@ -429,5 +435,70 @@ describe('le délai d’un essai (correction du coût de fermeture au rejeu, cah
     for (const delai of contexte.delaisClic) {
       expect(delai).toBe(30);
     }
+  });
+});
+
+describe('la MÉMOIRE de fermeture — le scan apprend, le rejeu se souvient (cahier P2-4)', () => {
+  /** Le recouvrement du cas : un intercepteur avec sa signature stable. */
+  function constat(): Recouvrement {
+    return { element: element('#cible'), intercepteur: element('#voile'), signatureIntercepteur: 'div|voile|' };
+  }
+
+  it('un recouvrement CONNU SANS PRISE ne coûte plus un seul geste — c’est le cas qui paie', () => {
+    // Mesuré : 4 006 ms par rejeu concerné, dont 6 034 ms pour la seule
+    // voie C et ses trois candidats morts sur `recouvrement--q10`.
+    const memoire = creerMemoireFermeture().pour('http://x.invalid/', 'desktop');
+    memoire.retenir('div|voile|', { aucunGeste: true });
+    const contexte = fauxContexte({ cede: null }, [constat()], memoire);
+    return contexte.executer().then((issue) => {
+      expect(contexte.gestesExecutes).toEqual([]);
+      expect(issue.nbEcartes).toBe(0);
+      expect(issue.restants).toHaveLength(1);
+      expect(contexte.journal.some((e) => e.type === EVENEMENT_MEMOIRE_FERMETURE && e.details.issue === 'connu-sans-prise')).toBe(true);
+    });
+  });
+
+  it('un geste MÉMORISÉ passe en tête : un seul geste au lieu de la séquence', async () => {
+    const memoire = creerMemoireFermeture().pour('http://x.invalid/', 'desktop');
+    memoire.retenir('div|voile|', { geste: 'clic-hors-zone' });
+    const contexte = fauxContexte({ cede: 'clic-hors-zone' }, [constat()], memoire);
+    await contexte.executer();
+    expect(contexte.gestesExecutes).toEqual(['clic-hors-zone']);
+  });
+
+  it('UNE ABSENCE DE SOUVENIR N’EST PAS UN SOUVENIR D’ABSENCE — la garde cardinale (F3)', async () => {
+    // LE CONTRÔLE QUI PEUT ÉCHOUER, et le plus grave : traiter une
+    // signature inconnue comme « rien ne ferme ». Un calque qui n'apparaît
+    // QU'AU rejeu — `calque-au-rejeu`, les iframes publicitaires chargées
+    // tard — serait alors publié « non écartable » sans qu'on ait essayé.
+    const memoire = creerMemoireFermeture().pour('http://x.invalid/', 'desktop');
+    memoire.retenir('UNE-AUTRE-SIGNATURE', { aucunGeste: true });
+    const contexte = fauxContexte({ cede: 'echap' }, [constat()], memoire);
+    const issue = await contexte.executer();
+    expect(contexte.gestesExecutes).toContain('echap');
+    expect(issue.nbEcartes).toBe(1);
+  });
+
+  it('UN SOUVENIR EST UN RACCOURCI, JAMAIS UNE AUTORITÉ (F4) : le geste mémorisé échoue, la séquence reprend', async () => {
+    const memoire = creerMemoireFermeture().pour('http://x.invalid/', 'desktop');
+    memoire.retenir('div|voile|', { geste: 'clic-hors-zone' });
+    // La page ne cède en réalité qu'à Échap : le souvenir est périmé.
+    const contexte = fauxContexte({ cede: 'echap', prises: { pointVide: { x: 5, y: 7 } } }, [constat()], memoire);
+    const issue = await contexte.executer();
+    expect(contexte.gestesExecutes[0]).toBe('clic-hors-zone');
+    expect(contexte.gestesExecutes).toContain('echap');
+    expect(issue.nbEcartes).toBe(1);
+  });
+
+  it('le scan RETIENT ce qu’il a appris, dans les deux sens', async () => {
+    const pleine = creerMemoireFermeture();
+    const liee = pleine.pour('http://x.invalid/', 'desktop');
+    await fauxContexte({ cede: 'echap' }, [constat()], liee).executer();
+    expect(liee.consulter('div|voile|')).toEqual({ geste: 'echap' });
+
+    const vide = creerMemoireFermeture();
+    const lieeVide = vide.pour('http://x.invalid/', 'desktop');
+    await fauxContexte({ cede: null }, [constat()], lieeVide).executer();
+    expect(lieeVide.consulter('div|voile|')).toEqual({ aucunGeste: true });
   });
 });

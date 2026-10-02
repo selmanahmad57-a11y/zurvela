@@ -433,6 +433,136 @@ donc pas « lesquels ne pas rejouer » mais « pourquoi un rejeu coûte un
 chargement de page entier ». Elle n'est pas ouverte ici : elle est nommée,
 chiffrée, et rangée.
 
+## 2quater. LE COÛT DE FERMETURE AU REJEU, ouvert par ses contrats (2026-10-02)
+
+### Les faits, mesurés sur les 166 rejeux du banc
+
+| | |
+|---|---|
+| Durée totale des rejeux | **510,5 s** |
+| Navigation | 286,5 s (56 %) |
+| **Fermeture des recouvrements** | **232,4 s (45 %)**, sur **58 rejeux** seulement |
+| Coût de la fermeture, sur un rejeu concerné | **4 006 ms** |
+| Sur `recouvrement--q10` | **6 034 ms sur 8 783**, soit **69 %**, pour un seul geste (voie C, 3 candidats morts × `clicMs`) |
+
+Le moteur refait à CHAQUE rejeu les cinq gestes sur chaque intercepteur,
+alors que le scan a déjà mesuré, sur cette page, ce qui ferme et ce qui ne
+ferme pas. **Rejouer, c'est reproduire un parcours connu ; refaire
+l'apprentissage est du gaspillage, pas une garantie.**
+
+Ce poste est un CONTRAT et non un cahier parce qu'il ne se heurte qu'à un
+réglage : on ne change pas ce qu'on teste, on arrête de re-découvrir ce
+qu'on sait. La navigation, elle, se heurte à `variations: ['contexte-neuf']`
+— une GARANTIE — et part en cahier distinct (APPRENTISSAGES n°39).
+
+### Les sous-contrats
+
+1. **F1 — LE SCAN APPREND, LE REJEU SE SOUVIENT.** Ce que l'écartement a
+   mesuré sur un recouvrement — quel geste l'écarte, ou qu'aucun ne
+   l'écarte — est mémorisé, et le rejeu consulte cette mémoire au lieu de
+   re-mesurer. La clé identifie LE MÊME recouvrement SUR LA MÊME PAGE :
+   url, viewport, signature de l'intercepteur.
+
+2. **F2 — LA MÉMOIRE NAÎT ET MEURT AVEC LE SCAN.** Aucune persistance entre
+   scans, et c'est un INVARIANT en code, pas un réglage : un site change
+   entre deux passages, et une mémoire qui survit ferait croire au moteur
+   qu'il connaît une page qu'il n'a pas vue aujourd'hui.
+
+3. **F3 — CE QUE LA MÉMOIRE NE CONNAÎT PAS SE MESURE. La garde cardinale.**
+   Un recouvrement rencontré au rejeu dont la signature n'est pas en
+   mémoire ne reçoit AUCUN raccourci : séquence complète. C'est exactement
+   le cas de `calque-au-rejeu` — un calque qui n'apparaît qu'au rejeu — et
+   des iframes publicitaires d'expandtesting. Une absence de souvenir n'est
+   pas un souvenir d'absence.
+
+4. **F4 — UN SOUVENIR EST UN RACCOURCI, JAMAIS UNE AUTORITÉ.** Si la
+   mémoire dit « le geste X ferme ceci » et que X échoue au rejeu, le
+   moteur ne conclut pas : il reprend la séquence complète. Le cas commun
+   est gratuit, le cas rare retombe sur la mesure, et aucun des deux ne
+   ment.
+
+5. **F5 — L'ATTENDU S'ÉCRIT EN PART DE COÛT SUPPRIMÉE, JAMAIS EN SECONDES.**
+   Les 45 % sont mesurés sur un banc où les gabarits de recouvrement sont
+   sur-représentés PAR CONSTRUCTION : l'échantillon n'a pas la composition
+   de la population (n°32). Promettre « −4 s par rejeu » sur expandtesting,
+   ce serait annoncer sur un site non mesuré un chiffre pris sur mes
+   propres gabarits — un fantôme de troisième espèce en puissance.
+   Ce qui est vrai partout, et qui est donc l'attendu : **pour un
+   recouvrement DÉJÀ CONNU du scan, le nombre de gestes tentés au rejeu
+   tombe à 0 (si rien ne le ferme) ou 1 (le geste mémorisé)**, contre cinq
+   par intercepteur aujourd'hui.
+
+6. **F6 — L'ORACLE JUGE, et ici les deux sens sont des alarmes.** La
+   mémoire ne doit RIEN changer à ce qui est publié : identité préservée,
+   effort réduit — le cas normal d'une optimisation de budget. Une identité
+   gagnée serait aussi suspecte qu'une perdue.
+
+### Les attendus, écrits AVANT la mesure (METHODE §13)
+
+- Banc entier : oracle **0 identité perdue ET 0 gagnée**.
+- `calque-au-rejeu--d01-d02` (fr et en) reste **vert** : le calque qui
+  n'apparaît qu'au rejeu est toujours écarté, mémoire vide donc mesure
+  complète. C'est le témoin de la garde F3.
+- Sur les scénarios `recouvrement--*`, le nombre de `recouvrement.tentative`
+  journalisés AU REJEU baisse ; sur q10, la voie C n'est plus retentée.
+- Aucun seuil de config déplacé.
+
+### La mesure (2026-10-02), et l'attendu F6 NON TENU
+
+Référence = `9e33624`. Détection 97,1 % inchangée, **0 faux positif**,
+97/97 scénarios, 0 anomalie perdue, 1720 tests.
+
+| | référence | avec la mémoire |
+|---|---|---|
+| **Tentatives de fermeture sur tout le banc** | **780** | **240** (172 consultations de mémoire) |
+| Durée du banc | 1 297 019 ms | **1 048 728 ms (−19,1 %)** |
+| Durée à identité inchangée (93/97) | 1 103 740 ms | **954 037 ms (−13,6 %)** |
+| `recouvrement--q05--fr` | 40 572 ms | **17 363 ms** |
+| `recouvrement--q10--fr` | 45 970 ms | **26 299 ms**, `nbNonVerifies` 3 → **0** |
+| `calque-au-rejeu--d01-d02` | 2/2, 21 491 ms | **2/2**, 15 370 ms |
+
+**L'attendu F5, dans sa forme vraie partout : 69 % des tentatives de
+fermeture supprimées** (780 → 240). C'est la grandeur qui ne mente pas hors
+du banc, contrairement aux secondes.
+
+**ATTENDU F6 NON TENU** : j'avais écrit « 0 identité perdue ET 0 gagnée ».
+L'oracle rend **0 perdue et 12 gagnées** sur 4 scénarios. F6 était
+MAL SPÉCIFIÉ, et je le laisse rouge : il supposait que la mémoire ne pouvait
+agir que sur le coût du rejeu, alors qu'elle libère du budget dans les DEUX
+phases, et qu'un budget libéré voit davantage. Chaque gain est tracé :
+
+- `recouvrement--q10` : les trois groupes que la référence déclarait
+  `limite-automatisation / echeance-atteinte` sont désormais vérifiés —
+  `nbNonVerifies` passe de 3 à **0**. L'attendu laissé rouge au contrat du
+  budget réparti (`≤ 2`) est donc tenu, et dépassé, par ce contrat-ci ;
+- `recouvrement--q07` : **l'exploration de la référence s'arrêtait sur
+  `reserve-confirmation`, à 3 pages sur 4.** Le coût de fermeture n'écourtait
+  pas seulement le rejeu, **il tronquait le scan**. L'exploration va
+  désormais au bout, la quatrième page est vue, le recouvrement mobile
+  devient candidat, est confirmé par son propre rejeu et fusionne avec son
+  jumeau desktop. C'est n°36 pour la troisième fois : un gaspillage
+  falsifie le dimensionnement de tout ce qui l'entoure.
+
+**Aucun jugement n'a changé**, et c'est vérifié et non supposé : au premier
+contact, mêmes gestes tentés, mêmes candidates, 0 recouvrement écarté avant
+comme après. Les 12 gains sont de la COUVERTURE, pas du jugement.
+
+**Et ce que cela apprend sur l'instrument** : l'oracle ne peut pas
+distinguer « la couverture s'élargit » de « le jugement change » — les deux
+se présentent à lui comme une identité gagnée. Il NOMME la question ; seul
+le journal y répond. APPRENTISSAGES n°40.
+
+### Les mutations à tuer
+
+- Traiter une signature ABSENTE comme « rien ne ferme » (confondre absence
+  de souvenir et souvenir d'absence) : `calque-au-rejeu` rougit.
+- Faire du souvenir une autorité, sans repli quand le geste mémorisé
+  échoue : un gabarit dont le recouvrement change de prise rougit.
+- Ignorer le viewport dans la clé : un recouvrement présent sur un seul
+  viewport ferait taire l'autre.
+- Laisser la mémoire survivre au scan : deux scans successifs du même
+  gabarit ne doivent pas différer.
+
 ## 3. Budget
 
 **Le piège propre à ce cahier : les sites qui valident sont les plus

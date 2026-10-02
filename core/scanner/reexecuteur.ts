@@ -76,6 +76,7 @@ export const ERREUR_BUDGET_INSUFFISANT = 'budget-insuffisant';
 export const ERREUR_URL_INVALIDE = 'url-invalide';
 /** Recette refusée avant d'ouvrir quoi que ce soit : un préalable étranger à la page d'ouverture (cahier P2-1, contrat 1). */
 import { ERREUR_RECETTE_INCOHERENTE } from './detection/commun.js';
+import type { MemoireFermeture } from './exploration/memoire-fermeture.js';
 export { ERREUR_RECETTE_INCOHERENTE };
 
 /** Préfixe des identifiants d'action d'un rejeu : le journal distingue un rejeu d'une exploration. */
@@ -147,6 +148,12 @@ export interface DependancesReexecuteur {
    * tentative, mais une tentative lancée ne doit pas non plus déborder.
    */
   echeance?: number;
+  /**
+   * Ce que le scan a appris des recouvrements. Le rejeu la CONSULTE au lieu
+   * de re-mesurer (cahier P2-4, contrat du coût de fermeture) — et une
+   * signature absente ne reçoit aucun raccourci.
+   */
+  memoireFermeture?: MemoireFermeture;
   /**
    * Le filtre d'actions destructives appliqué à un élément que le CODE
    * s'apprête à activer. REQUIS, jamais optionnel, et pour la même raison
@@ -270,6 +277,9 @@ export function creerReexecuteur(dependances: DependancesReexecuteur): Reexecute
               filtreElement: (cible) => dependances.filtreElement(ouverte, cible),
               delaiMs: delai(),
               clicMs: budget(exploration.clicMs),
+              ...(dependances.memoireFermeture === undefined
+                ? {}
+                : { memoire: dependances.memoireFermeture.pour(url, viewport.nom) }),
               geometrie: { max: exploration.elementsInteractifsMax, budgetMs: delai() },
               mesurer: () => recouvrements(ouverte, { max: exploration.elementsInteractifsMax, budgetMs: delai() }),
               journaliser: (type, details) => journaliser(type, { viewport: viewport.nom, url, rejeu: true, ...(details as object) }),

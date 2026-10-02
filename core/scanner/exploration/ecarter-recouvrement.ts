@@ -62,6 +62,7 @@ import type { Page } from 'playwright';
 import type { LocalisationElement } from '../../types.js';
 import { descendantsActivables, empreintePage, fermerDialog, prisesFermeture, type Recouvrement, type ResultatGeometrie } from './en-page.js';
 import type { FiltreElementLie } from './filtre-actions.js';
+import { EVENEMENT_MEMOIRE_FERMETURE, type MemoireLiee } from './memoire-fermeture.js';
 
 /** L'ensemble FERMÉ des gestes neutres. Invariant de sécurité : il vit en code. */
 export const GESTES_FERMETURE = ['echap', 'dialog-natif', 'controle-ferme', 'clic-hors-zone', 'descendant-essaye'] as const;
@@ -143,6 +144,12 @@ export interface OptionsEcartement {
    * une réponse, pas un incident.
    */
   clicMs: number;
+  /**
+   * Ce que le scan a déjà appris des recouvrements de CETTE page dans CE
+   * viewport (cahier P2-4, contrat du coût de fermeture au rejeu). Absente :
+   * tout se mesure, comme avant.
+   */
+  memoire?: MemoireLiee;
   /** Bornes de la mesure géométrique, pour re-mesurer à l'identique. */
   geometrie: { max: number; budgetMs: number };
   /**
@@ -187,8 +194,15 @@ function recouvreEncore(restants: readonly Recouvrement[], selecteur: string): b
  * plaisir de les essayer toutes.
  */
 export async function ecarterRecouvrements(options: OptionsEcartement): Promise<IssueEcartement> {
-  const { page, config, filtreElement, delaiMs, clicMs, journaliser, attendre, mesurer } = options;
+  const { page, config, filtreElement, delaiMs, clicMs, journaliser, attendre, mesurer, memoire } = options;
   const tentatives: TentativeFermeture[] = [];
+  /** La signature stable d'un intercepteur, par son sélecteur. */
+  const signatures = new Map<string, string>();
+  for (const constat of options.constats) {
+    if (constat.intercepteur !== null) {
+      signatures.set(constat.intercepteur.selecteur, constat.signatureIntercepteur ?? constat.intercepteur.selecteur);
+    }
+  }
   let restants = [...options.constats];
   let nbEcartes = 0;
 
@@ -206,7 +220,30 @@ export async function ecarterRecouvrements(options: OptionsEcartement): Promise<
       // conteneur fermé d'un coup) : rien à tenter.
       continue;
     }
-    for (const geste of config.gestes) {
+    const signature = signatures.get(intercepteur.selecteur) ?? '';
+    const souvenir = memoire?.consulter(signature);
+    if (souvenir !== undefined && 'aucunGeste' in souvenir) {
+      // LE CAS QUI PAIE. Le scan a déjà essayé les cinq gestes sur ce
+      // recouvrement et aucun ne l'a écarté : les réessayer re-mesurerait
+      // un résultat connu, au prix fort (la voie C essaie ses candidats un
+      // par un, chacun borné par `clicMs`).
+      journaliser(EVENEMENT_MEMOIRE_FERMETURE, { intercepteur: intercepteur.selecteur, issue: 'connu-sans-prise' });
+      continue;
+    }
+    /**
+     * L'ordre des gestes à tenter. Avec un souvenir, celui qui a marché
+     * d'abord — et les autres DERRIÈRE, jamais supprimés : un souvenir est
+     * un raccourci, pas une autorité (F4). Sans souvenir, l'ordre de config.
+     */
+    const aTenter =
+      souvenir === undefined || !('geste' in souvenir)
+        ? config.gestes
+        : [souvenir.geste, ...config.gestes.filter((geste) => geste !== souvenir.geste)];
+    if (souvenir !== undefined && 'geste' in souvenir) {
+      journaliser(EVENEMENT_MEMOIRE_FERMETURE, { intercepteur: intercepteur.selecteur, issue: 'connu-par-geste', geste: souvenir.geste });
+    }
+    let ecarte = false;
+    for (const geste of aTenter) {
       const tentative = await executerGeste({ geste, intercepteur, page, config, filtreElement, delaiMs, clicMs });
       // LE GESTE A EU LIEU : on re-mesure AVANT de conclure, et avant même
       // de journaliser. « Écarté » est une propriété de la PAGE, pas du
@@ -232,8 +269,17 @@ export async function ecarterRecouvrements(options: OptionsEcartement): Promise<
         continue;
       }
       nbEcartes += 1;
+      ecarte = true;
+      memoire?.retenir(signature, { geste });
       journaliser(EVENEMENT_RECOUVREMENT_ECARTE, { intercepteur: intercepteur.selecteur, geste });
       break;
+    }
+    if (!ecarte && recouvreEncore(restants, intercepteur.selecteur)) {
+      // LE SOUVENIR QUI PAIE LE PLUS : tous les gestes essayés, aucun n'a
+      // écarté. On ne le retiendra pas s'il reste un doute — un
+      // recouvrement qui a DISPARU entre-temps n'a pas été jugé, il s'est
+      // évanoui, et conclure « rien ne le ferme » serait inventer.
+      memoire?.retenir(signature, { aucunGeste: true });
     }
   }
 

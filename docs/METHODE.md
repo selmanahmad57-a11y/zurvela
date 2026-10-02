@@ -460,3 +460,35 @@ alors que baisser la cible aurait rendu la validation verte en une ligne.
   un seuil d'alarme de la scorecard** : affaiblir le contrôle pour obtenir
   le vert est l'auto-réparation frauduleuse que Zurvela existe pour ne pas
   commettre — l'agent de test qui corrige le test au lieu du défaut.
+
+## 14. Un attendu formulé en termes d'instrument nomme la CAUSE admissible, pas seulement le compte
+
+Tous nos instruments comparent des ÉTATS ; aucun ne connaît les CAUSES. Le
+banc compte des verdicts corrects sans savoir pourquoi ils le sont ; la
+scorecard mesure des faux positifs sans savoir d'où ils viennent ; l'oracle
+d'équivalence dit « ceci a changé » et jamais « et voici si c'est bon ».
+**Un chiffre d'instrument est une question bien posée, pas une réponse** —
+et la tentation de le lire comme une réponse est d'autant plus forte qu'il
+est vert. Un oracle qui rend « 0 identité perdue » dit « rien n'a disparu »,
+jamais « rien n'a changé de nature ».
+
+Conséquence contraignante pour tout attendu écrit avant une mesure
+(§13 en donne la forme, ceci en donne le contenu) :
+
+- **Mal posé** : « 0 identité gagnée ».
+- **Bien posé** : « aucune identité gagnée dont la cause ne soit un budget
+  libéré, tracée au journal par son `echeance-atteinte` ou son arrêt
+  `reserve-confirmation` ».
+
+Ce n'est PAS un desserrement : compter zéro se vérifie d'un coup d'œil ;
+prouver l'origine de chaque gain oblige à retrouver, pour chacun, la trace
+qui l'explique. **Un attendu qui nomme sa cause ne peut pas être satisfait
+par chance ; un attendu qui compte le peut.** Et un attendu qui ne dit pas
+quelle cause il accepte force à trancher APRÈS avoir vu le chiffre,
+c'est-à-dire au moment le plus tentant.
+
+Corollaire opératoire, à vérifier AVANT tout run coûteux : chaque issue
+possible doit être diagnosticable PAR SA CAUSE dans le journal qu'on va
+produire. Un run dont on ne pourra pas tracer les causes est un run qu'on
+ne doit pas lancer — n°31 étendu de « pourra-t-on le lire » à « pourra-t-on
+l'expliquer ». Cas fondateur : APPRENTISSAGES n°40, cahier P2-4.

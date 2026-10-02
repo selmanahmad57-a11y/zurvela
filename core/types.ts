@@ -7,6 +7,8 @@
  */
 
 /** Catégories d'anomalies couvertes par le moteur (constitution §1). */
+import type { MemoireFermeture } from './scanner/exploration/memoire-fermeture.js';
+
 export type Categorie =
   | 'fonctionnel'
   | 'performance'
@@ -440,6 +442,13 @@ export interface ContexteExploration {
    * `echeance` (défaut) quand c'est l'échéance du scan elle-même.
    */
   arretEcheance?: ArretEcheance;
+  /**
+   * Ce que l'écartement apprend des recouvrements, partagé avec le REJEU
+   * (cahier P2-4, contrat du coût de fermeture). Elle naît dans le scan et
+   * meurt avec lui : son absence de chemin vers le disque est ce qui
+   * garantit qu'aucun souvenir ne survit à un site qui a changé.
+   */
+  memoireFermeture?: MemoireFermeture;
   journaliser(type: string, details?: unknown): void;
 }
 

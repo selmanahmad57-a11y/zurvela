@@ -1298,3 +1298,70 @@ regardé.
   proposition d'optimisation se juge sur les DEUX conditions à la fois, sa
   sûreté et son rendement, jamais sur l'une puis l'autre.
 
+## 39. Une optimisation qui se heurte à un RÉGLAGE est un contrat ; une optimisation qui se heurte à une GARANTIE est un cahier (2026-10-02, découpage du coût unitaire du rejeu)
+
+- **Le fait** : « le coût d'un rejeu » semblait être un seul chantier. La
+  mesure l'a coupé en deux. La NAVIGATION pèse 56 % des 510 s de rejeu du
+  banc ; la FERMETURE des recouvrements 45 %, concentrée sur 58 rejeux où
+  elle coûte 4 s chacun (69 % du temps sur `recouvrement--q10`). Deux
+  postes comparables en poids — et de natures radicalement différentes.
+- **Ce qui les sépare, et c'est le critère** :
+  - la fermeture refait un APPRENTISSAGE DÉJÀ FAIT. Le scan a mesuré que
+    rien ne ferme ce recouvrement sur cette page ; le rejeu le re-mesure à
+    zéro. Supprimer cela ne touche à rien de ce qu'on défend : on ne change
+    pas ce qu'on teste, on arrête de re-découvrir ce qu'on sait. Ce qu'on
+    y rencontre est un RÉGLAGE ;
+  - la navigation se heurte à `variations: ['contexte-neuf']`. Ce n'est pas
+    un réglage : c'est ce qui donne un sens au mot « reproduit ». Deux
+    constats dans la même page tiède ne sont pas deux constats
+    indépendants. Réduire la navigation, c'est NÉGOCIER le différenciateur
+    n°1.
+- **La règle** : une optimisation qui se heurte à un réglage est un
+  CONTRAT — le réglage se change sous l'oracle, qui dit si l'identité a
+  bougé. Une optimisation qui se heurte à une garantie est un CAHIER — la
+  garantie se négocie sous arbitrage explicite, en tête de cahier, comme
+  l'identité déclarée l'a eu en P2-2. Un chantier de garantie traîné dans
+  un cahier de réglages se décide par inadvertance, c'est-à-dire mal.
+- **Comment reconnaître lequel, sans se raconter d'histoire** : demander ce
+  que l'optimisation RETIRE. Si elle retire du travail redondant, c'est un
+  réglage. Si elle retire une PROPRIÉTÉ — l'indépendance, la fraîcheur,
+  l'isolement, la vérification — alors elle retire une garantie, même
+  quand la propriété n'est écrite nulle part comme telle. Le signe : la
+  question « et si on faisait sans ? » a une réponse technique pour un
+  réglage, et une réponse de PRODUIT pour une garantie.
+
+## 40. L'oracle NOMME la question, seul le journal y répond (2026-10-02, cahier P2-4, contrat du coût de fermeture)
+
+- **Le fait** : la mémoire de fermeture devait, par contrat (F6), ne RIEN
+  changer à ce qui est publié — 0 identité perdue et 0 gagnée. L'oracle a
+  rendu 0 perdue et **12 gagnées**. Deux lectures s'offraient, opposées :
+  soit la mémoire avait fait sauter une mesure et changé un jugement (faute
+  cardinale), soit elle avait libéré du budget et élargi la couverture
+  (résultat souhaitable). **L'oracle ne peut pas les distinguer** : les deux
+  se présentent à lui exactement de la même façon.
+- **Ce qu'il a fallu faire** : tracer chaque gain à sa cause dans le
+  JOURNAL. Les trois groupes de q10 étaient déclarés
+  `limite-automatisation / echeance-atteinte` dans la référence ; la
+  localisation mobile de q07 vient d'une exploration qui s'arrêtait sur
+  `reserve-confirmation` à 3 pages sur 4 et qui va désormais au bout. Puis
+  vérifier que rien d'autre n'avait bougé : mêmes gestes au premier contact,
+  mêmes candidates, 0 recouvrement écarté avant comme après.
+- **La règle, et elle vaut pour tout instrument de comparaison** : un
+  oracle compare des ÉTATS, il ne connaît pas les CAUSES. Il dit « ceci a
+  changé », jamais « voici pourquoi ». Un verdict d'oracle est donc une
+  question bien posée, pas une réponse — et la tentation de le lire comme
+  une réponse est d'autant plus forte qu'il est vert. Un instrument qui
+  tranche ce qu'il ne peut pas savoir est pire qu'un instrument muet.
+- **Le corollaire pratique** : tout attendu écrit en termes d'oracle doit
+  nommer la CAUSE admissible, pas seulement le compte admissible. « 0
+  identité gagnée » était mal spécifié ; « aucune identité gagnée dont la
+  cause ne soit un budget libéré, tracée au journal » est ce qu'il fallait
+  écrire. Un attendu qui ne dit pas quelle cause il accepte force à
+  trancher après coup, c'est-à-dire au moment le plus tentant.
+- **Et pourquoi ce n'est pas un affaiblissement** : la trace est PLUS
+  exigeante que le compte. Compter zéro gain se vérifie en lisant un
+  nombre ; prouver que chaque gain vient d'un budget libéré demande de
+  retrouver, pour chacun, l'écartée `echeance-atteinte` ou l'arrêt
+  `reserve-confirmation` qui l'explique. C'est la même scission qu'au n°35 :
+  on ne desserre pas la garde, on la braque sur ce qui compte.
+
