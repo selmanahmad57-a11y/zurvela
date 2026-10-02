@@ -101,6 +101,8 @@ export function creerBudgetScan(client: ClientIa, maxUsdParScan: number | null):
   const plafonne: ClientIa = {
     mode: client.mode,
     raisonDegrade: client.raisonDegrade,
+    // La clé ne dépense rien : le plafond ne la concerne pas, elle passe.
+    cleDecision: (etat) => client.cleDecision(etat),
     profiler: (contexte: ContexteProfilage): Promise<ResultatIa<ProfilPage>> =>
       plafonner('profilage', () => client.profiler(contexte)),
     decider: (etat: EtatDecisionEnumere): Promise<ResultatIa<DecisionEstampillee>> =>

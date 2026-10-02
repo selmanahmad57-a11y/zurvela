@@ -564,6 +564,14 @@ export function clientRejouable(
      * production n'a pas — sans quoi l'instrument mesurerait un moteur plus
      * permissif que le vrai.
      */
+    /** La même clé que le rejeu emploie, exposée pour la mesure (P2-4, contrat 2). */
+    cleDecision: (etat: EtatDecisionEnumere) =>
+      cleCassetteDecision({
+        versionPrompt: VERSION_NAVIGATION,
+        empreinteContrat: empreinteNavigation,
+        modele: decision.modele,
+        etat: normaliserEtatDecision(etat, decision.config),
+      }),
     decider: (etat: EtatDecisionEnumere) => {
       const etatNormalise = normaliserEtatDecision(etat, decision.config);
       const validateurDecision = creerValidateurDecision(identifiantsEnumeres(etatNormalise));

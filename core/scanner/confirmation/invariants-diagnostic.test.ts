@@ -72,6 +72,7 @@ function client(avis: DiagnosticEstampille['avis']): ClientIa {
     mode: 'actif',
     raisonDegrade: null,
     profiler: () => indisponible(),
+    cleDecision: () => null,
     decider: () => indisponible(),
     rediger: () => indisponible(),
     diagnostiquer: () =>
@@ -88,6 +89,7 @@ const clientMuet: ClientIa = {
   mode: 'degrade',
   raisonDegrade: 'sans-capacite',
   profiler: () => Promise.resolve({ disponible: false, raison: 'sans-capacite' }),
+  cleDecision: () => null,
   decider: () => Promise.resolve({ disponible: false, raison: 'sans-capacite' }),
   rediger: () => Promise.resolve({ disponible: false, raison: 'sans-capacite' }),
   diagnostiquer: () => Promise.resolve({ disponible: false, raison: 'sans-capacite' }),

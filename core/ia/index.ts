@@ -259,6 +259,25 @@ export interface ClientIa {
    * produit jamais d'action : il rend l'identifiant opaque de son choix.
    */
   decider(etat: EtatDecisionEnumere): Promise<ResultatIa<DecisionEstampillee>>;
+  /**
+   * La CLÉ que porterait une décision mise en cache, pour cet état — rien
+   * de plus. Elle MESURE, elle ne décide rien : le cache n'existe pas
+   * encore (cahier P2-4, contrat 2), et c'est sa répétabilité qui dira s'il
+   * vaut le code.
+   *
+   * Elle est calculée par `cleCassetteDecision`, LA MÊME fonction que le
+   * rejeu du banc — jamais une réimplémentation « équivalente ». Deux
+   * chemins qui calculeraient la clé chacun de leur côté divergeraient
+   * silencieusement le jour où la normalisation évolue, et le cache
+   * frapperait à côté : une clé de cache est une doctrine, et une doctrine
+   * recopiée dérive (APPRENTISSAGES n°25).
+   *
+   * C'est un HASH de l'état normalisé, jamais l'état en clair : le journal
+   * d'un scan réel ne doit pas recopier la page d'autrui.
+   *
+   * `null` quand le client n'a pas de capacité de décision.
+   */
+  cleDecision(etat: EtatDecisionEnumere): string | null;
   diagnostiquer(contexte: ContexteDiagnostic): Promise<ResultatIa<DiagnosticEstampille>>;
   /**
    * Rédige les CHAMPS DE PROSE d'un rapport business à partir de sa structure
@@ -334,6 +353,8 @@ export function creerClientSansCapacite(raison: string, message?: string): Clien
     profiler: () => indisponible<ProfilPage>(),
     profilerBrut: () => indisponible<ReponseBrute>(),
     decider: () => indisponible<DecisionEstampillee>(),
+    // Sans capacité de décision, il n'y a pas de clé : rien ne serait mis en cache.
+    cleDecision: () => null,
     deciderBrut: () => indisponible<ReponseBrute>(),
     diagnostiquer: () => indisponible<DiagnosticEstampille>(),
     diagnostiquerBrut: () => indisponible<ReponseBrute>(),

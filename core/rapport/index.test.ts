@@ -38,6 +38,7 @@ const clientMuet: ClientIa = {
   mode: 'degrade',
   raisonDegrade: RAISON_CASSETTE_ABSENTE,
   profiler: async () => ({ disponible: false, raison: RAISON_CASSETTE_ABSENTE }),
+  cleDecision: () => null,
   decider: async () => ({ disponible: false, raison: RAISON_CASSETTE_ABSENTE }),
   diagnostiquer: async () => ({ disponible: false, raison: RAISON_CASSETTE_ABSENTE }),
   rediger: async () => ({ disponible: false, raison: RAISON_CASSETTE_ABSENTE, coutApi: 0.004 }),
@@ -50,6 +51,7 @@ function clientQuiRedige(): ClientIa & { appelsFaits: number } {
     mode: 'actif',
     raisonDegrade: null,
     profiler: async () => ({ disponible: false, raison: 'hors-sujet' }),
+    cleDecision: () => null,
     decider: async () => ({ disponible: false, raison: 'hors-sujet' }),
     diagnostiquer: async () => ({ disponible: false, raison: 'hors-sujet' }),
     rediger: async (contexte): Promise<ResultatIa<RedactionEstampillee>> => {
@@ -238,6 +240,7 @@ describe('redigerRapportBusiness — le rapport existe TOUJOURS', () => {
       mode: 'actif',
       raisonDegrade: null,
       profiler: async () => ({ disponible: false, raison: 'hors-sujet' }),
+      cleDecision: () => null,
       decider: async () => ({ disponible: false, raison: 'hors-sujet' }),
       diagnostiquer: async () => ({ disponible: false, raison: 'hors-sujet' }),
       rediger: async (contexte): Promise<ResultatIa<RedactionEstampillee>> => ({

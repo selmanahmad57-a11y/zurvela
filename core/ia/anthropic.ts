@@ -12,6 +12,9 @@ import Anthropic from '@anthropic-ai/sdk';
 import type { ConfigDiagnostic, ConfigProfilage, ConfigRapport, ConfigScanner } from '../scanner/config.js';
 import type { EtatDecisionEnumere } from '../types.js';
 import type { ConfigNavigation } from './config-navigation.js';
+import { cleCassetteDecision } from './cassettes.js';
+
+import { VERSION as VERSION_NAVIGATION } from '../../prompts/navigation/v2.js';
 import { deciderBrutAvec, decisionDepuisReponse, type AppelDecision } from './decision.js';
 import { diagnosticDepuisReponse, diagnostiquerBrutAvec, type AppelDiagnostic } from './diagnostic.js';
 import { normaliserContexteDiagnostic, type ContexteDiagnosticNormalise } from './contexte-diagnostic.js';
@@ -19,7 +22,7 @@ import { creerValidateurDiagnostic } from './schema-diagnostic.js';
 import { redactionDepuisReponse, redigerBrutAvec, type AppelRedaction } from './redaction.js';
 import { bornerContexteRedaction, identifiantsSections } from './contexte-redaction.js';
 import { creerValidateurRedaction } from './schema-redaction.js';
-import { identifiantsEnumeres, normaliserEtatDecision, type EtatNormalise } from './etat-decision.js';
+import { empreinteContratNavigation, identifiantsEnumeres, normaliserEtatDecision, type EtatNormalise } from './etat-decision.js';
 import { creerValidateurDecision } from './schema-decision.js';
 import {
   type OptionsRedaction,
@@ -371,6 +374,20 @@ export function creerClientAnthropic(options: OptionsClientAnthropic): ClientIaE
      * l'énumérateur a produit ses actions ne doit pas pouvoir changer ce que
      * le modèle voit.
      */
+    /**
+     * La clé que porterait une décision mise en cache. MESURE SEULE : rien
+     * n'est mis en cache aujourd'hui, et ce chemin ne décide rien (cahier
+     * P2-4, contrat 2). Elle appelle `cleCassetteDecision`, la même
+     * fonction que le rejeu du banc, sur la même normalisation.
+     */
+    cleDecision(etat: EtatDecisionEnumere): string {
+      return cleCassetteDecision({
+        versionPrompt: VERSION_NAVIGATION,
+        empreinteContrat: empreinteContratNavigation(navigation),
+        modele: modeleNavigation,
+        etat: normaliserEtatDecision(etat, navigation),
+      });
+    },
     async decider(etat: EtatDecisionEnumere): Promise<ResultatIa<DecisionEstampillee>> {
       const etatNormalise = normaliserEtatDecision(etat, navigation);
       const brut = await deciderBrut(etatNormalise);

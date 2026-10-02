@@ -271,7 +271,8 @@ describe('politique IA branchée — repli par décision et traçabilité jusqu�
       mode: 'actif' as const,
       raisonDegrade: null,
       profiler: () => Promise.resolve({ disponible: false as const, raison: 'doublure' }),
-      decider(etat: EtatDecisionEnumere): Promise<ResultatIa<DecisionEstampillee>> {
+      cleDecision: () => null,
+    decider(etat: EtatDecisionEnumere): Promise<ResultatIa<DecisionEstampillee>> {
         suivi.appels += 1;
         if (suivi.appels <= nbEchecs) {
           return Promise.resolve({ disponible: false, raison: RAISON_CASSETTE_ABSENTE });

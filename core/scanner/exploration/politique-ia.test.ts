@@ -10,7 +10,7 @@ import type { ContexteDecision, EntreeJournal, EtatDecisionEnumere, PageVisitee,
 import type { ConfigScanner } from '../config.js';
 import { enumererActions } from './enumeration.js';
 import { NOM_POLITIQUE_DETERMINISTE, politiqueDeterministe, RAISON_PLUS_RIEN } from './politique.js';
-import { EVENEMENT_ELECTION, EVENEMENT_REPLI, NOM_POLITIQUE_IA, politiqueIa, RAISON_DECISION_EN_ERREUR } from './politique-ia.js';
+import { EVENEMENT_CLE_DECISION, EVENEMENT_ELECTION, EVENEMENT_REPLI, NOM_POLITIQUE_IA, politiqueIa, RAISON_DECISION_EN_ERREUR } from './politique-ia.js';
 
 const ORIGINE = 'http://site.invalid';
 
@@ -64,6 +64,7 @@ function client(decider: ClientIa['decider']): ClientIa {
     mode: 'actif',
     raisonDegrade: null,
     profiler: () => Promise.resolve({ disponible: false, raison: 'doublure' }),
+    cleDecision: () => null,
     decider,
     diagnostiquer: () => Promise.resolve({ disponible: false, raison: 'doublure' }),
     rediger: () => Promise.resolve({ disponible: false, raison: 'doublure' }),
@@ -197,3 +198,47 @@ describe('politiqueIa — le repli PAR DÉCISION', () => {
     expect(decision.politique).toBe(NOM_POLITIQUE_DETERMINISTE);
   });
 });
+
+describe('la clé de décision journalisée (cahier P2-4, contrat 2)', () => {
+  /** Le banc d'essai existant, avec une clé de décision pilotée. */
+  function bancAvecCle(cle: string | null): { politique: ReturnType<typeof politiqueIa>; journal: EntreeJournal[] } {
+    const journal: EntreeJournal[] = [];
+    const cible = actions[1];
+    if (cible === undefined) {
+      throw new Error('énumération vide');
+    }
+    const politique = politiqueIa({
+      ia: { ...client(() => Promise.resolve(elu(cible.id))), cleDecision: () => cle },
+      deterministe: politiqueDeterministe(),
+      journaliser: (type, details) => journal.push({ horodatage: new Date().toISOString(), type, details }),
+    });
+    return { politique, journal };
+  }
+
+  it('journalise un HASH, et rien de l’état en clair', async () => {
+    // Le journal d'un scan réel ne recopie pas la page d'autrui : la clé
+    // est un hash, et c'est tout ce qui en sort.
+    const { politique, journal } = bancAvecCle('0123456789abcdef');
+    await politique.decider(contexte, etat);
+    expect(details(journal, EVENEMENT_CLE_DECISION)).toMatchObject({ cle: '0123456789abcdef' });
+    const trace = JSON.stringify(details(journal, EVENEMENT_CLE_DECISION));
+    expect(trace).not.toContain('historique');
+    expect(trace).not.toContain('libelle');
+  });
+
+  it('est INERTE : la décision rendue est EXACTEMENT la même, clé ou pas', async () => {
+    // L'observateur ne doit pas modifier l'observé. Le contrôle qui peut
+    // échouer : une journalisation qui changerait le chemin de décision —
+    // le pire des fantômes sur un chemin de production.
+    const avec = await bancAvecCle('abc').politique.decider(contexte, etat);
+    const sans = await bancAvecCle(null).politique.decider(contexte, etat);
+    expect(avec).toEqual(sans);
+  });
+
+  it('ne journalise RIEN quand le client n’a aucune capacité de décision', async () => {
+    const { politique, journal } = bancAvecCle(null);
+    await politique.decider(contexte, etat);
+    expect(details(journal, EVENEMENT_CLE_DECISION)).toBeUndefined();
+  });
+});
+

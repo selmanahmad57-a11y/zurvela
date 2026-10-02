@@ -29,6 +29,9 @@ export const RAISON_DECISION_EN_ERREUR = 'decision-en-erreur';
 
 /** Types d'entrée de journal propres à la politique IA. */
 export const EVENEMENT_ELECTION = 'decision.ia.election';
+/** Journal : la clé qu'une décision mise en cache porterait (P2-4, contrat 2). MESURE, jamais décision. */
+export const EVENEMENT_CLE_DECISION = 'decision.cle';
+
 export const EVENEMENT_REPLI = 'decision.repli';
 
 export type Journaliser = (type: string, details?: unknown) => void;
@@ -64,6 +67,21 @@ export function politiqueIa(dependances: DependancesPolitiqueIa): PolitiqueDecis
   return {
     nom: NOM_POLITIQUE_IA,
     async decider(contexte: ContexteDecision, etat: EtatDecisionEnumere): Promise<DecisionPrise> {
+      // LA CLÉ QUE PORTERAIT UNE DÉCISION MISE EN CACHE — mesure seule
+      // (cahier P2-4, contrat 2). Rien n'est mis en cache aujourd'hui : ce
+      // hash sert uniquement à mesurer la RÉPÉTABILITÉ des états énumérés,
+      // intra-scan et inter-scans, avant de décider si un cache vaut son
+      // code. Le facteur 14 dit où est le coût, pas si le cache le réduira.
+      //
+      // Un HASH, jamais l'état en clair : le journal d'un scan réel ne
+      // recopie pas la page d'autrui. Et la clé vient de `cleDecision`, qui
+      // appelle `cleCassetteDecision` — la même fonction que le rejeu du
+      // banc, sur la même normalisation : deux chemins qui la calculeraient
+      // chacun de leur côté divergeraient en silence.
+      const cle = ia.cleDecision(etat);
+      if (cle !== null) {
+        journaliser(EVENEMENT_CLE_DECISION, { cle, page: etat.page, viewport: etat.viewport });
+      }
       let resultat;
       try {
         resultat = await ia.decider(etat);

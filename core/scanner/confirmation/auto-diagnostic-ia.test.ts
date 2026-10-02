@@ -55,6 +55,7 @@ function clientFactice(reponse: ResultatIa<DiagnosticEstampille>): ClientIa & { 
     mode: 'actif',
     raisonDegrade: null,
     profiler: () => indisponible(),
+    cleDecision: () => null,
     decider: () => indisponible(),
     rediger: () => indisponible(),
     diagnostiquer: (contexte: ContexteDiagnostic) => {

@@ -134,6 +134,7 @@ describe('profilage IA sur le banc', () => {
         appels.push(contexte);
         return { disponible: true, valeur: PROFIL, coutApi: 0.005 };
       },
+      cleDecision: () => null,
       decider: () => Promise.resolve({ disponible: false, raison: 'hors-perimetre' }),
       diagnostiquer: () => Promise.resolve({ disponible: false, raison: 'hors-perimetre' }),
       rediger: () => Promise.resolve({ disponible: false, raison: 'hors-perimetre' }),
