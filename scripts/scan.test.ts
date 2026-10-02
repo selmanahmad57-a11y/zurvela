@@ -52,23 +52,31 @@ describe('la configuration de production GOUVERNE le scan', () => {
 
 describe('lecture des options', () => {
   it('par défaut, c’est la PRODUCTION : scanner un site réel avec les réglages du banc serait la faute', () => {
-    expect(lireOptions(['https://exemple.invalid'])).toMatchObject({ url: 'https://exemple.invalid', config: 'production' });
+    expect(lireOptions(['https://exemple.invalid', '--journal', 'j.json'])).toMatchObject({ url: 'https://exemple.invalid', config: 'production' });
   });
 
   it('accepte l’instrument explicitement, et refuse un nom inconnu', () => {
-    expect(lireOptions(['https://x.invalid', '--config', 'instrument'])?.config).toBe('instrument');
-    expect(lireOptions(['https://x.invalid', '--config', 'inconnue'])).toBeNull();
+    expect(lireOptions(['https://x.invalid', '--journal', 'j.json', '--config', 'instrument'])?.config).toBe('instrument');
+    expect(lireOptions(['https://x.invalid', '--journal', 'j.json', '--config', 'inconnue'])).toBeNull();
     expect(estNomConfig('production')).toBe(true);
     expect(estNomConfig('autre')).toBe(false);
   });
 
-  it('accepte --journal : sans lui, la campagne ne pouvait citer aucune preuve', () => {
+  it('un scan sans --journal est REFUSÉ : un jeu d’options sans journal N’EXISTE PAS', () => {
+    // APPRENTISSAGES n°31 rendu MÉCANIQUE (n°34). La règle « un run qu'on
+    // ne pourra pas lire ne se lance pas » était écrite, et elle a cédé
+    // DEUX FOIS en une soirée sous l'enchaînement des gestes : un
+    // apprentissage inscrit n'est pas un réflexe installé. Le refus vit
+    // donc à la LECTURE des options, et non dans une garde que l'appelant
+    // pourrait oublier d'appeler — un invariant imposé bat un invariant
+    // vérifié (n°28).
+    expect(lireOptions(['https://x.invalid'])).toBeNull();
+    expect(lireOptions(['https://x.invalid', '--journal', ''])).toBeNull();
     expect(lireOptions(['https://x.invalid', '--journal', 'j.json'])?.journal).toBe('j.json');
-    expect(lireOptions(['https://x.invalid'])?.journal).toBeUndefined();
   });
 
   it('sans URL, il n’y a rien à scanner', () => {
-    expect(lireOptions([])?.url).toBeUndefined();
+    expect(lireOptions(['--journal', 'j.json'])?.url).toBeUndefined();
   });
 });
 

@@ -64,10 +64,17 @@ interface Options {
   sortie?: string;
   /**
    * Fichier où écrire le RAPPORT TECHNIQUE complet (journal, candidates,
-   * écartées, anomalies) en JSON. Sans lui, la campagne ne pouvait citer
-   * aucune preuve : le premier scan réel l'a montré (bestiaire, fiche 01).
+   * écartées, anomalies) en JSON.
+   *
+   * OBLIGATOIRE, et c'est un INVARIANT, pas un confort. Sans lui, la
+   * campagne ne pouvait citer aucune preuve (bestiaire, fiche 01) — et un
+   * scan dont le résultat ne survit pas à l'affichage dépense sans rien
+   * apprendre (APPRENTISSAGES n°31). La règle était écrite ; elle a cédé
+   * deux fois en une soirée sous l'enchaînement des gestes. Elle n'est plus
+   * une case mentale : un jeu d'options SANS journal n'existe pas
+   * (n°34, et n°28 — un invariant imposé bat un invariant vérifié).
    */
-  journal?: string;
+  journal: string;
 }
 
 export function lireOptions(args?: string[]): Options | null {
@@ -82,11 +89,16 @@ export function lireOptions(args?: string[]): Options | null {
     if (!estNomConfig(nomConfig)) {
       return null;
     }
+    // PAS DE JOURNAL, PAS D'OPTIONS. Le refus vit ici, à la lecture, et non
+    // dans une garde que l'appelant pourrait oublier d'appeler.
+    if (values.journal === undefined || values.journal === '') {
+      return null;
+    }
     return {
       ...(positionals[0] === undefined ? {} : { url: positionals[0] }),
       config: nomConfig,
       ...(values.sortie === undefined ? {} : { sortie: values.sortie }),
-      ...(values.journal === undefined ? {} : { journal: values.journal }),
+      journal: values.journal,
     };
   } catch {
     return null;
@@ -96,13 +108,20 @@ export function lireOptions(args?: string[]): Options | null {
 async function principal(): Promise<void> {
   const options = lireOptions();
   if (options?.url === undefined) {
-    console.error('Usage : pnpm scan <url> [--config production|instrument] [--sortie <fichier>] [--journal <fichier.json>]');
+    console.error(
+      [
+        'Usage : pnpm scan <url> --journal <fichier.json> [--config production|instrument] [--sortie <fichier>]',
+        '  --journal est OBLIGATOIRE : un scan dont le résultat ne survit pas à l’affichage dépense',
+        '  sans rien apprendre, et aucune question posée après coup n’a de réponse (APPRENTISSAGES n°31).',
+      ].join('\n'),
+    );
     process.exitCode = 2;
     return;
   }
 
   const config = await chargerConfigScanner(FICHIERS_CONFIG[options.config]);
   const timeoutMs = timeoutDe(config, options.config);
+
   // CE QUE LA COMMANDE ANNONCE AVANT DE PARTIR. Un scan réel engage notre
   // responsabilité envers un site qui ne nous a rien demandé : ce qu'il va
   // faire, et ce qu'il s'interdit, se lit avant, pas après.
@@ -116,6 +135,11 @@ async function principal(): Promise<void> {
       `  budget             : ${config.budget.maxUsdParScan === null ? 'aucun' : `${config.budget.maxUsdParScan} USD`}`,
       `  échéance           : ${timeoutMs} ms`,
       `  agent              : ${config.robot.userAgent}`,
+      // LA POLITIQUE SE LIT, ELLE NE SE SUPPOSE PAS (n°30). Deux scans ont
+      // été payés en croyant mesurer la politique IA, alors que la
+      // production tourne en déterministe : l'information était dans un
+      // fichier de config que personne n'avait ouvert.
+      `  politique          : ${config.exploration.politique}`,
     ].join('\n'),
   );
 
@@ -132,7 +156,7 @@ async function principal(): Promise<void> {
     await writeFile(options.sortie, `${texte}\n`, 'utf8');
     console.log(`\nRapport écrit : ${options.sortie}`);
   }
-  if (options.journal !== undefined) {
+  {
     // JSON COMPACT : le journal du scan n°5 du bestiaire pesait 4,3 Mo indenté ;
     // vingt scans à ce rythme alourdissent le dépôt de dizaines de Mo pour une
     // campagne. La preuve n'a pas besoin d'être lisible à l'œil, elle a besoin

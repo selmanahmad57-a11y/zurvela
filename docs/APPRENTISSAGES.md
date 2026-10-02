@@ -1099,3 +1099,39 @@ regardé.
   décide. Mesurer une politique économe et la déployer sont deux décisions
   séparées, prises sur deux critères différents.
 
+## 34. Un apprentissage inscrit n'est pas un réflexe installé (2026-10-02, deux runs perdus coup sur coup)
+
+- **Le fait** : deux scans payants perdus en une heure, pour deux raisons
+  différentes, et chacun enfreignant une règle écrite UN OU DEUX JOURS plus
+  tôt, de ma main. Le premier sans `--journal` — n°31, « un run qu'on ne
+  pourra pas lire ne se lance pas ». Le second en supposant que la
+  production tournait en politique IA alors que la réponse était dans un
+  fichier de config — n°30, « lire le balisage, pas l'imaginer », transposé
+  à l'état du système. 0,16 USD pour zéro chiffre.
+- **Ce que cela dit, et qui est désagréable** : ce n'est pas un défaut de
+  connaissance. Je connaissais les deux règles, je les avais rédigées, j'en
+  avais écrit les corollaires. Elles ont cédé quand même — et elles ont cédé
+  **sous l'enchaînement rapide des gestes**, c'est-à-dire exactement dans la
+  situation où l'on lance des runs. Une règle écrite protège contre l'oubli ;
+  elle ne protège pas contre le relâchement, et le relâchement est le mode
+  de défaillance du moment où elle sert.
+- **Le remède n'est donc pas « mieux connaître les règles »** mais de les
+  sortir de la mémoire : une vérification pré-run MATÉRIELLE, et non
+  mentale. Trois cases, cochées explicitement avant tout scan payant :
+  1. le journal est demandé (et il survivra à l'affichage) ;
+  2. l'état du système est LU, pas supposé — politique, config, version ;
+  3. chaque issue possible est diagnosticable : « si elle sort, saurai-je
+     pourquoi ? ».
+- **Mieux que la case : l'impossibilité.** C'est le n°28 appliqué à la
+  méthode elle-même — un invariant que le code impose bat un invariant
+  qu'on se rappelle. `pnpm scan` REFUSE désormais de tourner sans
+  `--journal` : le refus vit à la lecture des options, donc un jeu
+  d'options sans journal n'existe pas. Et la commande AFFICHE la politique
+  effective avant de partir, pour qu'on la lise au lieu de la supposer.
+  Chaque fois qu'une règle de méthode peut devenir un refus du programme,
+  elle doit le devenir.
+- **Portée** : c'est le méta-apprentissage de la série. Il ne dit pas quoi
+  faire, il dit comment les trente-trois autres tiennent ou cèdent — et
+  lesquels méritent d'être transformés en garde mécanique plutôt que
+  laissés en texte.
+

@@ -83,38 +83,44 @@ qu'on n'a pas prouvé identique ne mesure rien.
    cache qui sert une réponse d'une autre clé — l'empreinte bouge, le
    scénario rougit, alors qu'aucun verdict n'est faux.
 
-2. **MESURER LA RÉPÉTABILITÉ AVANT DE CONSTRUIRE LE CACHE.** Le facteur 14
-   dit OÙ est le coût ; il ne dit pas si un cache le réduira. Le gain d'un
-   cache de décisions est proportionnel à une grandeur que personne n'a
-   mesurée : **la part des états énumérés identiques d'un scan à l'autre sur
-   un même site**. Un outil la mesure — deux scans d'un site stable, les
-   états énumérés normalisés, le taux de répétition — et le chiffre décide
-   de l'architecture :
-   - répétabilité forte → le cache de décisions est la bonne arme
-     (contrat 3) ;
-   - répétabilité faible → le cache ne vaut pas son code, et l'effort va
-     entièrement au budget de rejeu (contrat 4).
-   **Aucune ligne de cache ne s'écrit avant ce chiffre.** C'est la règle
-   que la brique 4b posait déjà : « c'est cette grandeur qu'il faudra
-   mesurer avant de le construire, pas le coût ».
+2. **LE CACHE DE DÉCISIONS EST SANS OBJET — constat du 2026-10-02, et il
+   remplace le contrat qui le prévoyait.**
 
-3. **Le cache de décisions est une CASSETTE d'un autre nom**, et il hérite
-   de toutes ses gardes. Deux états énumérés identiques produisent la même
-   décision, donc la seconde ne paie pas d'appel. Mais :
-   - la clé porte la **version du prompt** et le **modèle**, exactement
-     comme une cassette — sans quoi un prompt modifié rejouerait une
-     décision périmée (fantôme de seconde espèce, METHODE §6) ;
-   - deux réponses différentes sous une même clé sont une ERREUR, jamais un
-     écrasement silencieux ;
-   - le cache est **intra-scan par défaut** : sa portée inter-scans est une
-     décision à part (D2), parce qu'un site change entre deux scans et
-     qu'une décision mise en cache hier peut être fausse aujourd'hui.
-   Contrôle : à empreinte identique, le nombre d'appels baisse et le
-   résultat ne bouge pas. Mutations : clé sans version de prompt (une
-   décision périmée est servie), clé sans modèle (un modèle change sans que
-   rien ne rougisse).
+   Le poste « cache » est RETIRÉ du cahier, et voici pourquoi, écrit ici
+   pour que personne ne le reconstruise dans six mois : **la production
+   tourne en politique `deterministe`** (`config/production.json`,
+   `exploration.politique`). Le chemin de décision IA n'est jamais
+   emprunté, aucune clé de décision ne se forme, et deux scans réels de
+   quotes.toscrape.com l'ont confirmé — 42 décisions chacun, zéro clé.
 
-4. **Le rejeu SÉLECTIONNÉ — et il se paie en preuve, jamais en signal.**
+   **Le facteur 14 mesurait un coût RÉEL, mais dans une configuration qui
+   n'est pas celle de la production.** 0,583 USD de décisions contre 0,041
+   de profilage : mesuré à la brique 4b sous politique IA. En production,
+   les décisions de navigation ne coûtent rien. Un cache ne pourrait donc
+   économiser que sur un chemin que le produit n'emprunte pas — et au banc,
+   où ce chemin existe, les cassettes jouent déjà ce rôle, gratuitement.
+
+   C'est un **fantôme de troisième espèce à l'échelle d'une décision
+   d'architecture** : la bonne mesure du mauvais système. Nous avons failli
+   construire un cache entier pour optimiser un coût qui n'existe pas là où
+   le produit tourne. Ce qui l'a révélé n'est pas la répétabilité que nous
+   allions mesurer, mais le fait que la clé ne se formait JAMAIS — un
+   symptôme que seule la tentative réelle de mesurer a fait apparaître.
+
+   **Ce qui reste utile** : la clé de décision est désormais journalisée en
+   production (`decision.cle`, hash seul, inerte, par la même fonction que
+   le rejeu du banc). Elle ne sert à rien aujourd'hui et c'est assumé : le
+   jour où la politique de production serait mise à l'étude, la
+   répétabilité se mesurera sans nouvelle instrumentation.
+
+   **Et la question qu'il NE FAUT PAS trancher ici** : la production
+   doit-elle rester en `deterministe` ? C'est un arbitrage de PRODUIT —
+   atteindre plus de parcours critiques (IA, guidée mais fragile) contre
+   coûter zéro décision et rester déterministe (actuel) —, il dépend du
+   cahier n°2 jamais fait (l'historique aveugle de l'IA), et **il ne se
+   décide jamais sur le coût**. Rangé au carnet comme cahier distinct.
+
+3. **Le rejeu SÉLECTIONNÉ — et il se paie en preuve, jamais en signal.**
    Tous les groupes n'ont pas besoin du même nombre de re-exécutions : un
    groupe à double signal (0,95) est plus sûr qu'un groupe fragile (0,75).
    La politique `econome` écrite en brique 3 devient réelle et MESURÉE.
@@ -124,10 +130,13 @@ qu'on n'a pas prouvé identique ne mesure rien.
    cardinale du projet, et c'est exactement ce que cette optimisation rend
    possible.
    Contrôle : sur le banc entier, `econome` contre `complet` — mêmes
-   anomalies retenues, moins de tentatives. Mutation : un seuil qui laisse
+   anomalies retenues, moins de tentatives. **C'est désormais le CŒUR du
+   cahier, et non plus l'un de ses deux postes** : le cache retiré, tout
+   P2-4 tient dans le budget de rejeu — celui qui débloque les sites
+   lourds, et la raison pour laquelle le cahier a été promu en tête. Mutation : un seuil qui laisse
    tomber un groupe fragile — une anomalie disparaît, le banc rougit.
 
-5. **Le budget se RÉPARTIT, il ne s'augmente pas.** La réponse à « 54
+4. **Le budget se RÉPARTIT, il ne s'augmente pas.** La réponse à « 54
    groupes à rejouer » n'est pas « plus de temps » : c'est moins de rejeux
    inutiles (contrat 4) et une réserve de confirmation qui tient compte du
    NOMBRE de groupes, pas d'une fraction fixe de l'échéance. La répartition
@@ -135,7 +144,7 @@ qu'on n'a pas prouvé identique ne mesure rien.
    Contrôle : sur un site lourd simulé au banc, la confirmation reçoit de
    quoi rejouer ses groupes au lieu de s'arrêter à `reserve-confirmation`.
 
-6. **Le banc gagne un gabarit LOURD.** Les trois sites qui bloquent la
+5. **Le banc gagne un gabarit LOURD.** Les trois sites qui bloquent la
    mesure sont lourds de tiers et de recouvrements ; aucun gabarit ne leur
    ressemble, et la leçon de la dette n°20 interdit de régler une
    optimisation sur des cibles vivantes seules. Régler le budget de rejeu
@@ -152,7 +161,7 @@ qu'on n'a pas prouvé identique ne mesure rien.
    sature pas, il ne mesure rien. Ses dimensions — pages, groupes, délai
    de chaque rejeu — vivent en config, jamais en dur.
 
-7. **La mesure, et ce qui clôt le cahier.** Au banc : équivalence prouvée,
+6. **La mesure, et ce qui clôt le cahier.** Au banc : équivalence prouvée,
    appels en baisse, empreintes identiques. Sur le réel : **le grand
    tableau refait sur les neuf sites, avec automationexercise, demoqa et
    expandtesting enfin COMPARABLES** — le bilan de Phase 2 que le run du
@@ -174,15 +183,19 @@ optimisation se règle par itérations. La règle du cahier :
 - **les trois sites lourds ne sont scannés qu'à la validation finale**, une
   seule fois, dans le grand tableau.
 
-- Mesure de répétabilité (contrat 2) : deux scans d'un site stable ≈ **0,10
-  USD**. C'est la première dépense, et la seule avant toute décision
-  d'architecture.
-- Gabarit lourd et cassettes (contrat 6) ≈ **0,20 USD**.
+- **Dépensé : 0,16 USD**, et c'est une perte sèche — quatre scans de
+  quotes dont aucun n'a produit de chiffre. Les deux premiers sans
+  `--journal`, les deux suivants sur une politique supposée au lieu d'être
+  lue. Deux règles écrites de ma main, enfreintes coup sur coup
+  (APPRENTISSAGES n°34). La dépense a néanmoins acheté la découverte : la
+  clé ne se forme jamais en production.
+- Le poste « cache » est **supprimé** : il valait 0,10 de mesure et
+  l'écriture du cache. Les deux sont annulés.
+- Gabarit lourd et cassettes (contrat 5) ≈ **0,20 USD**.
 - Mises au point sur cible stable ≈ **0,20 USD**.
 - Grand tableau final, neuf sites × deux moteurs ≈ **0,85 USD**.
-- **Annoncé : ≈ 1,35 USD, plafond 2,00 USD.** Tout dépassement s'annonce
-  avant, jamais après, et l'estimation se refait une fois la répétabilité
-  connue — elle peut supprimer le poste « cache » entièrement.
+- **Annoncé : ≈ 1,41 USD au total (0,16 déjà dépensés), plafond 2,00 USD.**
+  Tout dépassement s'annonce avant, jamais après.
 
 ## 4. Hors périmètre
 
@@ -205,18 +218,10 @@ commit « P2-4 — la performance » à la validation seulement.
 
 - **D1 — la garde-maîtresse** (§0) : à confirmer telle quelle. Une
   optimisation se prouve équivalente, pas seulement rapide.
-- **D2 — portée du cache de décisions : intra-scan seulement, ou
-  inter-scans ?** Ma proposition : **intra-scan d'abord**, parce qu'un site
-  change entre deux scans et qu'une décision d'hier peut être fausse
-  aujourd'hui — et parce que l'inter-scans demanderait une politique
-  d'invalidation que rien ne mesure encore. L'inter-scans s'ouvre en dette,
-  levable par un chiffre : la répétabilité INTER-SCANS du contrat 2, si
-  elle est forte.
-- **D3 — que faire si la répétabilité est faible ?** Proposition :
-  abandonner le cache, l'inscrire en dette avec son chiffre, et porter tout
-  l'effort sur les contrats 4 et 5. Publier le chiffre qui condamne le
-  cache est un résultat, pas un échec — et il évite à quelqu'un de le
-  reconstruire dans six mois.
+- **D2 et D3 — SANS OBJET, tranchées par le réel** (contrat 2). Le cache
+  n'a pas été condamné par une répétabilité faible mais par la
+  configuration de production : la clé ne se forme jamais. Le constat est
+  publié dans le cahier pour que la question soit fermée, pas rouverte.
 - **D4 — la politique de production change-t-elle de `complet` à
   `econome` ?** Proposition : NON par défaut. `econome` devient mesurable
   et mesurée, et le passage en production est une décision séparée, prise

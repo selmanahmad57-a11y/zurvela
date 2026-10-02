@@ -155,6 +155,27 @@ automationexercise, demoqa et expandtesting enfin COMPARABLES — le bilan de
 Phase 2 que le run du 2026-10-01 n'a pas pu porter, et dont il devient la
 ligne « avant ».
 
+### Cahier — LE CHOIX DE LA POLITIQUE DE PRODUCTION (après le cahier n°2)
+
+**Isolé le 2026-10-02**, en retirant le poste « cache » de P2-4. La
+production tourne en `deterministe` : les décisions de navigation n'y
+coûtent rien, et le facteur 14 (0,583 contre 0,041 USD) mesurait un coût
+réel dans une configuration qui n'est pas celle de la production.
+
+**La question** : la production doit-elle passer en politique IA ? C'est un
+arbitrage de PRODUIT — l'IA est guidée mais fragile (elle atteint les
+cibles sous budget, elle souffrait de l'historique aveugle) ; la
+déterministe est robuste mais non guidée (elle rate les cibles sous budget,
+c'est le prix affiché de la gratuité).
+
+**Deux conditions pour l'ouvrir** : le cahier n°2 (l'historique aveugle de
+l'IA, C-01/C-08) doit être fait d'abord — on ne bascule pas sur une
+politique dont on connaît le défaut non corrigé ; et **la décision ne se
+prend jamais sur le coût**, seulement sur ce que chaque politique ATTEINT.
+Si elle bascule, le cache de décisions redevient pertinent et sa
+répétabilité se mesure sans nouvelle instrumentation : la clé est déjà
+journalisée (`decision.cle`).
+
 ### Cahier P2-5 — La lenteur
 
 **Périmètre** : **C-02** (un flux média 206 et une requête en attente ne sont
