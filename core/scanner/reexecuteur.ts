@@ -269,6 +269,7 @@ export function creerReexecuteur(dependances: DependancesReexecuteur): Reexecute
               config: config.detecteurs.recouvrement.fermeture,
               filtreElement: (cible) => dependances.filtreElement(ouverte, cible),
               delaiMs: delai(),
+              clicMs: budget(exploration.clicMs),
               geometrie: { max: exploration.elementsInteractifsMax, budgetMs: delai() },
               mesurer: () => recouvrements(ouverte, { max: exploration.elementsInteractifsMax, budgetMs: delai() }),
               journaliser: (type, details) => journaliser(type, { viewport: viewport.nom, url, rejeu: true, ...(details as object) }),

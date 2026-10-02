@@ -130,6 +130,19 @@ export interface OptionsEcartement {
   filtreElement: FiltreElementLie;
   /** Budget d'évaluation en page, en millisecondes. */
   delaiMs: number;
+  /**
+   * Délai d'un CLIC, qui n'est pas le budget d'évaluation d'un script.
+   *
+   * Les deux ont été confondus, et la facture a été lourde : un clic
+   * d'ESSAI sur un élément qui ne devient jamais actionnable attend tout
+   * son délai, et trois essais à 15 s — le budget d'évaluation — faisaient
+   * un rejeu de 46 s. Le groupe sortait alors en `limite-automatisation`
+   * pour budget insuffisant, et une anomalie RÉELLE était perdue.
+   *
+   * Un essai n'est pas une attente : il se borne court, et son échec est
+   * une réponse, pas un incident.
+   */
+  clicMs: number;
   /** Bornes de la mesure géométrique, pour re-mesurer à l'identique. */
   geometrie: { max: number; budgetMs: number };
   /**
@@ -174,7 +187,7 @@ function recouvreEncore(restants: readonly Recouvrement[], selecteur: string): b
  * plaisir de les essayer toutes.
  */
 export async function ecarterRecouvrements(options: OptionsEcartement): Promise<IssueEcartement> {
-  const { page, config, filtreElement, delaiMs, journaliser, attendre, mesurer } = options;
+  const { page, config, filtreElement, delaiMs, clicMs, journaliser, attendre, mesurer } = options;
   const tentatives: TentativeFermeture[] = [];
   let restants = [...options.constats];
   let nbEcartes = 0;
@@ -194,7 +207,7 @@ export async function ecarterRecouvrements(options: OptionsEcartement): Promise<
       continue;
     }
     for (const geste of config.gestes) {
-      const tentative = await executerGeste({ geste, intercepteur, page, config, filtreElement, delaiMs });
+      const tentative = await executerGeste({ geste, intercepteur, page, config, filtreElement, delaiMs, clicMs });
       // LE GESTE A EU LIEU : on re-mesure AVANT de conclure, et avant même
       // de journaliser. « Écarté » est une propriété de la PAGE, pas du
       // geste (APPRENTISSAGES n°27) — et une trace qui dirait « écarté »
@@ -234,6 +247,7 @@ interface OptionsGeste {
   config: ConfigFermeture;
   filtreElement: FiltreElementLie;
   delaiMs: number;
+  clicMs: number;
 }
 
 /**
@@ -241,7 +255,7 @@ interface OptionsGeste {
  * l'appelant qui re-mesure et tranche si la page a changé.
  */
 async function executerGeste(options: OptionsGeste): Promise<TentativeFermeture> {
-  const { geste, intercepteur, page, config, filtreElement, delaiMs } = options;
+  const { geste, intercepteur, page, config, filtreElement, delaiMs, clicMs } = options;
   const base: TentativeFermeture = { geste, cible: null, point: null, issue: 'indisponible' };
   try {
     switch (geste) {
@@ -272,7 +286,7 @@ async function executerGeste(options: OptionsGeste): Promise<TentativeFermeture>
           const motif = 'motif' in verdict ? verdict.motif : verdict.raison;
           return { ...base, cible: prises.controle, issue: 'interdite', motif };
         }
-        await page.click(prises.controle.selecteur, { timeout: delaiMs, noWaitAfter: true });
+        await page.click(prises.controle.selecteur, { timeout: clicMs, noWaitAfter: true });
         return { ...base, cible: prises.controle, issue: 'execute' };
       }
       case 'clic-hors-zone': {
@@ -309,7 +323,7 @@ async function executerGeste(options: OptionsGeste): Promise<TentativeFermeture>
             continue;
           }
           try {
-            await page.click(candidat.selecteur, { timeout: delaiMs, noWaitAfter: true });
+            await page.click(candidat.selecteur, { timeout: clicMs, noWaitAfter: true });
             essais.actives += 1;
           } catch {
             continue;

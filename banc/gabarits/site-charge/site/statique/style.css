@@ -1,0 +1,147 @@
+/* Feuille de style sobre du mini-site : lisible dès 375 px de large. */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  line-height: 1.5;
+  color: #22303a;
+  background: #f4efe6;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.entete {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem 1.5rem;
+  padding: 0.75rem 1rem;
+  background: #ffffff;
+  border-bottom: 1px solid #d9d2c5;
+}
+
+.marque {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-weight: 600;
+  color: inherit;
+  text-decoration: none;
+}
+
+.marque img {
+  width: 40px;
+  height: 40px;
+}
+
+.entete nav ul {
+  display: flex;
+  gap: 1rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.entete nav a {
+  color: #2f5d62;
+  text-decoration: none;
+}
+
+.entete nav a[aria-current="page"] {
+  text-decoration: underline;
+}
+
+.contenu {
+  flex: 1;
+  width: 100%;
+  max-width: 40rem;
+  margin: 0 auto;
+  padding: 1.5rem 1rem 3rem;
+}
+
+.intro {
+  font-size: 1.1rem;
+}
+
+.champ {
+  margin-bottom: 1rem;
+}
+
+.champ label {
+  display: block;
+  margin-bottom: 0.25rem;
+  font-weight: 600;
+}
+
+.champ input,
+.champ textarea {
+  width: 100%;
+  padding: 0.6rem 0.75rem;
+  font: inherit;
+  color: inherit;
+  border: 1px solid #b8b0a2;
+  border-radius: 0.375rem;
+  background: #ffffff;
+}
+
+.champ textarea {
+  resize: vertical;
+}
+
+.erreur {
+  padding: 0.75rem 1rem;
+  border-radius: 0.375rem;
+  background: #fbe3e0;
+  color: #7a1f14;
+}
+
+.actions {
+  margin-top: 1.5rem;
+}
+
+.bouton,
+button[data-role="envoyer"] {
+  display: inline-block;
+  padding: 0.7rem 1.5rem;
+  font: inherit;
+  font-weight: 600;
+  color: #ffffff;
+  background: #2f5d62;
+  border: 0;
+  border-radius: 0.375rem;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+button[data-role="envoyer"][disabled] {
+  opacity: 0.6;
+  cursor: progress;
+}
+
+.pied {
+  padding: 1rem;
+  font-size: 0.875rem;
+  color: #5c6770;
+  text-align: center;
+  border-top: 1px solid #d9d2c5;
+}
+
+/* Les trois offres de l'accueil : un bloc positionné, pour qu'un calque puisse s'y poser. */
+.offres {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin: 1.5rem 0;
+}
+

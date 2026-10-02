@@ -83,6 +83,34 @@ qu'on n'a pas prouvé identique ne mesure rien.
    cache qui sert une réponse d'une autre clé — l'empreinte bouge, le
    scénario rougit, alors qu'aucun verdict n'est faux.
 
+   **TENU, et corrigé à son premier usage (2026-10-02).** L'empreinte
+   écrite d'abord fondait deux grandeurs de natures opposées et rougissait
+   parce que le moteur avait observé un défaut deux fois au lieu d'une.
+   Elle est désormais SCINDÉE :
+
+   - **IDENTITÉ** — ce que le rapport dit du SITE : existence de l'anomalie,
+     description, catégorie, gravité, verdict, motif, groupe de cause,
+     localisations ÉNUMÉRÉES (jamais comptées), sections publiées. Égalité
+     exigée ; une identité perdue est le seul ÉCHEC de l'oracle.
+   - **EFFORT** — ce que le rapport dit de NOUS : observations, écartés pour
+     limite d'automatisation, non-vérifiés, recouvrements poussés, et la
+     note du banc. Affiché en second tableau, jamais bloquant — c'est ce
+     qu'une optimisation de budget a le DEVOIR de changer.
+
+   Le critère de partage n'est pas « est-ce imprimé dans le rapport » (les
+   trois comptes déclarés le sont tous les trois) mais « cette grandeur
+   parle-t-elle du site, ou de nous ? ». Il vit en CODE et non en config :
+   un réglage qui ferait glisser une gravité du côté effort ferait taire
+   l'oracle sans qu'aucune revue le voie (constitution §2). Dix mutations
+   le gardent, dont une par champ d'identité — un test par CAS laissait
+   passer le retrait du VERDICT sans aucun rouge.
+
+   Une identité GAGNÉE n'est pas un échec mais ce n'est pas une équivalence
+   non plus : l'oracle la nomme, exige qu'elle soit expliquée par écrit, et
+   REFUSE alors d'afficher que le gain de vitesse est comparable — une
+   durée qui tombe pendant qu'on en fait davantage ne mesure rien (n°33).
+   APPRENTISSAGES n°35.
+
 2. **LE CACHE DE DÉCISIONS EST SANS OBJET — constat du 2026-10-02, et il
    remplace le contrat qui le prévoyait.**
 
@@ -130,7 +158,12 @@ qu'on n'a pas prouvé identique ne mesure rien.
    cardinale du projet, et c'est exactement ce que cette optimisation rend
    possible.
    Contrôle : sur le banc entier, `econome` contre `complet` — mêmes
-   anomalies retenues, moins de tentatives. **C'est désormais le CŒUR du
+   anomalies retenues, moins de tentatives.
+   **Premier cas déterministe, acquis le 2026-10-02 : `recouvrement--q10`.**
+   Une fois le gaspillage de fermeture retiré, le desktop fait du vrai
+   travail et l'échéance arrive plus tôt sur mobile : deux groupes de plus
+   en `echeance-atteinte`, déclarés. Le budget paraissait suffisant parce
+   qu'on ne s'en servait pas (n°36). **C'est désormais le CŒUR du
    cahier, et non plus l'un de ses deux postes** : le cache retiré, tout
    P2-4 tient dans le budget de rejeu — celui qui débloque les sites
    lourds, et la raison pour laquelle le cahier a été promu en tête. Mutation : un seuil qui laisse
@@ -143,6 +176,14 @@ qu'on n'a pas prouvé identique ne mesure rien.
    (`echeance.repartition`) devient fonction de ce qu'il y a à faire.
    Contrôle : sur un site lourd simulé au banc, la confirmation reçoit de
    quoi rejouer ses groupes au lieu de s'arrêter à `reserve-confirmation`.
+   **Premier cas, traité le 2026-10-02 : `calque-au-rejeu--d01-d02`.** Le
+   rejeu tombait en `budget-insuffisant` à 46 s et PERDAIT une anomalie
+   réelle. La réponse n'a pas été plus de temps : les clics d'essai de
+   l'écartement de recouvrement étaient bornés par le budget d'ÉVALUATION
+   (15 s) au lieu du délai de CLIC (2 s), déjà en config. Aucun seuil
+   déplacé (METHODE §13) ; 39 s d'attente qui n'achetaient rien,
+   supprimées. Le coût débordait largement le témoin : `formulaire-contact`
+   perdait 34,7 s par scénario sans aucun recouvrement en jeu (n°36).
 
 5. **Le banc gagne un gabarit LOURD.** Les trois sites qui bloquent la
    mesure sont lourds de tiers et de recouvrements ; aucun gabarit ne leur

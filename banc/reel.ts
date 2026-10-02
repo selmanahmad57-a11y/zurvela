@@ -35,8 +35,8 @@
  * cahier ; elle refuse de partir sans clé.
  */
 import { spawn } from 'node:child_process';
-import { mkdtemp, readdir, readFile, stat, writeFile } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
+import { mkdir, readdir, readFile, stat, writeFile } from 'node:fs/promises';
+import { homedir } from 'node:os';
 import path from 'node:path';
 import { parseArgs } from 'node:util';
 import { chargerDictionnaire, traduire, type Dictionnaire } from '../core/i18n.js';
@@ -121,6 +121,11 @@ export interface OptionsReel {
   sites: string[];
   /** Moteurs d'avant, dans l'ordre donné : chacun scanne le même site, dans la même session. */
   avant: string[];
+  /**
+   * Où écrire les journaux et les rapports. Par défaut un dossier DURABLE
+   * hors du dépôt, jamais un temporaire du système.
+   */
+  dossier?: string;
 }
 
 const DECIMALES = 1;
@@ -154,11 +159,15 @@ export function lireOptions(args?: string[]): OptionsReel | null {
   try {
     const { values } = parseArgs({
       args,
-      options: { site: { type: 'string', multiple: true }, avant: { type: 'string', multiple: true } },
+      options: {
+        site: { type: 'string', multiple: true },
+        avant: { type: 'string', multiple: true },
+        dossier: { type: 'string' },
+      },
       allowPositionals: false,
       strict: true,
     });
-    return { sites: values.site ?? [], avant: values.avant ?? [] };
+    return { sites: values.site ?? [], avant: values.avant ?? [], ...(values.dossier === undefined ? {} : { dossier: values.dossier }) };
   } catch {
     return null;
   }
@@ -269,6 +278,19 @@ async function disponibilite(url: string, config: ConfigScanner): Promise<number
  * configuration de production, le même journal. Le moteur d'avant doit avoir
  * ses dépendances installées ; la commande le dit plutôt que de deviner.
  */
+/**
+ * Le dossier durable par défaut : `~/.config/zurvela/reel/<horodatage>`.
+ * Hors du dépôt — un grand tableau pèse des dizaines de Mo — mais pas dans
+ * un temporaire que le système efface.
+ */
+export function cheminDossierDurable(horodatage: string, accueil = homedir()): string {
+  return path.join(accueil, '.config', 'zurvela', 'reel', horodatage.replace(/[:.]/g, '-'));
+}
+
+async function dossierDurable(): Promise<string> {
+  return cheminDossierDurable(new Date().toISOString());
+}
+
 async function scannerAvec(moteur: string, url: string, dossierTravail: string, moment: string): Promise<{ ok: true; rapport: Rapport; tailleJournalOctets: number } | { ok: false; message: string }> {
   const journal = path.join(dossierTravail, `${moment}.journal.json`);
   const sortie = path.join(dossierTravail, `${moment}.rapport.md`);
@@ -331,7 +353,20 @@ async function principal(): Promise<void> {
   const retenus = options.sites.length === 0 ? tous : tous.filter((cas) => options.sites.includes(cas.id));
   console.log(traduire(dico, 'reel.entete', { nombre: retenus.length }));
 
-  const dossierTravail = await mkdtemp(path.join(tmpdir(), 'zurvela-reel-'));
+  // LE JOURNAL DOIT SURVIVRE (checklist n°34, case 1). Les journaux
+  // partaient dans un temporaire du système : 59 Mo pour un grand tableau,
+  // dans un dossier que l'OS purge. Or ce sont les runs les plus CHERS du
+  // projet, et toute l'analyse se fait APRÈS coup, sur ces fichiers — les
+  // perdre, c'est payer deux fois. Le défaut n'a jamais mordu par chance,
+  // pas par conception.
+  //
+  // Par défaut, donc, un dossier DURABLE hors du dépôt — la convention des
+  // journaux lourds du bestiaire —, horodaté, et ANNONCÉ avant le premier
+  // scan pour qu'on sache où regarder. Trop volumineux pour le dépôt
+  // (`banc/resultats/` est ignoré et ne conviendrait pas davantage).
+  const dossierTravail = options.dossier ?? (await dossierDurable());
+  await mkdir(dossierTravail, { recursive: true });
+  console.log(traduire(dico, 'reel.dossier', { dossier: dossierTravail }));
   const resultats: ResultatCas[] = [];
   let coutTotal = 0;
   for (const cas of retenus) {

@@ -1135,3 +1135,78 @@ regardé.
   lesquels méritent d'être transformés en garde mécanique plutôt que
   laissés en texte.
 
+
+## 35. Un instrument qui fond deux grandeurs de natures opposées interdit ce qu'il doit permettre (2026-10-02, cahier P2-4, premier usage de l'oracle)
+
+- **Le fait** : l'oracle d'équivalence, écrit le matin même, a rougi au
+  premier usage réel. 8 scénarios divergents, 20 éléments « perdus » — et
+  aucune anomalie perdue. Ce qui avait bougé, c'était le nombre
+  d'observations (le moteur avait re-vérifié deux fois au lieu d'une) et le
+  nombre de non-vérifiés. L'instrument ne distinguait pas **ce que le
+  rapport dit du SITE** de **ce qu'il dit de NOUS**.
+- **Pourquoi c'est grave et pas seulement agaçant** : exiger l'égalité de
+  l'effort, c'est interdire toute optimisation de budget — c'est-à-dire
+  interdire au cahier P2-4 d'exister. Un oracle ainsi fait n'est pas
+  « strict », il est inutilisable, et le réflexe qu'il installe est le pire
+  de tous : apprendre à ignorer son rouge.
+- **La frontière, et son critère** : l'identité est ce qui décrit le site —
+  existence de l'anomalie, description, catégorie, gravité, verdict, motif,
+  groupe de cause, localisations, sections publiées. L'effort est ce qui
+  décrit notre travail — observations, écartés, non-vérifiés, recouvrements
+  poussés, durées, coûts. **Le critère n'est pas « est-ce imprimé dans le
+  rapport »** : les trois comptes déclarés le sont tous les trois. C'est :
+  cette grandeur parle-t-elle du site, ou de nous ? Le client ne lit pas
+  « j'ai observé ce défaut deux fois au lieu d'une » ; il lit « ce défaut
+  existe ».
+- **Ce qui rend la correction légitime** — et la distinction vaut pour tout
+  instrument : la scission ne DESSERRE rien, elle BRAQUE. L'identité devient
+  d'égalité exigée, non négociable ; l'effort devient affiché, non bloquant.
+  §13 interdit de baisser un seuil pour convertir un échec en succès ; ici
+  l'une des deux grandeurs devient plus exigeante que l'instrument entier ne
+  l'était. La preuve qu'on n'est pas dans la complaisance, c'est que la
+  correction rend l'oracle capable de rougir là où il était AVEUGLE.
+- **Le corollaire mécanique : un COMPTE est aveugle au remplacement.**
+  L'empreinte comptait les localisations. Une anomalie qui gagne une place
+  (le même défaut, enfin vu sur mobile) sortait comme une perte suivie d'un
+  gain ; et surtout un défaut qui PASSE de desktop à mobile, à nombre égal,
+  ne bougeait pas d'un caractère — alors que la page concernée du rapport
+  client, elle, change. Énumérer attrape les deux cas, compter n'en attrape
+  aucun. Partout où une empreinte compte, se demander ce qu'un remplacement
+  à nombre constant lui ferait.
+- **Et la garde de la garde** : la frontière vit en CODE, jamais en config
+  (constitution §2), et chaque champ d'identité a son contrôle nommé. Les
+  mutations l'ont imposé : un test par CAS laissait passer le retrait du
+  VERDICT de l'identité sans aucun rouge. Ce qui doit être gardé, c'est la
+  LISTE des champs, pas quelques exemples choisis.
+
+## 36. Un gaspillage ne masque pas seulement son coût : il masque le manque qu'il provoque (2026-10-02, cahier P2-4, correction du coût de fermeture)
+
+- **Le fait** : les clics d'essai de l'écartement de recouvrement étaient
+  bornés par le budget d'ÉVALUATION (15 s) au lieu du délai de CLIC (2 s,
+  déjà en config, déjà utilisé par les vrais clics). Trois descendants
+  jamais actionnables faisaient 45 s. Deux bornes de natures différentes
+  confondues : le temps qu'on accorde à une MESURE et le temps qu'on accorde
+  à un GESTE. Un essai n'est pas une attente.
+- **Ce que le témoin montrait, et ce qu'il cachait** : le scénario
+  `calque-au-rejeu` sortait à 46 s avec une anomalie perdue — un symptôme
+  spectaculaire sur UN cas. L'oracle a montré que le coût était PARTOUT :
+  `formulaire-contact` perdait 34,7 s par scénario sans qu'aucun
+  recouvrement soit en jeu. Sans l'oracle, le témoin aurait été réparé et
+  les 34 s × N seraient restées. **Un symptôme visible est une porte, pas
+  une mesure.**
+- **La découverte qui compte, et qui n'était pas cherchée** : une fois le
+  gaspillage retiré, `recouvrement--q10` laisse DAVANTAGE de groupes
+  non vérifiés sur mobile. Rien n'a régressé — le desktop fait désormais du
+  vrai travail (deux re-exécutions au lieu d'une) là où il attendait des
+  clics morts, et l'échéance arrive donc plus tôt sur le viewport suivant.
+  **Le budget paraissait suffisant parce qu'on ne s'en servait pas.**
+- **La règle** : un gaspillage ne coûte pas seulement son temps, il
+  FALSIFIE le dimensionnement de tout ce qui l'entoure. Tant qu'il dure,
+  aucune mesure de suffisance d'un budget n'est valide — on mesure la
+  patience d'un système qui n'avance pas. Corollaire de méthode : après
+  avoir retiré un gaspillage, re-poser la question du dimensionnement, car
+  les réponses d'avant ne valent plus.
+- **Et ce que cela dit de P2-4** : le cahier se nourrit de lui-même. Chaque
+  réparation révèle la suivante — la correction du coût de fermeture a
+  donné son cas d'école au contrat du budget réparti, exactement comme
+  `calque-au-rejeu` l'avait donné au contrat de l'oracle.

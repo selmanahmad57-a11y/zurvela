@@ -22,7 +22,8 @@
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
-    "banc:reel": "node --env-file-if-exists=.env --env-file-if-exists=.env.local --env-file-if-exists=docs/.env.local --import tsx banc/reel.ts"
+    "banc:reel": "node --env-file-if-exists=.env --env-file-if-exists=.env.local --env-file-if-exists=docs/.env.local --import tsx banc/reel.ts",
+    "banc:equivalence-optimisation": "tsx banc/equivalence-optimisation.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "0.127.0",

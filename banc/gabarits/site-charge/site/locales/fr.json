@@ -1,0 +1,21 @@
+{
+  "langue": "fr",
+  "site": {
+    "nom": "Grand Rayon",
+    "slogan": "Un catalogue vaste, servi lentement"
+  },
+  "nav": {
+    "libelle": "Navigation principale"
+  },
+  "rayon": {
+    "nom": "Rayon"
+  },
+  "accueil": {
+    "titre": "Grand Rayon",
+    "intro": "Un catalogue vaste.",
+    "vitrine": "Vitrine"
+  },
+  "pied": {
+    "mentions": "Grand Rayon — catalogue"
+  }
+}

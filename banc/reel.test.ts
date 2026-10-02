@@ -4,10 +4,11 @@
  * d'un cas. Le scan lui-même est payant et vivant ; il ne se teste pas ici.
  */
 import { readFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
 import { describe, expect, it } from 'vitest';
 import { chargerDictionnaire, type Dictionnaire } from '../core/i18n.js';
 import type { Rapport } from '../core/types.js';
-import { chargerCas, creerRendu, juger, lireOptions, mesuresDe, type CasReel, type MesuresScan, type Rendu } from './reel.js';
+import { chargerCas, creerRendu, juger, lireOptions, mesuresDe, type CasReel, type MesuresScan, type Rendu, cheminDossierDurable } from './reel.js';
 import { depuisRacine } from './outils/racine.js';
 
 let dico: Dictionnaire;
@@ -187,6 +188,32 @@ describe('les raisons d’un verdict sont INTERPOLÉES, pas affichées brutes', 
     for (const raison of raisons) {
       expect(raison, raison).not.toMatch(/\{\{?[a-zA-Z]+\}?\}/);
     }
+  });
+});
+
+describe('le journal du réel doit SURVIVRE (checklist n°34, case 1)', () => {
+  it('écrit hors du dépôt ET hors des temporaires du système, dans un dossier horodaté', () => {
+    // Le défaut trouvé à froid : les journaux partaient dans
+    // `mkdtemp(tmpdir())`, 59 Mo pour un grand tableau, dans un dossier que
+    // l'OS purge — alors que ce sont les runs les plus chers du projet et
+    // que toute l'analyse se fait après coup, sur ces fichiers. Les perdre,
+    // c'est payer deux fois. Le contrôle qui peut échouer : un retour aux
+    // temporaires.
+    const chemin = cheminDossierDurable('2026-10-02T09:15:30.123Z', '/maison');
+    expect(chemin).toBe('/maison/.config/zurvela/reel/2026-10-02T09-15-30-123Z');
+    expect(chemin).not.toContain(tmpdir());
+    expect(chemin.startsWith('/maison/.config/zurvela/')).toBe(true);
+  });
+
+  it('deux runs ne se marchent pas dessus : l’horodatage sépare', () => {
+    const a = cheminDossierDurable('2026-10-02T09:15:30.123Z', '/maison');
+    const b = cheminDossierDurable('2026-10-02T09:15:31.000Z', '/maison');
+    expect(a).not.toBe(b);
+  });
+
+  it('`--dossier` permet de choisir, et son absence ne laisse jamais le dossier indéfini', () => {
+    expect(lireOptions(['--dossier', '/ailleurs'])?.dossier).toBe('/ailleurs');
+    expect(lireOptions([])?.dossier).toBeUndefined();
   });
 });
 

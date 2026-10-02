@@ -524,6 +524,7 @@ export function creerExplorateur(dependances: DependancesExplorateur): Explorate
             config: config.detecteurs.recouvrement.fermeture,
             filtreElement: (cible) => filtreElement(page, cible),
             delaiMs: delai(),
+            clicMs: budget(exploration.clicMs),
             geometrie: { max: exploration.elementsInteractifsMax, budgetMs: delai() },
             mesurer: () => recouvrements(page, { max: exploration.elementsInteractifsMax, budgetMs: delai() }),
             journaliser: (type, details) => contexte.journaliser(type, { viewport: viewport.nom, url, ...(details as object) }),

@@ -135,6 +135,10 @@
     },
     "W04": {
       "cheminRessourceIntrouvable": "/statique/images/logo-v2.svg"
+    },
+    "Z01": {
+      "ressourcesParPage": 6,
+      "delaiPageMs": 400
     }
   }
 }

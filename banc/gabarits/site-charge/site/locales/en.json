@@ -1,0 +1,21 @@
+{
+  "langue": "en",
+  "site": {
+    "nom": "Big Aisle",
+    "slogan": "A vast catalogue, served slowly"
+  },
+  "nav": {
+    "libelle": "Main navigation"
+  },
+  "rayon": {
+    "nom": "Aisle"
+  },
+  "accueil": {
+    "titre": "Big Aisle",
+    "intro": "A vast catalogue.",
+    "vitrine": "Showcase"
+  },
+  "pied": {
+    "mentions": "Big Aisle — catalogue"
+  }
+}

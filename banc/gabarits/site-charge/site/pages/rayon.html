@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="{{langue}}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{site.nom}}</title>
+  <meta name="description" content="{{site.slogan}}">
+  <link rel="stylesheet" href="/statique/style.css">
+</head>
+<body>
+  <header class="entete"><a class="marque" href="/"><span>{{site.nom}}</span></a></header>
+  <main class="contenu">
+    <h1>{{accueil.titre}}</h1>
+    <p class="intro">{{accueil.intro}}</p>
+    <nav aria-label="{{nav.libelle}}">
+      <ul>
+        <li><a href="/rayon/1">{{rayon.nom}} 1</a></li>
+        <li><a href="/rayon/2">{{rayon.nom}} 2</a></li>
+        <li><a href="/rayon/3">{{rayon.nom}} 3</a></li>
+        <li><a href="/rayon/4">{{rayon.nom}} 4</a></li>
+        <li><a href="/rayon/5">{{rayon.nom}} 5</a></li>
+        <li><a href="/rayon/6">{{rayon.nom}} 6</a></li>
+        <li><a href="/rayon/7">{{rayon.nom}} 7</a></li>
+        <li><a href="/rayon/8">{{rayon.nom}} 8</a></li>
+      </ul>
+    </nav>
+    <section data-role="vitrine" aria-label="{{accueil.vitrine}}"></section>
+  </main>
+  <footer class="pied"><p>{{pied.mentions}}</p></footer>
+</body>
+</html>

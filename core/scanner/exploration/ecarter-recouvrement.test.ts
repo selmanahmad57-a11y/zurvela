@@ -56,6 +56,8 @@ interface Faux {
   journal: { type: string; details: Record<string, unknown> }[];
   gestesExecutes: string[];
   clics: { x: number; y: number }[];
+  /** Le délai accordé à chaque clic : un ESSAI n'est pas une attente. */
+  delaisClic: number[];
   appelsFiltre: string[];
 }
 
@@ -65,7 +67,7 @@ interface Faux {
  * contact du module sont fournis.
  */
 function fauxContexte(scenario: Scenario, constats: Recouvrement[]): Faux & { executer: () => ReturnType<typeof ecarterRecouvrements> } {
-  const faux: Faux = { page: {} as Page, journal: [], gestesExecutes: [], clics: [], appelsFiltre: [] };
+  const faux: Faux = { page: {} as Page, journal: [], gestesExecutes: [], clics: [], delaisClic: [], appelsFiltre: [] };
   let leve = false;
   const prises: PrisesFermeture = {
     dialogOuvert: scenario.cede === 'dialog-natif',
@@ -116,7 +118,8 @@ function fauxContexte(scenario: Scenario, constats: Recouvrement[]): Faux & { ex
         return Promise.resolve();
       },
     },
-    click: (selecteur: string) => {
+    click: (selecteur: string, options?: { timeout?: number }) => {
+      faux.delaisClic.push(options?.timeout ?? Number.NaN);
       if (selecteur === '#ferme') {
         noter('descendant-essaye');
         return Promise.resolve();
@@ -140,6 +143,7 @@ function fauxContexte(scenario: Scenario, constats: Recouvrement[]): Faux & { ex
           return Promise.resolve(scenario.filtre ?? { autorisee: true });
         },
         delaiMs: 100,
+        clicMs: 30,
         geometrie: { max: 10, budgetMs: 100 },
         journaliser: (type, details) => faux.journal.push({ type, details: (details ?? {}) as Record<string, unknown> }),
         attendre: () => Promise.resolve(),
@@ -173,6 +177,7 @@ describe('ecarterRecouvrements — chaque geste mord, individuellement', () => {
         config: sansCeGeste,
         filtreElement: () => Promise.resolve({ autorisee: true }),
         delaiMs: 100,
+        clicMs: 30,
         geometrie: { max: 10, budgetMs: 100 },
         journaliser: () => undefined,
         attendre: () => Promise.resolve(),
@@ -244,6 +249,7 @@ describe('les gardes de sécurité du geste', () => {
       config: { ...CONFIG, recouvrementsMax: 2 },
       filtreElement: () => Promise.resolve({ autorisee: true }),
       delaiMs: 100,
+      clicMs: 30,
       geometrie: { max: 10, budgetMs: 100 },
       journaliser: (type, details) => faux.journal.push({ type, details: (details ?? {}) as Record<string, unknown> }),
       attendre: () => Promise.resolve(),
@@ -265,6 +271,7 @@ describe('les gardes de sécurité du geste', () => {
       config: { ...CONFIG, gestes: ['ouvrir-le-coffre' as unknown as GesteFermeture] },
       filtreElement: () => Promise.resolve({ autorisee: true }),
       delaiMs: 100,
+      clicMs: 30,
       geometrie: { max: 10, budgetMs: 100 },
       journaliser: (type, details) => faux.journal.push({ type, details: (details ?? {}) as Record<string, unknown> }),
       attendre: () => Promise.resolve(),
@@ -327,6 +334,7 @@ describe('la voie C — essayer, pas reconnaître : ses trois gardes', () => {
                 : { autorisee: true },
             ),
           delaiMs: 100,
+          clicMs: 30,
           geometrie: { max: 10, budgetMs: 100 },
           journaliser: (type, details) => journal.push({ type, details: (details ?? {}) as Record<string, unknown> }),
           attendre: () => Promise.resolve(),
@@ -394,5 +402,32 @@ describe('la voie C — essayer, pas reconnaître : ses trois gardes', () => {
     await vide.executer();
     const trace = vide.journal.find((e) => e.type === EVENEMENT_TENTATIVE_FERMETURE && e.details['geste'] === 'descendant-essaye');
     expect(trace?.details['essais']).toEqual({ candidats: 0, refuses: 0, actives: 0 });
+  });
+});
+
+describe('le délai d’un essai (correction du coût de fermeture au rejeu, cahier P2-4)', () => {
+  // Le défaut mesuré : les clics d'essai étaient bornés par le budget
+  // d'ÉVALUATION (15 s en production). Trois descendants qui ne deviennent
+  // jamais actionnables faisaient 45 s, le rejeu tombait en budget
+  // insuffisant, et une anomalie RÉELLE était perdue — `calque-au-rejeu`
+  // sortait en `limite-automatisation` au lieu de confirmer.
+  //
+  // Le contrôle qui peut échouer : quelqu'un repasse `delaiMs` au clic.
+  it('borne le clic par `clicMs`, jamais par le budget d’évaluation', async () => {
+    const contexte = fauxContexte({ cede: 'controle-ferme' }, [recouvrement('#cible', '#voile')]);
+    await contexte.executer();
+    expect(contexte.delaisClic.length).toBeGreaterThan(0);
+    for (const delai of contexte.delaisClic) {
+      expect(delai).toBe(30);
+    }
+  });
+
+  it('borne aussi le clic de la voie C, celle qui a coûté les 45 secondes', async () => {
+    const contexte = fauxContexte({ cede: 'descendant-essaye', prises: { controle: null } }, [recouvrement('#cible', '#voile')]);
+    await contexte.executer();
+    expect(contexte.gestesExecutes).toContain('descendant-essaye');
+    for (const delai of contexte.delaisClic) {
+      expect(delai).toBe(30);
+    }
   });
 });
