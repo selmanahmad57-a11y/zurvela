@@ -1210,3 +1210,51 @@ regardé.
   réparation révèle la suivante — la correction du coût de fermeture a
   donné son cas d'école au contrat du budget réparti, exactement comme
   `calque-au-rejeu` l'avait donné au contrat de l'oracle.
+
+## 37. Une preuve dit qu'il faut agir, elle ne dit pas sous quelle identité publier (2026-10-02, cahier P2-4, contrat du budget réparti)
+
+- **Le fait** : la fusion des jumeaux de viewport (P2-3) choisissait comme
+  survivant le groupe qui PORTAIT la preuve — celui dont la contre-épreuve
+  avait retrouvé le défaut dans l'autre viewport. Tant que l'ordre de
+  traitement était stable, c'était toujours le même, et la règle paraissait
+  juste. Dès que le budget s'est réparti, c'est le groupe qui POUVAIT SE
+  PAYER la contre-épreuve qui survivait — et la catégorie d'un
+  `clic-intercepte` vaut `mobile` ou `fonctionnel` SELON LE VIEWPORT. Sur
+  `recouvrement--q05`, un mur bloquant présent sur les deux viewports s'est
+  publié « mobile » : le banc l'a compté faux positif, et il avait raison.
+- **Ce que cela aurait coûté au client** : dire « mobile » à un commerçant
+  pour un défaut qui bloque sa commande sur les deux viewports, c'est lui
+  désigner la MOITIÉ de son problème — et l'envoyer corriger un symptôme de
+  terminal au lieu de la cause.
+- **La règle** : deux questions étaient confondues. *Faut-il agir ?* se
+  répond par la PREUVE. *Sous quelle identité publier ?* se répond par une
+  règle STABLE, indépendante de l'ordre dans lequel on a dépensé le budget.
+  L'ordre de dépense est de l'EFFORT, et l'effort ne décide jamais de ce que
+  le client lit — c'est le principe n°8 (n°35) appliqué une seconde fois, à
+  un autre endroit du moteur, et retrouvé par la mesure et non par analogie.
+- **Le signe à chercher ailleurs** : partout où un choix est fait par « le
+  premier qui remplit la condition », se demander ce qui décide de l'ordre
+  d'arrivée. Si cet ordre dépend du budget, de la charge, du réseau ou d'une
+  heure de la journée, alors une grandeur d'effort décide d'un contenu de
+  rapport — et elle le décidera différemment demain.
+- **L'ORDRE EST DE L'EFFORT DÉGUISÉ EN SÉQUENCE**, et c'est la forme
+  générale de cet apprentissage. Le principe n°8 interdit à une grandeur
+  d'effort de décider de ce que le client lit ; on pense alors à des
+  comptes, des durées, des coûts. L'ordre de traitement n'a l'air de rien
+  de tout cela — c'est une séquence, pas une mesure. Mais il est DÉTERMINÉ
+  par l'effort (quel groupe a eu du budget, lequel a répondu le premier,
+  lequel le réseau a servi), et dès qu'une règle le consulte, l'effort
+  franchit la frontière sans se faire voir.
+- **Ce qui l'a rendu visible, et le cran qu'il ajoute à n°25** : rien
+  n'avait changé dans la fusion ; c'est une optimisation AILLEURS qui a
+  déstabilisé l'ordre. P2-3 était juste DANS SON MONDE — un monde où le
+  premier groupe prenait tout le budget, payait sa contre-épreuve et
+  survivait toujours. Sa justesse reposait sur une hypothèse qu'il ne
+  déclarait pas, et que P2-4 a brisée. Ce n'est donc pas seulement que
+  l'intersection de deux cahiers justes peut être fausse (n°25) : c'est
+  qu'un cahier peut être juste PAR COÏNCIDENCE D'ORDRE, et qu'une
+  coïncidence tient jusqu'au premier changement de ses alentours. La
+  confusion n'était pas cachée — elle n'était simplement EXERCÉE par
+  aucune variation. Corollaire de méthode : une règle qu'aucune variation
+  n'exerce n'est pas éprouvée, elle est seulement non contredite.
+

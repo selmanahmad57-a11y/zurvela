@@ -142,6 +142,100 @@ function candidatesEcartees(resultat: ResultatGroupe): CandidateEcartee[] {
   }));
 }
 
+/**
+ * L'ORDRE DES GROUPES ALTERNE LES VIEWPORTS (contrat du budget réparti, R4).
+ *
+ * Le budget se consomme dans l'ordre de la liste : une liste qui range tous
+ * les groupes desktop avant tous les groupes mobile sacrifie le mobile dès
+ * qu'elle sature. Ce n'est pas un confort — en référence, le défaut de
+ * `/panier` existait sur les deux viewports, le mobile tombait en
+ * `echeance-atteinte`, et le client lisait « desktop » seul (n°36).
+ *
+ * L'ordre relatif à l'intérieur d'un viewport est PRÉSERVÉ : on alterne, on
+ * ne trie pas.
+ */
+export const EVENEMENT_QUOTA_REJEUX = 'confirmation.quota';
+
+export function ordonnerParViewport(groupes: readonly GroupeCause[]): GroupeCause[] {
+  const files = new Map<string, GroupeCause[]>();
+  for (const groupe of groupes) {
+    const nom = viewportDuGroupe(groupe).nom;
+    const file = files.get(nom);
+    if (file === undefined) {
+      files.set(nom, [groupe]);
+    } else {
+      file.push(groupe);
+    }
+  }
+  const ordonnes: GroupeCause[] = [];
+  while (ordonnes.length < groupes.length) {
+    for (const file of files.values()) {
+      const suivant = file.shift();
+      if (suivant !== undefined) {
+        ordonnes.push(suivant);
+      }
+    }
+  }
+  return ordonnes;
+}
+
+/**
+ * LE QUOTA DE REJEUX D'UN GROUPE (contrat du budget réparti, R1 et R3).
+ *
+ * L'allocation se fait en REJEUX, jamais en millisecondes : sur
+ * `recouvrement--q10`, 34 302 ms restaient pour six groupes, soit 5 717 ms
+ * chacun — moins qu'un seul rejeu (8 680 ms mesurés). Une part égale en
+ * temps n'affame pas un groupe, elle les affame TOUS.
+ *
+ * UN TOUR AVANT DEUX : le reste de la division est distribué à raison d'un
+ * rejeu par groupe, donc personne n'obtient sa deuxième re-exécution avant
+ * que tous aient eu la première. C'est fondé sur une mesure et non sur une
+ * esthétique : `juger` conclut sur les tentatives EXPLOITABLES, donc une
+ * seule re-exécution reproduite suffit déjà à `confirmee` — le deuxième
+ * rejeu achète de la PREUVE, pas la conclusion.
+ */
+export function quotaRejeux(options: {
+  budgetMs: number;
+  coutRejeuMs: number;
+  groupesRestants: number;
+  maxParGroupe: number;
+}): number {
+  const { budgetMs, coutRejeuMs, groupesRestants, maxParGroupe } = options;
+  if (groupesRestants <= 0 || coutRejeuMs <= 0) {
+    return 0;
+  }
+  const payables = Math.floor(budgetMs / coutRejeuMs);
+  if (payables <= 0) {
+    return 0;
+  }
+  const base = Math.floor(payables / groupesRestants);
+  const reste = payables % groupesRestants > 0 ? 1 : 0;
+  return Math.min(base + reste, maxParGroupe);
+}
+
+/**
+ * Le coût d'un rejeu se MESURE (R2). 8,7 s au banc, 29 s sur
+ * expandtesting : une constante ne vaudrait que pour le site qui l'a
+ * inspirée. La médiane des rejeux DÉJÀ exécutés dans ce scan est la seule
+ * estimation qui suive la cible.
+ *
+ * Le plancher est `budgetMinimalMs`, qui dit déjà « un rejeu a besoin d'au
+ * moins ceci » : sans lui, un rejeu anormalement rapide ferait promettre
+ * des rejeux impayables. C'est aussi la valeur d'amorçage, avant toute
+ * observation — elle surestime le nombre de rejeux payables, ce qui est
+ * sans danger puisque `tempsRestant()` reste la garde dure.
+ */
+export function coutRejeuEstime(dureesMs: readonly number[], plancherMs: number): number {
+  if (dureesMs.length === 0) {
+    return plancherMs;
+  }
+  const triees = [...dureesMs].sort((a, b) => a - b);
+  const milieu = Math.floor(triees.length / 2);
+  const mediane =
+    triees.length % 2 === 1 ? (triees[milieu] as number) : ((triees[milieu - 1] as number) + (triees[milieu] as number)) / 2;
+  return Math.max(mediane, plancherMs);
+}
+
 export function creerProtocole(dependances: DependancesProtocole): ProtocoleConfirmation {
   const { config, autoDiagnostic } = dependances;
 
@@ -150,7 +244,7 @@ export function creerProtocole(dependances: DependancesProtocole): ProtocoleConf
 
     async confirmer(candidates, contexte: ContexteConfirmation) {
       const debut = Date.now();
-      const groupes = consolider(candidates);
+      const groupes = ordonnerParViewport(consolider(candidates));
       contexte.journaliser('confirmation.debut', {
         nbCandidates: candidates.length,
         nbGroupes: groupes.length,
@@ -169,6 +263,19 @@ export function creerProtocole(dependances: DependancesProtocole): ProtocoleConf
       const tempsRestant = (): boolean =>
         Date.now() + config.rejeu.margeEcheanceMs + config.rejeu.budgetMinimalMs < contexte.echeance;
 
+      /**
+       * La part de CE groupe, recalculée à chaque fois : le coût d'un rejeu
+       * s'affine à mesure qu'on en observe, et le temps restant diminue. Une
+       * allocation posée une fois au départ se tromperait sur les deux.
+       */
+      const quotaDuGroupe = (): number =>
+        quotaRejeux({
+          budgetMs: contexte.echeance - config.rejeu.margeEcheanceMs - Date.now(),
+          coutRejeuMs: coutRejeuEstime(dureesRejeuMs, config.rejeu.budgetMinimalMs),
+          groupesRestants,
+          maxParGroupe: maxRejeuxParGroupe,
+        });
+
       let resultats: ResultatGroupe[] = [];
       /** Tout ce que les rejeux ont relevé, groupes d'origine compris : le tri vient après. */
       const candidatesRejeu: AnomalieCandidate[] = [];
@@ -184,6 +291,20 @@ export function creerProtocole(dependances: DependancesProtocole): ProtocoleConf
        */
       const decouvertesSurAvis = new Map<ResultatGroupe, { facteurConfiance: number; motif: string }>();
       let coutApi = 0;
+      /**
+       * LE BUDGET RÉPARTI (contrat du budget réparti). Trois grandeurs
+       * suffisent : ce que coûte un rejeu (mesuré), combien de groupes
+       * restent à servir, et combien de rejeux chacun a le droit de
+       * prendre. L'échéance reste la garde dure par-dessus.
+       */
+      const dureesRejeuMs: number[] = [];
+      const maxRejeuxParGroupe = config.reExecutions + (config.contreEpreuve ? 1 : 0);
+      /** Les groupes qui PEUVENT consommer un rejeu : les autres ne pèsent pas sur le partage. */
+      let groupesRestants = groupes.filter(
+        (candidat) =>
+          !tiersSansEffetVisible(candidat) &&
+          !(config.politique === 'econome' && candidat.confiance >= config.seuilConfirmationDirecte),
+      ).length;
 
       for (const groupe of groupes) {
         const detecteur: Detecteur | undefined = contexte.detecteurs.find(
@@ -200,11 +321,21 @@ export function creerProtocole(dependances: DependancesProtocole): ProtocoleConf
         } else if (config.politique === 'econome' && groupe.confiance >= config.seuilConfirmationDirecte) {
           // Politique d'échelle : un constat déjà très sûr ne paie pas de rejeu.
           resultat = sansRejeu(groupe, 'confirmee', MOTIF_CONFIANCE_SUFFISANTE);
-        } else if (!tempsRestant()) {
+        } else if (!tempsRestant() || quotaDuGroupe() === 0) {
           // Sans rejeu, on ne CONCLUT pas : on dit que l'automatisation n'a pas pu trancher.
+          groupesRestants -= 1;
           resultat = sansRejeu(groupe, 'limite-automatisation', MOTIF_ECHEANCE_ATTEINTE);
         } else {
-          const reexecution = await reexecuterGroupe({ groupe, contexte, config, detecteur, tempsRestant });
+          const rejeuxMax = quotaDuGroupe();
+          groupesRestants -= 1;
+          contexte.journaliser(EVENEMENT_QUOTA_REJEUX, {
+            cle: groupe.cle,
+            rejeuxMax,
+            groupesRestants: groupesRestants + 1,
+            coutRejeuEstimeMs: coutRejeuEstime(dureesRejeuMs, config.rejeu.budgetMinimalMs),
+          });
+          const reexecution = await reexecuterGroupe({ groupe, contexte, config, detecteur, tempsRestant, rejeuxMax });
+          dureesRejeuMs.push(...reexecution.tentatives.map((tentative) => tentative.dureeMs));
           const { tentatives, contreEpreuve } = reexecution;
           candidatesRejeu.push(...reexecution.candidates);
           const jugement = juger(tentatives, {
@@ -295,7 +426,7 @@ export function creerProtocole(dependances: DependancesProtocole): ProtocoleConf
       // preuve ne se solde pas par un escompte. La fusion vient APRÈS le
       // jugement (elle ne change aucun verdict) et AVANT le tri : ce qui est
       // absorbé ne doit jamais atteindre le rapport.
-      const fusion = fusionnerParContreEpreuve(resultats);
+      const fusion = fusionnerParContreEpreuve(resultats, contexte.viewports.map((viewport) => viewport.nom));
       for (const { survivant, absorbees } of fusion.fusions) {
         contexte.journaliser(EVENEMENT_FUSION_VIEWPORTS, { cle: survivant.groupe.cle, absorbees });
         const recalibre = calibrer(

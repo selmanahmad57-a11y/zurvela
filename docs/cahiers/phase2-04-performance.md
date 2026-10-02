@@ -212,6 +212,149 @@ qu'on n'a pas prouvé identique ne mesure rien.
 Aucune règle ne porte sur un site, un hôte ou une langue : les critères
 sont des comptes, des durées et des empreintes.
 
+## 2bis. LE BUDGET RÉPARTI, ouvert par ses contrats (2026-10-02)
+
+Le contrat « le budget se RÉPARTIT, il ne s'augmente pas » est le cœur de ce
+qui reste. Il s'ouvre ici par ses sous-contrats, posés AVANT le code, sur
+des faits mesurés et non sur une lecture du cahier.
+
+### Les faits, mesurés sur `recouvrement--q10--fr` (journal du run optimisé)
+
+| | |
+|---|---|
+| Échéance | 60 000 ms → exploration 30 000, confirmation 21 000, rédaction 6 000 |
+| Exploration | finie à 19 666 ms, arrêt `complet` : elle REND 10 s aux phases suivantes |
+| Confirmation | de 19 698 ms à 54 000 ms, soit **34 302 ms** pour **6 groupes** |
+| Confiances | les six à **0,80** — rien ne distingue le premier des cinq autres |
+| Groupe n°1 | 3 rejeux (2 re-exécutions + 1 contre-épreuve) à ~8 680 ms = **26 s** |
+| Groupes 2 à 6 | **zéro rejeu**, tous en `echeance-atteinte` au même instant |
+
+**Le défaut n'est pas que le budget manque : c'est qu'il n'est pas réparti.**
+La boucle de confirmation est un PREMIER ARRIVÉ, PREMIER SERVI
+(`for (const groupe of groupes)` + `tempsRestant()`), et rien n'empêche le
+premier groupe de prendre les trois quarts du temps de tous les autres.
+
+**Le piège que la mesure révèle, et qui interdit la réponse naïve** :
+34 302 / 6 = 5 717 ms par groupe, soit **moins qu'un seul rejeu** (8 680 ms).
+Une part égale en millisecondes n'affame pas un groupe, elle les affame
+TOUS — les six sortiraient en `echeance-atteinte`, strictement pire que la
+file actuelle. Toute répartition qui ignore l'indivisibilité d'un rejeu est
+une régression déguisée en équité.
+
+### Les sous-contrats
+
+1. **R1 — LE BUDGET S'ALLOUE EN REJEUX, PAS EN MILLISECONDES.** L'unité
+   d'allocation est le rejeu, indivisible : on calcule combien de rejeux la
+   réserve peut payer, puis on distribue CES REJEUX. Un demi-rejeu n'existe
+   pas — une tentative écourtée par l'échéance ne se distingue pas d'un
+   rejeu complet qui n'aurait rien reproduit, règle déjà posée en P2-1.
+   Mutation : allouer des millisecondes à parts égales — sur q10, zéro
+   groupe rejoué, le banc rougit.
+
+2. **R2 — LE COÛT D'UN REJEU SE MESURE, IL NE SE CONFIGURE PAS.** 8,7 s au
+   banc, 29 s sur expandtesting : une constante en config ne vaudrait que
+   pour le site qui l'a inspirée, et le cahier interdit déjà de régler une
+   optimisation sur une cible unique (dette n°20, n°32). Le protocole tient
+   une ESTIMATION COURANTE : valeur initiale en config, révisée par la
+   médiane des rejeux déjà exécutés dans ce scan. Invariant en CODE :
+   l'estimation ne descend jamais sous un plancher, sans quoi un rejeu
+   anormalement rapide ferait promettre des rejeux impayables.
+   Mutation : figer l'estimation à sa valeur de config — sur un gabarit
+   ralenti, l'allocation promet plus de rejeux qu'il n'en tient.
+
+3. **R3 — UN TOUR AVANT DEUX.** Les rejeux se distribuent par TOURS : aucun
+   groupe ne reçoit sa deuxième re-exécution avant que tous aient reçu la
+   première, et la contre-épreuve est un tour ultérieur encore.
+   La justification est MESURÉE, pas esthétique : `juger` conclut sur les
+   tentatives EXPLOITABLES (`taux = reproduites / exploitables`), donc une
+   seule re-exécution reproduite suffit déjà au verdict `confirmee`. Le
+   deuxième rejeu achète de la PREUVE, pas la conclusion. Trois rejeux sur
+   un groupe confirment un groupe ; trois rejeux sur trois groupes en
+   confirment trois. Et rien n'est sur-promis au client : la voix du
+   rapport dit déjà « nos N vérifications indépendantes », N compris.
+   Mutation : rendre le deuxième tour avant le premier (la file actuelle) —
+   sur q10, un seul groupe rejoué, le banc rougit.
+
+4. **R4 — AUCUN VIEWPORT N'EST SACRIFIÉ À L'AUTRE.** À l'intérieur d'un
+   tour, l'ordre ALTERNE les viewports. Ce n'est pas une préférence de
+   confort : en référence, le défaut de `/panier` existait sur desktop ET
+   mobile, le mobile tombait en `echeance-atteinte`, et le client lisait
+   « desktop » seul. Un gaspillage ne coûte pas que du temps, il tronque la
+   couverture livrée (n°36).
+   Mutation : ordre non alterné — sur un gabarit à deux viewports saturé,
+   le mobile n'est jamais rejoué.
+
+5. **R5 — CE QUI N'EST PAS REJOUÉ RESTE DÉCLARÉ.** Rien ne change à l'aveu :
+   `limite-automatisation` / `echeance-atteinte`, compté dans
+   `nbNonVerifies`, dit au client. Le budget réparti réduit le NOMBRE de
+   non-vérifiés ; il ne change pas la nature de l'aveu, et il n'autorise
+   aucun groupe à être conclu sans rejeu.
+
+6. **R6 — LA QUESTION DES DEUX PORTES** (METHODE §3bis). L'allocation vit
+   dans la boucle de confirmation, et le rejeu n'a pas de seconde entrée :
+   l'exploration n'est pas touchée. Mais il existe une porte DÉRIVÉE —
+   les candidates relevées PENDANT un rejeu (`candidatesRejeu`) repassent au
+   tri final et peuvent produire des découvertes. Rejouer plus de groupes
+   élargit donc la surface de découverte : c'est attendu, c'est un gain
+   d'IDENTITÉ, et l'oracle doit le NOMMER plutôt que le laisser passer.
+
+### Les attendus, écrits AVANT la mesure (METHODE §13)
+
+- `recouvrement--q10` (fr et en) : **au moins 3 groupes rejoués** au lieu
+  de 1 ; `nbNonVerifies` ≤ 2 au lieu de 4 ; l'anomalie desktop reste
+  `confirmee` ; au moins un groupe **mobile** rejoué.
+- `site-charge--z01` : plus de groupes rejoués qu'aujourd'hui (6 sur 54).
+- Banc entier : l'oracle rend **identité préservée ou gagnée, jamais
+  perdue**. Une seule identité perdue arrête le contrat.
+- Aucun seuil de config déplacé pour obtenir ces chiffres.
+
+### La mesure, et l'attendu NON TENU (2026-10-02)
+
+Banc entier, référence = `f8f079e` : détection 97,1 % inchangée, **0 faux
+positif**, 97/97 scénarios, 0 anomalie perdue. **Groupes retenus 79 contre
+65**, écartés 102 contre 116 : quatorze groupes de plus réellement vérifiés.
+Oracle : **0 identité PERDUE**, 54 gagnées sur 4 scénarios, 93/97 à identité
+inchangée. Durée : −1,1 % à identité inchangée — ce contrat ne vend pas de
+la vitesse, il emploie mieux le même budget, et c'est l'oracle qui permet de
+le dire sans tricher.
+
+| attendu écrit avant | résultat |
+|---|---|
+| q10 : ≥ 3 groupes rejoués (contre 1) | **3** ✓ |
+| q10 : au moins un groupe MOBILE rejoué | **1** ✓ |
+| q10 : `nbNonVerifies` ≤ 2 (contre 4) | **3** ✗ **NON TENU** |
+| z01 : plus de 6 groupes rejoués sur 54 | **12** ✓ |
+| banc : identité jamais perdue | **0 perdue** ✓ |
+| aucun seuil de config déplacé | aucun ✓ |
+
+**L'attendu non tenu l'est par une faute d'arithmétique DE L'ATTENDU, pas du
+moteur**, et il reste inscrit tel quel : 34 302 / 8 680 = 3,95, donc trois
+rejeux payables, donc au mieux trois groupes servis sur six et trois
+non vérifiés. Écrire « ≤ 2 » supposait quatre rejeux là où le budget n'en
+paie que trois. Le corriger après coup pour afficher un succès serait
+exactement le geste que METHODE §13 interdit. Ce qui reste à gagner sur q10
+ne viendra pas d'une meilleure répartition — elle est optimale à trois
+rejeux — mais du **rejeu sélectionné** : moins de rejeux nécessaires, donc
+plus de groupes servis. C'est le contrat suivant, et q10 lui sert déjà de
+cas.
+
+**Et la découverte du contrat, qui n'était pas cherchée** : la fusion de
+viewports confondait deux questions — *faut-il fondre ?* et *qui survit ?*.
+La preuve répondait aux deux, et cela ne se voyait pas tant que l'ordre de
+traitement était stable. Dès que le budget se répartit, c'est le groupe qui
+PEUT SE PAYER la contre-épreuve qui imposait son viewport, donc sa
+CATÉGORIE (`mobile` ou `fonctionnel` selon le viewport, `d-recouvrement`) :
+sur q05, un mur bloquant présent sur les deux viewports se publiait
+« mobile ». La preuve dit désormais qu'il faut fondre ; la liste CONFIGURÉE
+des viewports dit sous quelle identité on publie. APPRENTISSAGES n°37.
+
+### Hors périmètre de ce contrat
+
+Le rejeu SÉLECTIONNÉ (politique `econome`, un groupe très sûr qui ne paie
+pas de rejeu) est le contrat suivant. Les deux se composent — moins de
+rejeux inutiles ET mieux répartis — mais se mesurent séparément, sans quoi
+on ne saurait pas lequel porte le gain.
+
 ## 3. Budget
 
 **Le piège propre à ce cahier : les sites qui valident sont les plus

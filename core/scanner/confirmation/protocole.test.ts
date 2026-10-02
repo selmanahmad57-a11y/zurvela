@@ -303,11 +303,17 @@ describe('creerProtocole — consolidation, échéance, politique', () => {
     expect(typesJournal({ journal, rejeu })).toEqual([
       'confirmation.debut',
       'confirmation.groupe',
+      // La part allouée AVANT de la dépenser : sans elle, on lirait le
+      // nombre de rejeux sans savoir combien le groupe avait le droit d'en
+      // prendre, ni sur quelle estimation de coût (contrat du budget
+      // réparti, R1 et R2).
+      'confirmation.quota',
       'confirmation.tentative',
       'confirmation.tentative',
       'confirmation.verdict',
       'confirmation.fin',
     ]);
+    expect(details(journal, 'confirmation.quota')).toMatchObject({ rejeuxMax: 3, groupesRestants: 1 });
     expect(details(journal, 'confirmation.tentative')).toMatchObject({ numero: 1, viewport: DESKTOP.nom, reproduite: true, echecOutillage: false });
     expect(details(journal, 'confirmation.fin')).toMatchObject({ nbRetenues: 1, nbEcartees: 0, coutApi: 0 });
   });

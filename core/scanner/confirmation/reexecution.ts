@@ -51,6 +51,17 @@ export interface OptionsReexecution {
   detecteur?: Detecteur | undefined;
   /** false dès que l'échéance ne laisse plus la place à une tentative. */
   tempsRestant(): boolean;
+  /**
+   * Nombre maximal de REJEUX que ce groupe a le droit de consommer —
+   * re-exécutions ET contre-épreuve confondues (cahier P2-4, contrat du
+   * budget réparti, R1).
+   *
+   * L'échéance reste la garde dure ; ce quota est la garde ÉQUITABLE. Sans
+   * lui, le premier groupe de la liste prenait les trois quarts du temps
+   * de tous les autres : sur `recouvrement--q10`, trois rejeux pour le
+   * groupe n°1 et zéro pour les cinq suivants.
+   */
+  rejeuxMax: number;
 }
 
 export interface ResultatReexecution {
@@ -250,10 +261,13 @@ export async function reexecuterGroupe(options: OptionsReexecution): Promise<Res
   const tentatives: TentativeReexecution[] = [];
   const candidates: AnomalieCandidate[] = [];
 
+  /** Rejeux déjà consommés par ce groupe, contre-épreuve comprise. */
+  let rejeux = 0;
   for (let numero = 1; numero <= config.reExecutions; numero += 1) {
-    if (!options.tempsRestant()) {
+    if (!options.tempsRestant() || rejeux >= options.rejeuxMax) {
       break;
     }
+    rejeux += 1;
     const constat = await rejouerEtRelire(options, viewport, true);
     candidates.push(...constat.candidates);
     const tentative: TentativeReexecution = {
@@ -274,7 +288,14 @@ export async function reexecuterGroupe(options: OptionsReexecution): Promise<Res
 
   const exploitable = tentatives.some(estExploitable);
   const autre = contexte.viewports.find((candidat) => candidat.nom !== viewport.nom);
-  if (!config.contreEpreuve || detecteur?.dependDuViewport !== true || !exploitable || autre === undefined || !options.tempsRestant()) {
+  if (
+    !config.contreEpreuve ||
+    detecteur?.dependDuViewport !== true ||
+    !exploitable ||
+    autre === undefined ||
+    !options.tempsRestant() ||
+    rejeux >= options.rejeuxMax
+  ) {
     return { tentatives, candidates };
   }
   const constat = await rejouerEtRelire(options, autre, false);
