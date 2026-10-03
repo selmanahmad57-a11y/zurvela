@@ -1445,3 +1445,85 @@ regardé.
   change entre deux chargements de la même page est volatil PAR PREUVE, pas
   par nom. À concevoir par ses contrats, à froid.
 
+## 43. On RÉVÈLE une continuité, on n'en INVENTE pas (2026-10-03, ouverture du cahier « l'identité d'une cause »)
+
+- **Le fait** : le cahier s'ouvrait sur « des causes sortent en N sections
+  sans continuité, il faut leur rendre une identité stable ». Trois mesures
+  gratuites ont démonté la prémisse, l'une après l'autre.
+  1. Deux observations ne prouvent pas la stabilité : sur six chargements,
+     deux n'attrapent que 9 à 50 % des identifiants volatils, et la
+     volatilité est INTERMITTENTE (1/6, 2/6 … 5/6), jamais systématique.
+  2. Le repli structurel est mort : des 14 chemins des éléments à
+     identifiant volatil, **zéro** est stable sur cinq chargements. Le
+     cadre publicitaire ne reçoit pas seulement un autre nom — il est
+     injecté AILLEURS. Remplacer une identité volatile par une autre.
+  3. Et surtout, sur le PUBLIÉ : 17 % des causes seulement reviennent d'un
+     scan à l'autre, et les victimes 18 % et 11 %. Les témoins propres :
+     100 %.
+- **La leçon, et elle est générale** : le publié n'était pas instable parce
+  qu'on le nommait mal. Il était instable **parce que le monde l'est** — la
+  page montre réellement d'autres publicités, à d'autres emplacements,
+  recouvrant d'autres liens, à chaque chargement. **Aucun ré-ancrage ne
+  crée une continuité que la réalité n'a pas.** On peut révéler une
+  continuité masquée par un identifiant volatil ; on ne peut pas fabriquer
+  la permanence d'un phénomène qui n'en a pas.
+- **Ce que la mesure a fait de mieux que condamner** : elle a SCINDÉ en
+  deux un problème qu'on croyait unique, et les deux moitiés sont de
+  natures opposées.
+  - **Phénomène stable, identifiant volatil** — la continuité EXISTE, elle
+    est masquée. Un cas mesuré : `reponse-lente` sur `/xpath-css-tester`,
+    présent dans les trois scans sous **onze clés différentes**. Ça se
+    répare par l'identité.
+  - **Phénomène instable** — il n'y a rien à rendre continu. Les
+    recouvrements publicitaires : autre publicité, autre emplacement,
+    autre victime. Sept causes sur douze n'apparaissent que dans un seul
+    scan sur trois. Ça ne se répare pas par l'identité.
+- **Comment on distingue les deux SANS lire le monde** : le phénomène est
+  le couple (nature du défaut, page où il est constaté). S'il revient d'une
+  observation à l'autre alors que sa clé change, la continuité est masquée.
+  S'il ne revient pas, il n'y en a pas. Mesuré, jamais nommé — et mesurable
+  DANS UN SEUL SCAN, puisque le moteur recharge déjà chaque page plusieurs
+  fois (exploration, puis chaque rejeu).
+- **Le critère de n°39 tranche le découpage** : réparer l'identité touche à
+  un RÉGLAGE (comment on nomme) — c'est un cahier de contrats. Décider si
+  un effet visible mais non reproductible est un défaut du site touche à
+  une GARANTIE (ce qu'on publie) — c'est un cahier d'arbitrage. Deux
+  niveaux de décision, deux cahiers.
+
+## 44. Un bilan n'est jamais clos contre une mesure nouvelle (2026-10-03, amendement du bilan de la Phase 2)
+
+- **Le fait** : le bilan du 2026-10-02 annonçait « 0 faux positif sur 20
+  publiées », validé, committé, et c'était la phrase que tout le projet
+  visait depuis le premier scan réel. Le lendemain, en cherchant le cas
+  d'école d'un AUTRE cahier, une mesure a montré que les trois
+  « découvertes » d'expandtesting étaient trois faux positifs : leurs
+  ressources sont des `blob:` URL. Le chiffre honnête est 15 %, pas 0 %.
+- **La tentation, qu'il faut nommer pour s'en garder** : le bilan était
+  clos, validé, loué. Personne ne cherchait. Le corriger abîmait le plus
+  beau chiffre du projet. Toutes les raisons de ne rien dire étaient
+  réunies, et aucune n'était une raison.
+- **La règle** : une affirmation publiée qui se révèle fausse se corrige —
+  même flatteuse, même validée, même quand la corriger défait un résultat
+  célébré. **La vérité d'un chiffre prime sur le fait qu'il soit déjà
+  écrit.** C'est §13 et n°26 fusionnés : on ne déplace pas un seuil pour
+  faire passer une mesure, et on ne protège pas une mesure passée contre
+  une mesure nouvelle.
+- **CE QUI A RENDU L'ERREUR POSSIBLE, et c'est la part technique** :
+  j'avais classé ces trois anomalies « ni vraies ni fausses par
+  construction », parce qu'elles étaient `decouverte` — déclarées non
+  re-testées. **Un statut n'est pas un jugement.** « Déclaré non
+  re-testé » n'est pas un abri contre le jugement : c'est un jugement
+  DIFFÉRÉ, qui doit finir par tomber. En le traitant comme une catégorie
+  hors-jugement, j'avais soustrait trois anomalies au dépouillement au
+  moment même où je prétendais dépouiller section par section. C'est n°40
+  une dernière fois, retourné contre moi : un verdict (« découverte ») est
+  une question, pas une réponse.
+- **Le corollaire de méthode** : tout bilan qui compte des faux positifs
+  doit ranger les DÉCOUVERTES dans une colonne qui exige une réponse, pas
+  dans une colonne qui l'exempte. Une ligne « ni vraie ni fausse » est une
+  dette de jugement, et elle se solde.
+- **Et ce qui s'en sauve** : le 0 % redeviendra vrai, mais APRÈS correction
+  et PAR la mesure — pas avant et par commodité. Un chiffre qui a survécu
+  à sa propre réfutation vaut mieux qu'un chiffre qui n'a jamais été
+  éprouvé.
+

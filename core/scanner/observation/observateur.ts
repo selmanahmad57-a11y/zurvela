@@ -173,6 +173,31 @@ export function regrouperParInstant(mutations: MutationLue[]): { t: number; nb: 
   return lots;
 }
 
+/**
+ * LES SCHÉMAS LOCAUX NE SONT PAS DU RÉSEAU (correctif du 2026-10-03).
+ *
+ * `blob:`, `data:` et leur famille désignent des objets créés par le
+ * JavaScript de la page et vivant dans le navigateur : rien n'est demandé
+ * à un serveur, rien ne voyage, il n'y a aucun temps de réponse à mesurer.
+ * Les compter comme des ressources réseau produit des défauts qui n'en sont
+ * pas — mesuré : les QUATORZE `reponse-lente` publiées sur l'ensemble des
+ * scans réels portaient toutes sur une `blob:` URL, aucune sur une vraie
+ * ressource. Et comme une `blob:` URL est unique PAR SPÉCIFICATION, chacune
+ * sortait sous une clé neuve : onze sections pour un seul non-défaut.
+ *
+ * Le code a le droit de connaître cela : un schéma d'URL est un standard du
+ * web, au même titre qu'un code HTTP ou un attribut ARIA — pas une
+ * connaissance du monde (constitution §2). Et ce n'est pas un réglage : une
+ * `blob:` ne deviendra jamais une ressource réseau, donc la liste vit en
+ * CODE.
+ */
+const SCHEMAS_LOCAUX: readonly string[] = ['blob:', 'data:', 'filesystem:', 'about:', 'javascript:'];
+
+export function estRessourceReseau(url: string): boolean {
+  const normalisee = url.trim().toLowerCase();
+  return !SCHEMAS_LOCAUX.some((schema) => normalisee.startsWith(schema));
+}
+
 function estInterne(url: string, origine: string): boolean {
   try {
     return new URL(url).origin === origine;
@@ -251,6 +276,12 @@ export function brancherPage(page: Page, params: ParametresBranchement): PageBra
   };
 
   const surRequete = (requete: Request): void => {
+    if (!estRessourceReseau(requete.url())) {
+      // Ni suivie, ni comptée, ni signalée : elle n'est pas partie sur le
+      // réseau. La filtrer ICI vaut pour toutes les suites — en vol,
+      // réponse, échec — plutôt que dans chaque détecteur.
+      return;
+    }
     enVol.set(requete, Date.now());
     requetes += 1;
     if (estNavigationPrincipale(requete)) {
@@ -260,6 +291,9 @@ export function brancherPage(page: Page, params: ParametresBranchement): PageBra
   };
   const surReponse = (reponse: Response): void => {
     const requete = reponse.request();
+    if (!estRessourceReseau(reponse.url())) {
+      return;
+    }
     const { dureeMs, horodatage } = mesurerReponse(requete);
     // Le document d'une navigation est attribué à sa propre URL : `page.url()` n'a pas encore changé.
     const estDocument = estNavigationPrincipale(requete);
@@ -282,6 +316,9 @@ export function brancherPage(page: Page, params: ParametresBranchement): PageBra
     terminerRequete(requete);
   };
   const surEchec = (requete: Request): void => {
+    if (!estRessourceReseau(requete.url())) {
+      return;
+    }
     const principale = estNavigationPrincipale(requete);
     if (!repondues.has(requete)) {
       observateur.emettre({

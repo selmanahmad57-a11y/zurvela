@@ -71,3 +71,24 @@ describe('observateur sur le banc', () => {
     }
   }, 30_000);
 });
+
+describe('les schémas locaux ne sont pas du réseau (correctif du 2026-10-03)', () => {
+  // MESURÉ SUR LE RÉEL : les QUATORZE « reponse-lente » publiées sur
+  // l'ensemble des scans portaient toutes sur une `blob:` URL — un objet
+  // créé par la page, qui ne quitte pas le navigateur et n'a aucun temps de
+  // réponse. Et comme une `blob:` est unique PAR SPÉCIFICATION, chacune
+  // sortait sous une clé neuve : onze sections pour un seul non-défaut.
+  it('aucun signal réseau pour `blob:` ni `data:`, et les VRAIES ressources restent observées', async () => {
+    const resultat = await banc.explorer([]);
+    const urls = resultat.signaux
+      .filter((signal) => signal.type === 'reponse-reseau' || signal.type === 'requete-echouee' || signal.type === 'requete-en-attente')
+      .map((signal) => (signal as { urlRessource: string }).urlRessource);
+    // LE SENS QUI COMPTE : rien de local n'entre.
+    expect(urls.filter((url) => url.startsWith('blob:') || url.startsWith('data:'))).toEqual([]);
+    // L'AUTRE SENS, tout aussi nécessaire : on filtre les schémas locaux,
+    // pas le réseau. Un correctif qui tarirait l'observation serait pire
+    // que le défaut qu'il corrige.
+    expect(urls.some((url) => url.endsWith('/statique/style.css'))).toBe(true);
+    expect(urls.some((url) => url.startsWith('http'))).toBe(true);
+  });
+});

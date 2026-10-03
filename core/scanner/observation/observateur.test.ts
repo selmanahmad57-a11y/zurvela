@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { MutationLue } from '../exploration/en-page.js';
-import { attendreStabilisation, creerObservateur, regrouperParInstant, type EtatFenetre, type Horloge } from './observateur.js';
+import { attendreStabilisation, creerObservateur, regrouperParInstant, type EtatFenetre, type Horloge, estRessourceReseau } from './observateur.js';
 
 /** Horloge simulée : `dormir` avance le temps, aucune attente réelle. */
 function horlogeSimulee(): Horloge & { t: number } {
@@ -147,5 +147,42 @@ describe('attendreStabilisation', () => {
     };
     const attente = await attendreStabilisation(etatSimule(), options, derniereMutation, horloge);
     expect(attente).toBeGreaterThanOrEqual(500);
+  });
+});
+
+describe('estRessourceReseau — un schéma d’URL est un standard du web, pas une connaissance du monde', () => {
+  // Mesuré le 2026-10-03 : les QUATORZE « reponse-lente » publiées sur
+  // l'ensemble des scans réels portaient sur une `blob:` URL, aucune sur une
+  // vraie ressource. Un objet créé par la page ne part pas sur le réseau,
+  // n'a aucun temps de réponse, et son identifiant est unique PAR
+  // SPÉCIFICATION — d'où une clé neuve à chaque fois.
+  it('refuse les schémas LOCAUX', () => {
+    for (const url of [
+      'blob:https://exemple.invalid/1fa9aa73-dee9-446b-9bce-b66e4d5d55e2',
+      'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7',
+      'filesystem:https://exemple.invalid/temporary/x',
+      'about:blank',
+      'javascript:void(0)',
+    ]) {
+      expect(estRessourceReseau(url), url).toBe(false);
+    }
+  });
+
+  it('accepte le RÉSEAU — on filtre les schémas locaux, pas l’observation', () => {
+    // LE SENS GRAVE : un filtre trop large tarirait l'observation, ce qui
+    // serait pire que le défaut qu'il corrige.
+    for (const url of [
+      'https://exemple.invalid/style.css',
+      'http://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js',
+      'https://exemple.invalid/databases/liste.json',
+      'https://exemple.invalid/blobstore/x',
+    ]) {
+      expect(estRessourceReseau(url), url).toBe(true);
+    }
+  });
+
+  it('ne se laisse pas contourner par la casse ni par une espace de tête', () => {
+    expect(estRessourceReseau('BLOB:https://exemple.invalid/x')).toBe(false);
+    expect(estRessourceReseau('  data:text/plain,x')).toBe(false);
   });
 });

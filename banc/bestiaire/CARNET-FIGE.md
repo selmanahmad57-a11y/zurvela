@@ -260,8 +260,9 @@ l'ouverture de P2-2, pas avant.
 
 ## Prochain cahier (posé le 2026-10-02, au bilan réel de la Phase 2)
 
-**« L'identité d'une cause »** — une cause doit se reconnaître d'un scan à
-l'autre. Découvert sur automationexercise et expandtesting : les
+**« L'identité d'une cause » — OUVERT le 2026-10-03** (`docs/cahiers/phase2-05-identite-cause.md`),
+et SCINDÉ EN DEUX par la mesure. Énoncé d'origine : une cause doit se
+reconnaître d'un scan à l'autre. Découvert sur automationexercise et expandtesting : les
 intercepteurs publicitaires (`<iframe>` AdSense) et les URL de session
 portent des identifiants régénérés à chaque chargement, donc la clé de
 cause est volatile. Conséquences : un phénomène éclaté en six sections, et
@@ -279,4 +280,36 @@ Puis : lenteur (C-02, reste de C-04), périmètre/politesse/sécurité (C-15,
 C-14), le coût de NAVIGATION du rejeu (cahier à part : il se heurte à la
 garantie `contexte-neuf`, APPRENTISSAGES n°39), et le choix de la politique
 de production.
+
+### Cahier B — « les causes sans continuité » (à ouvrir APRÈS P2-5)
+
+La mesure du 2026-10-03 a séparé deux problèmes qu'on croyait identiques.
+P2-5 traite les phénomènes STABLES à identifiant volatil : la continuité
+existe, on la révèle. Reste l'autre moitié, qui n'est pas un problème
+d'identité : les recouvrements publicitaires dont la publicité,
+l'emplacement ET la victime changent à chaque chargement. Sept causes sur
+douze à automationexercise n'apparaissent que dans un scan sur trois.
+Aucun ré-ancrage ne peut leur rendre une continuité qu'elles n'ont pas.
+
+**L'arbitrage de fond, qui en fait un cahier et non un contrat** (n°39) :
+un effet VISIBLE mais NON REPRODUCTIBLE est-il un défaut du site ? La
+doctrine tierce de P2-2 juge une ressource tierce à son effet visible ;
+l'effet est bien là — un lien produit est recouvert — mais l'occurrence ne
+survit pas à un rechargement. Est-ce un défaut que le commerçant doit
+corriger, ou une propriété de son inventaire publicitaire ? C'est une
+décision de PRODUIT, pas de code.
+
+**Le soupçon à vérifier à l'ouverture** : pourquoi le protocole
+anti-faux-positifs ne les écarte-t-il pas déjà comme non reproductibles ?
+Piste mesurée : l'identifiant AdSense est un COMPTEUR D'EMPLACEMENT
+(`aswift_N`), donc un rejeu peut retomber sur un recouvrement au même
+emplacement et le « confirmer » — alors que c'est une autre publicité. Le
+protocole confirmerait une coïncidence d'emplacement, pas une persistance
+de défaut. Ce serait un faux positif d'un type neuf : ni « tiers sans
+effet » (P2-2), ni « rejeu qui ment » (P2-1), mais « phénomène intermittent
+confirmé par coïncidence ».
+
+**Condition d'ouverture** : après P2-5, sur le résidu RÉELLEMENT mesuré —
+pas sur les 67 recouvrements bruts, dont la chaîne en écarte déjà soixante
+avant publication.
 

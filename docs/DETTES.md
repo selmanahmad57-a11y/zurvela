@@ -639,3 +639,27 @@ dette est levée (le commit qui la lève renvoie à ce fichier).
   le propriétaire sur le principe. Deux fois dans la même soirée, et deux
   fois le critère n'a pas été écrit par qui avait l'œil sur le résultat.
 
+## 26. Le filtre des schémas locaux n'a pas de témoin au banc sur la voie « en attente » (2026-10-03, correctif `blob:`)
+
+- **Le fait** : le correctif filtre les schémas locaux à TROIS endroits de
+  l'observateur — à la requête, à la réponse, à l'échec. Le gabarit
+  reproduit la voie « réponse » (un `blob:` qui se résout) et la mutation
+  correspondante meurt. Mais **le défaut mesuré sur le réel passait par la
+  voie « en attente »** — une requête `blob:` encore en vol au moment de la
+  mesure —, et je n'ai pas su la reproduire au banc : ni un `fetch` d'un
+  blob statique, ni un `MediaSource` attaché à une `<video>` ne produisent
+  de requête en vol visible. La mutation « retirer le filtre de
+  `surRequete` » SURVIT donc au banc.
+- **Ce qui tient quand même** : le prédicat `estRessourceReseau` est
+  éprouvé dans les deux sens par ses tests unitaires, et le correctif est
+  validé SUR LE RÉEL — expandtesting publiait trois à quatre
+  `reponse-lente` par scan, il en publie zéro. Le témoin existe, il est
+  simplement hors du banc.
+- **Pourquoi c'est une dette et pas un échec** : une garde sans mutation
+  qui la tue est une garde non éprouvée (METHODE §10). Celle-ci l'est par
+  le réel, pas par le banc — donc elle cédera sans bruit le jour où
+  quelqu'un touchera `surRequete`.
+- **Condition de levée** : trouver comment faire tenir une requête de
+  schéma local EN VOL dans un gabarit, ou déplacer la garde vers un point
+  dont le banc peut observer la conséquence.
+

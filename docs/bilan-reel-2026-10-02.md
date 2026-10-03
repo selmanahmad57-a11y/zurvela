@@ -19,6 +19,37 @@ Configuration de production, politique `deterministe`, identité déclarée
 | automationexercise | 15 / 7 | 325 / 94 | **0 / 7** | 1 contenu mixte, 6 recouvrements |
 | expandtesting | 15 / 6 | 259 / 82 | **0 / 9** | 6 recouvrements, 3 lenteurs *(découvertes)* |
 
+## ⚠ AMENDEMENT DU 2026-10-03 — le chiffre publié était faux
+
+Ce bilan annonçait « 0 faux positif ». **C'est faux, et je le corrige.**
+
+Les trois `reponse-lente` d'expandtesting, que j'avais classées « ni vraies
+ni fausses par construction » parce qu'elles étaient déclarées non
+re-testées, **sont trois faux positifs** : leurs ressources sont des
+`blob:` URL — des objets créés par le JavaScript de la page, qui ne
+quittent jamais le navigateur et n'ont aucun temps de réponse. Le moteur
+les comptait comme des requêtes réseau en attente. Mesuré le lendemain, en
+cherchant le cas d'école d'un autre cahier : **14 `reponse-lente` sur 14,
+dans les 28 journaux, portaient sur une `blob:`**.
+
+**Le chiffre honnête :**
+
+> campagne : **4 faux positifs sur 5 publiées (80 %)**
+> P2-4 : **3 faux positifs sur 20 publiées (15 %)**, tous de la même cause
+
+Tout le reste du bilan tient : aucune identité perdue, les trois sites
+lourds enfin jugés, le témoin immobile, le défaut de sécurité de `books`
+récupéré. Mais « 0 % » était une classification, pas une mesure — et c'est
+exactement ce que METHODE §14 interdit : un statut (« déclaré non
+re-testé ») n'est pas un jugement, c'est un jugement DIFFÉRÉ, qui doit
+finir par tomber.
+
+Le correctif est livré (`estRessourceReseau`, les schémas locaux ne sont
+pas du réseau) et validé sur le site qui produisait le défaut :
+expandtesting publie désormais **zéro** `reponse-lente`. Le 0 % redeviendra
+vrai — mais après correction et par la mesure, pas avant et par commodité.
+La différence est tout.
+
 ## Le chiffre, jugé section par section
 
 **La campagne publiait 5 anomalies, dont 4 FAUX POSITIFS (80 %)** — toutes

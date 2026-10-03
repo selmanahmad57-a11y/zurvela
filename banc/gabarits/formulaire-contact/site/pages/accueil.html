@@ -34,6 +34,22 @@
     </section>
     <p><a class="bouton" href="/contact">{{accueil.appel}}</a></p>
   </main>
+  <!--
+    LES SCHÉMAS LOCAUX (correctif du 2026-10-03). Cette page demande deux
+    ressources qui ne partent JAMAIS sur le réseau : un objet `blob:` créé
+    par la page, et une image `data:`. Le moteur ne doit en faire aucune
+    candidate — mesuré sur le réel, les quatorze « réponse lente » publiées
+    portaient toutes sur une `blob:` URL. Les vraies ressources de la page
+    (feuille de style, logo) doivent, elles, rester observées.
+  -->
+  <img data-role="pixel-local" alt="" width="1" height="1"
+       src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7">
+  <script>
+    try {
+      var objet = URL.createObjectURL(new Blob(['x'], { type: 'text/plain' }));
+      fetch(objet).catch(function () {});
+    } catch (erreur) { /* le gabarit ne doit jamais casser la page */ }
+  </script>
   <footer class="pied">
     <p>{{pied.mentions}}</p>
   </footer>
