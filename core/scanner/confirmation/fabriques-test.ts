@@ -29,6 +29,7 @@ export const CONFIG_CONFIRMATION_TEST: ConfigConfirmation = {
   politique: 'complet',
   seuilConfirmationDirecte: 0.9,
   reExecutions: 2,
+  observationsMinPersistance: 2,
   variations: ['contexte-neuf'],
   tauxReproduction: 1,
   contreEpreuve: true,

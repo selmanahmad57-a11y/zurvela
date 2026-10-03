@@ -315,3 +315,21 @@ confirmé par coïncidence ».
 pas sur les 67 recouvrements bruts, dont la chaîne en écarte déjà soixante
 avant publication.
 
+### Prochain grand sujet — « LA MÉMOIRE ENTRE SCANS » (posé le 2026-10-03)
+
+P2-6 a situé le défaut : le churn de victimes est **inter-scans**, pas
+intra-scan (zéro cas sur 56 groupes mesurés dans un scan). Le problème du
+client — « six nouveaux défauts chaque semaine » — exige donc de comparer
+un scan au précédent, ce que le moteur ne sait pas faire.
+
+C'est un cahier LOURD : il touche à la persistance du bestiaire, pas à un
+scan. Il hérite de l'instrument de P2-6 (la marque d'observation et le
+palier de persistance intra-scan) — pour comparer d'un scan à l'autre, il
+faut d'abord savoir mesurer dans un scan, et c'est fait.
+
+À cadrer à froid, par ses contrats. Et avant lui, peut-être le GRAND
+TABLEAU refait : tous les défauts INTRA-SCAN connus sont traités (P2-1 à
+P2-6, plus le correctif `blob:`), donc le tableau dirait le vrai taux de
+faux positifs sur ce qui est corrigible dans un scan — en nommant que la
+continuité inter-scans reste ouverte.
+

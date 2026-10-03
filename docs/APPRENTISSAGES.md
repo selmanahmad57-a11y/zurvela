@@ -1590,3 +1590,38 @@ regardé.
   fois ce soir, la mutation survivante a désigné précisément la grandeur
   qu'il fallait mesurer à la place.
 
+## 47. Une persistance n'a pas de sens sans son HORIZON — une mesure juste peut répondre au mauvais niveau (2026-10-03, clôture de la branche d'action de P2-6)
+
+- **Le fait** : le cahier P2-6 est né d'un chiffre réel et correctement
+  mesuré — `#aswift_4` publiée `confirmee` dans TROIS SCANS SÉPARÉS sans
+  une seule victime commune ENTRE EUX. Nous en avons conclu que « le
+  protocole confirme par coïncidence d'emplacement », et nous avons
+  construit un instrument pour l'attraper. L'instrument, mis en mesure
+  avant d'agir, rend **zéro cas sur 56 groupes** — le banc entier et les
+  trois sites publicitaires.
+- **Pourquoi** : à l'intérieur d'un scan, quand la cause reparaît au rejeu,
+  elle reparaît sur au moins une des mêmes victimes. **Le churn de
+  victimes est un phénomène INTER-SCANS.** Or le protocole ne compare
+  qu'intra-scan. Le défaut que nous poursuivions n'existe pas au niveau où
+  nous le cherchions.
+- **La forme de l'erreur, et elle est pire que celle du n°45** : là-bas,
+  j'avais mesuré la MAUVAISE GRANDEUR (les `[id]` au lieu des
+  recouvrements). Ici la grandeur était la bonne, la mesure était juste, le
+  chiffre était vrai — **et il répondait à une question d'un autre
+  horizon**. Une mesure fausse se réfute ; une mesure juste au mauvais
+  niveau se croit, et elle a traversé cinq messages de raisonnement sans
+  se révéler.
+- **La règle** : *une persistance n'a pas de sens sans son horizon.* Avant
+  de mesurer qu'une chose « persiste », nommer explicitement DEUX choses —
+  ce qui est censé persister (n°45) et SUR QUEL HORIZON : d'une observation
+  à l'autre dans un scan, ou d'un scan au suivant. Les deux horizons
+  répondent à des questions différentes et n'ont pas les mêmes remèdes :
+  l'un relève du protocole, l'autre d'une mémoire qui n'existe pas encore.
+- **Ce qui l'a attrapée** : le CALCUL SANS ACTION. Mesurer ce que le
+  mécanisme ferait avant de le laisser faire a montré qu'il ne ferait
+  rien — et le vide a parlé. Branché directement, le palier 3 ne se serait
+  jamais allumé et j'aurais cherché un bug dans mon propre code au lieu de
+  comprendre que le défaut vivait un étage au-dessus. **Séparer le calcul
+  de l'action rend l'absence de cas visible AVANT qu'elle ne devienne un
+  bug fantôme à déboguer.**
+

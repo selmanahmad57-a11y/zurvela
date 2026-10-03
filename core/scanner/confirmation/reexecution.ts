@@ -39,6 +39,7 @@ import {
   TYPE_JOURNAL_TENTATIVE,
 } from './extraits-journal.js';
 import { estExploitable } from './verdict.js';
+import { victimesDe } from './persistance.js';
 
 /** Le rejeu lui-même a levé : l'outillage a lâché, pas le site. */
 export const ERREUR_REJEU_INTERROMPU = 'rejeu-interrompu';
@@ -133,6 +134,8 @@ export function observerRejeu(rejeu: ResultatRejeu, reproduction: ContexteReprod
 
 interface Constat {
   reproduite: boolean;
+  /** Les victimes retrouvées sous la même cause (cahier P2-6). */
+  victimes?: string[];
   /** Candidates relevées par les détecteurs sur les signaux de CE rejeu. */
   candidates: AnomalieCandidate[];
   mesureMs?: number;
@@ -202,8 +205,10 @@ async function rejouerEtRelire(options: OptionsReexecution, viewport: Viewport, 
   const mesureRessource = gradue && mesureCandidate === undefined ? mesurerRessourceVisee(groupe.representant, rejeu.signaux) : undefined;
   const mesureMs = mesureCandidate ?? mesureRessource;
   const nonMesuree = gradue && mesureMs === undefined;
+  const victimes = correspondante === undefined ? [] : victimesDe(correspondante);
   return {
     reproduite: correspondante !== undefined,
+    ...(victimes.length === 0 ? {} : { victimes }),
     candidates,
     ...(mesureMs === undefined ? {} : { mesureMs }),
     ...(nonMesuree ? { nonMesuree: true } : {}),
@@ -277,6 +282,7 @@ export async function reexecuterGroupe(options: OptionsReexecution): Promise<Res
       echecOutillage: constat.echecOutillage,
       ...(constat.causeEchec === undefined ? {} : { causeEchec: constat.causeEchec }),
       ...(constat.erreur === undefined ? {} : { erreur: constat.erreur }),
+      ...(constat.victimes === undefined ? {} : { victimes: constat.victimes }),
       ...(constat.mesureMs === undefined ? {} : { mesureMs: constat.mesureMs }),
       ...(constat.nonMesuree === true ? { nonMesuree: true } : {}),
       dureeMs: constat.dureeMs,

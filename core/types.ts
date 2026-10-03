@@ -934,6 +934,13 @@ export interface TentativeReexecution {
   causeEchec?: CauseEchecRejeu;
   /** Identifiant technique de l'échec, le cas échéant. */
   erreur?: string;
+  /**
+   * Les VICTIMES que ce rejeu a retrouvées sous la même cause (cahier
+   * P2-6). Absent quand rien n'a reparu, ou quand la cause ne désigne
+   * aucun élément (réseau). C'est le matériau du palier de persistance :
+   * reparaître au même endroit n'est pas reparaître sur la même chose.
+   */
+  victimes?: string[];
   /** Mesure brute quand le détecteur est gradué (durée observée pour D-LENTEUR). */
   mesureMs?: number;
   /**

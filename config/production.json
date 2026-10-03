@@ -245,6 +245,7 @@
     "politique": "complet",
     "seuilConfirmationDirecte": 0.9,
     "reExecutions": 2,
+    "observationsMinPersistance": 2,
     "variations": [
       "contexte-neuf"
     ],

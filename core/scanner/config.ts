@@ -194,6 +194,16 @@ export interface ConfigConfirmation {
   politique: 'complet' | 'econome';
   seuilConfirmationDirecte: number;
   reExecutions: number;
+  /**
+   * Rejeux EXPLOITABLES en deçà desquels on refuse de conclure qu'un
+   * recouvrement « ne persiste pas » (cahier P2-6). Défaut 2 : avec
+   * `reExecutions: 2`, c'est le cas normal ; sous budget serré, un seul
+   * rejeu rend le palier `sous-observe`, et on PUBLIE.
+   *
+   * C'est un RÉGLAGE ; l'asymétrie qu'il sert — le doute publie — est
+   * l'invariant, et elle vit en code.
+   */
+  observationsMinPersistance: number;
   variations: string[];
   tauxReproduction: number;
   contreEpreuve: boolean;

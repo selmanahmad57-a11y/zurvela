@@ -730,6 +730,7 @@
         "politique",
         "seuilConfirmationDirecte",
         "reExecutions",
+        "observationsMinPersistance",
         "variations",
         "tauxReproduction",
         "contreEpreuve",
@@ -757,6 +758,11 @@
           "type": "integer",
           "minimum": 1,
           "description": "Nombre de re-exécutions par groupe."
+        },
+        "observationsMinPersistance": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Rejeux exploitables en deçà desquels on refuse de conclure qu'un recouvrement ne persiste pas (cahier P2-6) : en dessous, le palier est « sous-observé » et l'anomalie est PUBLIÉE — le doute penche vers le signal préservé."
         },
         "variations": {
           "type": "array",

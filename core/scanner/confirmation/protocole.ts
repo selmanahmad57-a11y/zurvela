@@ -42,6 +42,7 @@ import { detailsGroupe, TYPE_JOURNAL_GROUPE } from './extraits-journal.js';
 import { confianceMinoree } from './pont-vocabulaires.js';
 import { reexecuterGroupe, viewportDuGroupe } from './reexecution.js';
 import { juger, MOTIF_CONFIANCE_SUFFISANTE, MOTIF_ECHEANCE_ATTEINTE, MOTIF_TIERS_SANS_EFFET } from './verdict.js';
+import { EVENEMENT_PALIER_PERSISTANCE, palierPersistance, victimesDe } from './persistance.js';
 
 /** Journal : un groupe de tiers sans effet visible, écarté d'office (P2-2, contrat 1). */
 export const EVENEMENT_TIERS_SANS_EFFET = 'tiers.sans-effet';
@@ -343,6 +344,26 @@ export function creerProtocole(dependances: DependancesProtocole): ProtocoleConf
             agregation: config.agregationMesures,
             ...(detecteur?.seuilMesure === undefined ? {} : { seuilMesure: detecteur.seuilMesure }),
           });
+          // LE PALIER DE PERSISTANCE (cahier P2-6). Calculé et JOURNALISÉ,
+          // sans agir encore sur ce qui est publié : on mesure ce que le
+          // mécanisme ferait avant de le laisser faire. Reparaître au même
+          // endroit n'est pas reparaître sur la même chose.
+          const victimesOrigine = victimesDe(groupe.representant);
+          const palier = palierPersistance({
+            victimesOrigine,
+            tentatives,
+            observationsMin: config.observationsMinPersistance,
+          });
+          if (palier !== 'sans-objet') {
+            contexte.journaliser(EVENEMENT_PALIER_PERSISTANCE, {
+              cle: groupe.cle,
+              palier,
+              verdict: jugement.verdict,
+              nbVictimesOrigine: victimesOrigine.length,
+              nbTentativesExploitables: tentatives.filter((tentative) => !tentative.echecOutillage).length,
+              observationsMin: config.observationsMinPersistance,
+            });
+          }
           resultat = {
             groupe,
             verdict: jugement.verdict,

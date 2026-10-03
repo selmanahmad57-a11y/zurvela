@@ -7,6 +7,47 @@ sont les contrôles du site), « la consolidation fond à tort » (non établi :
 le rapport nomme toutes les pages), « il faut une mémoire inter-scans »
 (faux : tout se mesure dans un scan).
 
+## ÉTAT — l'instrument est LIVRÉ, la branche d'action est SUSPENDUE (2026-10-03)
+
+**Livré et prouvé neutre** : la marque d'observation (`cfd2619`, oracle
+ÉQUIVALENT) et le palier de persistance, calculé et journalisé
+(`confirmation.persistance`, oracle ÉQUIVALENT sur 97 scénarios).
+
+**Suspendu, zéro cas mesuré** : la seule branche qui devait changer un
+comportement — le palier 3 (victime variable) publié comme motif.
+
+| | palier 2 victime stable | palier 1 non persistant | palier 4 sous-observé | **palier 3** |
+|---|---|---|---|---|
+| banc (97 scénarios) | 34 | 0 | 0 | **0** |
+| automationexercise | 12 | 0 | 4 | **0** |
+| expandtesting | 3 | 2 | 0 | **0** |
+| demoqa | 1 | 0 | 0 | **0** |
+| **total** | **50** | **2** | **4** | **0** |
+
+**Pourquoi zéro** : à l'intérieur d'un scan, quand la cause reparaît au
+rejeu, elle reparaît sur au moins une des mêmes victimes. Le churn de
+victimes qui a motivé ce cahier — `#aswift_4` confirmée dans trois scans
+sans victime commune — est un phénomène **INTER-SCANS**, et le protocole
+ne compare qu'intra-scan. **Le défaut que nous poursuivions n'existe pas
+au niveau où nous le cherchions** (APPRENTISSAGES n°47).
+
+**Ce qui reste vrai** : « six nouveaux défauts chaque semaine » est un
+problème réel du client. Il est inter-scans, il exige une MÉMOIRE entre
+scans, et P2-6 ne pouvait structurellement pas le résoudre puisqu'il
+travaille dans un scan. L'instrument livré ici est précisément ce dont ce
+cahier-là aura besoin : pour comparer la persistance d'un scan au suivant,
+il faut d'abord savoir la mesurer dans un scan.
+
+**Condition de réouverture de la branche d'action** : quand une mémoire
+inter-scans existera ET montrera un churn de victimes mesuré entre scans.
+Pas avant, pas au jugé.
+
+**L'intersection P2-4 / P2-6, vérifiée saine** : les 4 `sous-observe`
+d'automationexercise sont des groupes à budget serré qui n'ont pas eu
+assez de rejeux — et ils sont **publiés**, conformément à l'asymétrie. Le
+budget réparti ne fait donc taire aucun défaut persistant en lui refusant
+les rejeux qui le prouveraient. Mesuré, pas supposé (n°25).
+
 ## 0. Garde-maîtresse — ON MESURE L'EFFET, PAS SON SUPPORT
 
 La persistance d'un recouvrement se mesure sur **le recouvrement**, jamais
@@ -94,16 +135,22 @@ défaut persistant reçoit peu de budget.
 
 ## 2. Contrats — avant toute implémentation
 
-1. **P1 — TROIS PALIERS, décidés par la persistance du recouvrement.**
-   - *ne persiste pas d'un chargement à l'autre* → **pas un défaut
-     établi**. Ce n'est pas « un défaut dont la victime varie », c'est une
-     collision fortuite. Le protocole anti-faux-positifs fait alors son
-     travail normal — enfin correctement, puisqu'il juge le recouvrement
-     et non l'emplacement ;
-   - *persiste, MÊME victime* → **défaut précis**, cause ancrée sur la
-     victime. Le `#root > footer` de demoqa ;
-   - *persiste, victime VARIABLE* → **phénomène**, cause ancrée sur
-     l'emplacement, publié comme motif.
+1. **P1 — TROIS PALIERS, décidés APRÈS LES REJEUX, au protocole de
+   confirmation** (amendé le 2026-10-03, voir §1bis : `detecter()` est
+   aveugle à la multiplicité par construction, seul le protocole tient
+   ensemble le constat d'origine et ceux de chaque rejeu).
+   - *la cause ne reparaît à aucun rejeu* → **pas un défaut établi**. Ce
+     n'est pas « un défaut dont la victime varie », c'est une collision
+     fortuite. Le protocole anti-faux-positifs fait alors son travail
+     normal — enfin correctement, puisqu'il juge le RECOUVREMENT et non
+     l'emplacement ;
+   - *la cause reparaît, MÊME victime* → **défaut précis**. Le
+     `#root > footer` de demoqa ;
+   - *la cause reparaît, victime VARIABLE* → **phénomène**, publié comme
+     motif ;
+   - *trop peu de rejeux pour conclure* → **la quatrième face** : on
+     publie (P2).
+   Le critère n'a pas changé depuis l'écriture de ce cahier ; son LIEU si.
 
 2. **P2 — L'ASYMÉTRIE DU PALIER 1 : LE DOUTE VA VERS PUBLIER.** C'est le
    palier qui TAIT, donc le seul endroit où l'on peut taire à tort. Taire
@@ -123,11 +170,15 @@ défaut persistant reçoit peu de budget.
    moins cher ; en ajouter un ici le défairait (n°25, l'intersection des
    cahiers).
 
-4. **P4 — LA CLÉ SUIT LE PALIER.** Au palier 2, la victime entre dans
-   l'identité de cause — le protocole cesse alors de confirmer par
-   coïncidence d'emplacement, et la consolidation cesse de réunir des
-   pages que rien n'unit. Au palier 3, la clé reste l'emplacement : treize
-   victimes changeantes font un motif, pas treize sections.
+4. **P4 — LA CLÉ PUBLIÉE SUIT LE PALIER.** C'est la clé de ce qui est
+   PUBLIÉ qui découle du palier, pas la clé posée à la détection : au
+   moment où le détecteur travaille, aucun rejeu n'a eu lieu et le palier
+   n'existe pas encore (§1bis).
+   Au palier 2, la victime entre dans l'identité publiée — le protocole
+   cesse de confirmer par coïncidence d'emplacement, et deux pages que
+   rien n'unit cessent d'être réunies. Au palier 3, la clé reste
+   l'emplacement : treize victimes changeantes font un motif, pas treize
+   sections.
    Mutation : mettre la victime dans la clé À TOUS LES PALIERS — le
    gabarit du palier 3 explose en autant de sections que de victimes.
 
