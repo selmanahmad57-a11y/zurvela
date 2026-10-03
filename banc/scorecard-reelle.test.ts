@@ -13,11 +13,12 @@ import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import type { Rapport } from '../core/types.js';
 import { comparerEmpreintes, identitesApparues, identitesPerdues } from './correcteur/empreinte.js';
-import { SitesEnDouble, construire, identifiantDeSite, pseudoScenario } from './scorecard-reelle.js';
+import { SitesEnDouble, construire, identifiantDeSite, pagesVisitees, pseudoScenario, restreindreAuSocle } from './scorecard-reelle.js';
 
-function journal(url: string, descriptions: readonly string[]): Rapport {
+function journal(url: string, descriptions: readonly string[], pages: readonly string[] = [url]): Rapport {
   return {
     url,
+    parcours: { pages: pages.map((page) => ({ url: page })), arret: 'complet' },
     dureeMs: 1000,
     coutApi: 0.1,
     journal: [],
@@ -28,7 +29,7 @@ function journal(url: string, descriptions: readonly string[]): Rapport {
       verdict: 'confirmee',
       motif: 'reproduite',
       groupe: `g-${description}`,
-      localisations: [{ urlOuEtape: url, viewport: 'desktop' }],
+      localisations: [{ urlOuEtape: pages[descriptions.indexOf(description) % pages.length] ?? url, viewport: 'desktop' }],
       observations: [{ viewport: 'desktop' }],
     })),
     ecartees: [],
@@ -115,5 +116,58 @@ describe('ce que le pseudo-scénario n’invente pas', () => {
   it('reporte le rapport business, sans quoi l’oracle ne verrait aucune section publiée', () => {
     const scenario = pseudoScenario(journal('https://a.invalid/', ['x']), 'a.invalid');
     expect(scenario.rapportBusiness?.sections).toHaveLength(1);
+  });
+});
+
+describe('le SOCLE COMMUN — comparer sur ce que les deux moteurs ont vu (dette n°25)', () => {
+  // ARBITRAGE DÉLÉGUÉ, 2026-10-02 : le nombre de pages explorées décrit
+  // NOTRE scan, pas le site. Sur demoqa, la campagne voyait 16 pages (elle
+  // explorait jusqu'à l'échéance et ne jugeait rien) et P2-4 en voit 8 (il
+  // garde la réserve de confirmation et JUGE). Comparer leurs identités sur
+  // des parcours différents mélangerait « ce que le moteur a changé » et
+  // « ce qu'il n'a pas eu le temps de voir ».
+  const P = ['https://a.invalid/1', 'https://a.invalid/2', 'https://a.invalid/3'];
+
+  it('une anomalie HORS SOCLE ne compte pas comme perdue : c’est du périmètre, pas du signal', async () => {
+    // Le moteur d'avant a vu trois pages et trouvé trois défauts ; le nôtre
+    // n'a vu que les deux premières. Sans socle, l'oracle crierait à la
+    // perte du troisième — alors qu'on ne l'a pas cherché.
+    const avantChemins = await ecrire([journal('https://a.invalid/1', ['a', 'b', 'c'], P)]);
+    const apresChemins = await ecrire([journal('https://a.invalid/1', ['a', 'b'], P.slice(0, 2))]);
+    const avant = await construire(avantChemins, apresChemins);
+    const apres = await construire(apresChemins, avantChemins);
+    expect(identitesPerdues(comparerEmpreintes(avant.scenarios, apres.scenarios))).toBe(0);
+  });
+
+  it('DÉCLARE le périmètre laissé dehors : on nomme ce qu’on n’a pas comparé', async () => {
+    const avantChemins = await ecrire([journal('https://a.invalid/1', ['a', 'b', 'c'], P)]);
+    const apresChemins = await ecrire([journal('https://a.invalid/1', ['a', 'b'], P.slice(0, 2))]);
+    const avant = await construire(avantChemins, apresChemins);
+    expect(avant.perimetres).toEqual([{ site: 'a.invalid', communes: 2, horsSocle: [P[2]] }]);
+  });
+
+  it('DANS le socle, une anomalie perdue reste perdue : le socle n’excuse pas le signal', async () => {
+    // LA MUTATION À TUER : restreindre trop, et le socle deviendrait une
+    // amnistie. Les deux moteurs ont vu les deux mêmes pages ; une anomalie
+    // qui disparaît là est une vraie perte.
+    const avantChemins = await ecrire([journal('https://a.invalid/1', ['a', 'b'], P.slice(0, 2))]);
+    const apresChemins = await ecrire([journal('https://a.invalid/1', ['a'], P.slice(0, 2))]);
+    const avant = await construire(avantChemins, apresChemins);
+    const apres = await construire(apresChemins, avantChemins);
+    expect(identitesPerdues(comparerEmpreintes(avant.scenarios, apres.scenarios))).toBeGreaterThan(0);
+  });
+
+  it('sans socle fourni, rien n’est restreint : le comportement d’avant est préservé', async () => {
+    const chemins = await ecrire([journal('https://a.invalid/1', ['a', 'b', 'c'], P)]);
+    const sans = await construire(chemins);
+    expect(sans.scenarios[0]?.rapport?.anomalies).toHaveLength(3);
+    expect(sans.perimetres).toEqual([]);
+  });
+
+  it('la restriction garde l’anomalie et ne lui laisse QUE ses localisations du socle', () => {
+    const r = journal('https://a.invalid/1', ['a'], P);
+    const restreint = restreindreAuSocle(r, new Set([P[0] as string]));
+    expect(restreint.anomalies).toHaveLength(1);
+    expect(pagesVisitees(r).size).toBe(3);
   });
 });

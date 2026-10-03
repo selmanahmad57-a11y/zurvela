@@ -52,6 +52,65 @@ export function identifiantDeSite(rapport: Rapport, repli: string): string {
   }
 }
 
+/**
+ * LE SOCLE COMMUN — les pages que les DEUX moteurs ont réellement visitées
+ * (dette n°25).
+ *
+ * Deux moteurs ne voient pas le même nombre de pages : P2-1 a donné à la
+ * confirmation une réserve que l'exploration ne peut plus manger, donc le
+ * moteur d'aujourd'hui explore moins et JUGE, là où celui d'hier explorait
+ * jusqu'à l'échéance et ne jugeait rien. Comparer leurs identités sur des
+ * parcours différents mélangerait deux choses : ce que le moteur a changé,
+ * et ce qu'il n'a pas eu le temps de voir.
+ *
+ * La réponse n'est ni « non comparable » (qui jette le site du bilan) ni
+ * « comparable » (qui mentirait) : la comparaison porte sur le socle, et le
+ * périmètre laissé dehors est DÉCLARÉ. Même honnêteté que « sans objet »
+ * pour un ratio sans dénominateur — on ne note pas un échec, on nomme ce
+ * qu'on a mesuré et sur quoi.
+ */
+export function pagesVisitees(rapport: Rapport): Set<string> {
+  const pages = (rapport as { parcours?: { pages?: { url?: string }[] } }).parcours?.pages ?? [];
+  return new Set(pages.map((page) => page.url).filter((url): url is string => url !== undefined));
+}
+
+/**
+ * Restreint un rapport au socle : chaque anomalie perd les localisations
+ * hors socle, et disparaît si elle n'en garde aucune ; les sections de son
+ * groupe partent avec elle.
+ *
+ * CE QUI N'EST PAS RESTREINT, et c'est dit plutôt que caché : les candidates
+ * ÉCARTÉES ne portent pas de page — elles référencent un groupe par sa clé.
+ * Elles restent donc comparées en entier, et une divergence d'écartée peut
+ * venir du périmètre. Le journal reste l'arbitre (n°40).
+ */
+export function restreindreAuSocle(rapport: Rapport, socle: ReadonlySet<string>): Rapport {
+  const anomalies: unknown[] = [];
+  const groupesRetenus = new Set<string>();
+  for (const brute of rapport.anomalies ?? []) {
+    const anomalie = brute as { groupe?: string; localisations?: { urlOuEtape?: string }[] };
+    const gardees = (anomalie.localisations ?? []).filter((place) => place.urlOuEtape !== undefined && socle.has(place.urlOuEtape));
+    if (gardees.length === 0) {
+      continue;
+    }
+    groupesRetenus.add(anomalie.groupe ?? '');
+    anomalies.push({ ...anomalie, localisations: gardees });
+  }
+  const business = rapport.rapportBusiness;
+  return {
+    ...rapport,
+    anomalies: anomalies as Rapport['anomalies'],
+    ...(business === undefined
+      ? {}
+      : {
+          rapportBusiness: {
+            ...business,
+            sections: (business.sections ?? []).filter((section) => groupesRetenus.has(section.groupe ?? '')),
+          },
+        }),
+  };
+}
+
 /** Un journal de scan, enveloppé pour l'oracle. Rien n'est inventé. */
 export function pseudoScenario(rapport: Rapport, scenarioId: string): ResultatScenario {
   return {
@@ -86,24 +145,54 @@ export function pseudoScenario(rapport: Rapport, scenarioId: string): ResultatSc
  */
 export class SitesEnDouble extends Error {}
 
-export async function construire(chemins: readonly string[]): Promise<{ scenarios: ResultatScenario[] }> {
+export interface Perimetre {
+  site: string;
+  /** Pages que les deux moteurs ont visitées : c'est là que la comparaison vaut. */
+  communes: number;
+  /** Pages vues par CE moteur seulement : hors comparaison, et dites. */
+  horsSocle: string[];
+}
+
+export async function construire(
+  chemins: readonly string[],
+  /** Les journaux de l'AUTRE moteur : leur intersection de pages fait le socle. */
+  cheminsSocle: readonly string[] = [],
+): Promise<{ scenarios: ResultatScenario[]; perimetres: Perimetre[] }> {
+  const socles = new Map<string, Set<string>>();
+  for (const chemin of cheminsSocle) {
+    const autre = JSON.parse(await readFile(chemin, 'utf8')) as Rapport;
+    socles.set(identifiantDeSite(autre, path.basename(chemin)), pagesVisitees(autre));
+  }
+
   const scenarios: ResultatScenario[] = [];
+  const perimetres: Perimetre[] = [];
   const vus = new Set<string>();
   for (const chemin of chemins) {
-    const rapport = JSON.parse(await readFile(chemin, 'utf8')) as Rapport;
-    const identifiant = identifiantDeSite(rapport, path.basename(chemin));
+    const brut = JSON.parse(await readFile(chemin, 'utf8')) as Rapport;
+    const identifiant = identifiantDeSite(brut, path.basename(chemin));
     if (vus.has(identifiant)) {
       throw new SitesEnDouble(identifiant);
     }
     vus.add(identifiant);
-    scenarios.push(pseudoScenario(rapport, identifiant));
+    const pagesAutre = socles.get(identifiant);
+    if (pagesAutre === undefined) {
+      scenarios.push(pseudoScenario(brut, identifiant));
+      continue;
+    }
+    const miennes = pagesVisitees(brut);
+    const socle = new Set([...miennes].filter((url) => pagesAutre.has(url)));
+    perimetres.push({ site: identifiant, communes: socle.size, horsSocle: [...miennes].filter((url) => !pagesAutre.has(url)) });
+    scenarios.push(pseudoScenario(restreindreAuSocle(brut, socle), identifiant));
   }
-  return { scenarios };
+  return { scenarios, perimetres };
 }
 
 async function principal(): Promise<void> {
   const dico = await chargerDictionnaire(depuisRacine('locales'), (await chargerConfig()).langueConsole);
-  const [sortie, ...journaux] = process.argv.slice(2);
+  const args = process.argv.slice(2);
+  const coupure = args.indexOf('--socle');
+  const [sortie, ...journaux] = coupure === -1 ? args : args.slice(0, coupure);
+  const socle = coupure === -1 ? [] : args.slice(coupure + 1);
   if (sortie === undefined || journaux.length === 0) {
     console.error(traduire(dico, 'scorecardReelle.usage'));
     process.exitCode = 2;
@@ -111,7 +200,7 @@ async function principal(): Promise<void> {
   }
   let scorecard;
   try {
-    scorecard = await construire(journaux);
+    scorecard = await construire(journaux, socle);
   } catch (cause: unknown) {
     if (!(cause instanceof SitesEnDouble)) {
       throw cause;
@@ -121,6 +210,15 @@ async function principal(): Promise<void> {
     return;
   }
   await writeFile(sortie, `${JSON.stringify(scorecard, null, 1)}\n`, 'utf8');
+  for (const perimetre of scorecard.perimetres) {
+    console.log(
+      traduire(dico, 'scorecardReelle.perimetre', {
+        site: perimetre.site,
+        communes: perimetre.communes,
+        horsSocle: perimetre.horsSocle.length,
+      }),
+    );
+  }
   console.log(
     traduire(dico, 'scorecardReelle.ecrite', {
       fichier: sortie,

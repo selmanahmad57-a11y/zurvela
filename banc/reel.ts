@@ -113,7 +113,7 @@ function estAffirmee(anomalie: Anomalie): boolean {
 }
 
 export type VerdictReel =
-  | { statut: 'tenu'; temoinStable: boolean | null }
+  | { statut: 'tenu'; temoinStable: boolean | null; rejouabiliteSansObjet?: boolean }
   | { statut: 'non-tenu'; raisons: string[] }
   | { statut: 'declare'; motif: 'indisponible' | 'structure-changee' | 'echec-scan'; detail: string };
 
@@ -218,8 +218,29 @@ export function juger(cas: CasReel, apres: MesuresScan, rendu: Rendu, avant?: Me
     };
   }
   const raisons: string[] = [];
+  /**
+   * UN RATIO SANS DÉNOMINATEUR NE MESURE RIEN — ni TENU, ni NON TENU : SANS
+   * OBJET (levée de la dette n°23, arbitrage du propriétaire, 2026-10-02).
+   *
+   * La rejouabilité mesure la part des candidates que le protocole atteint.
+   * Un site qui ne produit aucun groupe à rejouer — tout écarté d'office en
+   * tiers sans effet, ou aucune anomalie du tout — n'a ni numérateur ni
+   * dénominateur. Le noter « non tenu » répond à une question qui n'a pas
+   * été posée ; le noter « tenu » prétendrait un succès de rejouabilité là
+   * où aucun rejeu n'a eu lieu. Les deux mentent, dans deux sens.
+   *
+   * C'est la même famille que la quatrième nature d'attendu du banc et que
+   * le troisième état épistémique : l'absence de mesure n'est pas un
+   * résultat, et elle ne se note pas comme un échec.
+   *
+   * CE QUI GARDE LA RÈGLE d'être un trou : un moteur qui cesserait de
+   * détecter rendrait tous les sites « sans objet ». Ce cas-là est déjà
+   * attrapé en amont par `candidatesMin` — une structure qui s'effondre est
+   * DÉCLARÉE, pas blanchie.
+   */
+  const rejouabiliteSansObjet = apres.tauxGroupesPourcent === null;
   const taux = apres.tauxGroupesPourcent ?? 0;
-  if (taux < cas.attendus.rejouabiliteGroupesMinPourcent) {
+  if (!rejouabiliteSansObjet && taux < cas.attendus.rejouabiliteGroupesMinPourcent) {
     raisons.push(traduire(dico, 'reel.raisonRejouabilite', { taux: rendu.pourcent(apres.tauxGroupesPourcent), min: rendu.pourcent(cas.attendus.rejouabiliteGroupesMinPourcent) }));
   }
   // Contrat 8, sur tous les sites : une découverte n'est jamais publiée comme
@@ -239,13 +260,17 @@ export function juger(cas: CasReel, apres: MesuresScan, rendu: Rendu, avant?: Me
   }
   const reference = avant?.tauxGroupesPourcent ?? cas.avant.rejouabiliteGroupesPourcent;
   let temoinStable: boolean | null = null;
-  if (cas.role === 'temoin') {
+  if (cas.role === 'temoin' && !rejouabiliteSansObjet) {
+    // Le témoin se juge sur le MÊME ratio : sans dénominateur, il ne dit pas
+    // davantage que le site n'a bougé qu'il ne dit qu'il est resté stable.
     temoinStable = taux >= reference;
     if (!temoinStable) {
       raisons.push(traduire(dico, 'reel.temoinBouge', { avant: rendu.pourcent(reference), apres: rendu.pourcent(apres.tauxGroupesPourcent) }));
     }
   }
-  return raisons.length === 0 ? { statut: 'tenu', temoinStable } : { statut: 'non-tenu', raisons };
+  return raisons.length === 0
+    ? { statut: 'tenu', temoinStable, ...(rejouabiliteSansObjet ? { rejouabiliteSansObjet: true } : {}) }
+    : { statut: 'non-tenu', raisons };
 }
 
 export async function chargerCas(dossier: string = depuisRacine(DOSSIER_CAS)): Promise<CasReel[]> {
@@ -448,6 +473,13 @@ function ligneScan(rendu: Rendu, moment: string, mesures: MesuresScan): string {
 
 function ligneVerdict(rendu: Rendu, cas: CasReel, mesures: MesuresScan, verdict: VerdictReel): string {
   const { dico } = rendu;
+  if (verdict.statut === 'tenu' && verdict.rejouabiliteSansObjet === true) {
+    return traduire(dico, 'reel.tenuSansRejouabilite', {
+      id: cas.id,
+      dureeMs: rendu.entier(mesures.dureeMs),
+      dureeMaxMs: rendu.entier(cas.attendus.dureeMaxMs),
+    });
+  }
   if (verdict.statut === 'tenu') {
     return traduire(dico, 'reel.tenu', {
       id: cas.id,

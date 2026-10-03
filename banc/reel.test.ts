@@ -217,3 +217,40 @@ describe('le journal du réel doit SURVIVRE (checklist n°34, case 1)', () => {
   });
 });
 
+describe('un ratio SANS DÉNOMINATEUR est sans objet, ni tenu ni non tenu (dette n°23 levée)', () => {
+  // ARBITRAGE DU PROPRIÉTAIRE, 2026-10-02. La règle a été DÉLÉGUÉE parce
+  // que j'avais déjà vu les chiffres qu'elle fait basculer — trois sites
+  // sortaient « non tenu » pour n'avoir rien à rejouer. Le raisonnement ne
+  // dépend pas de ces chiffres : un ratio sans numérateur ni dénominateur
+  // ne mesure rien, le noter en échec répond à une question jamais posée.
+  const vide = { tauxGroupesPourcent: null, groupes: 0, groupesRejoues: 0 };
+
+  it('aucun groupe à rejouer : TENU, et le dit — pas un vert qui masque, une mesure qui manque', () => {
+    const verdict = juger(cas(), mesures(vide), rendu);
+    expect(verdict).toEqual({ statut: 'tenu', temoinStable: null, rejouabiliteSansObjet: true });
+  });
+
+  it('un TÉMOIN sans dénominateur ne « bouge » pas : le ratio ne dit rien, dans aucun sens', () => {
+    const temoin = cas({ role: 'temoin', avant: { ...cas().avant, rejouabiliteGroupesPourcent: 100 } });
+    const verdict = juger(temoin, mesures(vide), rendu);
+    expect(verdict.statut).toBe('tenu');
+    expect((verdict as { temoinStable: boolean | null }).temoinStable).toBeNull();
+  });
+
+  it('LA RÈGLE N’EXCUSE QUE L’ABSENCE DE MESURE : un taux réellement bas reste NON TENU', () => {
+    // Le contrôle qui peut échouer : étendre « sans objet » à zéro.
+    // Rejouer 0 groupe sur 5 est un échec mesuré ; n'avoir aucun groupe est
+    // une absence de mesure. Les deux ne se notent pas pareil.
+    const verdict = juger(cas(), mesures({ tauxGroupesPourcent: 0, groupes: 5, groupesRejoues: 0 }), rendu);
+    expect(verdict.statut).toBe('non-tenu');
+  });
+
+  it('LA GARDE : un moteur qui cesserait de détecter est DÉCLARÉ, jamais blanchi en « sans objet »', () => {
+    // Sans cette garde, la règle serait un trou : tous les sites
+    // deviendraient « sans objet » le jour où la détection s'effondre.
+    // `candidatesMin` l'attrape en amont.
+    const verdict = juger(cas(), mesures({ ...vide, candidates: 0 }), rendu);
+    expect(verdict).toMatchObject({ statut: 'declare', motif: 'structure-changee' });
+  });
+});
+

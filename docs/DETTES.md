@@ -535,7 +535,32 @@ dette est levée (le commit qui la lève renvoie à ce fichier).
   P2-2, avant tout cahier qui élargit la doctrine tierce. En attendant, le
   compte par TYPE est journalisé à chaque scan, et toute revue doit le lire.
 
-## 23. La rejouabilité n'a pas de règle pour le dénominateur vide (2026-09-30, cahier P2-2, validation sur le réel)
+## 23. ~~La rejouabilité n'a pas de règle pour le dénominateur vide~~ — LEVÉE le 2026-10-02 (2026-09-30, cahier P2-2, validation sur le réel)
+
+> **LEVÉE, par arbitrage DÉLÉGUÉ.** Un ratio sans dénominateur n'est ni
+> TENU ni NON TENU : il est **SANS OBJET**. La rejouabilité mesure la part
+> des candidates que le protocole atteint ; un site qui ne produit aucun
+> groupe à rejouer n'a ni numérateur ni dénominateur, et le ratio ne mesure
+> rien. Le noter « non tenu » répond à une question qui n'a pas été posée ;
+> le noter « tenu » prétendrait un succès de rejouabilité là où aucun rejeu
+> n'a eu lieu — les deux mentent, dans deux sens opposés. Même famille que
+> la quatrième nature d'attendu du banc et le troisième état épistémique :
+> l'absence de mesure n'est pas un résultat.
+>
+> **La garde qui l'empêche d'être un trou** : un moteur qui cesserait de
+> détecter rendrait tous les sites « sans objet ». Ce cas est attrapé en
+> amont par `candidatesMin` — une structure qui s'effondre est DÉCLARÉE,
+> jamais blanchie. Mutation tuée : étendre « sans objet » à un taux de 0 %
+> (rejouer 0 groupe sur 5 est un échec MESURÉ ; n'avoir aucun groupe est une
+> absence de mesure).
+>
+> **MENTION DE DÉLÉGATION, pour que l'historique la porte** : la dette
+> disait « à décider à froid, jamais après avoir vu les chiffres ». Le
+> 2026-10-02, au dépouillement du grand tableau, j'avais DÉJÀ VU que trois
+> sites sortaient « non tenu » par ce défaut. Je me suis donc récusé, et la
+> règle a été tranchée par le propriétaire sur le principe. Elle n'a pas été
+> écrite par qui avait l'œil sur le résultat. Implémentée dans
+> `banc/reel.ts` (`rejouabiliteSansObjet`).
 
 - **Le fait** : la rejouabilité est « groupes rejoués / groupes jugeables ».
   Quand un scan ne retient plus AUCUN groupe jugeable, le rapport affiche
@@ -578,4 +603,39 @@ dette est levée (le commit qui la lève renvoie à ce fichier).
   une même page — par exemple un attendu qui porte un repère STRUCTUREL de
   l'intercepteur (son `data-role`), et non seulement sa catégorie et sa
   page. À faire avant tout cahier qui élargit le regroupement par cause.
+
+## 25. « Structure changée » se mesure sur NOTRE scan, pas sur le site (2026-10-02, grand tableau de clôture P2-4)
+
+- **Le fait** : `banc:reel` déclare un site « STRUCTURE CHANGÉE, non jugé »
+  quand `pages < pagesMin`. Or le nombre de pages explorées n'est PAS une
+  propriété du site : c'est une propriété de notre scan. Sur demoqa, le
+  moteur de campagne a vu 16 pages (il explorait jusqu'à l'échéance
+  complète) et P2-4 en voit 8 (il s'arrête à `reserve-confirmation` pour
+  protéger le budget de rejeu, décision de P2-1). Le site n'a pas bougé
+  d'un octet ; le critère l'a pourtant déclaré « changé », et a jeté la
+  ligne du bilan.
+- **Ce que c'est, nommément** : n°30 cristallisé dans un critère — supposer
+  l'état du site à partir d'une grandeur qui décrit notre comportement. Le
+  critère ne détecte jamais ce qu'il prétend détecter.
+- **La règle juste, posée sur le principe** : « structure changée » doit se
+  mesurer sur ce qui appartient au SITE — les URL rencontrées, les parcours
+  attendus, le sitemap —, jamais sur le nombre de pages que nous avons eu
+  le temps de voir.
+- **Pourquoi c'est une dette et pas un correctif de ce soir** : écrire un
+  détecteur de dérive de structure (comparer des sitemaps, définir « même
+  structure ») est un chantier, et l'ouvrir à la fin d'un cahier sur des
+  runs coûteux est exactement ce que n°34 interdit. Ce qui est fait ce soir
+  est la mesure MINIMALE et honnête : la comparaison porte sur le SOCLE
+  COMMUN — les pages que les deux moteurs ont réellement visitées — et le
+  périmètre laissé dehors est DÉCLARÉ, avec sa raison. Ni « non comparable »
+  (qui jette le site), ni « comparable » (qui mentirait en comparant des
+  parcours différents).
+- **Condition de levée** : avant de s'appuyer sur « structure changée »
+  comme VERDICT dans un bilan public. Tant que la dette tient, ce verdict
+  reste indicatif et le socle commun fait foi.
+- **MENTION DE DÉLÉGATION** : comme pour la dette n°23, j'avais DÉJÀ VU les
+  chiffres que ce critère fait basculer (demoqa jeté du tableau alors que
+  le moteur l'avait jugé). Je me suis récusé ; la règle a été tranchée par
+  le propriétaire sur le principe. Deux fois dans la même soirée, et deux
+  fois le critère n'a pas été écrit par qui avait l'œil sur le résultat.
 

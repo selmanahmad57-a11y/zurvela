@@ -1358,6 +1358,20 @@ regardé.
   cause ne soit un budget libéré, tracée au journal » est ce qu'il fallait
   écrire. Un attendu qui ne dit pas quelle cause il accepte force à
   trancher après coup, c'est-à-dire au moment le plus tentant.
+- **EXTENSION (2026-10-02, premier dépouillement réel) : la NATURE de la
+  question dépend de ce que la comparaison promet d'établir.** Un verdict
+  d'oracle ne se lit pas dans l'absolu. Pour une OPTIMISATION — même
+  moteur, avant/après —, l'identité préservée est exigée et tout écart est
+  une faute. Pour une comparaison INTER-VERSIONS — deux moteurs à trois
+  cahiers d'écart —, les écarts SONT le sujet : faire taire du bruit fait
+  disparaître des identités, re-cadrer une cause en transforme. La même
+  « identité perdue » est une faute dans un contexte et un progrès dans
+  l'autre. Cas fondateur : sur quotes, l'oracle a rendu 44 identités
+  perdues ; le journal a montré 2 faux positifs tierce tus par P2-2 et UN
+  SEUL défaut re-clé sur sa cause et re-gradué par P2-3 — même cible, même
+  intercepteur, dans les deux moteurs. Lu comme une réponse, ce verdict
+  aurait fait paniquer (« un bloquant perdu ») ou célébrer (« 44
+  changements »). Les deux faux.
 - **Et pourquoi ce n'est pas un affaiblissement** : la trace est PLUS
   exigeante que le compte. Compter zéro gain se vérifie en lisant un
   nombre ; prouver que chaque gain vient d'un budget libéré demande de
@@ -1391,4 +1405,43 @@ regardé.
   autre — c'est exactement pour cela qu'on éprouve.** Un instrument validé
   « il tourne sans erreur » est vert sans être éprouvé ; c'est le fantôme
   du gabarit (n°30) sous sa forme instrumentale.
+
+## 42. L'identité d'une cause doit survivre à un rechargement (2026-10-02, bilan réel de la Phase 2, sur les sites lourds)
+
+- **Le fait** : sur automationexercise et expandtesting, le moteur publie
+  six recouvrements chacun dont les intercepteurs sont des `<iframe>`
+  AdSense — `#aswift_2`, `#aswift_9`, `#aswift_17`. Ces identifiants sont
+  RÉGÉNÉRÉS à chaque chargement. `signatureConstruction` n'en tire aucune
+  signature (`null`), donc la clé de cause retombe sur l'identifiant
+  volatil. Même forme sur les trois lenteurs d'expandtesting, dont les URL
+  sont des UUID de session.
+- **Ce n'est PAS un faux positif** — et c'est ce qui rend le défaut subtil.
+  Les cadres publicitaires couvrent réellement des liens produits ; un
+  visiteur qui clique touche la publicité. Le jugement est juste. C'est
+  l'IDENTITÉ du jugement qui est fausse.
+- **Les deux conséquences, toutes deux pour le client** :
+  1. **un phénomène, plusieurs sections** — « les publicités couvrent le
+     contenu » sort en six sections au lieu d'une, et le client lit six
+     défauts là où il y en a un à corriger ;
+  2. **aucune continuité** — au prochain scan, mêmes publicités, autres
+     identifiants : le bestiaire ne peut pas suivre le défaut, et le client
+     voit « six nouveaux défauts » chaque semaine. Un moteur de
+     SURVEILLANCE qui ne reconnaît pas ce qu'il a déjà signalé ne surveille
+     pas, il re-découvre.
+- **Pourquoi aucun test ne pouvait l'attraper** : il était invisible AU
+  BANC — nos gabarits ont des identifiants stables, puisque c'est nous qui
+  les écrivons (n°30 encore) — et invisible SUR LES SITES PROPRES, qui
+  n'ont pas de publicité à identifiants volatils. Seul un site lourd réel,
+  jugé pour la première fois grâce au budget de P2-4, pouvait le révéler.
+  **Il a été trouvé avant qu'un seul client ne reçoive un rapport « six
+  nouveaux défauts cette semaine ».** C'est exactement ce pour quoi on
+  mesure sur le réel avant de vendre.
+- **La difficulté de fond du cahier à venir, posée ici pour qu'elle mûrisse
+  à froid** : distinguer un identifiant VOLATIL d'un identifiant SIGNIFIANT
+  sans lire le monde. `#aswift_17` est volatil, `#panier` est signifiant —
+  mais le moteur ne peut pas le savoir en lisant les noms, ce serait de la
+  langue en détection (constitution §2). La voie est probablement celle de
+  la voie C de P2-3 : **ne pas reconnaître, mesurer.** Un identifiant qui
+  change entre deux chargements de la même page est volatil PAR PREUVE, pas
+  par nom. À concevoir par ses contrats, à froid.
 

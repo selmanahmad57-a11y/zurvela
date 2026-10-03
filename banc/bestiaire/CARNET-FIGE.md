@@ -255,3 +255,28 @@ mentir sur l'identité, c'est de corriger le jugement (APPRENTISSAGES n°19),
 ce que P2-2 prévoit. L'arbitrage se réduira probablement à « on garde
 l'identité, on répare la doctrine » — et il se posera formellement à
 l'ouverture de P2-2, pas avant.
+
+---
+
+## Prochain cahier (posé le 2026-10-02, au bilan réel de la Phase 2)
+
+**« L'identité d'une cause »** — une cause doit se reconnaître d'un scan à
+l'autre. Découvert sur automationexercise et expandtesting : les
+intercepteurs publicitaires (`<iframe>` AdSense) et les URL de session
+portent des identifiants régénérés à chaque chargement, donc la clé de
+cause est volatile. Conséquences : un phénomène éclaté en six sections, et
+aucune continuité d'un scan au suivant — un moteur de surveillance qui
+re-découvre au lieu de suivre. Ce n'est pas un faux positif : le jugement
+est juste, c'est son identité qui ne tient pas.
+
+Difficulté de fond : distinguer volatil de signifiant SANS lire les noms
+(constitution §2). Piste : mesurer plutôt que reconnaître — un identifiant
+qui change entre deux chargements de la même page est volatil par preuve.
+Voisinage délicat : `signatureConstruction` et la fusion de P2-3.
+APPRENTISSAGES n°42.
+
+Puis : lenteur (C-02, reste de C-04), périmètre/politesse/sécurité (C-15,
+C-14), le coût de NAVIGATION du rejeu (cahier à part : il se heurte à la
+garantie `contexte-neuf`, APPRENTISSAGES n°39), et le choix de la politique
+de production.
+

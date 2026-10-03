@@ -611,6 +611,26 @@ propre lecture :
 - **Régression du moteur** (le site répond, et le modal n'est plus fermé) :
   le témoin rougit, **tout s'arrête**, et c'est le sujet.
 
+### `the-internet` n'est PAS un témoin de run réel (acté le 2026-10-02)
+
+Deuxième fois sur deux que son hébergement gratuit le rend indisponible le
+soir d'un grand tableau : 2 pages explorées au lieu des ~20 de sa fiche,
+pour LES DEUX moteurs, deux scans collés à l'échéance de 300 s. **Un témoin
+qui est « non mesurable » un soir sur deux n'est pas un témoin** — faire
+dépendre une décision du grand tableau de sa disponibilité, c'est confier
+l'arbitrage à la météo d'un hébergement gratuit.
+
+Il reste précieux au BANC comme cas de modal pur (c'est lui qui a donné la
+voie C de P2-3). Pour le réel, les témoins stables sont **zurvela** (deux
+pages statiques que nous contrôlons) et **quotes** (statique, stable).
+
+Ce que la soirée du 2026-10-02 lui doit quand même, et ce n'est pas rien :
+sur sa jambe comparable, la seule anomalie que le moteur de campagne
+publiait — `dependance-tierce-en-echec`, mineur — est désormais écartée en
+`sans-effet / tiers-sans-effet`. **La doctrine tierce de P2-2 est vérifiée
+sur un site réel**, motif déclaré à l'appui. Un site « non mesurable » a
+quand même prouvé quelque chose.
+
 ### Comment chaque ligne se lit
 
 1. **L'oracle trie, le jugement tranche.** Aucune identité gagnée n'est
