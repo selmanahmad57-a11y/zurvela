@@ -281,7 +281,9 @@ C-14), le coût de NAVIGATION du rejeu (cahier à part : il se heurte à la
 garantie `contexte-neuf`, APPRENTISSAGES n°39), et le choix de la politique
 de production.
 
-### Cahier B — « les causes sans continuité » (à ouvrir APRÈS P2-5)
+### Cahier B — OUVERT le 2026-10-03 sous son vrai nom : « la persistance d'un recouvrement » (`docs/cahiers/phase2-06-persistance-recouvrement.md`)
+
+> Cinq mesures lui ont donné sa forme. L'énoncé ci-dessous est celui de son ouverture, conservé pour mémoire ; il était faux sur deux points (ce ne sont pas des pubs qui recouvrent des pubs mais des encarts qui recouvrent les CONTRÔLES DU SITE, et la consolidation ne « fond pas à tort » puisque le rapport nomme toutes les pages). La forme réelle : trois paliers décidés par la persistance du RECOUVREMENT — mesurée sur l'effet, pas sur l'identifiant (n°45), intra-scan, gratuite.
 
 La mesure du 2026-10-03 a séparé deux problèmes qu'on croyait identiques.
 P2-5 traite les phénomènes STABLES à identifiant volatil : la continuité

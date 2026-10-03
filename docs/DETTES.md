@@ -663,3 +663,26 @@ dette est levée (le commit qui la lève renvoie à ce fichier).
   schéma local EN VOL dans un gabarit, ou déplacer la garde vers un point
   dont le banc peut observer la conséquence.
 
+## 27. En mode dégradé, deux sections distinctes peuvent être INDISCERNABLES pour le client (2026-10-03, lecture du rapport d'expandtesting)
+
+- **Le fait** : sans clé API, le rapport sort sous sa forme structurée, sans
+  prose. Sur expandtesting, les sections 5 et 6 sont alors
+  rigoureusement identiques à la lecture — même catégorie (Mobile), même
+  gravité (Important), même statut (non re-testé), même page, même
+  viewport. Deux recouvrements différents, deux lignes que rien ne sépare.
+- **Pourquoi ce n'est pas un détail de mode dégradé** : le mode dégradé est
+  un MODE RÉEL du produit (constitution §4, « sans clé API, le moteur
+  fonctionne et le signale proprement »). Aujourd'hui il fonctionne, mais
+  il ne signale pas proprement : il présente deux défauts comme s'il y en
+  avait un répété. **Si la prose est la seule chose qui distingue deux
+  sections, une panne de rédaction rend le rapport illisible** — et
+  « illisible » est pire que « incomplet », parce que le client croit lire.
+- **La règle à poser** : une section doit être identifiable par sa
+  STRUCTURE, pas seulement par sa prose. Ce qui la distingue (l'élément
+  concerné, la cause) doit figurer dans les champs posés par le code, que
+  le modèle réponde ou non.
+- **Condition de levée** : avant de proposer le mode dégradé à un client,
+  ou de s'appuyer sur un rapport dégradé pour un jugement.
+- Hors périmètre du cahier B : c'est un défaut de RENDU, découvert en le
+  lisant.
+

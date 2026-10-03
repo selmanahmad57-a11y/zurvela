@@ -1527,3 +1527,34 @@ regardé.
   à sa propre réfutation vaut mieux qu'un chiffre qui n'a jamais été
   éprouvé.
 
+## 45. La persistance d'un EFFET se mesure sur l'effet, jamais sur l'objet qui le porte (2026-10-03, cahier B)
+
+- **Le fait** : pour décider si un recouvrement publicitaire est un défaut
+  stable, j'ai mesuré la stabilité de son IDENTIFIANT — les `[id]` du DOM
+  sur N chargements. `#aswift_4` ressortait STABLE sur `/about` (les 97
+  identifiants de la page l'étaient), et j'en ai conclu que la distinction
+  « défaut précis / phénomène » n'était pas observable dans un scan et
+  qu'elle exigeait une mémoire inter-scans. **C'était faux**, et cela a
+  failli faire suspendre un cahier qui était traitable gratuitement.
+- **Ce qu'il fallait mesurer** : le RECOUVREMENT, pas l'encart. Mesuré avec
+  la détection du moteur sur quatre chargements de la même page : **aucun
+  `#aswift_*` n'est présent dans les quatre**. L'encart existe à chaque
+  fois ; il ne recouvre pas la même chose, parfois rien.
+- **La leçon** : *l'existence d'un objet n'est pas la persistance de son
+  effet*. Deux objets parfaitement stables peuvent se chevaucher par
+  hasard de mise en page, et le hasard change à chaque rendu : ce qui est
+  volatil n'est ni l'identifiant, ni l'emplacement, **c'est la collision**.
+- **La forme générale, et c'est la dernière de la série** : le projet juge
+  à l'effet depuis longtemps — « écarté » est une propriété de la PAGE
+  (n°27), une ressource tierce se juge à son EFFET VISIBLE (P2-2), une
+  action se juge à son effet mesuré. Il manquait le cran suivant : **même
+  quand on croit mesurer l'effet, vérifier qu'on mesure l'effet et pas son
+  SUPPORT.** « L'identifiant est-il le même ? » répond à « l'objet est-il
+  le même ? ». Seule « l'effet se reproduit-il ? » répond à la question
+  posée.
+- **Le signe à chercher** : toute mesure de stabilité doit nommer
+  explicitement CE QUI est censé persister. Si la grandeur mesurée est un
+  attribut (un nom, une position, un identifiant) alors qu'on raisonne sur
+  un phénomène (un chevauchement, un échec, une lenteur), la mesure répond
+  à côté — et elle répondra de façon crédible, ce qui est le pire cas.
+

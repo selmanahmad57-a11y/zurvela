@@ -492,3 +492,34 @@ possible doit être diagnosticable PAR SA CAUSE dans le journal qu'on va
 produire. Un run dont on ne pourra pas tracer les causes est un run qu'on
 ne doit pas lancer — n°31 étendu de « pourra-t-on le lire » à « pourra-t-on
 l'expliquer ». Cas fondateur : APPRENTISSAGES n°40, cahier P2-4.
+
+## 15. Toute asymétrie du moteur penche vers le SIGNAL PRÉSERVÉ — une divergence révèle une erreur
+
+Le moteur a posé, cahier après cahier, une série de règles à sens unique :
+
+- le doute ne monte jamais la confiance (brique 3) ;
+- sans signature, on NE FOND PAS deux causes (P2-3) — ne pas fondre coûte
+  une section en double, fondre à tort perd un signal ;
+- une nature indéterminée ne descend pas au plus bas de la gravité (P2-3) ;
+- un ratio sans dénominateur n'est pas un échec, il est sans objet (n°23) ;
+- on ne regroupe pas deux causes en cas de doute (P2-5) ;
+- on ne TAIT pas un recouvrement en cas de doute (P2-6).
+
+Elles n'ont l'air indépendantes que de loin. **C'est une seule règle qui se
+décline : en cas de doute, le moteur préfère le BRUIT MINEUR à la PERTE DE
+SIGNAL.**
+
+D'où le contrôle, à appliquer à toute asymétrie nouvelle : **vérifier
+qu'elle penche du même côté que les autres.** Deux asymétries peuvent
+sembler opposées dans leur forme — « ne pas fondre » et « ne pas taire »
+agissent en sens inverse — et pencher pourtant du même côté, parce que
+l'une protège du silence par fusion et l'autre du silence par
+non-publication. Si une asymétrie nouvelle penche vers le silence, de deux
+choses l'une : **elle est fausse**, ou le cas est réellement différent et
+**la différence s'écrit**, en toutes lettres, avec sa justification.
+
+Sans ce contrôle, une asymétrie commode — « taire en cas de doute, c'est
+plus propre » — se glisse un jour sans qu'on voie qu'elle contredit tout
+le reste. C'est ce qui transforme une collection de règles en un principe
+vérifiable.
+
