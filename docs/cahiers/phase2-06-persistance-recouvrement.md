@@ -41,6 +41,57 @@ commune**.
 le protocole confirme un emplacement, et la consolidation réunit des
 pages. Un seul critère les règle tous les deux.
 
+## 1bis. OÙ LE PALIER SE DÉCIDE — corrigé le 2026-10-03, en lisant le code
+
+P1 et P4 ci-dessous ont été écrits en situant le palier **à la détection**.
+C'est le mauvais lieu, et la raison est structurelle, pas circonstancielle :
+
+`detecter()` est appelé une fois sur les signaux de l'exploration, puis une
+fois PAR REJEU sur les signaux de ce seul rejeu. **Il ne voit donc jamais
+qu'une observation à la fois** — il est aveugle à la multiplicité par
+construction. Et pendant l'exploration, une page n'est visitée qu'une fois
+par viewport : les observations multiples viennent des REJEUX, qui arrivent
+plus tard.
+
+**L'endroit où les observations se rencontrent est le PROTOCOLE DE
+CONFIRMATION** — lui seul tient ensemble le constat d'origine et les
+constats de chaque rejeu.
+
+Et cela simplifie le cahier d'un cran de plus. Le protocole pose déjà la
+question « le rejeu a-t-il produit une candidate de MÊME CAUSE ? ». Il lui
+manque **un seul mot** : *et de même VICTIME ?* Les trois paliers tombent
+alors du matériau que `reexecuterGroupe` a déjà en main (les candidates
+relevées à chaque rejeu) :
+
+| ce que les rejeux montrent | palier |
+|---|---|
+| la cause ne reparaît pas | 1 — pas un défaut établi |
+| la cause reparaît, **même victime** | 2 — défaut précis, ancré sur la victime |
+| la cause reparaît, **victime différente** | 3 — phénomène, ancré sur l'emplacement |
+| **trop peu de rejeux pour conclure** | la quatrième face — on publie |
+
+**P3 (zéro chargement ajouté) est donc tenu PAR CONSTRUCTION**, et pas
+seulement respecté : le cahier ne construit pas un mécanisme de mesure, il
+lit une persistance que le protocole mesure déjà.
+
+Le critère ne change pas ; son LIEU si. Lire P1 et P4 avec cette
+correction : le palier se décide APRÈS les rejeux, et c'est la clé
+PUBLIÉE qui en découle, pas la clé posée à la détection.
+
+### L'intersection à surveiller : P2-4 et P2-6 (n°25)
+
+Si le palier se décide au protocole, **la quatrième face dépend du nombre
+de rejeux que le budget accorde** — nombre que P2-4 vient précisément de
+répartir. Un groupe qui reçoit peu de rejeux (budget serré, site lourd)
+tombe donc plus facilement dans « trop peu d'observations → on publie ».
+
+C'est cohérent avec l'asymétrie « doute → publier » : moins de rejeux,
+plus de doute, on publie. Mais il faut le VÉRIFIER plutôt que le supposer :
+**le budget réparti ne doit pas faire taire un défaut persistant en lui
+refusant les rejeux qui prouveraient sa persistance.** `calque-au-rejeu`
+ne couvrira pas cet angle seul ; il faudra sans doute un gabarit où un
+défaut persistant reçoit peu de budget.
+
 ## 2. Contrats — avant toute implémentation
 
 1. **P1 — TROIS PALIERS, décidés par la persistance du recouvrement.**
