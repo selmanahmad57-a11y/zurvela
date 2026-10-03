@@ -77,6 +77,7 @@ function finActionInerte(viewport: string): Signal {
     horodatage: new Date().toISOString(),
     page: URL_CONTACT,
     viewport,
+    observation: 'o1',
     actionId: 'a1',
     effets: { requetes: 0, requetesEnAttente: 0, navigation: false, mutations: 0, mutationsZone: 0, mutationsHorsBruit: 0, attenteMs: 500 },
   };
@@ -182,6 +183,7 @@ function signauxLogoMort(page: string, viewport: string): Signal[] {
       horodatage,
       page,
       viewport,
+      observation: 'o1',
       actionId: 'a1',
       urlRessource: URL_LOGO,
       methode: 'GET',
@@ -193,7 +195,7 @@ function signauxLogoMort(page: string, viewport: string): Signal[] {
     // Sans `actionId` : c'est l'état de l'image, pas l'effet de l'action —
     // c'est ce qui prive D-IMAGE du contexte de rejeu, et lui coûte le rôle
     // de représentant.
-    { type: 'etat-image', horodatage, page, viewport, ressource: URL_LOGO, element: LOGO, complete: true, largeurNaturelle: 0, hauteurNaturelle: 0 },
+    { type: 'etat-image', horodatage, page, viewport, observation: 'o1', ressource: URL_LOGO, element: LOGO, complete: true, largeurNaturelle: 0, hauteurNaturelle: 0 },
   ];
 }
 
@@ -1024,3 +1026,36 @@ describe('creerScanner — l’échéance est répartie, réservée et appliqué
     expect(confirmee).toBe(true);
   });
 });
+
+describe('le compteur d’observations est PARTAGÉ par les deux portes (cahier P2-6)', () => {
+  it('l’exploration et le rejeu reçoivent le MÊME compteur : une visite et un rejeu sont deux observations', async () => {
+    // L'unicité des marques est globale AU SCAN. Deux compteurs locaux
+    // repartant à 1 feraient porter la même marque à la visite
+    // d'exploration et au premier rejeu de la même page — et la
+    // persistance se calculerait sur un dénominateur faux, ce qui est
+    // exactement la réponse crédible à la mauvaise question (n°45).
+    let vuParExploration: unknown;
+    let vuParRejeu: unknown;
+    const explorateur: Explorateur = {
+      nom: 'capteur',
+      async explorer(contexte) {
+        vuParExploration = contexte.compteurObservations;
+        return { urlDepart: ORIGINE, pages: [], actions: [], arret: 'complet', enAttenteALArret: 0, pagesRestantesALArret: 0, nbRecouvrementsEcartes: 0 };
+      },
+    };
+    await creerScanner(
+      dependances({
+        explorateur,
+        ouvrirRejeu: (_journaliser, _echeance, _memoire, compteurObservations) => {
+          vuParRejeu = compteurObservations;
+          return { reexecuteur: { rejouer: () => Promise.reject(new Error('non appelé')) }, fermer: () => Promise.resolve() };
+        },
+      }),
+    )(ORIGINE, { timeoutMs: 2000 });
+
+    expect(vuParExploration).toBeDefined();
+    expect(vuParRejeu).toBeDefined();
+    expect(vuParRejeu).toBe(vuParExploration);
+  });
+});
+

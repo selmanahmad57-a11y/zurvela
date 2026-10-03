@@ -501,11 +501,12 @@ export function creerExplorateur(dependances: DependancesExplorateur): Explorate
       async function emettreSignauxDePage(etat: EtatViewport, url: string): Promise<void> {
         const { page, viewport } = etat;
         const horodatage = new Date().toISOString();
+        const observation = etat.branchee.observationCourante();
         for (const image of await etatsImages(page, delai())) {
-          observateur.emettre({ type: 'etat-image', horodatage, page: url, viewport: viewport.nom, ...image });
+          observateur.emettre({ type: 'etat-image', horodatage, observation, page: url, viewport: viewport.nom, ...image });
         }
         for (const cadre of await etatsCadres(page, delai())) {
-          observateur.emettre({ type: 'etat-cadre', horodatage, page: url, viewport: viewport.nom, ...cadre });
+          observateur.emettre({ type: 'etat-cadre', horodatage, observation, page: url, viewport: viewport.nom, ...cadre });
         }
         const geometrie = await recouvrements(page, { max: exploration.elementsInteractifsMax, budgetMs: delai() });
         if (geometrie.tronque) {
@@ -535,7 +536,7 @@ export function creerExplorateur(dependances: DependancesExplorateur): Explorate
           nbRecouvrementsEcartes += issue.nbEcartes;
         }
         for (const constat of constats) {
-          observateur.emettre({ type: 'interception-clic', horodatage, page: url, viewport: viewport.nom, ...constat, source: 'geometrie' });
+          observateur.emettre({ type: 'interception-clic', horodatage, observation, page: url, viewport: viewport.nom, ...constat, source: 'geometrie' });
         }
       }
 
@@ -697,6 +698,7 @@ export function creerExplorateur(dependances: DependancesExplorateur): Explorate
             observateur.emettre({
               type: 'interception-clic',
               horodatage: new Date().toISOString(),
+              observation: etat.branchee.observationCourante(),
               page: etat.pageCourante.url,
               viewport: viewport.nom,
               actionId: actionCourante,
@@ -801,6 +803,7 @@ export function creerExplorateur(dependances: DependancesExplorateur): Explorate
             origine,
             actionCouranteId: () => actionCourante,
             pageCourante: () => page.url(),
+            ouvrirObservation: () => contexte.compteurObservations.ouvrir(),
           });
           if (echeanceProche()) {
             return contexte.arretEcheance ?? 'echeance';

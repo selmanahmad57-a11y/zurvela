@@ -27,6 +27,7 @@ import { politiqueDeterministe } from './exploration/politique.js';
 import { lancerNavigateur } from './navigateur.js';
 import { creerObservateur } from './observation/observateur.js';
 import { creerReexecuteur } from './reexecuteur.js';
+import { creerCompteurObservations } from './observation/observations.js';
 
 const ECHEANCE_MS = 40_000;
 
@@ -63,6 +64,7 @@ beforeAll(async () => {
     {
       urlDepart: serveur.url,
       echeance: Date.now() + ECHEANCE_MS,
+      compteurObservations: creerCompteurObservations(),
       journaliser: (type, details) => journal.push({ horodatage: new Date().toISOString(), type, details }),
     },
     observateur,
@@ -91,6 +93,7 @@ async function rejouer(): Promise<{ journal: EntreeJournal[]; signaux: Signal[];
     filtreElement: creerFiltreElement(await chargerActionsInterdites()),
     navigateur,
     config,
+    compteurObservations: creerCompteurObservations(),
     journaliser: (type, details) => journal.push({ horodatage: new Date().toISOString(), type, details }),
   });
   const resultat = await reexecuteur.rejouer(candidate.reproduction, candidate.reproduction.viewport);

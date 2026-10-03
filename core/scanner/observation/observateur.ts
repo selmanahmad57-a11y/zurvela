@@ -33,6 +33,13 @@ export interface ParametresBranchement {
   /** Action en cours (undefined hors fenêtre d'action) : chaque signal la reçoit. */
   actionCouranteId(): string | undefined;
   pageCourante(): string;
+  /**
+   * Ouvre une nouvelle OBSERVATION et rend sa marque (cahier P2-6). Appelée
+   * au branchement, puis à chaque navigation du cadre principal — c'est-à-
+   * dire à chaque fois que la page est rechargée et que ses effets sont à
+   * reconstater.
+   */
+  ouvrirObservation(): string;
 }
 
 export interface OptionsFenetre {
@@ -53,6 +60,13 @@ export interface OptionsEffets extends OptionsFenetre {
 export type EffetsAction = Extract<Signal, { type: 'fin-action' }>['effets'];
 
 export interface PageBranchee {
+  /**
+   * La marque de l'observation en cours (cahier P2-6). Les deux portes
+   * émettent aussi des signaux de leur côté — états d'images, géométrie,
+   * interceptions — et ils doivent porter la MÊME marque que ceux de
+   * l'observateur, sans quoi un même chargement compterait pour deux.
+   */
+  observationCourante(): string;
   /** Ouvre une fenêtre d'effet : remet à zéro les compteurs (à appeler juste AVANT l'action). */
   ouvrirFenetre(): void;
   /** Attend la stabilisation de la page sans émettre de signal (après un chargement). */
@@ -92,7 +106,7 @@ export interface EtatFenetre {
 }
 
 /** Contexte commun d'un signal : viewport, page, action en cours. */
-type BaseSignal = { viewport: string; page: string; actionId?: string };
+type BaseSignal = { viewport: string; page: string; observation: string; actionId?: string };
 
 export interface Horloge {
   maintenant(): number;
@@ -221,9 +235,11 @@ function mesurerReponse(requete: Request): { dureeMs: number | null; horodatage:
 
 export function brancherPage(page: Page, params: ParametresBranchement): PageBranchee {
   const { observateur, viewport, origine } = params;
+  let observation = params.ouvrirObservation();
   const base = (): BaseSignal => {
     const actionId = params.actionCouranteId();
-    return actionId === undefined ? { viewport, page: params.pageCourante() } : { viewport, page: params.pageCourante(), actionId };
+    const commun = { viewport, page: params.pageCourante(), observation };
+    return actionId === undefined ? commun : { ...commun, actionId };
   };
   /** Requête de NAVIGATION du cadre principal : le document de la page elle-même, jamais un sous-cadre. */
   const estNavigationPrincipale = (requete: Request): boolean =>
@@ -351,7 +367,11 @@ export function brancherPage(page: Page, params: ParametresBranchement): PageBra
       return;
     }
     const vers = cadre.url();
+    // La navigation APPARTIENT à l'observation qui s'achève — c'est elle qui
+    // la cause. L'observation suivante s'ouvre juste après, pour les signaux
+    // de la page nouvellement chargée.
     observateur.emettre({ ...base(), type: 'navigation', horodatage: iso(Date.now()), de: urlPrecedente, vers });
+    observation = params.ouvrirObservation();
     urlPrecedente = vers;
     navigationVue = true;
     activite();
@@ -378,6 +398,7 @@ export function brancherPage(page: Page, params: ParametresBranchement): PageBra
   };
 
   return {
+    observationCourante: () => observation,
     ouvrirFenetre() {
       enVol = new Map();
       requetes = 0;

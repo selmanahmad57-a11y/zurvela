@@ -39,6 +39,7 @@ import { autoDiagnosticMecanique } from './auto-diagnostic.js';
 import { MOTIF_CONSTATEE_AU_REJEU, graviteDecouverte } from './decouvertes.js';
 import { creerProtocole } from './protocole.js';
 import { MOTIF_REJEU_IMPOSSIBLE } from './verdict.js';
+import { creerCompteurObservations } from '../observation/observations.js';
 
 const ECHEANCE_MS = 40_000;
 
@@ -87,7 +88,7 @@ beforeAll(async () => {
     navigateur,
   });
   const parcours: Parcours = await explorateur.explorer(
-    { urlDepart, echeance: Date.now() + ECHEANCE_MS, journaliser: () => undefined },
+    { urlDepart, echeance: Date.now() + ECHEANCE_MS, compteurObservations: creerCompteurObservations(), journaliser: () => undefined },
     observateur,
   );
   candidates = detecter(observateur.signaux(), { urlDepart, parcours, viewports: config.viewports }, creerDetecteurs(config.detecteurs));
@@ -113,7 +114,7 @@ async function confirmer(): Promise<{ resultat: ResultatConfirmation; journal: E
     journaliser,
     reexecuteur: creerReexecuteur({
     filtreElement: creerFiltreElement(await chargerActionsInterdites()),
-    navigateur, config, journaliser }),
+    navigateur, config, journaliser, compteurObservations: creerCompteurObservations() }),
     detecteurs: creerDetecteurs(config.detecteurs),
     viewports: config.viewports,
   });

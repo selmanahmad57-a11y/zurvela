@@ -8,6 +8,7 @@
 
 /** Catégories d'anomalies couvertes par le moteur (constitution §1). */
 import type { MemoireFermeture } from './scanner/exploration/memoire-fermeture.js';
+import type { CompteurObservations } from './scanner/observation/observations.js';
 
 export type Categorie =
   | 'fonctionnel'
@@ -449,6 +450,8 @@ export interface ContexteExploration {
    * garantit qu'aucun souvenir ne survit à un site qui a changé.
    */
   memoireFermeture?: MemoireFermeture;
+  /** Le compteur d'observations du scan (cahier P2-6) : chaque chargement reçoit sa marque. */
+  compteurObservations: CompteurObservations;
   journaliser(type: string, details?: unknown): void;
 }
 
@@ -468,6 +471,25 @@ interface SignalBase {
   /** URL de la page au moment du signal. */
   page: string;
   viewport: string;
+  /**
+   * QUEL CHARGEMENT a produit ce signal (cahier P2-6, contrat préalable).
+   *
+   * Deux signaux de la même page peuvent venir de deux chargements
+   * différents — l'exploration, puis chaque rejeu. Sans cette marque, on
+   * ne peut pas répondre à « cet effet se reproduit-il ? » : on voit un
+   * sac de signaux, pas une suite d'observations. Et c'est la question
+   * dont tout P2-6 dépend, parce qu'un objet stable peut produire un effet
+   * volatil (APPRENTISSAGES n°45).
+   *
+   * REQUIS, délibérément : optionnel, un signal sans marque se fondrait en
+   * silence dans l'observation des autres, et la persistance se
+   * calculerait sur un dénominateur faux — une réponse crédible à la
+   * mauvaise question. `tsc` impose donc le champ partout (n°28).
+   *
+   * Unique à l'échelle du SCAN : une visite d'exploration et un rejeu de la
+   * même page sont deux observations, et doivent se distinguer.
+   */
+  observation: string;
   /** Action pendant la fenêtre d'observation de laquelle le signal est survenu. */
   actionId?: string;
 }

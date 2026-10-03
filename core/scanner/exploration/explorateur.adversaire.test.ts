@@ -19,6 +19,7 @@ import { COUCHE_FILTRE_DESTRUCTIF } from './couches.js';
 import { creerExplorateur } from './explorateur.js';
 import { creerFiltre, creerFiltreElement, type FiltreActions, type FiltreElement } from './filtre-actions.js';
 import { politiqueDeterministe } from './politique.js';
+import { creerCompteurObservations } from '../observation/observations.js';
 
 /** Délais resserrés : ces tests n'attendent que des effets immédiats. */
 function resserrer(base: ConfigScanner, surcharges: Partial<ConfigScanner['exploration']> = {}): ConfigScanner {
@@ -114,6 +115,7 @@ async function explorer(url: string, config: ConfigScanner, dureeMs = 15_000): P
     {
       urlDepart: url,
       echeance: Date.now() + dureeMs,
+      compteurObservations: creerCompteurObservations(),
       journaliser: (type, details) => journal.push({ horodatage: new Date().toISOString(), type, details }),
     },
     observateur,

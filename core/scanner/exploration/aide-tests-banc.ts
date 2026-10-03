@@ -15,6 +15,7 @@ import { creerObservateur } from '../observation/observateur.js';
 import { creerExplorateur } from './explorateur.js';
 import { creerFiltre, creerFiltreElement, type FiltreActions, type FiltreElement } from './filtre-actions.js';
 import { politiqueDeterministe } from './politique.js';
+import { creerCompteurObservations } from '../observation/observations.js';
 
 export const ECHEANCE_TEST_MS = 40_000;
 
@@ -63,7 +64,12 @@ export async function preparerBanc(): Promise<BancEssai> {
     const deterministe = politiqueDeterministe();
     const explorateur = creerExplorateur({ config, politique: deterministe, secours: deterministe, filtre, filtreElement, navigateur });
     const parcours = await explorateur.explorer(
-      { urlDepart: url, echeance, journaliser: (type, details) => journal.push({ horodatage: new Date().toISOString(), type, details }) },
+      {
+        urlDepart: url,
+        echeance,
+        compteurObservations: creerCompteurObservations(),
+        journaliser: (type, details) => journal.push({ horodatage: new Date().toISOString(), type, details }),
+      },
       observateur,
     );
     return { url, parcours, signaux: observateur.signaux(), journal };

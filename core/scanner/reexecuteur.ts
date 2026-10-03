@@ -77,6 +77,7 @@ export const ERREUR_URL_INVALIDE = 'url-invalide';
 /** Recette refusée avant d'ouvrir quoi que ce soit : un préalable étranger à la page d'ouverture (cahier P2-1, contrat 1). */
 import { ERREUR_RECETTE_INCOHERENTE } from './detection/commun.js';
 import type { MemoireFermeture } from './exploration/memoire-fermeture.js';
+import type { CompteurObservations } from './observation/observations.js';
 export { ERREUR_RECETTE_INCOHERENTE };
 
 /** Préfixe des identifiants d'action d'un rejeu : le journal distingue un rejeu d'une exploration. */
@@ -155,6 +156,12 @@ export interface DependancesReexecuteur {
    */
   memoireFermeture?: MemoireFermeture;
   /**
+   * Le compteur d'observations du SCAN (cahier P2-6). Un rejeu est une
+   * observation de plus de la même page : sans compteur partagé, il
+   * repartirait à 1 et se confondrait avec la visite d'exploration.
+   */
+  compteurObservations: CompteurObservations;
+  /**
    * Le filtre d'actions destructives appliqué à un élément que le CODE
    * s'apprête à activer. REQUIS, jamais optionnel, et pour la même raison
    * qu'à l'exploration : le rejeu écarte les recouvrements comme elle, donc
@@ -167,6 +174,7 @@ export interface DependancesReexecuteur {
 export function creerReexecuteur(dependances: DependancesReexecuteur): Reexecuteur {
   const { navigateur, config } = dependances;
   const fabriqueObservateur = dependances.observateur ?? creerObservateur;
+  const { compteurObservations } = dependances;
   const journaliser = dependances.journaliser ?? ((): void => undefined);
   const { rejeu } = config.confirmation;
   const { exploration } = config;
@@ -222,6 +230,7 @@ export function creerReexecuteur(dependances: DependancesReexecuteur): Reexecute
           origine,
           actionCouranteId: () => actionCourante,
           pageCourante: () => ouverte.url(),
+          ouvrirObservation: () => compteurObservations.ouvrir(),
         });
         const branchement = branchee;
 
@@ -254,10 +263,10 @@ export function creerReexecuteur(dependances: DependancesReexecuteur): Reexecute
         async function emettreSignauxDePage(url: string): Promise<void> {
           const horodatage = new Date().toISOString();
           for (const image of await etatsImages(ouverte, delai())) {
-            observateur.emettre({ type: 'etat-image', horodatage, page: url, viewport: viewport.nom, ...image });
+            observateur.emettre({ type: 'etat-image', horodatage, observation: branchement.observationCourante(), page: url, viewport: viewport.nom, ...image });
           }
           for (const cadre of await etatsCadres(ouverte, delai())) {
-            observateur.emettre({ type: 'etat-cadre', horodatage, page: url, viewport: viewport.nom, ...cadre });
+            observateur.emettre({ type: 'etat-cadre', horodatage, observation: branchement.observationCourante(), page: url, viewport: viewport.nom, ...cadre });
           }
           const geometrie = await recouvrements(ouverte, { max: exploration.elementsInteractifsMax, budgetMs: delai() });
           // ON TENTE AU REJEU COMME À L'EXPLORATION (cahier P2-3, contrat 1).
@@ -289,7 +298,7 @@ export function creerReexecuteur(dependances: DependancesReexecuteur): Reexecute
             nbRecouvrementsEcartes += issue.nbEcartes;
           }
           for (const constat of constats) {
-            observateur.emettre({ type: 'interception-clic', horodatage, page: url, viewport: viewport.nom, ...constat, source: 'geometrie' });
+            observateur.emettre({ type: 'interception-clic', horodatage, observation: branchement.observationCourante(), page: url, viewport: viewport.nom, ...constat, source: 'geometrie' });
           }
         }
 
@@ -379,6 +388,7 @@ export function creerReexecuteur(dependances: DependancesReexecuteur): Reexecute
               observateur.emettre({
                 type: 'interception-clic',
                 horodatage: new Date().toISOString(),
+                observation: branchement.observationCourante(),
                 page: ouverte.url(),
                 viewport: viewport.nom,
                 ...(actionCourante === undefined ? {} : { actionId: actionCourante }),

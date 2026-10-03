@@ -91,8 +91,10 @@ export function horodatage(decalageMs: number): string {
 
 type Surcharges<T extends Signal['type']> = Partial<Omit<Extract<Signal, { type: T }>, 'type'>>;
 
-function base(decalageMs: number): { horodatage: string; page: string; viewport: string } {
-  return { horodatage: horodatage(decalageMs), page: URL_CONTACT, viewport: DESKTOP.nom };
+function base(decalageMs: number): { horodatage: string; page: string; viewport: string; observation: string } {
+  // Une seule observation par défaut : un test qui veut en éprouver
+  // plusieurs surcharge `observation` explicitement (cahier P2-6).
+  return { horodatage: horodatage(decalageMs), page: URL_CONTACT, viewport: DESKTOP.nom, observation: 'o1' };
 }
 
 export function reponse(surcharges: Surcharges<'reponse-reseau'> = {}): Signal {

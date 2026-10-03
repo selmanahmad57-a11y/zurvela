@@ -38,6 +38,7 @@ import { creerObservateur } from './observation/observateur.js';
 import type { CompteurCoutIa, ExplorateurProfilant } from './profilage.js';
 import { creerReexecuteur } from './reexecuteur.js';
 import type { MemoireFermeture } from './exploration/memoire-fermeture.js';
+import type { CompteurObservations } from './observation/observations.js';
 
 export const NOM_EXPLORATEUR_NAVIGATEUR = 'explorateur-navigateur';
 
@@ -136,6 +137,7 @@ function sessionRejeu(
   journaliser: (type: string, details?: unknown) => void,
   echeance: number,
   memoireFermeture: MemoireFermeture,
+  compteurObservations: CompteurObservations,
 ): SessionRejeu {
   // Le rejeu écarte les recouvrements comme l'exploration, donc il filtre
   // comme elle (constitution §3, clause de P2-3).
@@ -154,7 +156,7 @@ function sessionRejeu(
           }, Math.max(0, echeance - Date.now()));
           garde.unref();
         }
-        return creerReexecuteur({ filtreElement, navigateur, config, journaliser, echeance, memoireFermeture }).rejouer(
+        return creerReexecuteur({ filtreElement, navigateur, config, journaliser, echeance, memoireFermeture, compteurObservations }).rejouer(
           reproduction,
           viewport,
         );
@@ -295,8 +297,8 @@ export async function creerScannerParDefaut(options: OptionsAssemblage = {}): Pr
         budgetsRejeu: config.confirmation.rejeu,
       }),
     }),
-    ouvrirRejeu: (journaliser, echeance, memoireFermeture) =>
-      sessionRejeu(config, actionsInterdites, journaliser, echeance, memoireFermeture),
+    ouvrirRejeu: (journaliser, echeance, memoireFermeture, compteurObservations) =>
+      sessionRejeu(config, actionsInterdites, journaliser, echeance, memoireFermeture, compteurObservations),
     ia,
     // Le profilage est TOUJOURS assemblé : c'est le client IA, et lui seul,
     // qui décide s'il peut répondre. Un scan sans clé n'a donc pas de profil,

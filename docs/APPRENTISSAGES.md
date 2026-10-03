@@ -1558,3 +1558,35 @@ regardé.
   un phénomène (un chevauchement, un échec, une lenteur), la mesure répond
   à côté — et elle répondra de façon crédible, ce qui est le pire cas.
 
+## 46. Face à une mesure CORRÉLÉE-MAIS-À-CÔTÉ, la mutation attrape ce que la re-mesure n'attrape que si l'on y pense (2026-10-03, cahier P2-6)
+
+- **Le fait, deux fois dans la même soirée, et de structure identique** :
+  1. pour décider si un recouvrement persiste, j'ai mesuré la stabilité des
+     `[id]` du DOM au lieu des RECOUVREMENTS — un encart stable a bien un
+     identifiant stable, la mesure était vraie et répondait à côté ;
+  2. pour prouver que la marque d'observation se renouvelle, mon test
+     comptait les marques TOUS VIEWPORTS CONFONDUS — deux viewports
+     produisent bien deux marques, le test était vert et ne testait pas le
+     renouvellement.
+  Dans les deux cas : une grandeur CORRÉLÉE à celle qui intéresse, la
+  corrélation tenant assez pour rendre un chiffre plausible. C'est la forme
+  achevée du fantôme de mesure (n°45) — pas une mesure fausse, **une mesure
+  juste d'une grandeur voisine**.
+- **Les deux parades, et elles ne se valent pas** :
+  - pour `[id]`, c'est une MESURE SUIVANTE qui a corrigé la précédente.
+    Elle dépend d'avoir eu l'idée de re-mesurer, donc de l'attention ;
+  - pour la marque, c'est une MUTATION. Elle ne demande qu'à casser ce que
+    le test prétend garder et à regarder s'il rougit. **La réponse ne se
+    négocie pas**, et la question se pose mécaniquement, sans qu'il faille
+    soupçonner quoi que ce soit.
+- **La règle** : la mutation est supérieure parce qu'elle **ne dépend pas
+  d'avoir l'idée**. C'est ce qui fait de METHODE §10 une obligation et non
+  une consigne de vigilance — la vigilance dépend de l'attention, la
+  mutation non. Un test vert pour la mauvaise raison est indistinguable
+  d'un test juste **jusqu'à ce qu'une mutation le sonde** : la mutation ne
+  vérifie pas que le test passe, elle vérifie que le test TESTE.
+- **Et le corollaire d'honnêteté** : une mutation qui SURVIT n'est pas une
+  gêne à contourner, c'est le seul moment où le défaut se montre. Les deux
+  fois ce soir, la mutation survivante a désigné précisément la grandeur
+  qu'il fallait mesurer à la place.
+

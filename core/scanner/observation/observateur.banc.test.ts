@@ -92,3 +92,40 @@ describe('les schémas locaux ne sont pas du réseau (correctif du 2026-10-03)',
     expect(urls.some((url) => url.startsWith('http'))).toBe(true);
   });
 });
+
+describe('la marque d’observation (cahier P2-6, contrat préalable)', () => {
+  it('chaque signal porte une marque, et la marque CHANGE quand la page est rechargée', async () => {
+    // Sans cela, on ne peut pas répondre à « cet effet se reproduit-il ? » :
+    // on voit un sac de signaux, pas une suite d'observations — et c'est la
+    // question dont tout P2-6 dépend (APPRENTISSAGES n°45).
+    const resultat = await banc.explorer([]);
+    const marques = resultat.signaux.map((signal) => signal.observation);
+    expect(marques.every((marque) => typeof marque === 'string' && marque !== '')).toBe(true);
+    // PAR VIEWPORT, et c'est le point : compter les marques toutes
+    // confondues passerait sans renouvellement du tout, puisque deux
+    // viewports donnent déjà deux branchements. Ce qui doit être prouvé,
+    // c'est que la marque change QUAND LA PAGE CHANGE — donc plusieurs
+    // marques à l'intérieur d'un même viewport.
+    const parViewport = new Map<string, Set<string>>();
+    for (const signal of resultat.signaux) {
+      parViewport.set(signal.viewport, (parViewport.get(signal.viewport) ?? new Set()).add(signal.observation));
+    }
+    expect(parViewport.size).toBeGreaterThan(0);
+    for (const [viewport, marquesVues] of parViewport) {
+      expect(marquesVues.size, viewport).toBeGreaterThan(1);
+    }
+  });
+
+  it('une marque ne désigne qu’UN viewport : deux viewports sont deux observations', async () => {
+    // Le contrôle qui peut échouer : un compteur partagé mal renouvelé
+    // ferait porter la même marque à deux chargements différents.
+    const resultat = await banc.explorer([]);
+    const viewportsParMarque = new Map<string, Set<string>>();
+    for (const signal of resultat.signaux) {
+      viewportsParMarque.set(signal.observation, (viewportsParMarque.get(signal.observation) ?? new Set()).add(signal.viewport));
+    }
+    for (const [marque, viewports] of viewportsParMarque) {
+      expect(viewports.size, marque).toBe(1);
+    }
+  });
+});

@@ -20,7 +20,7 @@ const echec = (surcharges: Partial<SignalEchecReseau>): SignalEchecReseau =>
 
 function cadre(surcharges: Partial<Extract<Signal, { type: 'etat-cadre' }>>): Signal {
   const base = etatImage({}) as Extract<Signal, { type: 'etat-image' }>;
-  return { type: 'etat-cadre', horodatage: base.horodatage, page: base.page, viewport: base.viewport, ressource: CADRE_TIERS, element: { balise: 'iframe', selecteur: 'iframe', attributs: {} }, largeur: 560, hauteur: 315, ...surcharges };
+  return { type: 'etat-cadre', horodatage: base.horodatage, page: base.page, viewport: base.viewport, observation: base.observation, ressource: CADRE_TIERS, element: { balise: 'iframe', selecteur: 'iframe', attributs: {} }, largeur: 560, hauteur: 315, ...surcharges };
 }
 
 describe('effetVisible — trois effets physiques, rien d’autre', () => {

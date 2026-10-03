@@ -27,6 +27,7 @@ import { creerDetecteurs, detecter } from './detection/index.js';
 import { lancerNavigateur } from './navigateur.js';
 import { creerReexecuteur, ERREUR_BUDGET_INSUFFISANT, ERREUR_PAGE_INCHARGEABLE, ERREUR_RECETTE_INCOHERENTE } from './reexecuteur.js';
 import { creerFiltreElement } from './exploration/filtre-actions.js';
+import { creerCompteurObservations } from './observation/observations.js';
 
 /** Chargement raccourci : seules les ATTENTES sont resserrées, jamais la classification. */
 const CHARGEMENT_MS = 4000;
@@ -93,6 +94,7 @@ async function rejouer(url: string, echeance?: number): Promise<ResultatRejeu> {
     filtreElement: creerFiltreElement(await chargerActionsInterdites()),
     navigateur,
     config,
+    compteurObservations: creerCompteurObservations(),
     ...(echeance === undefined ? {} : { echeance }),
   });
   return reexecuteur.rejouer(reproduction(url), viewport);
@@ -125,7 +127,7 @@ describe('re-exécuteur — la recette est vérifiée avant d’ouvrir quoi que 
     };
     const rejeu = await creerReexecuteur({
     filtreElement: creerFiltreElement(await chargerActionsInterdites()),
-    navigateur, config }).rejouer({ ...reproduction(url), actionsPrealables: [prealable] }, viewport);
+    navigateur, config, compteurObservations: creerCompteurObservations() }).rejouer({ ...reproduction(url), actionsPrealables: [prealable] }, viewport);
     await serveur.arreter();
     expect(rejeu).toMatchObject({ echecOutillage: true, causeEchec: 'outil', erreur: ERREUR_RECETTE_INCOHERENTE });
     expect(rejeu.parcours.pages).toEqual([]);

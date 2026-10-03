@@ -30,6 +30,7 @@ import { creerExplorateur, EVENEMENT_DECISION, EVENEMENT_ENUMERATION, RAISON_HOR
 import { creerFiltre, creerFiltreElement, type FiltreActions, type FiltreElement } from './filtre-actions.js';
 import { NOM_POLITIQUE_DETERMINISTE, politiqueDeterministe } from './politique.js';
 import { EVENEMENT_REPLI, NOM_POLITIQUE_IA, politiqueIa } from './politique-ia.js';
+import { creerCompteurObservations } from '../observation/observations.js';
 
 /** Chemin jamais lié depuis aucune page : il ne peut donc jamais être énuméré. */
 const CHEMIN_PIEGE = '/piege-jamais-lie';
@@ -121,6 +122,7 @@ async function explorer(url: string, politique: PolitiqueDecision, dureeMs = 20_
     {
       urlDepart: url,
       echeance: Date.now() + dureeMs,
+      compteurObservations: creerCompteurObservations(),
       journaliser: (type, details) => journal.push({ horodatage: new Date().toISOString(), type, details }),
     },
     observateur,

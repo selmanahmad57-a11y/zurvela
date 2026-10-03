@@ -30,7 +30,7 @@ const options = { stabilisationMs: 500, plafondMs: 8000, sondageMs: 50 };
 describe('creerObservateur', () => {
   it('conserve les signaux dans l’ordre et rend une copie', () => {
     const observateur = creerObservateur();
-    observateur.emettre({ type: 'erreur-js', horodatage: 'h', page: 'p', viewport: 'v', message: 'm' });
+    observateur.emettre({ type: 'erreur-js', horodatage: 'h', page: 'p', viewport: 'v', observation: 'o1', message: 'm' });
     const copie = observateur.signaux();
     copie.length = 0;
     expect(observateur.signaux()).toHaveLength(1);
