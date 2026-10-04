@@ -50,6 +50,103 @@ expandtesting publie désormais **zéro** `reponse-lente`. Le 0 % redeviendra
 vrai — mais après correction et par la mesure, pas avant et par commodité.
 La différence est tout.
 
+## ⚠ SECOND AMENDEMENT DU 2026-10-04 — le « 0 % » est INFIRMÉ, et il est MESURÉ
+
+Le premier amendement promettait : *« Le 0 % redeviendra vrai — mais après
+correction et par la mesure, pas avant et par commodité. »* Le run de
+vérification a eu lieu : neuf sites, moteur `751778e`, configuration de
+production, identité déclarée, **0,4483 USD**. Il **infirme** le 0 %. La
+promesse est donc tenue au sens où elle engageait — mesurer — et non au
+sens où elle espérait.
+
+**Le `blob:` est éteint, confirmé en conditions réelles.** Sur les neuf
+sites, 24 sections publiées, **une seule** `reponse-lente`, et **zéro sur
+un schéma local** — y compris sur expandtesting, le site même qui
+produisait les trois faux. Le correctif `ca04789` tient sur le réel.
+
+**Le chiffre honnête, mesuré :**
+
+> **1 faux positif sur 20 sections comparables — 5,0 %**, plus **4 cibles
+> instables déclarées à côté**, non moyennées.
+
+| site | publiées | vraies | fausses | instables |
+|---|---|---|---|---|
+| books | 1 | 1 | — | — |
+| cutlybook | 0 | — | — | — |
+| quotes | 1 | 1 | — | — |
+| zurvela *(témoin)* | 0 | — | — | — |
+| **getlumavo** | 1 | 0 | **1** | — |
+| the-internet | 0 *(non mesurable)* | — | — | — |
+| automationexercise | 11 | 10 | 0 | 1 |
+| demoqa | 4 | 4 | 0 | 0 |
+| expandtesting | 6 | 3 | 0 | **3** |
+| **total** | **24** | **19** | **1** | **4** |
+
+**L'unique faux positif est sur notre propre produit**, et c'est une
+lenteur transitoire : `reponse-lente` sur le document de getlumavo,
+8 676 ms relevés dans une observation unique, alors que le document répond
+en **552, 806, 1 088 et 2 361 ms** sur quatre chargements à contexte neuf.
+Huit pour cent au-dessus du seuil, au palier de confiance le plus bas.
+
+Les quatre instables sont toutes pilotées par des régies — `aswift_*`
+d'AdSense sur expandtesting, la boîte Funding Choices sur
+automationexercise : la bannière est présente ou non selon le chargement.
+Mesurées trois fois chacune, elles sortent 1 fois sur 3. C'est un site non
+déterministe, pas un moteur qui se trompe — et on le DÉCLARE au lieu de le
+moyenner.
+
+### L'instrument de jugement a dû être corrigé en cours de dépouillement
+
+Le premier oracle utilisait `click({trial: true})`, qui **fait défiler
+l'élément au centre** avant de tester — ce qui écarte mécaniquement tout
+pied de page collant ou toute bannière fixe. Il répondait donc à « cet
+élément est-il atteignable SI L'ON FAIT DÉFILER », quand la question était
+« est-il atteignable LÀ OÙ LE VISITEUR LE VOIT ». Il déclarait faux des
+vrais positifs : demoqa `#root > footer`, en `position: fixed`, couvre le
+lien aux trois positions de page.
+
+**Six verdicts se sont inversés** quand le défilement a été retiré. Les
+deux sites déjà dépouillés ont été entièrement re-jugés avec l'oracle
+corrigé — on ne juge pas deux sites à deux instruments. Le tableau
+ci-dessus est celui de l'oracle corrigé : `elementFromPoint` au centre de
+la victime, **sans défilement**, à trois positions de page, deux à trois
+passages par section ; `curl` sur le HTML et les feuilles de style pour le
+contenu mixte ; `naturalWidth` pour les images. Apprentissage n°48.
+
+### Ce que le run a dissous, et les trois cahiers qu'il a révélés
+
+**Il n'y a pas de faux négatif de lenteur sur getlumavo.** Une première
+sonde avait relevé des bundles à 14, 28, 29 et 36 secondes, ce qui aurait
+voulu dire que le moteur taisait du sévère en publiant du passager. Elle
+mesurait faux — son propre affichage était corrompu, ce qui aurait dû
+alerter. Quatre passages sous les conditions exactes du moteur ne la
+reproduisent pas : `load` tombe entre 1 713 et 2 414 ms, incompatible avec
+un vendor chunk à 29 s. Les seules vraies lenteurs sont deux vidéos de
+démonstration à 10–15 s, et **le moteur les voit** (`showcase-2.mp4` sort
+en candidate à 9 683 ms dans le scan réel).
+
+Trois défauts moteur, eux, sont mesurés et inscrits au backlog, par
+priorité révisée :
+
+1. **`attenteMs` est plafonnée par la fenêtre d'effet** →
+   `attendreStabilisation` borne à `attenteEffetMaxMs = 12000`, donc
+   `attenteMs / seuilMs ≤ 1,5` au mieux (mesuré : 11 131 ms pour 14 629 ms
+   réels). Les paliers `ratioMin: 1.5` et `ratioMin: 3` sont
+   **inatteignables** pour une requête en attente : la lenteur qui ne finit
+   jamais sort toujours à 0,70, le plancher. Inversion au cœur du
+   détecteur.
+2. **Le sélecteur positionnel ne résout pas chez le client** → sur 15
+   `clic-intercepte` vraies, **9 nomment un sélecteur introuvable**
+   (`citePresent: false` dans 10 cas sur 10 sur automationexercise), parce
+   que c'est un chemin positionnel dans le DOM d'un tiers régénéré à chaque
+   chargement. L'anomalie est vraie, l'adresse est fausse.
+3. **`waitUntil: 'load'` prend le scan en otage** → the-internet passe de
+   40 pages à 2 parce qu'une ressource bloque le `load`, alors que
+   `domcontentloaded` rend une page complète à 46 liens en 5 410 ms.
+   Reproduit avec Playwright nu et l'agent par défaut : ni régression
+   moteur, ni site qui punit `ZurvelaBot`.
+
+
 ## Le chiffre, jugé section par section
 
 **La campagne publiait 5 anomalies, dont 4 FAUX POSITIFS (80 %)** — toutes
@@ -58,9 +155,12 @@ the-internet, deux polices Raleway sur quotes, et le **Google Sign-In de
 getlumavo**, le faux positif historique du projet. La cinquième était
 vraie.
 
-**P2-4 publie 20 anomalies, dont 0 FAUX POSITIF jugé** : 17 défauts
+**P2-4 publie 20 anomalies, dont ~~0~~ 3 FAUX POSITIFS** *(corrigé par le
+premier amendement : la phrase ci-dessous datait du jour du run, quand les
+3 découvertes étaient encore comptées comme hors-jugement)* : 17 défauts
 confirmés (2 contenus mixtes, 15 recouvrements) et 3 découvertes déclarées
-non re-testées, jamais affirmées (P2-1, contrat 8).
+non re-testées, jamais affirmées (P2-1, contrat 8) — **ces 3 sont les faux
+positifs `blob:`**.
 
 **Aucune identité perdue nulle part.** Chaque anomalie que la campagne
 publiait et que P2-4 ne publie plus a été tracée au journal : ce sont les
@@ -135,11 +235,25 @@ que les trois sites lourds devaient nous apprendre.
 > anomalies publiées**, et ne publiait rien du tout sur les quatre sites les
 > plus lourds, faute de budget pour les confirmer.
 
-> **P2-4** mesure, sur les mêmes neuf sites dans la même session,
-> **0 faux positif sur 20 anomalies publiées**, dont 17 confirmées et 3
-> déclarées non re-testées — et il juge les quatre sites que la campagne ne
-> pouvait pas atteindre.
+> **P2-4** mesurait, sur les mêmes neuf sites dans la même session,
+> **3 faux positifs sur 20 anomalies publiées (15 %)** — tous de la même
+> cause, les schémas locaux comptés comme du réseau — et il juge les quatre
+> sites que la campagne ne pouvait pas atteindre.
 
 Ces deux phrases viennent de deux runs du même soir, sur les mêmes sites,
 dans le même état du monde. Elles ne se comparent à aucun chiffre d'une
 autre nuit.
+
+**Et une troisième phrase, d'une autre nuit, qui ne se compare donc à
+aucune des deux** — c'est le run de vérification du 2026-10-04, après le
+correctif des schémas locaux :
+
+> **Le moteur `751778e`** mesure, sur ces neuf sites, **1 faux positif sur
+> 20 sections comparables (5,0 %)** — une lenteur transitoire sur notre
+> propre produit — avec **4 cibles instables déclarées** à côté, et
+> **zéro `reponse-lente` sur un schéma local**.
+
+La phrase de P2-4 a porté « 0 % » pendant un jour, puis « 15 % » après
+mesure. Celle-ci porte « 5,0 % » parce qu'un run est allé la chercher. Le
+chiffre qui a survécu à un run qui cherchait à le réfuter vaut plus que
+celui qu'aucun run n'a attaqué.

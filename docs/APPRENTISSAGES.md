@@ -1625,3 +1625,55 @@ regardé.
   de l'action rend l'absence de cas visible AVANT qu'elle ne devienne un
   bug fantôme à déboguer.**
 
+## 48. L'ORACLE DE JUGEMENT est un instrument comme un autre — et son biais contamine tous les verdicts qu'il a rendus (2026-10-04, run de vérification du bilan)
+
+- **Ce qui s'est passé.** Pour juger si les sections publiées par le moteur
+  étaient vraies, j'ai construit un oracle indépendant : charger la page,
+  localiser la victime, et demander à Playwright `click({trial: true})` —
+  s'il clique, l'élément n'est pas bloqué, donc le moteur a tort. Six
+  sections sont sorties « cliquables, donc fausses ». J'étais sur le point
+  de conclure que le détecteur de recouvrement publiait beaucoup de faux
+  positifs, et d'ouvrir un cahier pour corriger un moteur qui avait raison.
+- **Le biais.** `click()` **fait défiler l'élément au centre de la vue**
+  avant de tester son accessibilité. Un pied de page collant, une bannière
+  en `position: fixed`, un dialogue de consentement plein écran : tous sont
+  mécaniquement écartés par ce défilement. L'oracle répondait à « cet
+  élément est-il atteignable SI L'ON FAIT DÉFILER », quand la question
+  posée était « est-il atteignable LÀ OÙ LE VISITEUR LE VOIT ». Deux
+  grandeurs voisines, une seule juste.
+- **La preuve du biais, et le chiffre.** Oracle corrigé —
+  `elementFromPoint` au centre de la victime, **sans défilement**, à trois
+  positions de page : demoqa `#root > footer` est en `position: fixed` et
+  couvre le lien aux trois positions. **Six verdicts se sont inversés.**
+  Le faux positif mesuré du run est passé de 6 sections à 1.
+- **La forme de l'erreur — c'est le n°45 retourné sur l'instrument.** Au
+  n°45, j'avais mesuré la mauvaise grandeur dans le MOTEUR (les `[id]` au
+  lieu des recouvrements). Au n°47, une mesure juste répondait au mauvais
+  HORIZON. Ici, la grandeur et l'horizon étaient bons, mais c'est
+  **l'OUTIL DE JUGEMENT lui-même** qui mesurait à côté. C'est le pire des
+  trois, et pour une raison précise : un moteur qui se trompe se fait
+  attraper par son oracle ; **un oracle qui se trompe ne se fait attraper
+  par rien.** Il n'y a pas d'instance au-dessus.
+- **Et le sens du biais aggrave tout.** Celui-ci penchait du côté qui
+  ACCUSE le moteur — il déclarait faux des vrais positifs. Un biais qui
+  disculpe se fait soupçonner (le chiffre est trop beau) ; un biais qui
+  accuse se fait croire, parce qu'il a l'air sévère, et la sévérité
+  ressemble à de la rigueur.
+- **La règle** : *un oracle s'éprouve contre son propre biais AVANT de
+  servir, avec la même question qu'on pose au moteur — mesure-t-il ce que
+  je crois qu'il mesure ?* Concrètement, pour tout oracle : nommer ce que
+  l'outil fait AU MONDE avant de mesurer (défiler, attendre, recharger,
+  redimensionner), et se demander si ce geste peut créer ou détruire le
+  phénomène observé.
+- **Le corollaire opératoire, et il coûte cher** : *un oracle corrigé en
+  cours de dépouillement INVALIDE tout ce qu'il a jugé avant la
+  correction.* Les deux sites déjà jugés ont été entièrement re-jugés —
+  « je ne peux pas juger deux sites à deux instruments ». La cohérence de
+  l'instrument prime sur l'économie de re-juger, et il n'y a pas de
+  demi-mesure : un tableau dépouillé à deux oracles n'est pas un tableau,
+  c'est deux moitiés de tableaux qui ne s'additionnent pas.
+- **Ce qui l'a attrapé** : la même question que celle posée au moteur
+  depuis des semaines, retournée vers l'outil — appliquée au moment où le
+  résultat devenait TROP net (« six faux positifs de recouvrement, d'un
+  coup, sur des sites différents »). Une rupture nette dans un chiffre est
+  un signal à instruire, pas un résultat à publier.

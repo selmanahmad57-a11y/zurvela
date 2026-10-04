@@ -101,6 +101,101 @@ entrée indique la brique ou la phase où elle a vocation à être traitée.
   consommateur serait de la spéculation. Origine : clôture de la brique 3
   (2026-09-23).
 
+## Révélé par le run de vérification du 2026-10-04 — trois cahiers, dans cet ordre
+
+Le run qui devait confirmer le « 0 % » du bilan de la Phase 2 l'a infirmé
+(5,0 % mesuré, `docs/bilan-reel-2026-10-02.md`, second amendement) et a
+découvert trois défauts moteur, tous **intra-scan**. **Ils passent devant
+la continuité inter-scans** : l'inter-scans dégrade la continuité d'une
+semaine à l'autre, ces trois-là dégradent ce que le client lit maintenant.
+L'ordre est celui que la mesure impose, pas celui de la facilité.
+
+### 1. L'INVERSION DE CONFIANCE DU DÉTECTEUR DE LENTEUR — le plus grave
+
+`attendreStabilisation` borne la fenêtre d'effet à
+`exploration.attenteEffetMaxMs` (12 000 ms en production). Une requête
+encore en vol à la fermeture est signalée en `requete-en-attente` avec
+`attenteMs = maintenant − début`, donc **`attenteMs ≤ 12 000` par
+construction**, et strictement moins dès que la requête démarre après
+l'ouverture de la fenêtre.
+
+Le seuil de lenteur est à 8 000 ms. Le ratio plafonne donc à **1,5 au
+mieux** — mesuré **1,39** sur getlumavo (11 131 ms relevés pour 14 629 ms
+réels sur `showcase-1.mp4`). Les paliers `ratioMin: 1.5` et `ratioMin: 3`
+de `detecteurs.lenteur.paliers` sont **structurellement inatteignables**
+pour une requête en attente.
+
+**Conséquence** : la lenteur qui ne finit jamais — la plus grave pour un
+visiteur — sort toujours à la confiance **la plus basse (0,70)**, tandis
+qu'une réponse qui finit en 25 s à l'intérieur de la fenêtre atteindrait
+0,95. **Le moteur est le moins sûr précisément là où il devrait l'être le
+plus.** C'est une inversion au cœur d'un détecteur, pas un réglage.
+
+Sous-constat du même examen : **le moteur sous-mesure systématiquement ce
+qui ne finit pas** (11 131 publiés pour 14 629 réels). Ce que le rapport
+dit au client est un plancher, et il ne le dit pas.
+
+Deux pistes à instruire au cahier, aucune tranchée : exprimer la mesure
+d'une attente tronquée comme une BORNE INFÉRIEURE plutôt que comme une
+durée, ou donner aux paliers une échelle propre à la voie « en attente ».
+Voir aussi la dette n°26 — cette voie n'a pas de témoin au banc.
+
+### 2. LE SÉLECTEUR POSITIONNEL QUI NE RÉSOUT PAS CHEZ LE CLIENT — le plus répandu
+
+Sur les **15 `clic-intercepte` jugées VRAIES** du run, **9 nomment au
+client un sélecteur qui ne résout pas** : `citePresent: false` dans
+**10 cas sur 10** sur automationexercise, et deux cas d'expandtesting
+nomment une bannière là où c'en est une autre qui bloque.
+
+La cause est structurelle, et elle ne plaide pas en notre faveur : le
+moteur publie un chemin **positionnel**
+(`div:nth-of-type(4) > div:nth-of-type(2) > … > li:nth-of-type(9)`) qui
+pointe **dans le DOM d'un tiers régénéré à chaque chargement** — boîte de
+consentement Funding Choices, cadres AdSense. L'anomalie est vraie, le
+blocage est réel et reproductible ; **l'adresse donnée au client est
+introuvable quand il regarde.**
+
+C'est le principe n°7 — *la prose garantie nomme ce que la preuve
+contient* — pris en défaut sur 9 sections publiées : le moteur nomme une
+POSITION dans un DOM volatil, pas un élément.
+
+**Et c'est le vrai visage du problème publicitaire**, enfin formulé juste.
+Ce n'est pas « le protocole confirme par coïncidence » (réfuté : le churn
+est inter-scans, P2-6). Ce n'est pas non plus la volatilité des
+identifiants `#aswift_*` seule, déjà notée au bilan du 2026-10-02. C'est
+**intra-scan, réel, mesuré sur 9 sections, et traitable** : ce qu'il faut
+publier, c'est ce qui permet au client de RETROUVER l'élément, pas le
+chemin qui nous y a menés.
+
+### 3. `waitUntil: 'load'` QUI PREND LE SCAN EN OTAGE — le plus silencieux
+
+`explorateur.ts` et `reexecuteur.ts` naviguent en `waitUntil: 'load'`. Le
+`load` n'arrive qu'une fois **toutes** les ressources initiales terminées :
+une seule ressource bloquée suffit à faire expirer le `goto` à
+`chargementPageMs`, et la page entière est perdue.
+
+Mesuré sur the-internet : **40 pages explorées le 1er octobre, 2 depuis le
+2** — alors que le document sort en **HTTP 200 en 0,4 s** et que
+`domcontentloaded` rend une page **complète, 46 liens, en 5 410 ms**. Cinq
+ressources statiques (`jquery`, `jquery-ui`, `foundation`,
+`foundation.alerts`, une image) restent bloquées 29,5 s.
+
+Reproduit avec **Playwright nu, agent par défaut, aucun en-tête Zurvela** :
+ce n'est ni une régression moteur, ni le site qui punit `ZurvelaBot` — les
+deux hypothèses écartées par mesure, pas par raisonnement.
+
+**Pourquoi c'est le plus silencieux** : il ne publie rien de faux. Il rend
+des sites entiers **invisibles**, sans aucun signal au client ni au
+tableau de bord — the-internet sort « structure changée, déclaré, pas
+jugé » depuis deux jours et la cause était chez nous. Un échec de
+couverture ne se voit dans aucune des cinq métriques de référence.
+
+Note annexe relevée au même endroit, à trancher dans ce cahier : un site
+dont le `goto` expire ressort en `cause: indetermine`, alors que le
+principe de la taxonomie du rejeu réserve `reseau-site` au site
+injoignable. Vérifier si le classement est juste.
+
+
 ## Phase 2
 
 - **Le grand tableau du 2026-10-01 est écrit** (`docs/bilan-reel-2026-10-01.md`)
