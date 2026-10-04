@@ -239,6 +239,18 @@ injoignable. Vérifier si le classement est juste.
   polices — à lever avant tout argument commercial) et n°23 (la rejouabilité
   n'a pas de règle pour le dénominateur vide).
 
+  ⚠ **Ce « 0 % » n'a PAS subi la vérification que le bilan du 2026-10-02 a
+  subie** (2026-10-04). Il est antérieur au correctif `blob:` (`ca04789`),
+  à la correction de méthode n°44 (un statut n'est pas un jugement) et à la
+  correction d'oracle n°48 (`click({trial})` fait défiler avant de tester).
+  Ce qui a pu être revérifié GRATUITEMENT sur les rapports survivants du run
+  (`reel-mesure/`, 2026-09-30 20 h) : les 14 sections sont **toutes** du
+  contenu mixte, du clic-intercepté ou de l'image cassée — **zéro
+  `reponse-lente`**, donc le faux positif `blob:` ne peut pas les toucher.
+  Ce qui N'a PAS été revérifié : le jugement « 14 vraies » lui-même, rendu
+  par la méthode d'alors. À re-mesurer avec l'oracle corrigé avant tout
+  appui ; ne pas lui prêter l'autorité d'un chiffre éprouvé.
+
 - **Mesurer la répétabilité inter-scans des états énumérés d'un même site
   AVANT de concevoir le cache de décisions.** Le coût IA d'un scan vit dans
   le NOMBRE d'appels, pas dans le prix du modèle : un profilage par scan

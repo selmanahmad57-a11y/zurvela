@@ -1677,3 +1677,15 @@ regardé.
   résultat devenait TROP net (« six faux positifs de recouvrement, d'un
   coup, sur des sites différents »). Une rupture nette dans un chiffre est
   un signal à instruire, pas un résultat à publier.
+- **Le GESTE et le FILET, à ne pas confondre** (précision du propriétaire,
+  2026-10-04) : cette fois, ce n'est pas le geste qui a sauvé, c'est le
+  filet. Le geste — nommer ce que l'outil fait au monde — n'avait PAS été
+  fait avant ; il a été reconstruit après, déclenché par la netteté
+  suspecte. « Je me méfie de mes oracles » est un sentiment qui ne se
+  déclenche pas tout seul ; « je nomme ce que l'outil fait au monde avant de
+  mesurer » est un geste qui se fait ou ne se fait pas. **Le plan, c'est le
+  geste en amont. Le filet, c'est le réflexe « c'est trop net, soupçonne
+  l'outil » en dernier recours.** Garder les deux, sans laisser le filet
+  devenir la méthode : un résultat trop beau ou trop net mérite toujours
+  qu'on soupçonne l'instrument avant de célébrer — mais c'est le dernier
+  recours, pas le plan.
