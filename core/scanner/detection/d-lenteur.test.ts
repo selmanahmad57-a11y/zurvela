@@ -77,9 +77,19 @@ describe('D-LENTEUR', () => {
     expect(confiancePourDuree(seuil * ratio - 1)).toBe(PALIER_BAS?.confiance);
   });
 
-  it('une requête encore en attente est graduée sur son attente, par les mêmes paliers', () => {
-    const candidates = detecteur.detecter([requeteEnAttente({ actionId: 'a1', attenteMs: seuil * 10 })], contexte([soumission('a1')]));
-    expect(candidates[0]?.confiance).toBe(PALIER_HAUT?.confiance);
+  it('une requête en attente porte la confiance DÉDIÉE, découplée du ratio (voie A)', () => {
+    // La fenêtre d'effet plafonne l'attente : la grader par le ratio ferait
+    // sortir la lenteur la plus grave (celle qui ne finit jamais) sous le
+    // palier haut, et ferait dépendre sa confiance de l'instant de départ dans
+    // la fenêtre — un artefact. « Ne finit pas » est une nature, pas une durée.
+    const confEnAttente = CONFIG_TEST.lenteur.confianceEnAttente;
+    const bas = detecteur.detecter([requeteEnAttente({ actionId: 'a1', attenteMs: seuil + 1 })], contexte([soumission('a1')]));
+    const haut = detecteur.detecter([requeteEnAttente({ actionId: 'a1', attenteMs: seuil * 10 })], contexte([soumission('a1')]));
+    // Attente faible ET attente forte → la MÊME confiance dédiée (découplage).
+    expect(bas[0]?.confiance).toBe(confEnAttente);
+    expect(haut[0]?.confiance).toBe(confEnAttente);
+    // Et c'est bien dédié : la valeur n'est aucun des paliers du ratio.
+    expect([PALIER_BAS, PALIER_MOYEN, PALIER_HAUT].map((p) => p?.confiance)).not.toContain(confEnAttente);
   });
 
   it('paliers donnés en DÉSORDRE dans la config → même résultat (ils sont triés à la construction)', () => {

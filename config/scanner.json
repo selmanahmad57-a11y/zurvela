@@ -182,7 +182,8 @@
           "ratioMin": 3,
           "confiance": 0.95
         }
-      ]
+      ],
+      "confianceEnAttente": 0.95
     },
     "image": {
       "gravite": "mineur",

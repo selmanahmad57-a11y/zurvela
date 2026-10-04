@@ -119,7 +119,7 @@ export interface ConfigScanner {
     };
     inerte: { confiance: number; gravite: Gravite };
     echecMuet: { confiance: number; gravite: Gravite; typesRequete: string[] };
-    lenteur: { seuilMs: number; paliers: PalierConfiance[]; gravite: Gravite };
+    lenteur: { seuilMs: number; paliers: PalierConfiance[]; confianceEnAttente: number; gravite: Gravite };
     image: { confianceSignalSimple: number; confianceSignalDouble: number; gravite: Gravite };
     recouvrement: {
       confianceGeometrie: number;

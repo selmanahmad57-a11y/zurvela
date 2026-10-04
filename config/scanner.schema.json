@@ -447,7 +447,8 @@
           "required": [
             "seuilMs",
             "paliers",
-            "gravite"
+            "gravite",
+            "confianceEnAttente"
           ],
           "properties": {
             "seuilMs": {
@@ -480,6 +481,10 @@
             },
             "gravite": {
               "$ref": "#/definitions/gravite"
+            },
+            "confianceEnAttente": {
+              "$ref": "#/definitions/confiance",
+              "description": "Confiance d'une requête ENCORE EN ATTENTE au-delà du seuil (voie « en attente »). Dédiée, découplée des paliers : la vraie durée au-delà de la fenêtre d'effet est inconnaissable (la requête n'a jamais fini), donc le ratio attente/seuil est plafonné par la fenêtre et ne peut pas la grader. « Ne finit pas » est un signal de gravité fort, pas une durée : il porte une confiance haute propre. Jamais confirmée sans rejeu pour autant (le protocole exige la preuve de reproduction)."
             }
           }
         },

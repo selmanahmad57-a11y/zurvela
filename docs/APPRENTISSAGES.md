@@ -1689,3 +1689,37 @@ regardé.
   devenir la méthode : un résultat trop beau ou trop net mérite toujours
   qu'on soupçonne l'instrument avant de célébrer — mais c'est le dernier
   recours, pas le plan.
+
+## 49. Un PRÉALABLE validé en conception peut être inutile à l'implémentation — et le témoin vrai protège contre l'erreur de validation (2026-10-04, cahier P2-7)
+
+- **Ce qui s'est passé.** La conception de P2-7 avait validé un préalable
+  technique : un crochet `retarderRessource` au banc, pour retenir une
+  sous-ressource en vol (le cas `showcase-1.mp4`). Il a été construit de bonne
+  foi. Puis le témoin, rendu VRAIMENT rouge (pas simulé), l'a réfuté : la
+  sous-ressource sortait **reçue**, jamais en attente. La mesure du code
+  (instrumentation de `emettreAttentes`, trace de l'ordre) a montré pourquoi :
+  un sous-fetch de page est **avorté à la re-navigation de l'explorateur**,
+  jamais en vol au plafond de la fenêtre. La voie que la conception supposait
+  **n'existe pas dans le code**.
+- **La règle** : *un préalable validé en conception peut se révéler inutile à
+  l'implémentation, parce que la conception suppose un chemin que le code
+  n'emprunte pas.* Le construire puis le retirer n'est pas du gaspillage —
+  c'est la mesure qui corrige la conception, et le revert est la bonne fin
+  (§7 : pas d'abstraction avant le deuxième usage réel). C'est n°30 (ne jamais
+  supposer le réel) appliqué à un préalable technique.
+- **La garde qui a tenu, et c'est le plus important** : le témoin VRAI (C1,
+  jamais simulé) a protégé contre une erreur de VALIDATION, pas seulement de
+  code. Si le témoin avait été contrefait — `attenteMs` posé à la main — il
+  aurait rougi puis verdi sur un fantôme, et le crochet mort serait resté dans
+  le code, testant un chemin inexistant. Un instrument de preuve qui refuse de
+  simuler refuse aussi de valider ce qui n'existe pas. **La garde cardinale
+  d'un cahier peut rattraper une erreur commise à l'étage au-dessus
+  (la conception, la validation du propriétaire).**
+- **La confirmation par seconde voie** : le même fait — « un vrai sous-fetch
+  finit reçu ou avorté, jamais en attente » — explique la mesure « zéro
+  victime de terrain » (n°44, bilan). La seule chose qui empruntait la voie
+  « en attente » sur le réel était les `blob:` (jamais finis, non
+  avortables), désormais filtrés. Mesure des journaux et mesure du code
+  pointent la même vérité structurelle : le seul chemin vers une vraie
+  `requete-en-attente` est une action qui NE NAVIGUE PAS (une soumission dont
+  l'API pend). Deux mesures indépendantes qui convergent valent mieux qu'une.

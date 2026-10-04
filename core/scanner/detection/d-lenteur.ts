@@ -11,6 +11,19 @@
  * de plus grand `ratioMin` satisfait par `durée / seuil` ; les paliers sont
  * triés à la construction, l'ordre du fichier de config n'étant pas un
  * contrat.
+ *
+ * DEUX VOIES, deux régimes de confiance. Une réponse REÇUE a une durée vraie,
+ * graduée par les paliers ci-dessus. Une requête ENCORE EN ATTENTE à la
+ * fermeture de la fenêtre d'effet n'a PAS de durée vraie : son `attenteMs` est
+ * borné par la fenêtre (elle n'a jamais fini), donc le ratio attente/seuil est
+ * plafonné et NE PEUT PAS la grader — la grader par là ferait sortir la
+ * lenteur la plus grave (celle qui ne finit jamais) sous le palier haut, et
+ * ferait dépendre sa confiance de l'instant où la requête a démarré dans la
+ * fenêtre, un artefact d'observation. « Ne finit pas dans la fenêtre » est une
+ * NATURE, pas une quantité : c'est un signal de gravité fort qui porte une
+ * confiance DÉDIÉE (`confianceEnAttente`), découplée des paliers. La preuve de
+ * reproduction reste au protocole (une attente n'est jamais confirmée sans
+ * rejeu) : la confiance haute dit la gravité, pas la certitude du défaut.
  */
 import type { AnomalieCandidate, Detecteur, Signal } from '../../types.js';
 import type { ConfigScanner, PalierConfiance } from '../config.js';
@@ -84,9 +97,14 @@ export function creerDetecteurLenteur(config: ConfigScanner['detecteurs']['lente
         if (duree === null || duree <= config.seuilMs) {
           continue;
         }
-        const palier = palierPour(paliersTries, duree / config.seuilMs);
+        // Voie « en attente » : confiance dédiée, découplée du ratio que la
+        // fenêtre plafonne. Voie « reçue » : graduée par les paliers.
+        const confiance =
+          requete.type === 'requete-en-attente'
+            ? config.confianceEnAttente
+            : palierPour(paliersTries, duree / config.seuilMs)?.confiance;
         // Config sans aucun palier (interdite par le schéma) : rien à affirmer.
-        if (palier === undefined) {
+        if (confiance === undefined) {
           continue;
         }
         // UNE LENTEUR TIERCE N'EST PAS UNE CANDIDATE (cahier P2-2, contrat 5).
@@ -105,7 +123,7 @@ export function creerDetecteurLenteur(config: ConfigScanner['detecteurs']['lente
               description: DESCRIPTION_LENTE,
               categorie: 'performance',
               gravite: config.gravite,
-              confiance: palier.confiance,
+              confiance,
               page: requete.page,
               viewport: requete.viewport,
               dependDuViewport: false,

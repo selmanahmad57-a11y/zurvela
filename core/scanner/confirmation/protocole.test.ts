@@ -17,6 +17,7 @@ import {
   etatImage,
   interception,
   reponse,
+  requeteEnAttente,
   soumission,
 } from '../detection/fabriques-test.js';
 import { MOTIF_REJEU_PARTIELLEMENT_IMPOSSIBLE, autoDiagnosticMecanique } from './auto-diagnostic.js';
@@ -288,6 +289,35 @@ describe('creerProtocole — consolidation, échéance, politique', () => {
     expect(resultat.groupes?.[0]?.motif).toBe(MOTIF_CONFIANCE_SUFFISANTE);
     expect(resultat.groupes?.[0]?.tentatives).toEqual([]);
     // Le groupe sous le seuil, lui, est bien re-exécuté.
+    expect(rejeu.appels).toHaveLength(CONFIG_CONFIRMATION_TEST.reExecutions);
+  });
+
+  it('politique économe : une lenteur EN ATTENTE n’est JAMAIS confirmée sans rejeu, même très sûre (C3bis)', async () => {
+    // « Ne finit pas » est un signal de GRAVITÉ, pas une preuve de
+    // reproduction : on ignore si la requête pend à chaque fois ou une fois
+    // par congestion. La confiance peut être haute (voie dédiée), mais le
+    // court-circuit `confiance-suffisante` traiterait cette confiance comme
+    // une preuve — faux par nature. Sans cette exclusion, une congestion
+    // transitoire vue une fois serait publiée sans rejeu : le faux positif que
+    // la correction de l'échelle de confiance vient d'éviter.
+    const econome = creerProtocole({
+      config: { ...CONFIG_CONFIRMATION_TEST, politique: 'econome' },
+      autoDiagnostic: autoDiagnosticMecanique,
+    });
+    const journal: EntreeJournal[] = [];
+    const rejeu = reexecuteurFactice([{ enEchec: false }]);
+    const contexte = contexteConfirmation({ journal, reexecuteur: rejeu, detecteurs: DETECTEURS });
+
+    const enAttente = candidateSimulee({
+      confiance: 0.95, // ≥ seuilConfirmationDirecte (0,9)
+      detecteur: 'd-lenteur',
+      description: 'reponse-lente',
+      preuves: [requeteEnAttente({ actionId: 'a1', attenteMs: CONFIG_TEST.lenteur.seuilMs * 2 })],
+    });
+    const resultat = await econome.confirmer([enAttente], contexte);
+
+    // PAS de court-circuit : elle est rejouée, et son verdict vient du rejeu.
+    expect(resultat.groupes?.[0]?.motif).not.toBe(MOTIF_CONFIANCE_SUFFISANTE);
     expect(rejeu.appels).toHaveLength(CONFIG_CONFIRMATION_TEST.reExecutions);
   });
 

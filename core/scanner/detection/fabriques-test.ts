@@ -36,6 +36,9 @@ export const CONFIG_TEST: ConfigScanner['detecteurs'] = {
       { ratioMin: 1.5, confiance: 0.85 },
       { ratioMin: 3, confiance: 0.95 },
     ],
+    // Voie « en attente » : confiance dédiée, DISTINCTE de tout palier, pour
+    // qu'un test ne puisse pas la confondre avec le chemin par ratio.
+    confianceEnAttente: 0.9,
   },
   image: { confianceSignalSimple: 0.8, confianceSignalDouble: 0.95, gravite: 'mineur' },
   recouvrement: {

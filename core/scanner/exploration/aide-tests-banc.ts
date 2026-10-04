@@ -36,7 +36,7 @@ export interface BancEssai {
   fermer(): Promise<void>;
 }
 
-export async function preparerBanc(): Promise<BancEssai> {
+export async function preparerBanc(surchargesExploration: Partial<ConfigScanner['exploration']> = {}): Promise<BancEssai> {
   const base = await chargerConfigScanner();
   // Seules les ATTENTES du chemin nominal sont resserrées (stabilisation,
   // plafond d'effet, sondage). Les délais d'échec (clic, saisie, chargement)
@@ -50,6 +50,10 @@ export async function preparerBanc(): Promise<BancEssai> {
       stabilisationMs: 150,
       sondageMs: 25,
       margeEcheanceMs: 0,
+      // Surcharges d'un test précis : par ex. une fenêtre d'effet plus large
+      // que le seuil de lenteur, condition pour qu'une requête en attente
+      // devienne candidate (sinon attente ≤ seuil, jamais lente).
+      ...surchargesExploration,
     },
   };
   const actionsInterdites = await chargerActionsInterdites();

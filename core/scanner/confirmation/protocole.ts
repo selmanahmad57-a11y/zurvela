@@ -97,6 +97,22 @@ export function tiersSansEffetVisible(groupe: GroupeCause): boolean {
 }
 
 /**
+ * Une lenteur ENCORE EN ATTENTE : son évidence est une requête qui n'a pas
+ * fini dans la fenêtre d'effet. Sa confiance (haute) dit la GRAVITÉ — « ne
+ * finit pas » est un signal fort —, pas une preuve de REPRODUCTION : on ne
+ * sait pas si elle pend à chaque fois ou une fois par congestion. Seul le
+ * rejeu le dit. Elle est donc EXCLUE du court-circuit `confiance-suffisante`,
+ * quelle que soit la politique : confiance et preuve sont deux choses, et une
+ * confiance haute ne dispense pas de la preuve (le pendant, dans l'autre sens,
+ * de « le doute ne monte jamais la confiance »). Sans cela, une congestion
+ * transitoire vue une fois serait publiée sans rejeu sous `econome` — le faux
+ * positif que la correction de l'échelle de confiance vient d'éviter.
+ */
+export function lenteurSansPreuveDeReproduction(groupe: GroupeCause): boolean {
+  return groupe.representant.preuves.some((signal) => signal.type === 'requete-en-attente');
+}
+
+/**
  * Le silence se COMPTE : un silence qui ne se journalise pas est un angle
  * mort (APPRENTISSAGES n°4). L'hôte et le type de ressource disent DE QUOI
  * le moteur s'est tu, sans quoi la revue ne pourrait pas contrôler la
@@ -304,7 +320,11 @@ export function creerProtocole(dependances: DependancesProtocole): ProtocoleConf
       let groupesRestants = groupes.filter(
         (candidat) =>
           !tiersSansEffetVisible(candidat) &&
-          !(config.politique === 'econome' && candidat.confiance >= config.seuilConfirmationDirecte),
+          !(
+            config.politique === 'econome' &&
+            candidat.confiance >= config.seuilConfirmationDirecte &&
+            !lenteurSansPreuveDeReproduction(candidat)
+          ),
       ).length;
 
       for (const groupe of groupes) {
@@ -319,8 +339,14 @@ export function creerProtocole(dependances: DependancesProtocole): ProtocoleConf
           // rejoué, ni publié — mais journalisé et compté.
           resultat = sansRejeu(groupe, 'sans-effet', MOTIF_TIERS_SANS_EFFET);
           journaliserTiersSansEffet(contexte, groupe);
-        } else if (config.politique === 'econome' && groupe.confiance >= config.seuilConfirmationDirecte) {
+        } else if (
+          config.politique === 'econome' &&
+          groupe.confiance >= config.seuilConfirmationDirecte &&
+          !lenteurSansPreuveDeReproduction(groupe)
+        ) {
           // Politique d'échelle : un constat déjà très sûr ne paie pas de rejeu.
+          // SAUF une lenteur en attente — confiance = gravité, pas preuve de
+          // reproduction : elle est toujours rejouée (C3bis).
           resultat = sansRejeu(groupe, 'confirmee', MOTIF_CONFIANCE_SUFFISANTE);
         } else if (!tempsRestant() || quotaDuGroupe() === 0) {
           // Sans rejeu, on ne CONCLUT pas : on dit que l'automatisation n'a pas pu trancher.
