@@ -199,6 +199,7 @@ type Commande =
   | {
       commande: 'geometrie';
       attributsConserves: string[];
+      motifIdInstable: string;
       selecteursInteractifs: string;
       selecteur: string | null;
       max: number;
@@ -291,6 +292,51 @@ function enPage(arg: Commande): unknown {
 
     localiser(el: Element, conserves: string[]): LocalisationElement {
       return { balise: el.tagName.toLowerCase(), selecteur: aide.selecteurDe(el), attributs: aide.attributsDe(el, conserves) };
+    },
+
+    /**
+     * Sélecteur de PRÉSENTATION (cahier P2-8) : l'ancre DISTINCTIVE et STABLE
+     * PROPRE à l'élément — classe unique dans le document, `role` unique, ou id
+     * non STRUCTURELLEMENT instable (pas de suffixe généré) — qui résout de
+     * façon unique à lui. Jamais de segment positionnel : une position ne
+     * survit pas à un rechargement. Aucune ancre propre → `null` (renoncement
+     * strict : mieux vaut pas d'adresse qu'une fausse). Ne remonte pas aux
+     * ancêtres : si l'élément n'est pas distinctif par lui-même, on renonce.
+     */
+    selecteurDePresentation(el: Element, motifIdInstable: string): string | null {
+      const resout = (sel: string): boolean => {
+        try {
+          const trouves = document.querySelectorAll(sel);
+          return trouves.length === 1 && trouves[0] === el;
+        } catch {
+          return false;
+        }
+      };
+      const balise = el.tagName.toLowerCase();
+      for (const classe of Array.from(el.classList)) {
+        if (classe === '' || document.getElementsByClassName(classe).length !== 1) {
+          continue;
+        }
+        const sel = `${balise}.${CSS.escape(classe)}`;
+        if (resout(sel)) {
+          return sel;
+        }
+      }
+      const role = el.getAttribute('role');
+      if (role !== null && /^[a-z-]+$/.test(role) && document.querySelectorAll(`[role="${role}"]`).length === 1) {
+        const sel = `${balise}[role="${role}"]`;
+        if (resout(sel)) {
+          return sel;
+        }
+      }
+      const id = el.getAttribute('id');
+      if (id !== null && id !== '' && !new RegExp(motifIdInstable).test(id)) {
+        const sel = `#${CSS.escape(id)}`;
+        if (resout(sel)) {
+          return sel;
+        }
+      }
+      return null;
     },
 
     /** Un élément dont l'activation déclenche quelque chose : sémantique HTML et ARIA, jamais un nom de classe. */
@@ -704,7 +750,7 @@ function enPage(arg: Commande): unknown {
         }
         recouvrements.push({
           element: aide.localiser(el, arg.attributsConserves),
-          intercepteur: aide.localiser(recu, arg.attributsConserves),
+          intercepteur: { ...aide.localiser(recu, arg.attributsConserves), selecteurPublie: aide.selecteurDePresentation(recu, arg.motifIdInstable) },
           signatureIntercepteur: aide.signatureConstruction(recu, arg.attributsConserves),
         });
       }
@@ -1012,6 +1058,8 @@ export async function etatsCadres(page: Page, delaiMs?: number): Promise<EtatCad
 export interface OptionsGeometrie {
   /** Éléments désignés (null = tous les éléments interactifs). */
   selecteur?: string | null;
+  /** Motif (regex) d'un id structurellement instable, pour le sélecteur publié (cahier P2-8). */
+  motifIdInstable: string;
   /** Nombre maximal d'éléments examinés. */
   max: number;
   /** Budget de temps en page. */
@@ -1096,6 +1144,7 @@ export async function recouvrements(page: Page, options: OptionsGeometrie): Prom
     {
       commande: 'geometrie',
       attributsConserves: ATTRIBUTS_CONSERVES,
+      motifIdInstable: options.motifIdInstable,
       selecteursInteractifs: SELECTEURS_INTERACTIFS,
       selecteur: options.selecteur ?? null,
       max: options.max,

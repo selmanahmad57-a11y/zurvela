@@ -80,7 +80,7 @@ async function principal(): Promise<void> {
       page: await extrairePage(page),
       texte: await extraireTexte(page, configProfilage.contexteMaxChars, config.exploration.evaluationMs),
       images: await etatsImages(page),
-      recouvrements: (await recouvrements(page, { max: config.exploration.elementsInteractifsMax, budgetMs: config.exploration.evaluationMs })).recouvrements,
+      recouvrements: (await recouvrements(page, { max: config.exploration.elementsInteractifsMax, budgetMs: config.exploration.evaluationMs, motifIdInstable: config.detecteurs.recouvrement.motifIdInstable })).recouvrements,
       mutations: (await lireMutations(page, NOM_TAMPON, '#f')).mutations,
       declencheur: await lireDeclencheur(page, '#f > button', attributsLus(actionsInterdites), false),
       validite: await validiteFormulaire(page, '#f', '#f > button'),

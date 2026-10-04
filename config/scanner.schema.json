@@ -518,7 +518,8 @@
             "confianceGeometrieEtClic",
             "gravite",
             "graviteParNature",
-            "fermeture"
+            "fermeture",
+            "motifIdInstable"
           ],
           "properties": {
             "confianceGeometrie": {
@@ -614,6 +615,10 @@
                   "description": "Nombre maximal de descendants d'un recouvrement que la voie C essaie d'activer. Borne la dépense : un modal a une poignée de descendants, pas deux cents."
                 }
               }
+            },
+            "motifIdInstable": {
+              "type": "string",
+              "description": "Expression régulière marquant un id STRUCTURELLEMENT instable (par défaut un suffixe numérique « [0-9]+$ ») : un id qui la vérifie n'est pas une ancre stable pour le sélecteur publié d'une cause (cahier P2-8). Structurel, universel (conventions d'id du web), jamais un nom de produit. Par cohérence du renoncement strict, un id stable à suffixe numérique (#produit-7) est rejeté au même titre qu'un id volatil (#aswift_7) : on ne les distingue pas d'un instantané."
             }
           }
         },

@@ -124,6 +124,8 @@ export interface ConfigScanner {
     recouvrement: {
       confianceGeometrie: number;
       confianceGeometrieEtClic: number;
+      /** Motif (regex) d'un id STRUCTURELLEMENT instable — suffixe numérique : un tel id ne sert pas d'ancre au sélecteur publié (cahier P2-8). Le code connaît LE WEB (les conventions d'id), pas LE MONDE. */
+      motifIdInstable: string;
       /** Gravité de repli quand la nature de l'élément masqué n'a pas pu être établie (cahier P2-3, contrat 2). */
       gravite: Gravite;
       /** Le critère de gravité est CE QUI EST MASQUÉ, pas le fait de masquer (contrat 2, D4). */

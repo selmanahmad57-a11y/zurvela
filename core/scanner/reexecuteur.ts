@@ -268,7 +268,7 @@ export function creerReexecuteur(dependances: DependancesReexecuteur): Reexecute
           for (const cadre of await etatsCadres(ouverte, delai())) {
             observateur.emettre({ type: 'etat-cadre', horodatage, observation: branchement.observationCourante(), page: url, viewport: viewport.nom, ...cadre });
           }
-          const geometrie = await recouvrements(ouverte, { max: exploration.elementsInteractifsMax, budgetMs: delai() });
+          const geometrie = await recouvrements(ouverte, { max: exploration.elementsInteractifsMax, budgetMs: delai(), motifIdInstable: config.detecteurs.recouvrement.motifIdInstable });
           // ON TENTE AU REJEU COMME À L'EXPLORATION (cahier P2-3, contrat 1).
           // Un recouvrement qui n'apparaît qu'au rejeu — le calque de
           // `calque-au-rejeu`, l'iframe publicitaire d'expandtesting — serait
@@ -290,7 +290,7 @@ export function creerReexecuteur(dependances: DependancesReexecuteur): Reexecute
                 ? {}
                 : { memoire: dependances.memoireFermeture.pour(url, viewport.nom) }),
               geometrie: { max: exploration.elementsInteractifsMax, budgetMs: delai() },
-              mesurer: () => recouvrements(ouverte, { max: exploration.elementsInteractifsMax, budgetMs: delai() }),
+              mesurer: () => recouvrements(ouverte, { max: exploration.elementsInteractifsMax, budgetMs: delai(), motifIdInstable: config.detecteurs.recouvrement.motifIdInstable }),
               journaliser: (type, details) => journaliser(type, { viewport: viewport.nom, url, rejeu: true, ...(details as object) }),
               attendre: (ms) => new Promise<void>((resoudre) => setTimeout(resoudre, ms)),
             });
@@ -373,7 +373,7 @@ export function creerReexecuteur(dependances: DependancesReexecuteur): Reexecute
           let intercepteur: LocalisationElement | null = null;
           let couvert = false;
           try {
-            const constat = await recouvrements(ouverte, { selecteur: declencheur.selecteur, max: 1, budgetMs: delai() });
+            const constat = await recouvrements(ouverte, { selecteur: declencheur.selecteur, max: 1, budgetMs: delai(), motifIdInstable: config.detecteurs.recouvrement.motifIdInstable });
             couvert = constat.recouvrements.length > 0;
             intercepteur = constat.recouvrements[0]?.intercepteur ?? null;
           } catch {

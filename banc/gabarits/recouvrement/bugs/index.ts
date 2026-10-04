@@ -9,5 +9,8 @@ import { Q07 } from './q07-grille-repetee.js';
 import { Q08 } from './q08-ferme-sans-semantique.js';
 import { Q09 } from './q09-freres-sans-classe.js';
 import { Q10 } from './q10-freres-distincts.js';
+import { Q11 } from './q11-calque-position-volatile.js';
+import { Q12 } from './q12-calque-sans-ancre.js';
+import { Q13 } from './q13-id-suffixe-numerique.js';
 
-export const bugs: BugInjectable[] = [Q01, Q02, Q03, Q04, Q05, Q06, Q07, Q08, Q09, Q10];
+export const bugs: BugInjectable[] = [Q01, Q02, Q03, Q04, Q05, Q06, Q07, Q08, Q09, Q10, Q11, Q12, Q13];

@@ -44,6 +44,7 @@ export const CONFIG_TEST: ConfigScanner['detecteurs'] = {
   recouvrement: {
     confianceGeometrie: 0.8,
     confianceGeometrieEtClic: 0.95,
+    motifIdInstable: '[0-9]+$',
     gravite: 'important',
     graviteParNature: { actionCritique: 'bloquant', controleOrdinaire: 'important', contenuSecondaire: 'mineur' },
     fermeture: {

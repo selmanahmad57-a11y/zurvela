@@ -140,7 +140,19 @@ d'une attente tronquée comme une BORNE INFÉRIEURE plutôt que comme une
 durée, ou donner aux paliers une échelle propre à la voie « en attente ».
 Voir aussi la dette n°26 — cette voie n'a pas de témoin au banc.
 
-### 2. LE SÉLECTEUR POSITIONNEL QUI NE RÉSOUT PAS CHEZ LE CLIENT — le plus répandu
+### 2. LE SÉLECTEUR POSITIONNEL QUI NE RÉSOUT PAS CHEZ LE CLIENT — le plus répandu — **TRAITÉ : cahier P2-8 (face a)**
+
+> **État (2026-10-04) : la face (a) est livrée (cahier P2-8).** La mesure du
+> point 1 a montré que les 9 ne sont pas homogènes — la bifurcation n'est pas
+> « quelle méthode d'ancrage » mais **« y a-t-il une ancre, oui ou non »** :
+> (a) overlays à classe stable → une ancre existe, le sélecteur de
+> présentation la nomme ; (b) cadres publicitaires → rien de stable à nommer,
+> renoncement. P2-8 traite (a) : un `selecteurPublie` calculé à la publication
+> (classe unique / `role` / id non-instable, jamais positionnel), `null` quand
+> aucune ancre — sans toucher `selecteurDe` interne. (b) devient le cahier
+> ci-dessous. **Deux dettes de bascule inscrites à `docs/DETTES.md` n°28 et
+> n°29.**
+
 
 Sur les **15 `clic-intercepte` jugées VRAIES** du run, **9 nomment au
 client un sélecteur qui ne résout pas** : `citePresent: false` dans
@@ -166,6 +178,21 @@ identifiants `#aswift_*` seule, déjà notée au bilan du 2026-10-02. C'est
 **intra-scan, réel, mesuré sur 9 sections, et traitable** : ce qu'il faut
 publier, c'est ce qui permet au client de RETROUVER l'élément, pas le
 chemin qui nous y a menés.
+
+### 2bis. NOMMAGE SÉMANTIQUE DES RECOUVREMENTS SANS ANCRE (face b) — révélé par P2-8
+
+La face (b) de P2-8 : les recouvrements pour lesquels **il n'existe pas de
+sélecteur publiable** (cadre publicitaire à id volatile, overlay sans classe).
+P2-8 les RENONCE proprement (`selecteurPublie = null`) — il ne leur colle pas
+de fausse adresse. Mais renoncer n'est pas nommer : le client sait qu'un
+recouvrement couvre le lien, sans adresse. Ce cahier donne le registre
+SÉMANTIQUE (doctrine P2-2, n°7 poussé à son bout) : quand la preuve ne contient
+aucune adresse stable, **nommer la NATURE** (« un cadre publicitaire tiers
+couvre ce lien ») au lieu de l'adresse. Arbitrage de fond : reconnaître
+« pas d'ancre » par le renoncement de (a) ; nommer la nature **sans lire le
+monde** (pas de nom de produit en dur — comme l'hôte de P2-2 vient d'une table
+en config). **Condition d'ouverture** : après (a), sur le résidu réel des
+`selecteurPublie = null` (les combien, de quelle nature).
 
 ### 3. `waitUntil: 'load'` QUI PREND LE SCAN EN OTAGE — le plus silencieux
 

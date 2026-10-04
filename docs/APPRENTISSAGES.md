@@ -1723,3 +1723,41 @@ regardé.
   pointent la même vérité structurelle : le seul chemin vers une vraie
   `requete-en-attente` est une action qui NE NAVIGUE PAS (une soumission dont
   l'API pend). Deux mesures indépendantes qui convergent valent mieux qu'une.
+
+## 50. « Quelle méthode » suppose que le problème a UNE solution ; la mesure peut révéler qu'il n'en a pas (2026-10-04, cahier P2-8)
+
+- **La question posée** : pour le sélecteur positionnel non résolvable, le
+  propriétaire posait « heuristique d'un instantané vs mesure cross-observation
+  » — deux MÉTHODES d'ancrage. La mesure (point 1) est revenue avec : ce n'est
+  pas la bonne bifurcation. Les 9 sections ne se partagent pas par « quelle
+  méthode » mais par **« y a-t-il une ancre, oui ou non »** : (a) overlays à
+  classe stable — une ancre existe et persiste ; (b) cadres publicitaires — rien
+  de stable à nommer, ni par instantané ni par N observations, l'élément est
+  volatile de bout en bout.
+- **La forme de l'erreur, et elle est neuve** : je supposais que le problème
+  était « comment TROUVER l'ancre » (méthode), la mesure dit que pour (b) il n'y
+  a **pas d'ancre à trouver** (existence). On ne choisit pas une meilleure
+  méthode pour localiser ce qui n'a pas de localisation. **(a) et (b) ne sont
+  pas deux difficultés d'un problème, ce sont deux problèmes** : « le sélecteur
+  n'est pas le bon » → le réparer ; « il n'existe pas de sélecteur publiable » →
+  changer de registre, nommer la nature (doctrine P2-2, n°7 à son bout). C'est
+  n°45 d'un cran plus profond : non pas « on mesure la mauvaise grandeur » mais
+  « on suppose qu'une grandeur EXISTE ».
+- **La règle** : *avant de choisir une méthode pour résoudre un problème,
+  mesurer qu'il a une solution — sinon on raffine une réponse à une question
+  qui n'en a pas.* Une question de la forme « quelle méthode » présuppose
+  l'existence ; la mesure doit valider la présupposition avant d'optimiser la
+  méthode.
+
+- **Et l'asymétrie qui en découle (renoncement strict)** : quand on ne peut
+  PAS prouver qu'une adresse est stable, on RENONCE plutôt que de la publier.
+  Hiérarchie des erreurs : publier une fausse adresse envoie le client chercher
+  où rien n'est (coûte la CONFIANCE — le différenciateur n°1) ; renoncer à une
+  adresse réparable prive d'une précision mais ne trompe pas (coûte la
+  PRÉCISION, et le cas tombe dans le registre sémantique). *Sur-renoncer coûte
+  de la précision ; tolérer une fausse adresse coûte la confiance.* Le doute va
+  vers le moins trompeur, jamais vers le plus précis-mais-risqué (§15). Bonus :
+  le renoncement strict rend le critère purement syntaxique, sans mesure
+  cross-observation — il garde le cahier simple ET juste. La tolérance (dette
+  n°28) ne s'ouvre que sur une mesure de sur-renoncement, jamais sur l'intuition
+  « une queue courte, ça va probablement ».

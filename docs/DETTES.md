@@ -686,3 +686,42 @@ dette est levée (le commit qui la lève renvoie à ce fichier).
 - Hors périmètre du cahier B : c'est un défaut de RENDU, découvert en le
   lisant.
 
+
+## 28. Le renoncement strict peut SUR-RENONCER, et la tolérance ne s'ouvre que par mesure (2026-10-04, cahier P2-8)
+
+Le sélecteur de présentation renonce (`selecteurPublie = null`) dès qu'il n'a
+pas d'ancre distinctive PROPRE sans segment positionnel. Conséquence assumée,
+le bon côté de l'asymétrie : certains recouvrements (a) réellement réparables
+— une ancre stable existe sur un ANCÊTRE, ou une queue positionnelle courte qui
+se trouve persister — partent vers (b) comme « pas d'adresse ». On sur-renonce.
+
+**Pourquoi c'est volontaire** : « courte » n'a jamais voulu dire « stable »
+(n°45) — `#aswift_8` a montré un ancêtre stable + UNE queue positionnelle qui
+bouge. On ne peut pas prouver qu'une position persiste sans la mesurer sur
+plusieurs chargements (la cross-observation, en dette). Tolérer une queue
+courte, c'est SUPPOSER sa stabilité.
+
+**Condition de levée** : la tolérance (remonter à une ancre ancêtre, ou garder
+une queue positionnelle) ne s'ouvre que si le résidu réel de sur-renoncement
+est **mesuré significatif** — des cas (a) réparables partis à tort vers (b), en
+nombre. Et elle passera par la **cross-observation** (prouver que l'ancre
+ancêtre et la queue persistent sur N chargements), pas par une heuristique de
+longueur. Mesure d'abord, pas l'intuition « une queue courte, ça va ».
+
+## 29. La garantie « résout à la vue » est SYNTAXIQUE, pas mesurée à l'exécution (2026-10-04, cahier P2-8)
+
+Le moteur décide `selecteurPublie` par une heuristique SYNTAXIQUE d'un
+instantané (classe unique / `role` / id non-instable, jamais positionnel). Le
+banc PROUVE que cette heuristique résout pour (a) et renonce pour (b) sur
+l'asymétrie mesurée. Mais l'heuristique est un PROXY de « résout à la vue »,
+pas une mesure : une classe distinctive au scan POURRAIT, sur un site
+pathologique, être elle-même régénérée et ne pas résoudre à la vue (rare, pas
+impossible). Le gabarit prouve que le proxy tient sur les cas mesurés ; il ne
+prouve pas qu'il tient PARTOUT (n°45 en embuscade : corrélé n'est pas égal).
+
+**Condition de levée** : si le résidu réel montre des `selecteurPublie` non-null
+qui ne résolvent pas à la vue (une ancre distinctive au scan devenue
+introuvable), la garantie passe de syntaxique à **mesurée au rejeu** — le rejeu
+charge déjà la page, donc valider « le `selecteurPublie` résout » y est gratuit,
+et transforme le proxy en mesure. Pas maintenant (l'heuristique suffit sur les
+cas mesurés), mais nommé.

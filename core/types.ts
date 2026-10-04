@@ -218,6 +218,15 @@ export interface LocalisationElement {
   balise: string;
   /** Sélecteur CSS structurel (balise, id, name, type, rang) permettant de retrouver l'élément. */
   selecteur: string;
+  /**
+   * Sélecteur de PRÉSENTATION, calculé à la publication (cahier P2-8) : une
+   * ancre DISTINCTIVE et STABLE (classe unique, `role`, id non-instable) qui
+   * résout sur un chargement régénéré, ou `null` quand aucune n'existe
+   * (renoncement strict — mieux vaut pas d'adresse qu'une fausse). Distinct de
+   * `selecteur`, qui reste l'identité INTERNE (positionnelle, précise, pour les
+   * clés de cause et la consolidation). `undefined` quand non calculé.
+   */
+  selecteurPublie?: string | null;
   /** Attributs techniques (id, name, type, role, href, action…), jamais de libellé. */
   attributs: Record<string, string>;
 }

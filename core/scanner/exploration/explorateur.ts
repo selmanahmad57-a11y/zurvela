@@ -508,7 +508,7 @@ export function creerExplorateur(dependances: DependancesExplorateur): Explorate
         for (const cadre of await etatsCadres(page, delai())) {
           observateur.emettre({ type: 'etat-cadre', horodatage, observation, page: url, viewport: viewport.nom, ...cadre });
         }
-        const geometrie = await recouvrements(page, { max: exploration.elementsInteractifsMax, budgetMs: delai() });
+        const geometrie = await recouvrements(page, { max: exploration.elementsInteractifsMax, budgetMs: delai(), motifIdInstable: config.detecteurs.recouvrement.motifIdInstable });
         if (geometrie.tronque) {
           contexte.journaliser('exploration.geometrie.tronquee', { viewport: viewport.nom, url, examines: geometrie.examines });
         }
@@ -528,7 +528,7 @@ export function creerExplorateur(dependances: DependancesExplorateur): Explorate
             clicMs: budget(exploration.clicMs),
             ...(contexte.memoireFermeture === undefined ? {} : { memoire: contexte.memoireFermeture.pour(url, viewport.nom) }),
             geometrie: { max: exploration.elementsInteractifsMax, budgetMs: delai() },
-            mesurer: () => recouvrements(page, { max: exploration.elementsInteractifsMax, budgetMs: delai() }),
+            mesurer: () => recouvrements(page, { max: exploration.elementsInteractifsMax, budgetMs: delai(), motifIdInstable: config.detecteurs.recouvrement.motifIdInstable }),
             journaliser: (type, details) => contexte.journaliser(type, { viewport: viewport.nom, url, ...(details as object) }),
             attendre,
           });
@@ -681,7 +681,7 @@ export function creerExplorateur(dependances: DependancesExplorateur): Explorate
         let intercepteur: LocalisationElement | null = null;
         let couvert = false;
         try {
-          const constat = await recouvrements(page, { selecteur: declencheur.selecteur, max: 1, budgetMs: delai() });
+          const constat = await recouvrements(page, { selecteur: declencheur.selecteur, max: 1, budgetMs: delai(), motifIdInstable: config.detecteurs.recouvrement.motifIdInstable });
           couvert = constat.recouvrements.length > 0;
           intercepteur = constat.recouvrements[0]?.intercepteur ?? null;
         } catch {
