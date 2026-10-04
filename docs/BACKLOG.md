@@ -194,6 +194,37 @@ monde** (pas de nom de produit en dur — comme l'hôte de P2-2 vient d'une tabl
 en config). **Condition d'ouverture** : après (a), sur le résidu réel des
 `selecteurPublie = null` (les combien, de quelle nature).
 
+### 4. UNE DÉCOUVERTE D'UN DÉTECTEUR GRADUÉ SE PUBLIE SUR UNE OBSERVATION UNIQUE — le faux positif getlumavo, mesuré (révélé le 2026-10-04)
+
+**Mesuré au journal getlumavo du run de validation**, et NON couvert par P2-7
+ni P2-8. Le faux positif publié était `reponse-lente` sur le document
+(`reseau:GET:/`), en `verdict: decouverte`, `motif: constatee-au-rejeu`, sur
+**une preuve unique** (dureeMs 8 676, observation `o85`, pendant un rejeu). Le
+document chargeait vite au scan (0,5–2,4 s mesuré) ; il n'est apparu lent que
+lors d'UN rejeu, sur une congestion passagère.
+
+Le contraste est la preuve du trou : les candidates du SCAN (phone-3, phone-2,
+showcase-2) ont été correctement rétrogradées par le protocole
+(`non-reproduite / mesure-sous-seuil`, mesure agrégée 752 ms — la dégradation à
+sens unique a marché). Mais le document, DÉCOUVERT au rejeu, a été publié sur
+une observation unique, **sans re-test** — la voie découverte (P2-1 contrat 8)
+court-circuite la re-mesure du protocole.
+
+**La distinction binaire / gradué** : pour un détecteur BINAIRE (image cassée,
+site injoignable), une observation au rejeu suffit — le défaut est ou n'est
+pas. Pour un détecteur GRADUÉ (lenteur), une observation unique d'une valeur à
+peine au-dessus du seuil est exactement le transitoire que la re-mesure existe
+pour filtrer. **Une découverte de détecteur gradué ne devrait pas se publier
+sur une observation unique.**
+
+Enjeu : **tant que ce défaut tient, le grand tableau ne peut pas être refait**
+sans risquer de republier un transitoire de lenteur découvert au rejeu. C'est
+P2-7-adjacent (lenteur) mais DISTINCT (le chemin découverte, pas l'échelle de
+confiance). Piste à instruire à froid : une découverte graduée exige soit une
+re-mesure (coûteuse, elle est déjà au rejeu), soit un signal bien plus fort que
+le seuil, soit elle n'est pas publiée. L'instrument P2-6 (marque d'observation)
+et la dégradation à sens unique du protocole sont les outils.
+
 ### 3. `waitUntil: 'load'` QUI PREND LE SCAN EN OTAGE — le plus silencieux
 
 `explorateur.ts` et `reexecuteur.ts` naviguent en `waitUntil: 'load'`. Le
