@@ -172,6 +172,8 @@ function candidatesEcartees(resultat: ResultatGroupe): CandidateEcartee[] {
  * ne trie pas.
  */
 export const EVENEMENT_QUOTA_REJEUX = 'confirmation.quota';
+/** Re-mesure d'une découverte de détecteur gradué avant publication (cahier P2-9). */
+export const EVENEMENT_REMESURE_DECOUVERTE = 'confirmation.remesure-decouverte';
 
 export function ordonnerParViewport(groupes: readonly GroupeCause[]): GroupeCause[] {
   const files = new Map<string, GroupeCause[]>();
@@ -550,6 +552,49 @@ export function creerProtocole(dependances: DependancesProtocole): ProtocoleConf
           resultats.push(resultatTu);
           ecartees.push(...candidatesEcartees(resultatTu));
           continue;
+        }
+        // CAHIER P2-9 — une découverte d'un détecteur GRADUÉ ne se publie pas sur
+        // une observation unique : une mesure vue une fois peut être un
+        // transitoire (le faux positif getlumavo). On la RE-MESURE par le même
+        // chemin qu'une candidate (`reexecuterGroupe` + `juger`). Binaire : rien
+        // à re-mesurer, publiée telle quelle. Anti-récursion : les candidates
+        // des rejeux de re-mesure ne sont PAS collectées — on vérifie une
+        // lenteur précise, on ne cherche pas de nouvelles découvertes (un
+        // niveau, pas N). Re-mesure impossible (plus de temps) : on garde la
+        // découverte, statut faible « constatée une fois » (asymétrie : le doute
+        // n'écarte pas un défaut possible, seule une re-mesure SOUS le seuil le fait).
+        const detecteurDecouverte = contexte.detecteurs.find((candidat) => candidat.nom === groupe.representant.detecteur);
+        if (detecteurDecouverte?.mesureDe !== undefined && detecteurDecouverte.seuilMesure !== undefined && tempsRestant()) {
+          const reexecution = await reexecuterGroupe({ groupe, contexte, config, detecteur: detecteurDecouverte, tempsRestant, rejeuxMax: config.reExecutions });
+          const jugement = juger(reexecution.tentatives, {
+            tauxRequis: config.tauxReproduction,
+            agregation: config.agregationMesures,
+            seuilMesure: detecteurDecouverte.seuilMesure,
+          });
+          contexte.journaliser(EVENEMENT_REMESURE_DECOUVERTE, {
+            cle: groupe.cle,
+            verdict: jugement.verdict,
+            motif: jugement.motif,
+            ...(jugement.mesureAgregee === undefined ? {} : { mesureAgregee: jugement.mesureAgregee }),
+          });
+          if (jugement.verdict === 'non-reproduite') {
+            // Transitoire : re-mesuré sous le seuil → ÉCARTÉ, jamais publié.
+            const resultatEcarte: ResultatGroupe = {
+              groupe,
+              verdict: jugement.verdict,
+              motif: jugement.motif,
+              tentatives: reexecution.tentatives,
+              tauxReproduction: jugement.tauxReproduction,
+              ...(jugement.mesureAgregee === undefined ? {} : { mesureAgregee: jugement.mesureAgregee }),
+              confianceInitiale: groupe.confiance,
+              confianceFinale: groupe.confiance,
+              coutApi: 0,
+            };
+            resultats.push(resultatEcarte);
+            ecartees.push(...candidatesEcartees(resultatEcarte));
+            continue;
+          }
+          // Reproduite (ou re-mesure inconclusive) : la découverte survit, publiée ci-dessous.
         }
         const anomalie = anomalieDecouverte(groupe);
         contexte.journaliser('confirmation.decouverte', {

@@ -1761,3 +1761,37 @@ regardé.
   cross-observation — il garde le cahier simple ET juste. La tolérance (dette
   n°28) ne s'ouvre que sur une mesure de sur-renoncement, jamais sur l'intuition
   « une queue courte, ça va probablement ».
+
+
+## 51. Un contrat juste pour une classe de détecteurs reste appliqué à une autre où il est faux (2026-10-05, cahier P2-9)
+
+- **Ce qui s'est passé.** P2-1 contrat 8 publie une découverte (anomalie vue
+  au rejeu, inconnue du scan) sur une OBSERVATION UNIQUE, verdict `decouverte`,
+  sans re-test. Conçu pour des détecteurs BINAIRES (image cassée, site
+  injoignable : une observation suffit), il a été appliqué UNIFORMÉMENT à tous
+  les détecteurs, y compris les GRADUÉS (lenteur). Pour un gradué, « constaté
+  une fois » n'est pas « non re-testé par prudence » — c'est « publié sur un
+  transitoire sans re-mesure ». Le faux positif getlumavo (une congestion
+  passagère de 8 % au-dessus du seuil, découverte à un rejeu) est né là.
+- **La forme de l'erreur** : c'est n°25 (l'intersection de deux cahiers justes)
+  sous une forme neuve — P2-1 (la voie découverte) et le détecteur de lenteur
+  (gradué) sont chacun justes ; le faux positif naît à leur RENCONTRE, un angle
+  mort que ni l'un ni l'autre ne voyait parce que rien ne distinguait les deux
+  classes de détecteurs sur la voie découverte. Et c'est une décision de
+  conception qui a SURVÉCU À SON DOMAINE : « la re-confirmation récursive est
+  hors périmètre » était vrai pour les binaires, faux pour les gradués, et
+  personne ne l'avait ré-éprouvé quand le détecteur de lenteur (gradué) a
+  rejoint la voie découverte.
+- **La règle** : *une décision de conception valide pour une classe de cas
+  doit être ré-éprouvée quand une nouvelle classe entre dans son domaine.* Le
+  critère de distinction existait déjà dans le code (`mesureDe`/`seuilMesure` :
+  un détecteur gradué les porte, un binaire non) — la correction est donc
+  structurelle, pas une liste : une découverte graduée se re-mesure, une
+  binaire non. La même abstraction que P2-7 (le protocole juge la lenteur sans
+  la connaître), étendue à la voie découverte.
+- **Ce qui l'a attrapée** : le run de validation, encore — mais surtout la
+  MESURE préalable au journal (le faux positif était une `decouverte /
+  constatee-au-rejeu` sur preuve unique), qui a distingué le défaut d'un bug
+  ponctuel : il fallait le chercher avant de refaire le grand tableau, sinon le
+  tableau aurait menti une troisième fois. Mesurer avant d'écrire protège aussi
+  contre le MAUVAIS PROBLÈME (ici : croire couvert ce qui ne l'était pas).

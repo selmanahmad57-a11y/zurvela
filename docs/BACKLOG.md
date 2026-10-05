@@ -196,6 +196,8 @@ en config). **Condition d'ouverture** : après (a), sur le résidu réel des
 
 ### 4. UNE DÉCOUVERTE D'UN DÉTECTEUR GRADUÉ SE PUBLIE SUR UNE OBSERVATION UNIQUE — le faux positif getlumavo, mesuré (révélé le 2026-10-04)
 
+> **État (2026-10-05) : TRAITÉ — cahier P2-9.** Un branchement (zéro préalable) : dans la voie découverte, une découverte dont le détecteur est GRADUÉ (`mesureDe`) est re-mesurée via `reexecuterGroupe` + `juger` avant publication ; `non-reproduite` (sous le seuil) → écartée, sinon publiée. Borne anti-récursion (ne pas collecter les rejeux de re-mesure — un niveau, pas N) ; asymétrie (re-mesure impossible → statut faible « constatée une fois ») ; binaire inchangé. Témoin deux faces (transitoire écarté / persistant publié), mutation grave tuée, oracle inerte sur le corpus. getlumavo passe d'abri (n°44) à re-testé-et-écarté. APPRENTISSAGES n°51.
+
 **Mesuré au journal getlumavo du run de validation**, et NON couvert par P2-7
 ni P2-8. Le faux positif publié était `reponse-lente` sur le document
 (`reseau:GET:/`), en `verdict: decouverte`, `motif: constatee-au-rejeu`, sur

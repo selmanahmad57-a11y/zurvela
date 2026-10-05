@@ -139,6 +139,11 @@
     "Z01": {
       "ressourcesParPage": 6,
       "delaiPageMs": 400
+    },
+    "L04": {
+      "delaiMs": 3500,
+      "aPartirDe": 3,
+      "unique": true
     }
   }
 }
