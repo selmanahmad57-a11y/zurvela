@@ -1848,3 +1848,32 @@ regardé.
   Un défaut de couverture (sites rendus invisibles) n'a pas d'exemplaire tant
   qu'on n'en fabrique pas un — d'où le témoin construit, et la dette n°30 (le
   corpus statique ne couvre pas le rendu JS tardif).
+
+
+## 54. La mesurabilité d'un site NON DÉTERMINISTE ne se conclut pas d'une mesure unique (2026-10-05, vérification pré-run de P2-10)
+
+- **Ce qui s'est passé.** P2-10 (waitUntil → domcontentloaded) a été committé en
+  affirmant « the-internet redevient mesurable → verrou du grand tableau levé ».
+  La vérification pré-run GRATUITE (sonde Playwright, aucun dollar) l'a infirmé :
+  le 2026-10-05, `domcontentloaded` expire sur the-internet comme `load`. La
+  claim reposait sur l'UNIQUE mesure du 2026-10-04 (5,4 s, 46 liens) —
+  généralisée à tort.
+- **Pourquoi c'était faux.** the-internet a sept `<script src>` dans le `<head>`,
+  bloquants pour le parseur. Quand ils se chargent vite (2026-10-04), seul une
+  image pend → `domcontentloaded` aide. Quand ils pendent (2026-10-05), le
+  parseur n'atteint jamais `<body>` → `DOMContentLoaded` ne se déclenche jamais →
+  `domcontentloaded` expire aussi. Le site est NON DÉTERMINISTE : la même sonde
+  donne OK un jour, timeout le lendemain.
+- **La règle** : *la mesurabilité d'un site instable est une propriété
+  PROBABILISTE, pas un fait ; une mesure unique à un bon moment ne l'établit
+  pas.* C'est la famille n°45/n°47/n°53 (un vert/une valeur obtenu par un chemin
+  ou un instant qu'on n'a pas vu), appliquée à un site dont l'état varie dans le
+  temps. Avant d'affirmer « X est mesurable », mesurer X plusieurs fois, ou
+  déclarer la propriété comme probabiliste.
+- **Ce qui l'a attrapée, et le coût évité** : la vérification pré-run que le
+  propriétaire exige avant tout dollar (« vérifier que the-internet l'est
+  vraiment — c'est le test en réel de P2-10 »). Sans elle, le grand tableau
+  aurait été lancé en comptant sur un témoin fantôme, et sa lecture aurait
+  affirmé « the-internet mesuré » un soir où il ne l'est pas. Le fix P2-10 reste
+  correct pour SA classe (ressource bloquant le `load`, pas le parseur, prouvé
+  par L05) ; seule la claim sur the-internet était fausse.

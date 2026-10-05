@@ -89,9 +89,41 @@ rendu par XHR/fetch — mais un rendu synchrone post-`load` sans activité rése
 échapperait. À valider sur un site réel à rendu JS lourd avant de s'en remettre
 entièrement (dette inscrite à `docs/DETTES.md`).
 
-## Le jalon : le grand tableau redevient faisable
+## ⚠ CORRECTION DU 2026-10-05 — P2-10 ne débloque PAS the-internet
 
-Avec P2-10, the-internet redevient mesurable et les deux faux positifs du run
-sont fermés (`blob:` `ca04789`, transitoire getlumavo `83d261a`). **Les deux
-verrous du grand tableau sont levés.** Le grand tableau refait dira enfin le
-vrai taux de faux positifs de la Phase 2, sur neuf sites tous jugeables.
+La vérification pré-run (gratuite, ma sonde Playwright) a infirmé une claim de
+ce cahier, et je la corrige (n°44). **P2-10 débloque une ressource qui bloque
+le `load` SANS bloquer le parseur** (une image, un script différé/en fin de
+corps — la classe de L05). Mesuré le 2026-10-05, the-internet est d'une AUTRE
+classe : **sept `<script src>` dans le `<head>`, tous bloquants pour le
+parseur**. Quand l'un pend, le parseur n'atteint jamais `<body>` →
+`DOMContentLoaded` ne se déclenche jamais → `domcontentloaded` expire comme
+`load`. Le document répond pourtant (200 en 0,4 s) : le contenu est derrière
+les scripts qui pendent.
+
+Et the-internet est **non déterministe** : le 2026-10-04 les scripts se
+chargeaient en 5,4 s (seule l'image pendait → domcontentloaded aidait), le
+2026-10-05 les scripts pendent (>30 s → domcontentloaded expire). La claim
+« the-internet re-mesurable » reposait sur l'unique mesure favorable du
+2026-10-04 — généralisée à tort (famille n°45/n°53 : une mesure prise à un bon
+moment n'établit pas la mesurabilité d'un site instable). APPRENTISSAGES n°54.
+
+**Ce qui reste VRAI** : P2-10 est un fix correct pour sa classe (prouvé par
+L05, banc ×3 équivalent, zéro régression). Il AMÉLIORE les chances de
+the-internet (il rend la main dès `DOMContentLoaded`, sans attendre l'image qui
+pend) mais ne les GARANTIT pas (quand les scripts du `<head>` pendent, rien ne
+le débloque côté moteur — le contenu est gaté derrière eux). Aucun `waitUntil`
+ne corrige cela : `'commit'` rendrait la main avant le parsing, mais le corps
+ne se construit pas tant que les scripts bloquants pendent.
+
+## Le jalon : le grand tableau, et the-internet n'en est pas le témoin
+
+the-internet était DÉJÀ rétrogradé comme témoin (mémoire : « plus un témoin de
+run réel ») — cette mesure confirme pourquoi, et plus profondément que
+`waitUntil`. **Les témoins du grand tableau restent zurvela et quotes**
+(stables), pas the-internet. Le tableau n'est donc PAS bloqué par the-internet :
+les deux faux positifs du run sont fermés (`blob:` `ca04789`, transitoire
+`83d261a`), les quatre défauts intra-scan traités. Le grand tableau refait dira
+le vrai taux sur les sites JUGEABLES ; the-internet y sera « non mesurable ce
+soir » s'il pend (son critère pré-tranché), déclaré, pas jugé — une ligne
+absente, pas une ligne fausse.
