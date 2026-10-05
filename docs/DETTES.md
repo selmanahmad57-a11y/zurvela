@@ -725,3 +725,20 @@ introuvable), la garantie passe de syntaxique à **mesurée au rejeu** — le re
 charge déjà la page, donc valider « le `selecteurPublie` résout » y est gratuit,
 et transforme le proxy en mesure. Pas maintenant (l'heuristique suffit sur les
 cas mesurés), mais nommé.
+
+## 30. La garde « sans perte » de `domcontentloaded` n'est prouvée que sur du contenu STATIQUE (2026-10-05, cahier P2-10)
+
+Le passage à `waitUntil: 'domcontentloaded'` (P2-10) a été prouvé sans perte de
+détection sur le corpus du banc — mais le corpus est en HTML STATIQUE : tout
+son contenu est présent dès `DOMContentLoaded`. Un site à rendu JS tardif
+(contenu injecté ENTRE `domcontentloaded` et `load`) pourrait, lui, être
+observé incomplet. La fenêtre d'effet (`attendreStabilisation`) attend
+l'activité réseau/mutations APRÈS le DOM prêt, ce qui couvre un rendu par
+XHR/fetch/mutation — mais un rendu synchrone qui n'arriverait qu'au `load`, sans
+activité réseau ni mutation observée, échapperait.
+
+**Condition de levée** : valider sur un site réel à rendu JS lourd (SPA) que la
+détection sous `'domcontentloaded'` + fenêtre d'effet égale celle sous `'load'`.
+Si un écart apparaît, l'option est d'attendre, après `domcontentloaded`, une
+quiescence bornée du rendu (pas un retour à `load`, qui rouvrirait l'otage).
+Pas urgent (les cas mesurés sont couverts), mais nommé.

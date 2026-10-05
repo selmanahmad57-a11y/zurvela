@@ -164,23 +164,34 @@ describe('re-exécuteur — classer l’échec d’un chargement', () => {
     await serveur.arreter();
   }, 60_000);
 
-  it('ressource TIERCE en échec pendant un chargement qui n’aboutit pas → indetermine, jamais un constat sur le site', async () => {
+  it('ressource non essentielle qui pend → le rejeu ABOUTIT (au DOM), sans imputer au site (cahier P2-10)', async () => {
     // Le site répond parfaitement ; c'est un iframe d'une origine morte qui
-    // échoue, et une image qui ne revient jamais qui retient le `load`.
+    // échoue, et une image qui ne revient jamais qui retiendrait le `load`.
+    // AVANT P2-10 (`waitUntil: 'load'`) : l'image prenait le rejeu en OTAGE —
+    // `goto` expirait, `page-inchargeable`, `echecOutillage: true /
+    // indetermine`, un rejeu non concluant sur un site pourtant sain.
+    // APRÈS (`'domcontentloaded'`) : le `goto` rend la main au DOM prêt, le
+    // rejeu ABOUTIT (`echecOutillage: false`) — gain net, moins de
+    // `limite-automatisation` dus à une ressource accessoire. La garantie
+    // profonde tient : le site sain n'est JAMAIS flashé « document injoignable »,
+    // et l'échec de l'iframe morte n'est pas imputé au cadre principal.
     const serveur = await servir((chemin, reponse) => {
       if (chemin === '/') {
         html(reponse, '<iframe src="http://127.0.0.1:1/absent"></iframe><img src="/image-sans-fin.png" alt="">');
         return;
       }
-      // L'image n'est jamais servie : le chargement n'aboutit pas.
+      // L'image n'est jamais servie : sous 'load' elle retenait le chargement ;
+      // sous 'domcontentloaded' elle reste en vol, bornée par la fenêtre d'effet.
     });
 
     const rejeu = await rejouer(serveur.url);
 
-    expect(rejeu).toMatchObject({ echecOutillage: true, causeEchec: 'indetermine', erreur: ERREUR_PAGE_INCHARGEABLE });
+    // Le rejeu aboutit : la ressource qui pend ne le prend plus en otage.
+    expect(rejeu.echecOutillage).toBe(false);
+    // L'iframe morte échoue toujours, mais sur un sous-cadre, jamais le principal…
     const echecs = signauxDe(rejeu.signaux, 'requete-echouee');
-    expect(echecs.length).toBeGreaterThan(0);
     expect(echecs.every((signal) => signal.type === 'requete-echouee' && !signal.cadrePrincipal)).toBe(true);
+    // …et le site sain n'est jamais flashé « document injoignable ».
     expect(candidatesDe(rejeu, serveur.url).map((candidate) => candidate.description)).not.toContain(DESCRIPTION_DOCUMENT_INJOIGNABLE);
 
     await serveur.arreter();

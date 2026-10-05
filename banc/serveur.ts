@@ -242,6 +242,14 @@ function construirePipelines(scenario: Scenario, gabarit: Gabarit, config: Confi
     },
 
     async statique(chemin, sansCorps, res) {
+      // Le retard d'une ressource se paie ICI, sur la requête, avant toute
+      // résolution : une ressource retenue bloque le `load` (pas le DOM), ce
+      // qui éprouve le choix de `waitUntil` (cahier P2-10).
+      for (const { bug, contexte } of bugsActifs) {
+        if (bug.retarderRessource) {
+          await bug.retarderRessource(chemin, contexte);
+        }
+      }
       const fichier = resoudreFichierStatique(dossierStatique, chemin.slice(gabarit.prefixeStatique.length));
       if (fichier === null) {
         envoyer(res, 404, {});

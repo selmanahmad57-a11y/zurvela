@@ -229,6 +229,8 @@ et la dégradation à sens unique du protocole sont les outils.
 
 ### 3. `waitUntil: 'load'` QUI PREND LE SCAN EN OTAGE — le plus silencieux
 
+> **État (2026-10-05) : TRAITÉ — cahier P2-10.** Les 3 `goto` de production passent en `'domcontentloaded'` ; les ressources en cours sont bornées par la fenêtre d'effet, pas par le `goto`. MESURE clé : sur le corpus, `domcontentloaded` est PLEINEMENT équivalent (0 scénario bouge) — la garde « sans perte ailleurs » est prouvée ; l'oracle non-équivalent attendu ne se manifeste pas sur le corpus (pas de ressource qui pend). Témoin neuf (Q06 + L05, `retarderRessource` ré-introduit, 2ᵉ usage §7) : otage levé (rouge→vert). Le test `reexecuteur.pannes` a bougé — jugé VRAI (le rejeu aboutit au lieu d'échouer sur un site sain, §14). Dette n°30 (rendu JS tardif, à valider sur SPA réelle). **the-internet redevient mesurable → verrou (3) levé.** APPRENTISSAGES n°53.
+
 `explorateur.ts` et `reexecuteur.ts` naviguent en `waitUntil: 'load'`. Le
 `load` n'arrive qu'une fois **toutes** les ressources initiales terminées :
 une seule ressource bloquée suffit à faire expirer le `goto` à

@@ -305,7 +305,9 @@ export function creerReexecuteur(dependances: DependancesReexecuteur): Reexecute
         async function naviguer(url: string): Promise<void> {
           const plafond = budget(rejeu.chargementPageMs);
           try {
-            await ouverte.goto(url, { waitUntil: 'load', timeout: plafond });
+            // `domcontentloaded`, pas `load` (cahier P2-10) : un rejeu ne doit pas
+            // être pris en otage par une ressource qui pend plus que le reste.
+            await ouverte.goto(url, { waitUntil: 'domcontentloaded', timeout: plafond });
           } catch {
             if (siteMuet(observateur.signaux(), actionCourante, erreursIgnorees)) {
               throw new EchecRejeu(ERREUR_PAGE_INCHARGEABLE, 'reseau-site');

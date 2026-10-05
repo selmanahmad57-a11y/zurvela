@@ -380,6 +380,16 @@ export interface BugInjectable {
    */
   retarderPage?(chemin: string, contexte: ContexteBug): Promise<void>;
   /**
+   * Retarde le SERVICE d'une SOUS-RESSOURCE statique (image, script, feuille
+   * de style — pas le document, pas l'API). Appelé par le serveur au début du
+   * pipeline statique, avant toute résolution, avec le `attendre` injecté. Son
+   * usage (cahier P2-10) : faire PENDRE une ressource qui BLOQUE le `load` sans
+   * bloquer le DOM, pour éprouver le passage de `waitUntil: 'load'` (otage) à
+   * `'domcontentloaded'` (DOM prêt, ressources en cours, bornées par la fenêtre
+   * d'effet).
+   */
+  retarderRessource?(chemin: string, contexte: ContexteBug): Promise<void>;
+  /**
    * Note une VISITE de page : appelé à chaque requête de page, avant le rendu,
    * et JAMAIS par la vérification du démarrage. C'est là qu'un bug à compteur
    * de visites tient son compte — dans `transformerHtml`, que le démarrage

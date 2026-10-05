@@ -13,5 +13,6 @@ import { Q11 } from './q11-calque-position-volatile.js';
 import { Q12 } from './q12-calque-sans-ancre.js';
 import { Q13 } from './q13-id-suffixe-numerique.js';
 import { L04 } from './l04-document-lent-decouvert.js';
+import { L05 } from './l05-ressource-bloque-load.js';
 
-export const bugs: BugInjectable[] = [Q01, Q02, Q03, Q04, Q05, Q06, Q07, Q08, Q09, Q10, Q11, Q12, Q13, L04];
+export const bugs: BugInjectable[] = [Q01, Q02, Q03, Q04, Q05, Q06, Q07, Q08, Q09, Q10, Q11, Q12, Q13, L04, L05];

@@ -1819,3 +1819,32 @@ regardé.
   l'œuvre (budget épuisé → statut faible, correct), et c'est précisément cela
   qui rendait la mutation vacante. Les deux cohabitent sans que l'une taise ce
   que l'autre doit publier.
+## 53. L'oracle d'équivalence prouve l'absence de RÉGRESSION, pas l'absence d'EFFET — et un défaut absent du corpus y est invisible (2026-10-05, cahier P2-10)
+
+- **Ce qui s'est passé.** On attendait, pour le passage `waitUntil: 'load'` →
+  `'domcontentloaded'`, un oracle « identité change » (changer le moment
+  d'observation change ce qui est observé). Mesuré : sur le corpus, l'oracle est
+  PLEINEMENT équivalent, 0 scénario ne bouge. Non parce que le fix est inerte,
+  mais parce que **le corpus ne contient pas le cas que le fix corrige** : les
+  gabarits sont servis en local, sans ressource qui pend, donc `load` et
+  `domcontentloaded` s'y déclenchent ensemble. Le défaut (et le gain) vit sur une
+  ressource lente — absente du corpus.
+- **La règle** : *l'oracle d'équivalence mesure que l'optimisation ne DÉGRADE
+  pas ce que le corpus exerce déjà ; il ne peut pas montrer un GAIN sur un cas
+  que le corpus ne contient pas.* « Oracle équivalent » ≠ « le fix ne fait
+  rien ». Pour un défaut de COUVERTURE absent du corpus, l'équivalence est la
+  moitié « sans perte » de la garde ; l'autre moitié — le gain — exige un témoin
+  CONSTRUIT pour le cas (ici Q06 + L05, l'otage reproduit). Deux instruments,
+  deux garanties : l'oracle pour la non-régression, le témoin pour le gain.
+- **Le contraste avec P2-7/8/9** : ceux-là étaient additifs (confiance,
+  sélecteur publié, re-mesure) ou touchaient un chemin absent du corpus
+  (découverte graduée) — oracle équivalent, et c'était la preuve attendue. P2-10
+  change CE QUE le moteur voit, et pourtant l'oracle reste équivalent sur le
+  corpus — la surprise qui aurait pu faire croire « je n'ai rien changé » si le
+  témoin ne prouvait pas le gain. La garde cardinale a été reformulée à temps
+  (gain sans perte, pas équivalence) précisément pour ne pas tomber dans ce
+  piège.
+- **Corollaire** : un corpus ne garde que les défauts dont il a un exemplaire.
+  Un défaut de couverture (sites rendus invisibles) n'a pas d'exemplaire tant
+  qu'on n'en fabrique pas un — d'où le témoin construit, et la dette n°30 (le
+  corpus statique ne couvre pas le rendu JS tardif).

@@ -144,6 +144,9 @@
       "delaiMs": 3500,
       "aPartirDe": 3,
       "unique": true
+    },
+    "L05": {
+      "delaiMs": 30000
     }
   }
 }

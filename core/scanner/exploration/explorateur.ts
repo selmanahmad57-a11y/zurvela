@@ -350,7 +350,8 @@ export function creerExplorateur(dependances: DependancesExplorateur): Explorate
           return;
         }
         contexte.journaliser('navigation.abandonnee', { viewport: etat.viewport.nom, page: url });
-        await etat.page.goto(url, { waitUntil: 'load', timeout: budget(exploration.chargementPageMs) }).catch(() => undefined);
+        // `domcontentloaded` ici aussi (cahier P2-10) : même otage, même borne par la fenêtre d'effet.
+        await etat.page.goto(url, { waitUntil: 'domcontentloaded', timeout: budget(exploration.chargementPageMs) }).catch(() => undefined);
         oublierRemplissages(etat, url);
       }
 
@@ -366,7 +367,12 @@ export function creerExplorateur(dependances: DependancesExplorateur): Explorate
         let statutHttp: number | null = null;
         let chargee = false;
         try {
-          const reponse = await page.goto(urlDemandee, { waitUntil: 'load', timeout: budget(exploration.chargementPageMs) });
+          // `domcontentloaded`, pas `load` (cahier P2-10) : `load` attend TOUTES
+          // les ressources, donc une seule qui pend prend le scan en otage
+          // (the-internet 40→2 pages). On rend la main au DOM prêt ; les
+          // ressources en cours sont bornées par la fenêtre d'effet
+          // (`attendreStabilite` ci-dessous), pas par le `goto`.
+          const reponse = await page.goto(urlDemandee, { waitUntil: 'domcontentloaded', timeout: budget(exploration.chargementPageMs) });
           statutHttp = reponse?.status() ?? null;
           chargee = true;
         } catch (erreur: unknown) {
