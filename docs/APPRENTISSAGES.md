@@ -1795,3 +1795,27 @@ regardé.
   ponctuel : il fallait le chercher avant de refaire le grand tableau, sinon le
   tableau aurait menti une troisième fois. Mesurer avant d'écrire protège aussi
   contre le MAUVAIS PROBLÈME (ici : croire couvert ce qui ne l'était pas).
+
+## 52. Une mutation qui ne tue pas peut accuser le TÉMOIN, pas le contrôle (2026-10-05, cahier P2-9)
+
+- **Ce qui s'est passé.** La mutation grave de P2-9 (écarter une découverte
+  graduée en IGNORANT la re-mesure → faux négatif) n'a d'abord PAS tué. Le
+  réflexe paresseux : « le contrôle est redondant ». La mesure du POURQUOI a
+  dit autre chose : le témoin persistant épuisait le budget avant la boucle de
+  re-mesure et sortait en statut faible (l'asymétrie « re-mesure impossible »,
+  correcte) — il ne traversait pas la branche mutée. Le témoin était vert par
+  le MAUVAIS chemin.
+- **La règle** : *une mutation qui survit a deux causes — le contrôle est
+  faible (à corriger), ou le témoin n'exerce pas le chemin muté (à recaler).
+  Les distinguer exige de mesurer pourquoi la mutation survit, jamais de le
+  supposer.* C'est le complément de METHODE §10 : la mutation-kill vérifie que
+  le contrôle mord ; encore faut-il que le témoin passe par là.
+- **La famille** : même erreur que n°48 (l'oracle biaisé), que le test
+  « plusieurs marques » de P2-7, que le `[id]` au lieu des recouvrements
+  (n°45) — un vert obtenu par un chemin qu'on n'a pas vu. La mutation vacante
+  en est le révélateur, à condition de ne pas la prendre pour une redondance.
+- **Bonus mesuré** : l'incident a PROUVÉ l'intersection des deux asymétries
+  (budget P2-4 et re-mesure P2-9) — la première version montrait P2-4 à
+  l'œuvre (budget épuisé → statut faible, correct), et c'est précisément cela
+  qui rendait la mutation vacante. Les deux cohabitent sans que l'une taise ce
+  que l'autre doit publier.

@@ -368,6 +368,24 @@ conditions : ici W03 (un tiers qui ne tombe qu'au rejeu) et W04 (le défaut
 interne dont le rejeu le fait tomber). Une suite de tests par cahier vérifie
 des contrats, jamais leur composition.
 
+**Étendu le 2026-10-05 (cahier P2-9) — une mutation qui ne tue pas a DEUX
+causes possibles, et il faut les distinguer par la mesure.** Quand une
+mutation survit, le réflexe paresseux conclut « contrôle redondant, tant
+pis ». C'est l'un des deux cas seulement : (a) le contrôle est faible — il ne
+mesure pas la garde (le vrai « mutation vacante », à corriger) ; (b) **le
+témoin n'EXERCE PAS le chemin muté** — il passe par un autre chemin, donc la
+mutation mute du code que le test ne traverse pas. Avant de conclure (a),
+vérifier (b) : mesurer POURQUOI la mutation survit, jamais le supposer. Cas
+fondateur : la mutation de P2-9 (écarter une découverte graduée sans tenir
+compte de la re-mesure) n'a d'abord pas tué — parce que le témoin persistant
+épuisait le budget AVANT la boucle de re-mesure et sortait en statut faible
+par un autre chemin (l'asymétrie « re-mesure impossible », correcte). Le témoin
+était vert par le MAUVAIS chemin — la même erreur que l'oracle biaisé (n°48) ou
+le test « plusieurs marques » (P2-7). Budget élargi pour forcer le témoin à
+traverser la re-mesure, et la mutation a tué. **Une mutation vacante est
+souvent le signe d'un témoin qui passe par un chemin qu'on n'a pas vu — pas
+d'un contrôle inutile.**
+
 ## 11. L'instrument refuse de piloter un scan plutôt que d'inventer un défaut
 
 `config/scanner.json` ne porte pas `scan.timeoutMs`, et ce n'est pas un oubli :

@@ -255,6 +255,29 @@ dont le `goto` expire ressort en `cause: indetermine`, alors que le
 principe de la taxonomie du rejeu réserve `reseau-site` au site
 injoignable. Vérifier si le classement est juste.
 
+**Cadrage pour la conception (2026-10-05), car (3) a un piège que les trois
+autres n'avaient pas.** `waitUntil: 'load'` a été choisi pour une raison :
+`load` attend que TOUTES les ressources soient là — robuste (la page est
+vraiment prête), mais fragile (une ressource lente prend le scan en otage).
+Passer à `domcontentloaded` débloque the-internet, mais **change ce que le
+moteur VOIT au moment où il agit** — éléments pas encore rendus, recouvrements
+pas encore injectés, lenteurs pas encore mesurées. Ce n'est donc pas « changer
+un mot » : c'est un arbitrage entre ATTENDRE TROP (otage) et AGIR TROP TÔT
+(page incomplète), et il touche TOUS les détecteurs (tous observent après le
+chargement).
+
+**Conséquence sur l'oracle** : contrairement à P2-7/8/9 (additifs, oracle
+pleinement équivalent), (3) changera probablement CE QUI EST OBSERVÉ →
+l'oracle sortira **NON équivalent**, et c'est ATTENDU. Ce sera le premier des
+cahiers du run où « identité change » doit être JUGÉ (METHODE §14), pas
+« équivalent ». La garde cardinale n'est donc pas « équivalent » mais :
+**the-internet redevient mesurable SANS perte de détection sur les sites qui
+marchaient déjà** — tout ce qui était détecté avant doit l'être encore, et
+the-internet en plus. Le gabarit témoin : un site dont une ressource non
+essentielle pend indéfiniment, dont le DOM est complet et explorable à
+`domcontentloaded` — rouge aujourd'hui (0 page jugée faute de `load`), vert
+après (pages explorées, détection préservée).
+
 
 ## Phase 2
 
