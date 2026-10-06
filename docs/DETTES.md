@@ -742,3 +742,34 @@ détection sous `'domcontentloaded'` + fenêtre d'effet égale celle sous `'load
 Si un écart apparaît, l'option est d'attendre, après `domcontentloaded`, une
 quiescence bornée du rendu (pas un retour à `load`, qui rouvrirait l'otage).
 Pas urgent (les cas mesurés sont couverts), mais nommé.
+
+## 31. L'oracle de jugement du grand tableau est un instrument du scratchpad, pas un instrument committé (2026-10-06, préparation du grand tableau)
+
+L'oracle qui tranche « un `clic-intercepte` est-il un vrai recouvrement » —
+`elementFromPoint` au centre, sans défilement artificiel, passe défilement-naturel
+pour les victimes hors-fenêtre, exclusions label/région-activable — a été, jusqu'au
+run de validation du 2026-10-04, lancé **ad-hoc à un REPL Playwright, jamais sauvé
+comme code**. Le run qui a infirmé le 0 % a donc été jugé par un instrument qui
+n'existait nulle part. Il vit désormais en fichier éprouvé sur sept cas à réponse
+connue, chacun prouvé discriminant (la variante biaisée bascule) — mais dans le
+**scratchpad**, hors du dépôt, hors des tests, hors du versionnement.
+
+**Pourquoi c'est une faille de REPRODUCTIBILITÉ, pas de style** : un grand tableau
+jugé par un jetable re-tapé n'est reproductible que si la main qui le re-tape ne
+dérive pas d'un run à l'autre — précisément la garantie qu'on ne peut pas donner
+(le biais `click({trial})` était exactement une telle dérive silencieuse). Tant que
+l'oracle est jetable, chaque grand tableau peut être jugé par un instrument
+légèrement différent, donc les tableaux ne sont **pas comparables entre eux** — et
+la comparabilité des tableaux (le « avant/après » de la Phase 2) est tout leur
+intérêt. Un oracle qui ne peut être ni éprouvé, ni versionné, ni garanti identique
+n'est pas un oracle de mesure.
+
+**Condition de levée — ferme** : avant le PROCHAIN grand tableau, l'oracle de
+jugement du recouvrement devient un instrument **committé et testé** (un petit
+cahier) : sous `banc/`, avec ses sept gabarits-témoins en test unitaire (dont les
+deux témoins de discrimination qui prouvent que l'oracle donne la bonne réponse pour
+la bonne raison), et appelé par le dépouillement au lieu d'être re-tapé. Le run de
+ce soir, lui, peut s'appuyer sur le fichier du scratchpad : il existe, il est
+éprouvé sur sept cas, il est inspectable — ce qui suffit pour UN run, pas pour la
+comparabilité de DEUX. (Instrument de ce soir :
+`scratchpad/oracle-recouvrement.mjs`.)
