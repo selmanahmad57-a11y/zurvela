@@ -281,6 +281,60 @@ essentielle pend indéfiniment, dont le DOM est complet et explorable à
 après (pages explorées, détection préservée).
 
 
+## Révélé par le grand tableau du 2026-10-06 — trois cahiers (nommés, pas conçus)
+
+Le grand tableau du 2026-10-06 (`docs/bilan-reel-2026-10-06.md`, run réel
+0,4542 USD, jugé par l'oracle indépendant) a infirmé le 0 % pour la seconde
+fois, mesuré : **80 % de faux positifs (20/25 publiées), mais une seule cause
+en porte 15/20.** Trois causes-racines, trois cahiers, dans cet ordre de
+poids. À concevoir **à froid, par leurs contrats, un par un** (n°34 — la
+conception d'un arbitrage de fond ne se fait pas sur la fatigue d'une session
+de deux heures). Le cahier (A) seul fera tomber le bruit de ~80 % à ~25 %.
+
+### A. LE MUR DE CONSENTEMENT NON LEVÉ — 15 FP, le gros — **arbitrage de fond, pas extension de geste**
+
+Mesuré sur automationexercise (`docs/bilan-reel-2026-10-06.md`) : le mur Google
+Funding Choices couvre tout le viewport et intercepte 15 éléments sur 7 URLs.
+Le geste `controle-ferme` (P2-3) ne reconnaît un contrôle de fermeture que
+**petit ET dans un coin** ; le CTA « Consent » est centré → non reconnu → le
+moteur publie la page comme 15× bloquée. Occlusion réelle (oracle `recouvert`),
+mais pas un défaut du site : un visiteur lève le mur en un clic.
+
+> ⚠ **AVERTISSEMENT D'ARBITRAGE, inscrit dès le backlog.** Ce cahier devra
+> reconnaître un mur de consentement couvrant (modale + contrôle de choix) **et
+> renoncer à le publier comme défaut bloquant — SANS le franchir.** Ce n'est
+> **PAS** « étendre le geste de fermeture aux CTA centrés », parce que cliquer
+> « Consent » **POSE un consentement** : Zurvela ne consent pas pour autrui
+> (arbitrage P2-3 — le moteur agit sur la page, mais jamais un acte à
+> conséquence pour le propriétaire du site ou ses visiteurs). Le cahier a donc
+> un **arbitrage de fond** (reconnaître sans franchir ; que dire au client d'un
+> mur de consentement qu'on ne peut pas lever sans consentir ?), pas une
+> extension mécanique. Reconnaissance par **forme universelle** (modale
+> couvrante + contrôle de choix), jamais par classe `fc-*`. Lié à C-11 étendu
+> (le même mur est aussi sur-compté inter-pages).
+
+### B. LE REJEU FIGE UN RECOUVREMENT TRANSITOIRE — 4 FP — le cahier B, désormais mesuré
+
+Mesuré sur expandtesting : 4 `clic-intercepte` dont l'intercepteur est une pub
+`#aswift_N`. Le rejeu même-session a « confirmé » une **coïncidence
+d'emplacement de pub** ; l'oracle, sur chargement neuf indépendant, dit
+`cliquable` (3/4) ou `hors-fenêtre` (1/4) — aucune pub ne couvre la cible.
+Cause : le protocole de confirmation re-exécute dans la **même lignée de
+chargement**, donc il fige un transitoire au lieu de le réfuter. **Piste
+mesurée** : `confirmation.variations: ['contexte-neuf']` existe déjà dans la
+config — pourquoi le rejeu de recouvrement ne l'applique-t-il pas ? Distinct de
+2bis (qui nomme un cadre pub quand il EST un vrai recouvrement sans ancre) :
+ici le recouvrement n'est pas persistant du tout.
+
+### C. LE CALQUE DE COMPOSANT — 1 FP, mineur
+
+Mesuré sur expandtesting : un éditeur de code (`#html-editor`) couvre son
+propre `<textarea>` par conception ; oracle `recouvert` (reproductible), mais
+fonctionnel. L'exclusion « même région activable » (P2-3) ne couvre que les
+ancêtres `a`/`button` ; elle ne reconnaît pas les **composants** dont ni la
+surface ni la cible ne sont activables. Mineur, mais nommé.
+
+
 ## Phase 2
 
 - **Le grand tableau du 2026-10-01 est écrit** (`docs/bilan-reel-2026-10-01.md`)
