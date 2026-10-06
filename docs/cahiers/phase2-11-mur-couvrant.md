@@ -229,3 +229,73 @@ AU BANC** (le témoin). La LISIBILITÉ du constat restant attend C3-b. Les deux
 ensemble ferment (A). Le « 80 % → ~25 % » n'est PAS déclaré acquis sur le réel :
 il est prouvé au banc ; le prochain grand tableau le confirmera (ou le corrigera)
 en conditions réelles.
+
+## P2-11 (b) / C3-b — câbler la formulation du mur couvrant (contrats, à câbler À FROID)
+
+Mesure préalable faite le 2026-10-06 (lecture + témoin « avant » gratuit).
+Décisions du propriétaire doublées et tranchées. **Aucune ligne de voix écrite
+ici : les contrats, pas le code.**
+
+### La ligne « AVANT » (mesurée, `--sans-ia`)
+
+Un mur couvrant sort aujourd'hui en 1 section titrée par sa CATÉGORIE
+(« Mobile »), gravité « Important », statut reproduit, pages — **sans ligne
+Constat, sans mention de recouvrement**. En mode IA, l'IA écrit le constat à
+partir du symptôme technique « clic-intercepte » (prose non contrainte, risque
+de sur-promesse — non mesuré, zéro dollar). **Précision mesurée** : le piège
+« muette » ne se déclenche PAS en `--sans-ia` complet (bannière globale) ; il se
+déclenche en mode PARTIEL (section mur, titre='', comptée parmi les muettes).
+
+### Les six contrats
+
+1. **Titre fixe à garantie sémantique** (fr+en, exhaustivité) : descriptif,
+   aucune nature, aucune conséquence. Validé : « Élément recouvrant
+   l'interface » / « Overlay covering the interface ».
+2. **Constat fixe** = la formulation validée, AVEC les pages, sans nature, sans
+   conséquence : « **Un élément recouvre l'interface et masque N éléments
+   interactifs sur [pages].** » Les pages sont gardées (fait observable utile,
+   ce que la fusion inter-pages de C-11 a préservé).
+3. **Impact VIDE ; action = invitation à vérifier** (factuelle, non
+   prescriptive, nommant les DEUX possibilités) : « Vérifiez si ce recouvrement
+   est voulu — s'il s'agit d'un bandeau de consentement ou d'une fenêtre que
+   vous avez placée, ce constat est normal ; sinon, un élément masque une
+   partie de votre interface. » Pas d'impact : le moteur ne sait pas si c'est
+   voulu ou cassé ; prétendre une conséquence serait la sur-promesse que C3
+   ferme.
+4. **Exclusion du contexte IA** : la section mur n'est PAS envoyée à la
+   rédaction (`normaliserFaits`/`contexteRedaction`) — la phrase fixe survit par
+   construction (pas de verrouillage post-fusion fragile), et l'IA ne la paie
+   pas. La synthèse globale se fait sans le mur (fait neutre, pas un défaut du
+   site dont la synthèse doit tenir compte) — ajout délibéré si un jour on le
+   veut.
+5. **Jamais « muette »** : la section mur porte sa prose fixe (titre+constat),
+   donc elle est RÉDIGÉE PAR LE CODE. `nbSectionsRedigees` / `signalerMuette`
+   doivent la compter comme rédigée, jamais « non rédigée ». Défaut trouvé par
+   la mesure (famille n°44 : un statut « muette » qui ne correspond pas à la
+   réalité « fixe, pas IA »), contrat à part entière.
+6. **Statut + constat ne sur-promettent pas en combinaison** (n°26) : le mur
+   reste `confirmee/reproduite`, donc « Constaté, puis reproduit… » s'affiche
+   AVEC le nouveau constat. À VÉRIFIER AU GABARIT que la combinaison ne se lit
+   pas « nous confirmons que cet élément est un défaut » — « reproduit » dit
+   « vu plusieurs fois » (factuel), pas « grave ». Si elle sur-promet, une
+   phrase de statut spécifique au mur sera nécessaire. À tester, pas à supposer.
+
+### Le rayon (nommé)
+
+`voix.ts` (titre + constat + action, fr+en, + `voix.exhaustivite.test.ts`) ·
+`types.ts` (`SectionRapport.murCouvrant`) · `structure.ts` (assignation hors IA
+de la prose fixe + marquage) · `faits.ts`/`contexte-redaction.ts` (exclure la
+section mur du contexte IA) · `rendu.ts` + `index.ts` (compter la section mur
+comme rédigée, jamais « muette ») · tests.
+
+### Le témoin (déterministe, `--sans-ia` ET cassette IA)
+
+Un mur couvrant sort avec titre fixe + constat « un élément recouvre… sur
+[pages] » + action de vérification, **jamais « muette »**, **jamais écrasé par
+l'IA** (prouvé par une cassette où l'IA tourne sur les autres sections mais pas
+le mur), et la combinaison statut+constat ne dit pas « défaut confirmé ».
+Mutations à tuer : IA qui écrase la phrase fixe → rouge ; section comptée muette
+→ rouge ; impact/action prescriptif → rouge (revue de voix).
+
+**À câbler à froid, par une tête fraîche** — c'est la voix du rapport, le texte
+que le commerçant lira, avec le point de vigilance Q4 (combinaison statut+constat).
