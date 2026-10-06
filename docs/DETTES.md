@@ -773,3 +773,43 @@ ce soir, lui, peut s'appuyer sur le fichier du scratchpad : il existe, il est
 éprouvé sur sept cas, il est inspectable — ce qui suffit pour UN run, pas pour la
 comparabilité de DEUX. (Instrument de ce soir :
 `scratchpad/oracle-recouvrement.mjs`.)
+
+## 32. Le dépouilleur du grand tableau est un instrument du scratchpad, pas un instrument committé (2026-10-06, préparation du grand tableau)
+
+Jumelle de n°31, sur l'autre instrument jetable du grand tableau. Là où n°31
+vise l'oracle qui JUGE un recouvrement, celle-ci vise le dépouilleur qui LIT le
+tableau : `scratchpad/juger.js` (expose la nature de chaque section et si le
+moteur d'aujourd'hui a su écarter l'intercepteur — il n'invente aucun verdict,
+il donne à juger) et `scratchpad/depouiller-tableau.js` (compte les sections
+publiées, tient le **contrôle `blob:`** « zéro reponse-lente sur schéma local »,
+extrait preuves et localisations). Ce sont des scripts ad-hoc re-tapés d'un run
+à l'autre — exactement le jetable que l'oracle était avant n°31.
+
+**Pourquoi c'est une faille de REPRODUCTIBILITÉ** : un tableau *lu* par des
+scripts re-tapés n'est pas lu de façon reproductible, pas plus qu'il n'était
+*jugé* de façon reproductible. Un dépouilleur qui dérive compterait mal les
+sections, ou tiendrait mal le contrôle `blob:`, et fausserait le tableau de
+façon **invisible** — aucun oracle de jugement ne le rattrape. Deux tableaux lus
+par deux versions re-tapées ne sont pas comparables, et la comparabilité est
+tout l'intérêt du « avant/après » de la Phase 2.
+
+**Ce qui la distingue de n°31, et fixe le moment de sa levée** : l'oracle répond
+à une question STABLE (« ce clic est-il bloqué »), donc il pouvait être durci
+d'avance. Le dépouilleur, lui, dépend de CE QUE LE TABLEAU CONTIENT — un run
+peut révéler un cinquième défaut, une catégorie neuve, un cas que le dépouilleur
+actuel ne gère pas. Le durcir *avant* de savoir ce qu'il doit lire le figerait
+sur les besoins d'hier. Sa levée est donc **naturellement post-run** : on le
+committe en instrument testé une fois qu'on sait ce qu'il doit lire.
+
+**Condition de levée** : avant le PROCHAIN grand tableau, et après avoir vu ce
+que le run courant révèle — `juger.js` et `depouiller-tableau.js` deviennent un
+instrument committé et testé sous `banc/`, avec des gabarits-témoins (dont un
+témoin du contrôle `blob:` : une `reponse-lente` sur schéma local DOIT rougir le
+contrôle). Pour UN run, le jetable du scratchpad suffit (il existe, il est
+inspectable) — pas pour la comparabilité de DEUX.
+
+Inventaire des instruments jetables du grand tableau, désormais complet :
+**n°31 (oracle de jugement) + n°32 (dépouilleur de lecture)**. Les deux tiennent
+pour un run, aucun ne tient pour la comparabilité des runs ; les deux se lèvent
+au même jalon (avant le prochain grand tableau), n°32 après le run, n°31 pouvant
+l'être dès maintenant.
