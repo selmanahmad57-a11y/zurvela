@@ -17,6 +17,7 @@ import { errors, type Browser, type BrowserContext, type Page } from 'playwright
 import type {
   Action,
   ActionExecutee,
+  AncetreCouvrant,
   ActionProposee,
   ContexteDecision,
   ContexteExploration,
@@ -685,11 +686,13 @@ export function creerExplorateur(dependances: DependancesExplorateur): Explorate
         }
         // Géométrie juste avant le clic : qualifie un échec de clic comme interception.
         let intercepteur: LocalisationElement | null = null;
+        let ancetreCouvrant: AncetreCouvrant | null = null;
         let couvert = false;
         try {
           const constat = await recouvrements(page, { selecteur: declencheur.selecteur, max: 1, budgetMs: delai(), motifIdInstable: config.detecteurs.recouvrement.motifIdInstable });
           couvert = constat.recouvrements.length > 0;
           intercepteur = constat.recouvrements[0]?.intercepteur ?? null;
+          ancetreCouvrant = constat.recouvrements[0]?.ancetreCouvrant ?? null;
         } catch {
           // Géométrie indisponible : le clic tranchera.
         }
@@ -710,6 +713,7 @@ export function creerExplorateur(dependances: DependancesExplorateur): Explorate
               actionId: actionCourante,
               element: declencheur,
               intercepteur,
+              ancetreCouvrant,
               source: 'clic',
             });
             return { resultat: 'bloquee', details: { raison: RAISON_CLIC_INTERCEPTE } };

@@ -14,7 +14,7 @@
  * candidate : c'est elle qui porte la confiance du palier atteint, et non une
  * candidate par signal que le dédoublonnage devrait ensuite recalculer.
  */
-import type { AnomalieCandidate, Detecteur, Signal } from '../../types.js';
+import type { AncetreCouvrant, AnomalieCandidate, Detecteur, Signal } from '../../types.js';
 import type { ConfigScanner } from '../config.js';
 import { cheminDePage, construireCandidate, trouverAction, trouverViewport } from './commun.js';
 import { graviteRecouvrement, natureMasquee, naturePlusGrave } from './nature-masquee.js';
@@ -66,6 +66,22 @@ function cleCause(cibles: SignalInterception[]): string {
     : ['construction', cheminDePage(premier.page), signature, premier.viewport].join('|');
 }
 
+/**
+ * L'ancêtre couvrant d'une victime, s'il dépasse le seuil (cahier P2-11) : le
+ * plus couvrant parmi les signaux de la cible. Sous le seuil, ou absent → null
+ * (la victime n'est pas membre d'un mur ; elle suit le traitement ordinaire).
+ */
+function ancetreCouvrantQualifiant(cibles: SignalInterception[], seuil: number): AncetreCouvrant | null {
+  let meilleur: AncetreCouvrant | null = null;
+  for (const signal of cibles) {
+    const a = signal.ancetreCouvrant ?? null;
+    if (a !== null && a.couverture >= seuil && (meilleur === null || a.couverture > meilleur.couverture)) {
+      meilleur = a;
+    }
+  }
+  return meilleur;
+}
+
 export function creerDetecteurRecouvrement(config: ConfigScanner['detecteurs']['recouvrement']): Detecteur {
   return {
     nom: NOM_DETECTEUR_RECOUVREMENT,
@@ -80,18 +96,80 @@ export function creerDetecteurRecouvrement(config: ConfigScanner['detecteurs']['
         const cle = cleCible(signal);
         parCible.set(cle, [...(parCible.get(cle) ?? []), signal]);
       }
-      // Niveau 2 : les causes. Le palier de confiance se décide PAR CIBLE — la
-      // géométrie et le clic doivent se confirmer sur le même élément —, et la
-      // cause retient le palier le plus haut de ses cibles.
-      const parCause = new Map<string, { signaux: SignalInterception[]; paliersHauts: boolean }>();
+      // NIVEAU « MUR COUVRANT » (cahier P2-11). Une victime dont un signal
+      // porte un ancêtre couvrant au-dessus du seuil est membre d'un mur. On
+      // groupe par (signature de l'ancêtre couvrant, viewport) SANS la page :
+      // un mur de même construction servi sur N pages est UN mur récurrent
+      // (C2, absorbe le cas consentement de C-11). Le seuil de couverture
+      // GARDE : un ancêtre NON couvrant (un pied, 0,075) ne fait pas mur — ses
+      // victimes restent ordinaires. Deux murs de constructions distinctes =
+      // deux causes (la signature les sépare).
+      const seuil = config.murCouvrant.fractionViewport;
+      const murs = new Map<string, { ancetre: AncetreCouvrant; cibles: SignalInterception[][] }>();
+      const ordinaires: SignalInterception[][] = [];
       for (const cibles of parCible.values()) {
+        const premier = cibles[0];
+        const ancetre = ancetreCouvrantQualifiant(cibles, seuil);
+        if (ancetre === null || premier === undefined) {
+          ordinaires.push(cibles);
+          continue;
+        }
+        const cle = ['mur', ancetre.signature ?? ancetre.element.selecteur, premier.viewport].join('|');
+        const mur = murs.get(cle) ?? { ancetre, cibles: [] };
+        mur.cibles.push(cibles);
+        murs.set(cle, mur);
+      }
+
+      const candidates: AnomalieCandidate[] = [];
+
+      // Un mur à AU MOINS `victimesMin` victimes distinctes → UNE cause honnête
+      // (« un élément recouvre l'interface et masque N éléments interactifs »).
+      // Gravité FIXE : le marqueur court-circuite la gravité-par-ce-qui-est-
+      // masqué — un mur masque tout, on n'affirme pas « bloquant » d'un
+      // consentement standard qu'un visiteur lève en un clic. Sous le seuil de
+      // victimes, ce n'est pas un mur : retour au traitement ordinaire.
+      for (const mur of murs.values()) {
+        if (mur.cibles.length < config.murCouvrant.victimesMin) {
+          ordinaires.push(...mur.cibles);
+          continue;
+        }
+        const groupe = mur.cibles.flat();
+        const premier = groupe[0];
+        if (premier === undefined) {
+          continue;
+        }
+        const viewport = trouverViewport(contexte.viewports, premier.viewport);
+        const geometrieEtClic = groupe.some((signal) => signal.source === 'geometrie') && groupe.some((signal) => signal.source === 'clic');
+        const candidate = construireCandidate(
+          {
+            detecteur: NOM_DETECTEUR_RECOUVREMENT,
+            description: DESCRIPTION_CLIC_INTERCEPTE,
+            categorie: viewport.mobile ? 'mobile' : 'fonctionnel',
+            gravite: config.murCouvrant.gravite,
+            confiance: geometrieEtClic ? config.confianceGeometrieEtClic : config.confianceGeometrie,
+            page: premier.page,
+            viewport: premier.viewport,
+            dependDuViewport: true,
+            action: trouverAction(contexte.parcours, premier.actionId),
+            element: mur.ancetre.element,
+            preuves: groupe,
+          },
+          contexte,
+        );
+        candidate.murCouvrant = true;
+        candidates.push(candidate);
+      }
+
+      // Niveau 2/3 : les causes ORDINAIRES (hors mur), fusion C-16 inchangée.
+      // Le palier de confiance se décide PAR CIBLE — géométrie et clic doivent
+      // se confirmer sur le même élément —, et la cause retient le plus haut.
+      const parCause = new Map<string, { signaux: SignalInterception[]; paliersHauts: boolean }>();
+      for (const cibles of ordinaires) {
         const cle = cleCause(cibles);
         const confirmee = cibles.some((signal) => signal.source === 'geometrie') && cibles.some((signal) => signal.source === 'clic');
         const cause = parCause.get(cle) ?? { signaux: [], paliersHauts: false };
         parCause.set(cle, { signaux: [...cause.signaux, ...cibles], paliersHauts: cause.paliersHauts || confirmee });
       }
-
-      const candidates: AnomalieCandidate[] = [];
       for (const { signaux: groupe, paliersHauts: geometrieEtClic } of parCause.values()) {
         const premier = groupe[0];
         if (premier === undefined) {

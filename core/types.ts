@@ -34,6 +34,15 @@ export interface Anomalie {
   confiance: number;
   /** Élément en cause (localisation structurelle), si applicable. */
   element?: LocalisationElement;
+  /**
+   * MUR COUVRANT (cahier P2-11) : l'élément en cause est un calque qui recouvre
+   * une large part du viewport et masque N éléments interactifs — mur de
+   * consentement, modale, pub plein écran. Marqueur STRUCTUREL (le moteur ne
+   * sait pas la NATURE — il ne lit pas le monde), qui route la voix vers « un
+   * élément recouvre l'interface » et fixe la gravité à « important » (un mur
+   * masque tout, donc la gravité-par-ce-qui-est-masqué n'a pas de sens).
+   */
+  murCouvrant?: boolean;
   /** Nom du viewport où l'anomalie a été constatée, si elle en dépend. */
   viewport?: string;
   /** Détecteur à l'origine de l'anomalie. */
@@ -213,6 +222,18 @@ export interface Viewport {
  * Localisation STRUCTURELLE d'un élément : balise, sélecteur et attributs
  * techniques. Jamais son texte visible (Mur 1).
  */
+/**
+ * L'ancêtre couvrant d'un intercepteur (cahier P2-11) : la couche positionnée
+ * qui recouvre le plus de viewport. Mesuré en page, jugé par le détecteur.
+ */
+export interface AncetreCouvrant {
+  element: LocalisationElement;
+  /** Signature de construction de l'ancêtre (même calcul que P2-3), ou null. */
+  signature: string | null;
+  /** Fraction du viewport couverte, dans [0, 1]. */
+  couverture: number;
+}
+
 export interface LocalisationElement {
   /** Balise en minuscules. */
   balise: string;
@@ -582,6 +603,16 @@ export type Signal =
        * constate une égalité (règle maîtresse §2, comme l'hôte en P2-2).
        */
       signatureIntercepteur?: string | null;
+      /**
+       * L'ANCÊTRE COUVRANT de l'intercepteur (cahier P2-11) : parmi
+       * l'intercepteur et ses ancêtres POSITIONNÉS (fixed/absolute/sticky, hors
+       * `html`/`body`), celui qui couvre la plus grande fraction du viewport.
+       * `couverture` est cette fraction [0,1]. Le détecteur fond en UNE cause
+       * les victimes dont l'ancêtre couvrant a la même construction ET une
+       * couverture au-dessus du seuil — un mur, pas N défauts. Le seuil GARDE :
+       * sans lui, `body`/`#root` (couverture 1) avaleraient toute la page.
+       */
+      ancetreCouvrant?: AncetreCouvrant | null;
       /** `geometrie` : constaté par elementFromPoint ; `clic` : clic refusé par le navigateur. */
       source: 'geometrie' | 'clic';
     })

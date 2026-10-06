@@ -12,7 +12,12 @@ import { Q10 } from './q10-freres-distincts.js';
 import { Q11 } from './q11-calque-position-volatile.js';
 import { Q12 } from './q12-calque-sans-ancre.js';
 import { Q13 } from './q13-id-suffixe-numerique.js';
+import { Q14 } from './q14-mur-couvrant.js';
+import { Q15 } from './q15-mur-sur-soumission.js';
+import { Q16 } from './q16-pied-deux-victimes.js';
+import { Q17 } from './q17-mur-recurrent-inter-pages.js';
+import { Q18 } from './q18-deux-murs-distincts.js';
 import { L04 } from './l04-document-lent-decouvert.js';
 import { L05 } from './l05-ressource-bloque-load.js';
 
-export const bugs: BugInjectable[] = [Q01, Q02, Q03, Q04, Q05, Q06, Q07, Q08, Q09, Q10, Q11, Q12, Q13, L04, L05];
+export const bugs: BugInjectable[] = [Q01, Q02, Q03, Q04, Q05, Q06, Q07, Q08, Q09, Q10, Q11, Q12, Q13, Q14, Q15, Q16, Q17, Q18, L04, L05];

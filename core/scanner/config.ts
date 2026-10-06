@@ -130,6 +130,15 @@ export interface ConfigScanner {
       gravite: Gravite;
       /** Le critère de gravité est CE QUI EST MASQUÉ, pas le fait de masquer (contrat 2, D4). */
       graviteParNature: { actionCritique: Gravite; controleOrdinaire: Gravite; contenuSecondaire: Gravite };
+      /** MUR COUVRANT (cahier P2-11) : une occlusion couvrant une large part du viewport et masquant N victimes = UNE cause honnête, pas N défauts. */
+      murCouvrant: {
+        /** Fraction minimale de viewport couverte par l'ancêtre couvrant (seuil posé sur deux populations mesurées, §13 : légitimes ≤ 0,075, mur = 1,0). */
+        fractionViewport: number;
+        /** Nombre minimal de victimes distinctes sous le mur pour fondre (une seule victime n'est pas un mur). */
+        victimesMin: number;
+        /** Gravité FIXE d'un mur couvrant : il masque tout, donc la gravité-par-ce-qui-est-masqué n'a pas de sens ; on n'affirme pas « bloquant » d'un consentement standard. */
+        gravite: Gravite;
+      };
       /** Les gestes NEUTRES de fermeture : leur ordre et leur activation (contrat 1). L'ensemble possible vit en code. */
       fermeture: {
         gestes: readonly GesteFermeture[];

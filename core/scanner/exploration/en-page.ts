@@ -19,7 +19,7 @@
  */
 /// <reference lib="dom" />
 import type { Page } from 'playwright';
-import type { ChampFormulaire, DescriptionFormulaire, LocalisationElement } from '../../types.js';
+import type { AncetreCouvrant, ChampFormulaire, DescriptionFormulaire, LocalisationElement } from '../../types.js';
 import type { TamponMutations } from '../navigateur.js';
 
 /** Éléments interactifs (standards HTML/ARIA) soumis au contrôle géométrique. */
@@ -131,6 +131,8 @@ export interface Recouvrement {
   intercepteur: LocalisationElement | null;
   /** Signature de construction de l'intercepteur (cahier P2-3, contrat 4), ou null. */
   signatureIntercepteur: string | null;
+  /** Ancêtre couvrant de l'intercepteur (cahier P2-11), ou null. La géométrie le calcule toujours ; optionnel pour les fixtures qui n'éprouvent que la fermeture. */
+  ancetreCouvrant?: AncetreCouvrant | null;
 }
 
 /**
@@ -290,6 +292,38 @@ function enPage(arg: Commande): unknown {
       return segments.join(' > ');
     },
 
+    /**
+     * L'ANCÊTRE COUVRANT de l'intercepteur (cahier P2-11) : parmi lui-même et
+     * ses ancêtres POSITIONNÉS (fixed/absolute/sticky), hors `body`/`html`,
+     * celui qui couvre la plus grande fraction du viewport. On exclut `body`/
+     * `html` parce qu'ils couvrent toujours tout sans être des CALQUES : ce
+     * qu'on cherche est ce qui recouvre PAR-DESSUS, pas ce qui contient la
+     * page. Le seuil est appliqué par le détecteur, pas ici (mesurer / juger).
+     */
+    ancetreCouvrant(recu: Element, conserves: string[]): AncetreCouvrant {
+      const aireFenetre = window.innerWidth * window.innerHeight;
+      const couverture = (n: Element): number => {
+        const r = n.getBoundingClientRect();
+        const x = Math.max(0, Math.min(r.right, window.innerWidth) - Math.max(r.left, 0));
+        const y = Math.max(0, Math.min(r.bottom, window.innerHeight) - Math.max(r.top, 0));
+        return aireFenetre === 0 ? 0 : (x * y) / aireFenetre;
+      };
+      let meilleur: Element = recu;
+      let meilleureCouv = couverture(recu);
+      let n: Element | null = recu.parentElement;
+      while (n !== null && n !== document.body && n !== document.documentElement) {
+        const pos = window.getComputedStyle(n).position;
+        if (pos === 'fixed' || pos === 'absolute' || pos === 'sticky') {
+          const c = couverture(n);
+          if (c > meilleureCouv) {
+            meilleur = n;
+            meilleureCouv = c;
+          }
+        }
+        n = n.parentElement;
+      }
+      return { element: aide.localiser(meilleur, conserves), signature: aide.signatureConstruction(meilleur, conserves), couverture: meilleureCouv };
+    },
     localiser(el: Element, conserves: string[]): LocalisationElement {
       return { balise: el.tagName.toLowerCase(), selecteur: aide.selecteurDe(el), attributs: aide.attributsDe(el, conserves) };
     },
@@ -752,6 +786,7 @@ function enPage(arg: Commande): unknown {
           element: aide.localiser(el, arg.attributsConserves),
           intercepteur: { ...aide.localiser(recu, arg.attributsConserves), selecteurPublie: aide.selecteurDePresentation(recu, arg.motifIdInstable) },
           signatureIntercepteur: aide.signatureConstruction(recu, arg.attributsConserves),
+          ancetreCouvrant: aide.ancetreCouvrant(recu, arg.attributsConserves),
         });
       }
       window.scrollTo(0, 0);

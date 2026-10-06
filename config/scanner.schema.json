@@ -518,6 +518,7 @@
             "confianceGeometrieEtClic",
             "gravite",
             "graviteParNature",
+            "murCouvrant",
             "fermeture",
             "motifIdInstable"
           ],
@@ -555,6 +556,29 @@
                 "contenuSecondaire": {
                   "$ref": "#/definitions/gravite",
                   "description": "Lien ou contenu secondaire : un lien de mot-clé recouvert par un pied de page n'arrête aucun parcours."
+                }
+              }
+            },
+            "murCouvrant": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["fractionViewport", "victimesMin", "gravite"],
+              "description": "MUR COUVRANT (cahier P2-11) : une occlusion non écartable couvrant une large part du viewport et masquant N victimes est UNE cause honnête (« un élément recouvre l'interface »), pas N défauts. Le moteur ne sait pas sa NATURE (consentement, pub, modale) — il ne lit pas le monde — et ne la franchit jamais.",
+              "properties": {
+                "fractionViewport": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 1,
+                  "description": "Fraction minimale de viewport que l'ancêtre couvrant doit couvrir pour qu'un recouvrement soit un mur. Seuil posé sur DEUX populations mesurées (cahier P2-11, §13) : recouvrements légitimes ≤ 0,075, mur de consentement = 1,0 ; 0,5 est au milieu du fossé. Sépare le mur du recouvrement localisé ; sans lui, body/#root (couverture 1) feraient tout fondre."
+                },
+                "victimesMin": {
+                  "type": "integer",
+                  "minimum": 2,
+                  "description": "Nombre minimal de victimes distinctes sous l'ancêtre couvrant pour fondre en mur. Une seule victime n'est pas un mur ; combiné au seuil de couverture, un pied légitime à plusieurs victimes ne fond pas (la couverture le disqualifie d'abord)."
+                },
+                "gravite": {
+                  "$ref": "#/definitions/gravite",
+                  "description": "Gravité FIXE d'un mur couvrant. Un mur masque TOUT, donc la gravité-par-ce-qui-est-masqué (actionCritique → bloquant) y est fausse : on n'affirme pas « le parcours s'arrête » d'un consentement standard qu'un visiteur lève en un clic. « important » : on signale sans dramatiser."
                 }
               }
             },

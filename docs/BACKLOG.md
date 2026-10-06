@@ -291,7 +291,34 @@ poids. À concevoir **à froid, par leurs contrats, un par un** (n°34 — la
 conception d'un arbitrage de fond ne se fait pas sur la fatigue d'une session
 de deux heures). Le cahier (A) seul fera tomber le bruit de ~80 % à ~25 %.
 
-### A. LE MUR DE CONSENTEMENT NON LEVÉ — 15 FP, le gros — **arbitrage de fond, pas extension de geste**
+### A. LE MUR DE CONSENTEMENT NON LEVÉ — 15 FP, le gros — **moitié lourde TRAITÉE (P2-11), reste C3-b**
+
+> **État (2026-10-06) : fusion TRAITÉE — cahier P2-11 « le mur couvrant ».** Le
+> 4ᵉ niveau « ancêtre couvrant » de `cleCause` fond les victimes d'un même
+> ancêtre couvrant (seuil `fractionViewport ≥ 0,5` + `victimesMin ≥ 2`,
+> cross-page par signature — absorbe le cas consentement de C-11), gravité
+> « important » fixe (marqueur `murCouvrant`, court-circuite la
+> gravité-par-ce-qui-est-masqué). 15→1 et bloquant→important, prouvés au banc
+> (témoin 6 sens, 2 mutations tuées, équivalence ×3, 1776 tests). L'éthique
+> reste close (P2-3, C5) : le moteur ne franchit jamais le mur. **Le « 80 % →
+> ~25 % » est prouvé AU BANC, pas déclaré acquis sur le réel** — le prochain
+> grand tableau le confirmera. **Reste C3-b** (ci-dessous).
+
+#### A-b (C3-b). CÂBLER LA FORMULATION DU MUR COUVRANT, HORS RÉDACTION IA — le pas délibéré suivant
+
+La seconde moitié de P2-11, clairement séparée (natures différentes : la fusion
+de causes est prouvée neutre ; la voix du rapport est un autre registre). Le
+détecteur porte déjà le marqueur `murCouvrant`, mais la phrase posée — **« Un
+élément recouvre l'interface et masque N éléments interactifs sur [pages] »** —
+n'est pas rendue : aujourd'hui un mur sort en 1 section `clic-intercepte`
+« important » avec la description technique par défaut. **Cadrage** : la phrase
+est à **garantie sémantique** (elle promet « on constate une occlusion, on ne
+juge pas l'intention »), donc elle doit **contourner la rédaction IA** qui
+reformulerait `constat` — modèle `statutFormule` (assignée hors-IA au montage,
+`structure.ts`). Chantier : `voix.ts` (la formulation, par langue, +
+`voix.exhaustivite.test.ts`) + `structure.ts`/`rendu.ts` (assignation + rendu) +
+la rédaction qui **saute** ces sections. À ouvrir à froid, par ses contrats. À
+mener avant de déclarer (A) clos : fusion + voix honnête ensemble ferment (A).
 
 Mesuré sur automationexercise (`docs/bilan-reel-2026-10-06.md`) : le mur Google
 Funding Choices couvre tout le viewport et intercepte 15 éléments sur 7 URLs.

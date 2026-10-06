@@ -199,6 +199,11 @@
         "controleOrdinaire": "important",
         "contenuSecondaire": "mineur"
       },
+      "murCouvrant": {
+        "fractionViewport": 0.5,
+        "victimesMin": 2,
+        "gravite": "important"
+      },
       "fermeture": {
         "gestes": [
           "echap",
