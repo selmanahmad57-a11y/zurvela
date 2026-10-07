@@ -298,9 +298,10 @@ de deux heures). Le cahier (A) seul fera tomber le bruit de ~80 % à ~25 %.
 > instrumentaux avant de refaire le tableau** (un tableau jugé par un oracle
 > jetable, lu par un dépouilleur jetable, comparé par un banc qui crie faux
 > n'est pas fiable) : **n°33 LEVÉE** (`site-charge` exclu de l'équivalence,
-> documenté et annoncé — révélée en vérifiant P2-12, voir DETTES). **Restent
-> n°31** (oracle de jugement committé) + **n°32** (dépouilleur committé) — à
-> froid, un par un, avant la mesure réelle.
+> documenté et annoncé — révélée en vérifiant P2-12) ; **n°31 LEVÉE** (oracle
+> de jugement committé et testé, `banc/oracle-recouvrement.ts` + témoin 7/7).
+> **Reste n°32** (dépouilleur committé, levée naturellement post-run) — voir
+> DETTES. Dernier verrou avant la mesure réelle, à froid.
 
 ### A. LE MUR DE CONSENTEMENT NON LEVÉ — 15 FP, le gros — **moitié lourde TRAITÉE (P2-11), reste C3-b**
 

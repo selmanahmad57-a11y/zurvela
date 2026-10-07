@@ -743,7 +743,21 @@ Si un écart apparaît, l'option est d'attendre, après `domcontentloaded`, une
 quiescence bornée du rendu (pas un retour à `load`, qui rouvrirait l'otage).
 Pas urgent (les cas mesurés sont couverts), mais nommé.
 
-## 31. L'oracle de jugement du grand tableau est un instrument du scratchpad, pas un instrument committé (2026-10-06, préparation du grand tableau)
+## 31. L'oracle de jugement du grand tableau est un instrument du scratchpad, pas un instrument committé (2026-10-06, préparation du grand tableau) — **LEVÉE le 2026-10-07**
+
+> **LEVÉE le 2026-10-07.** L'oracle vit désormais en instrument committé et
+> testé : `banc/oracle-recouvrement.ts` (la LOGIQUE, extraite TELLE QUELLE du
+> scratchpad — aucune ré-écriture : `scriptOracle(sel, biaise)` + la table
+> `ORACLE` au mot près) et `banc/oracle-recouvrement.test.ts` (les SEPT
+> gabarits-témoins à réponse connue, 9 contrôles : 7 verdicts + les DEUX
+> témoins de discrimination — cas 1 et 6 — qui EXIGENT que la variante biaisée
+> n°48 BASCULE, donc que le bon verdict vienne de la bonne raison). C'est cette
+> re-preuve 7/7 re-lancée APRÈS extraction qui garantit que la logique n'a pas
+> dérivé. L'oracle est versionné, inspectable, garanti identique d'un run à
+> l'autre : deux grands tableaux deviennent comparables. Il n'appelle pas le
+> moteur (ré-implémentation physique indépendante, délibérée). Le dernier fil —
+> « appelé par le dépouillement au lieu d'être re-tapé » — se referme avec n°32
+> (le dépouilleur committé importera `scriptOracle` au lieu de le retaper).
 
 L'oracle qui tranche « un `clic-intercepte` est-il un vrai recouvrement » —
 `elementFromPoint` au centre, sans défilement artificiel, passe défilement-naturel
@@ -877,8 +891,10 @@ si c'est le timing de l'image-404 qu'il faut fixer. Probablement petit.
 Les trois verrous du prochain grand tableau étaient : **n°31 (oracle de
 jugement committé) + n°32 (dépouilleur committé) + n°33 (`site-charge`
 déterministe ou exclu de l'équivalence)**. **n°33 LEVÉE le 2026-10-07**
-(exclusion documentée et annoncée). Restent **n°31 et n°32** — committer les
-deux instruments jetables du scratchpad en instruments testés sous `banc/`.
-Un tableau jugé par un oracle jetable et lu par un dépouilleur jetable n'est
-pas fiable ; les deux se mettent en ordre à froid, un par un, avant la mesure
-réelle.
+(exclusion documentée et annoncée). **n°31 LEVÉE le 2026-10-07** (oracle
+committé et testé, `banc/oracle-recouvrement.ts` + témoin 7/7). **Reste n°32**
+— committer le dépouilleur (`scratchpad/juger.js` + `depouiller-tableau.js`) en
+instrument testé sous `banc/`, avec le témoin du contrôle `blob:`, qui importera
+`scriptOracle` de n°31 au lieu de le retaper. C'est le dernier verrou avant la
+mesure réelle, et sa levée est NATURELLEMENT POST-RUN (le dépouilleur dépend de
+ce que le tableau révèle), à froid.
