@@ -520,7 +520,8 @@
             "graviteParNature",
             "murCouvrant",
             "fermeture",
-            "motifIdInstable"
+            "motifIdInstable",
+            "dimensionMinVictime"
           ],
           "properties": {
             "confianceGeometrie": {
@@ -643,6 +644,11 @@
             "motifIdInstable": {
               "type": "string",
               "description": "Expression régulière marquant un id STRUCTURELLEMENT instable (par défaut un suffixe numérique « [0-9]+$ ») : un id qui la vérifie n'est pas une ancre stable pour le sélecteur publié d'une cause (cahier P2-8). Structurel, universel (conventions d'id du web), jamais un nom de produit. Par cohérence du renoncement strict, un id stable à suffixe numérique (#produit-7) est rejeté au même titre qu'un id volatil (#aswift_7) : on ne les distingue pas d'un instantané."
+            },
+            "dimensionMinVictime": {
+              "type": "number",
+              "exclusiveMinimum": 0,
+              "description": "Dimension minimale en pixels (la plus petite de largeur/hauteur) EN DEÇÀ de laquelle un élément EFFECTIVEMENT INVISIBLE (opacité effective nulle ou visibility non visible) est tenu pour un proxy de composant, pas une victime d'un recouvrement (cahier P2-11 C). Calé SOUS le plus petit vrai positif mesuré au grand tableau (dimension min 11, lien de tag de quotes) avec marge. Invisible ET minuscule ensemble : chaque condition seule tairait un vrai défaut (un champ invisible de taille réelle, un petit bouton visible)."
             }
           }
         },

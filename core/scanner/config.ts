@@ -126,6 +126,15 @@ export interface ConfigScanner {
       confianceGeometrieEtClic: number;
       /** Motif (regex) d'un id STRUCTURELLEMENT instable — suffixe numérique : un tel id ne sert pas d'ancre au sélecteur publié (cahier P2-8). Le code connaît LE WEB (les conventions d'id), pas LE MONDE. */
       motifIdInstable: string;
+      /**
+       * Dimension minimale (px, la plus petite de largeur/hauteur) EN DEÇÀ de
+       * laquelle un élément EFFECTIVEMENT INVISIBLE est tenu pour un proxy de
+       * composant, pas une victime (cahier P2-11 C). Calé SOUS le plus petit
+       * vrai positif mesuré au grand tableau (dimension min 11, lien de tag de
+       * quotes) avec marge : un seuil ≥ 12 écarterait ce vrai positif.
+       * Invisible ET minuscule ensemble — chacun seul tairait un vrai défaut.
+       */
+      dimensionMinVictime: number;
       /** Gravité de repli quand la nature de l'élément masqué n'a pas pu être établie (cahier P2-3, contrat 2). */
       gravite: Gravite;
       /** Le critère de gravité est CE QUI EST MASQUÉ, pas le fait de masquer (contrat 2, D4). */

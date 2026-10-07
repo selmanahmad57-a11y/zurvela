@@ -161,6 +161,13 @@ export interface ResultatGeometrie {
   /** true si le contrôle s'est arrêté avant d'avoir examiné tous les éléments (borne ou budget). */
   tronque: boolean;
   examines: number;
+  /**
+   * Nombre de cibles ÉCARTÉES comme proxy de composant (invisible effectif ET
+   * minuscule, cahier P2-11 C). Distingue « la géométrie n'a rien trouvé » de
+   * « la géométrie a délibérément exclu un proxy » : un clic refusé par le
+   * navigateur sur un proxy exclu n'est pas une interception à publier.
+   */
+  ciblesProxy: number;
 }
 
 export interface MutationLue {
@@ -206,6 +213,8 @@ type Commande =
       selecteur: string | null;
       max: number;
       budgetMs: number;
+      /** Seuil de dimension minimale sous lequel un élément invisible est tenu pour un proxy de composant, pas une victime (cahier P2-11 C). */
+      dimensionMinVictime: number;
     }
   | {
       commande: 'prises-fermeture';
@@ -456,6 +465,32 @@ function enPage(arg: Commande): unknown {
       let courant: Element | null = cible;
       while (courant !== null && courant !== document.body) {
         if (aide.estActivable(courant) && courant.contains(intercepteur)) {
+          return true;
+        }
+        courant = courant.parentElement;
+      }
+      return false;
+    },
+
+    /**
+     * L'élément est-il EFFECTIVEMENT invisible (cahier P2-11 C) ? Deux signaux
+     * physiques universels, jamais un nom :
+     *
+     * - `visibility` est DÉJÀ effective sous `getComputedStyle` : elle hérite,
+     *   et un descendant peut la rétablir — la valeur résolue suffit.
+     * - `opacity` NE se cumule PAS sous `getComputedStyle` : un ancêtre à 0
+     *   rend l'élément invisible sans que sa propre opacité le dise. On remonte
+     *   la lignée ; un seul ancêtre à opacité nulle annule le produit.
+     *
+     * `display:none` donne un rect 0×0, déjà écarté plus haut dans la boucle.
+     */
+    invisibleEffectif(el: Element): boolean {
+      if (getComputedStyle(el).visibility !== 'visible') {
+        return true;
+      }
+      let courant: Element | null = el;
+      while (courant !== null && courant !== document.documentElement) {
+        if (parseFloat(getComputedStyle(courant).opacity) === 0) {
           return true;
         }
         courant = courant.parentElement;
@@ -745,6 +780,7 @@ function enPage(arg: Commande): unknown {
       const recouvrements: Recouvrement[] = [];
       let examines = 0;
       let tronque = false;
+      let ciblesProxy = 0;
       for (const el of cibles) {
         if (examines >= arg.max || performance.now() > fin) {
           tronque = true;
@@ -753,6 +789,20 @@ function enPage(arg: Commande): unknown {
         examines += 1;
         let rect = el.getBoundingClientRect();
         if (rect.width === 0 || rect.height === 0) {
+          continue;
+        }
+        // LE PROXY INVISIBLE D'UN COMPOSANT N'EST PAS UNE VICTIME (cahier
+        // P2-11 C, grand tableau 2026-10-06). Un champ que le visiteur ne voit
+        // NI ne vise — rendu invisible (opacité effective nulle ou visibility
+        // non visible) ET minuscule (dimension min sous le seuil) — ne peut
+        // pas être « bloqué » : son recouvrement est le fonctionnement NORMAL
+        // d'un composant qui pilote sa frappe par un champ caché (l'éditeur
+        // ACE mesuré). Les DEUX conditions ENSEMBLE : invisible seul resterait
+        // un vrai défaut d'invisibilité (on ne l'excuse pas) ; minuscule seul
+        // tairait un petit bouton VISIBLE. Signaux physiques universels
+        // (constitution §2 : le code connaît LE WEB), jamais un nom de classe.
+        if (Math.min(rect.width, rect.height) <= arg.dimensionMinVictime && aide.invisibleEffectif(el)) {
+          ciblesProxy += 1;
           continue;
         }
         // Ne défiler que si le centre n'est pas déjà dans la fenêtre.
@@ -790,7 +840,7 @@ function enPage(arg: Commande): unknown {
         });
       }
       window.scrollTo(0, 0);
-      const resultat: ResultatGeometrie = { recouvrements, tronque, examines };
+      const resultat: ResultatGeometrie = { recouvrements, tronque, examines, ciblesProxy };
       return resultat;
     }
     case 'prises-fermeture': {
@@ -1099,6 +1149,8 @@ export interface OptionsGeometrie {
   max: number;
   /** Budget de temps en page. */
   budgetMs: number;
+  /** Seuil de dimension minimale (px) sous lequel un élément invisible est un proxy de composant, pas une victime (cahier P2-11 C). */
+  dimensionMinVictime: number;
   /** Délai de l'évaluation côté Node (par défaut le budget, avec une marge du même ordre). */
   delaiMs?: number;
 }
@@ -1184,6 +1236,7 @@ export async function recouvrements(page: Page, options: OptionsGeometrie): Prom
       selecteur: options.selecteur ?? null,
       max: options.max,
       budgetMs: options.budgetMs,
+      dimensionMinVictime: options.dimensionMinVictime,
     },
     options.delaiMs ?? options.budgetMs * 2,
   )) as ResultatGeometrie;

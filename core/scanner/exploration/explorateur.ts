@@ -515,7 +515,7 @@ export function creerExplorateur(dependances: DependancesExplorateur): Explorate
         for (const cadre of await etatsCadres(page, delai())) {
           observateur.emettre({ type: 'etat-cadre', horodatage, observation, page: url, viewport: viewport.nom, ...cadre });
         }
-        const geometrie = await recouvrements(page, { max: exploration.elementsInteractifsMax, budgetMs: delai(), motifIdInstable: config.detecteurs.recouvrement.motifIdInstable });
+        const geometrie = await recouvrements(page, { max: exploration.elementsInteractifsMax, budgetMs: delai(), motifIdInstable: config.detecteurs.recouvrement.motifIdInstable, dimensionMinVictime: config.detecteurs.recouvrement.dimensionMinVictime });
         if (geometrie.tronque) {
           contexte.journaliser('exploration.geometrie.tronquee', { viewport: viewport.nom, url, examines: geometrie.examines });
         }
@@ -535,7 +535,7 @@ export function creerExplorateur(dependances: DependancesExplorateur): Explorate
             clicMs: budget(exploration.clicMs),
             ...(contexte.memoireFermeture === undefined ? {} : { memoire: contexte.memoireFermeture.pour(url, viewport.nom) }),
             geometrie: { max: exploration.elementsInteractifsMax, budgetMs: delai() },
-            mesurer: () => recouvrements(page, { max: exploration.elementsInteractifsMax, budgetMs: delai(), motifIdInstable: config.detecteurs.recouvrement.motifIdInstable }),
+            mesurer: () => recouvrements(page, { max: exploration.elementsInteractifsMax, budgetMs: delai(), motifIdInstable: config.detecteurs.recouvrement.motifIdInstable, dimensionMinVictime: config.detecteurs.recouvrement.dimensionMinVictime }),
             journaliser: (type, details) => contexte.journaliser(type, { viewport: viewport.nom, url, ...(details as object) }),
             attendre,
           });
@@ -688,9 +688,16 @@ export function creerExplorateur(dependances: DependancesExplorateur): Explorate
         let intercepteur: LocalisationElement | null = null;
         let ancetreCouvrant: AncetreCouvrant | null = null;
         let couvert = false;
+        let proxyExclu = false;
         try {
-          const constat = await recouvrements(page, { selecteur: declencheur.selecteur, max: 1, budgetMs: delai(), motifIdInstable: config.detecteurs.recouvrement.motifIdInstable });
+          const constat = await recouvrements(page, { selecteur: declencheur.selecteur, max: 1, budgetMs: delai(), motifIdInstable: config.detecteurs.recouvrement.motifIdInstable, dimensionMinVictime: config.detecteurs.recouvrement.dimensionMinVictime });
           couvert = constat.recouvrements.length > 0;
+          // La géométrie a DÉLIBÉRÉMENT écarté la cible comme proxy de composant
+          // (invisible et minuscule, cahier P2-11 C) : un clic refusé par le
+          // navigateur ne la relève pas. Sans cette distinction, la branche
+          // « le navigateur a refusé » republierait le proxy que la géométrie
+          // vient d'écarter.
+          proxyExclu = constat.ciblesProxy > 0;
           intercepteur = constat.recouvrements[0]?.intercepteur ?? null;
           ancetreCouvrant = constat.recouvrements[0]?.ancetreCouvrant ?? null;
         } catch {
@@ -703,7 +710,7 @@ export function creerExplorateur(dependances: DependancesExplorateur): Explorate
           return { resultat: 'ok' };
         } catch (erreur: unknown) {
           const expire = erreur instanceof errors.TimeoutError;
-          if (expire && (couvert || messageErreur(erreur).includes(MARQUE_INTERCEPTION))) {
+          if (expire && !proxyExclu && (couvert || messageErreur(erreur).includes(MARQUE_INTERCEPTION))) {
             observateur.emettre({
               type: 'interception-clic',
               horodatage: new Date().toISOString(),

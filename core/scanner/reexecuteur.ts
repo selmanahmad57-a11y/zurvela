@@ -268,7 +268,7 @@ export function creerReexecuteur(dependances: DependancesReexecuteur): Reexecute
           for (const cadre of await etatsCadres(ouverte, delai())) {
             observateur.emettre({ type: 'etat-cadre', horodatage, observation: branchement.observationCourante(), page: url, viewport: viewport.nom, ...cadre });
           }
-          const geometrie = await recouvrements(ouverte, { max: exploration.elementsInteractifsMax, budgetMs: delai(), motifIdInstable: config.detecteurs.recouvrement.motifIdInstable });
+          const geometrie = await recouvrements(ouverte, { max: exploration.elementsInteractifsMax, budgetMs: delai(), motifIdInstable: config.detecteurs.recouvrement.motifIdInstable, dimensionMinVictime: config.detecteurs.recouvrement.dimensionMinVictime });
           // ON TENTE AU REJEU COMME À L'EXPLORATION (cahier P2-3, contrat 1).
           // Un recouvrement qui n'apparaît qu'au rejeu — le calque de
           // `calque-au-rejeu`, l'iframe publicitaire d'expandtesting — serait
@@ -290,7 +290,7 @@ export function creerReexecuteur(dependances: DependancesReexecuteur): Reexecute
                 ? {}
                 : { memoire: dependances.memoireFermeture.pour(url, viewport.nom) }),
               geometrie: { max: exploration.elementsInteractifsMax, budgetMs: delai() },
-              mesurer: () => recouvrements(ouverte, { max: exploration.elementsInteractifsMax, budgetMs: delai(), motifIdInstable: config.detecteurs.recouvrement.motifIdInstable }),
+              mesurer: () => recouvrements(ouverte, { max: exploration.elementsInteractifsMax, budgetMs: delai(), motifIdInstable: config.detecteurs.recouvrement.motifIdInstable, dimensionMinVictime: config.detecteurs.recouvrement.dimensionMinVictime }),
               journaliser: (type, details) => journaliser(type, { viewport: viewport.nom, url, rejeu: true, ...(details as object) }),
               attendre: (ms) => new Promise<void>((resoudre) => setTimeout(resoudre, ms)),
             });
@@ -374,9 +374,13 @@ export function creerReexecuteur(dependances: DependancesReexecuteur): Reexecute
           }
           let intercepteur: LocalisationElement | null = null;
           let couvert = false;
+          let proxyExclu = false;
           try {
-            const constat = await recouvrements(ouverte, { selecteur: declencheur.selecteur, max: 1, budgetMs: delai(), motifIdInstable: config.detecteurs.recouvrement.motifIdInstable });
+            const constat = await recouvrements(ouverte, { selecteur: declencheur.selecteur, max: 1, budgetMs: delai(), motifIdInstable: config.detecteurs.recouvrement.motifIdInstable, dimensionMinVictime: config.detecteurs.recouvrement.dimensionMinVictime });
             couvert = constat.recouvrements.length > 0;
+            // Proxy de composant écarté par la géométrie (cahier P2-11 C) : un
+            // clic refusé ne le relève pas, même au rejeu.
+            proxyExclu = constat.ciblesProxy > 0;
             intercepteur = constat.recouvrements[0]?.intercepteur ?? null;
           } catch {
             // Géométrie indisponible : le clic tranchera.
@@ -386,7 +390,7 @@ export function creerReexecuteur(dependances: DependancesReexecuteur): Reexecute
             return { resultat: 'ok' };
           } catch (erreur: unknown) {
             const message = erreur instanceof Error ? erreur.message : String(erreur);
-            if (erreur instanceof errors.TimeoutError && (couvert || message.includes(MARQUE_INTERCEPTION))) {
+            if (erreur instanceof errors.TimeoutError && !proxyExclu && (couvert || message.includes(MARQUE_INTERCEPTION))) {
               observateur.emettre({
                 type: 'interception-clic',
                 horodatage: new Date().toISOString(),

@@ -388,13 +388,25 @@ bestiaire** (« six nouveaux défauts chaque semaine », nommée de longue date)
 Substantielle, à concevoir à froid. Condition de valeur : un churn de victimes
 mesuré entre scans (acquis pour les pubs via le grand tableau).
 
-### C. LE CALQUE DE COMPOSANT — 1 FP, mineur
+### C. LE CALQUE DE COMPOSANT — 1 FP, mineur — **TRAITÉ : cahier P2-12**
 
 Mesuré sur expandtesting : un éditeur de code (`#html-editor`) couvre son
 propre `<textarea>` par conception ; oracle `recouvert` (reproductible), mais
 fonctionnel. L'exclusion « même région activable » (P2-3) ne couvre que les
 ancêtres `a`/`button` ; elle ne reconnaît pas les **composants** dont ni la
 surface ni la cible ne sont activables. Mineur, mais nommé.
+
+> **État (2026-10-07) : TRAITÉ — cahier P2-12.** La piste « reconnaître le
+> composant par sa construction » a été ÉCARTÉE par la mesure : elle exigerait
+> de lire le monde (relation surface/cible, classes). Le signal est dans la
+> VICTIME, pas dans le calque : un champ **effectivement invisible** (opacité
+> cumulée des ancêtres nulle, ou `visibility` non visible) ET **minuscule**
+> (dimension min ≤ `recouvrement.dimensionMinVictime`, défaut 4) n'est pas une
+> victime — le proxy ACE mesurait dimension min 1, opacité 0. Les deux
+> conditions ENSEMBLE (chacune seule tairait un vrai défaut) ; seuil calé SOUS
+> le plus petit vrai positif mesuré (11, lien de tag de quotes) avec marge.
+> Témoin Q19–Q23 (5 sens) + 3 mutations + équivalence ×3. Signal physique,
+> universel, zéro nom.
 
 
 ## Phase 2

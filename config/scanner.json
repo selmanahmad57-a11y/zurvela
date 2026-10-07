@@ -218,7 +218,8 @@
         "recouvrementsMax": 10,
         "descendantsEssayesMax": 12
       },
-      "motifIdInstable": "[0-9]+$"
+      "motifIdInstable": "[0-9]+$",
+      "dimensionMinVictime": 4
     },
     "tiers": {
       "categorie": "fonctionnel",

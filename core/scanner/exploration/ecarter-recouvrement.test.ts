@@ -135,7 +135,7 @@ function fauxContexte(
     },
   } as unknown as Page;
 
-  const geometrie: ResultatGeometrie = { recouvrements: [], tronque: false, examines: 0 };
+  const geometrie: ResultatGeometrie = { recouvrements: [], tronque: false, examines: 0, ciblesProxy: 0 };
   return {
     ...faux,
     executer: () =>
@@ -187,7 +187,7 @@ describe('ecarterRecouvrements — chaque geste mord, individuellement', () => {
         geometrie: { max: 10, budgetMs: 100 },
         journaliser: () => undefined,
         attendre: () => Promise.resolve(),
-        mesurer: () => Promise.resolve({ recouvrements: constats, tronque: false, examines: 0 }),
+        mesurer: () => Promise.resolve({ recouvrements: constats, tronque: false, examines: 0, ciblesProxy: 0 }),
       });
       expect(issue.nbEcartes).toBe(0);
       expect(issue.restants).toEqual(constats);
@@ -259,7 +259,7 @@ describe('les gardes de sécurité du geste', () => {
       geometrie: { max: 10, budgetMs: 100 },
       journaliser: (type, details) => faux.journal.push({ type, details: (details ?? {}) as Record<string, unknown> }),
       attendre: () => Promise.resolve(),
-      mesurer: () => Promise.resolve({ recouvrements: constats, tronque: false, examines: 0 }),
+      mesurer: () => Promise.resolve({ recouvrements: constats, tronque: false, examines: 0, ciblesProxy: 0 }),
     });
     expect(issue.restants).toEqual(constats);
     expect(faux.journal.find((e) => e.type === EVENEMENT_FERMETURE_BORNEE)?.details).toMatchObject({ intercepteurs: 3, tentes: 2 });
@@ -281,7 +281,7 @@ describe('les gardes de sécurité du geste', () => {
       geometrie: { max: 10, budgetMs: 100 },
       journaliser: (type, details) => faux.journal.push({ type, details: (details ?? {}) as Record<string, unknown> }),
       attendre: () => Promise.resolve(),
-      mesurer: () => Promise.resolve({ recouvrements: constats, tronque: false, examines: 0 }),
+      mesurer: () => Promise.resolve({ recouvrements: constats, tronque: false, examines: 0, ciblesProxy: 0 }),
     });
     expect(faux.gestesExecutes).toEqual([]);
     expect(issue.nbEcartes).toBe(0);
@@ -344,7 +344,7 @@ describe('la voie C — essayer, pas reconnaître : ses trois gardes', () => {
           geometrie: { max: 10, budgetMs: 100 },
           journaliser: (type, details) => journal.push({ type, details: (details ?? {}) as Record<string, unknown> }),
           attendre: () => Promise.resolve(),
-          mesurer: () => Promise.resolve({ recouvrements: present ? constats : [], tronque: false, examines: 0 }),
+          mesurer: () => Promise.resolve({ recouvrements: present ? constats : [], tronque: false, examines: 0, ciblesProxy: 0 }),
         }),
     };
   }

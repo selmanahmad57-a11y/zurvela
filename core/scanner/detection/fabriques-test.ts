@@ -45,6 +45,7 @@ export const CONFIG_TEST: ConfigScanner['detecteurs'] = {
     confianceGeometrie: 0.8,
     confianceGeometrieEtClic: 0.95,
     motifIdInstable: '[0-9]+$',
+    dimensionMinVictime: 4,
     gravite: 'important',
     graviteParNature: { actionCritique: 'bloquant', controleOrdinaire: 'important', contenuSecondaire: 'mineur' },
     murCouvrant: { fractionViewport: 0.5, victimesMin: 2, gravite: 'mineur' },

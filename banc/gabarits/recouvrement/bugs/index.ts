@@ -17,7 +17,12 @@ import { Q15 } from './q15-mur-sur-soumission.js';
 import { Q16 } from './q16-pied-deux-victimes.js';
 import { Q17 } from './q17-mur-recurrent-inter-pages.js';
 import { Q18 } from './q18-deux-murs-distincts.js';
+import { Q19 } from './q19-champ-proxy-invisible.js';
+import { Q20 } from './q20-champ-visible-recouvert.js';
+import { Q21 } from './q21-champ-invisible-taille-reelle.js';
+import { Q22 } from './q22-champ-sliver-invisible.js';
+import { Q23 } from './q23-champ-visible-minuscule.js';
 import { L04 } from './l04-document-lent-decouvert.js';
 import { L05 } from './l05-ressource-bloque-load.js';
 
-export const bugs: BugInjectable[] = [Q01, Q02, Q03, Q04, Q05, Q06, Q07, Q08, Q09, Q10, Q11, Q12, Q13, Q14, Q15, Q16, Q17, Q18, L04, L05];
+export const bugs: BugInjectable[] = [Q01, Q02, Q03, Q04, Q05, Q06, Q07, Q08, Q09, Q10, Q11, Q12, Q13, Q14, Q15, Q16, Q17, Q18, Q19, Q20, Q21, Q22, Q23, L04, L05];
