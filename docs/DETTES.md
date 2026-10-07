@@ -813,3 +813,49 @@ Inventaire des instruments jetables du grand tableau, désormais complet :
 pour un run, aucun ne tient pour la comparabilité des runs ; les deux se lèvent
 au même jalon (avant le prochain grand tableau), n°32 après le run, n°31 pouvant
 l'être dès maintenant.
+
+## 33. Le banc n'est pas déterministe sur `site-charge` — l'oracle d'équivalence crie faux (2026-10-07, révélée par la vérification de P2-12)
+
+Trouvée EN VÉRIFIANT (C) : l'équivalence de P2-12 ne touchait que le
+recouvrement, mais la comparaison brute sur les 97 scénarios ressortait « NON
+ÉQUIVALENT » — **uniquement** sur `site-charge--z01--{fr,en}`, **uniquement**
+sur l'axe `ressource-interne-404` ↔ `non-verifiee:echeance-atteinte`. Le
+gabarit `site-charge` est une page LOURDE qui course sa propre échéance : selon
+la vitesse de la machine à l'instant, une image-404 (`absente-rayon-1-N.svg`)
+est vérifiée AVANT l'échéance (→ anomalie `confirmee/reproduite`) ou APRÈS
+(→ `non-verifiee`, échéance atteinte). Le verdict bascule sur le timing.
+
+**Diagnostic imparable — opt-vs-opt.** Prouvé INHÉRENT, pas causé par le fix,
+par la seule méthode qui le prouve : comparer deux runs à **code identique**
+(`opt1` vs `opt2`, `opt2` vs `opt3`). Ils divergent — parfois « 4 identités
+perdues », « NON ÉQUIVALENT » — entre deux exécutions du **même binaire**. Deux
+exécutions du même binaire ne devraient jamais diverger ; elles le font, donc
+c'est du non-déterminisme du banc, pas du code mesuré. (En retirant la famille
+`site-charge`, l'équivalence de P2-12 est un ÉQUIVALENT net ×3 sur 93/93.)
+
+**Pourquoi c'est grave, et pas « à noter si on veut ».** Le prochain grand
+tableau utilisera l'oracle d'équivalence pour prouver sa non-régression. Si le
+banc est non déterministe sur `site-charge`, l'équivalence sortira « NON
+ÉQUIVALENT » à CHAQUE tableau, sur ce gabarit, pour une raison étrangère à ce
+qu'on mesure — et il faudra, à chaque fois, refaire le travail de diagnostic
+(exclure la famille, prouver l'inhérence par opt-vs-opt). C'est n°48 (un oracle
+qui ment) sous une autre forme : il ne ment pas sur le jugement, il **crie au
+loup** sur un gabarit, et à force on apprendrait à ignorer ses alarmes. Un
+oracle qu'on apprend à ignorer est un oracle mort. C'est donc un défaut de
+l'INSTRUMENT qui jugera le prochain grand tableau, au même rang que n°31/n°32.
+
+**Condition de levée — ferme, au rang de verrou du grand tableau.** Avant le
+PROCHAIN grand tableau, `site-charge` est soit **rendu déterministe** (une
+échéance qui ne course pas l'image — p. ex. élargie pour que la vérification
+des 404 aboutisse toujours, ou un timing de 404 rendu déterministe), soit
+**exclu explicitement de l'équivalence** avec sa raison documentée dans
+l'outil. Ne PAS trancher maintenant lequel : c'est de la conception (stabiliser
+vs exclure), à froid, par la mesure — qui dira si l'échéance est trop serrée ou
+si c'est le timing de l'image-404 qu'il faut fixer. Probablement petit.
+
+Les trois verrous du prochain grand tableau sont désormais : **n°31 (oracle de
+jugement committé) + n°32 (dépouilleur committé) + n°33 (`site-charge`
+déterministe ou exclu de l'équivalence)**. Un tableau jugé par un oracle
+jetable, lu par un dépouilleur jetable, et comparé par un banc qui crie faux,
+n'est pas un tableau fiable. Les trois se mettent en ordre à froid, un par un,
+avant la mesure réelle.
