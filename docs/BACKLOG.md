@@ -340,18 +340,53 @@ mais pas un défaut du site : un visiteur lève le mur en un clic.
 > couvrante + contrôle de choix), jamais par classe `fc-*`. Lié à C-11 étendu
 > (le même mur est aussi sur-compté inter-pages).
 
-### B. LE REJEU FIGE UN RECOUVREMENT TRANSITOIRE — 4 FP — le cahier B, désormais mesuré
+### B. LE RECOUVREMENT TRANSITOIRE — 4 FP — SUSPENDU : c'est la branche d'action INTER-SCANS de P2-6 (mesure préalable 2026-10-07)
+
+> **État : SUSPENDU, preuve acquise, en attente de la mémoire inter-scans.**
+> Ce n'est PAS un cahier distinct ni un trou du rejeu intra-scan : c'est la
+> branche d'action que **P2-6 a suspendue**, et le grand tableau lui a donné
+> son cas réel.
 
 Mesuré sur expandtesting : 4 `clic-intercepte` dont l'intercepteur est une pub
-`#aswift_N`. Le rejeu même-session a « confirmé » une **coïncidence
-d'emplacement de pub** ; l'oracle, sur chargement neuf indépendant, dit
-`cliquable` (3/4) ou `hors-fenêtre` (1/4) — aucune pub ne couvre la cible.
-Cause : le protocole de confirmation re-exécute dans la **même lignée de
-chargement**, donc il fige un transitoire au lieu de le réfuter. **Piste
-mesurée** : `confirmation.variations: ['contexte-neuf']` existe déjà dans la
-config — pourquoi le rejeu de recouvrement ne l'applique-t-il pas ? Distinct de
-2bis (qui nomme un cadre pub quand il EST un vrai recouvrement sans ancre) :
-ici le recouvrement n'est pas persistant du tout.
+`#aswift_N`, « confirmés » par le rejeu du moteur mais `cliquable` à l'oracle en
+chargement indépendant ultérieur. **Mesure préalable (lecture seule) :**
+- `contexte-neuf` EST appliqué — chaque rejeu ouvre un contexte navigateur neuf
+  (cache froid, stockage vierge), par construction (`reexecuteur.ts`). La piste
+  « contexte-neuf pas appliqué » est **RÉFUTÉE**.
+- Le verdict `reproduite` apparie par `identiteCause` = l'intercepteur
+  (emplacement), jamais la victime. MAIS P2-6 a ajouté le palier victime et
+  **mesuré que le palier 3 (victime différente) = 0 intra-scan** : quand
+  l'emplacement reproduit dans un scan, la victime aussi. Donc rien à corriger
+  intra-scan.
+- L'oracle trouve `cliquable` à un chargement **ultérieur et indépendant** —
+  inter-scan par nature. Le churn n'est visible qu'entre deux chargements.
+
+**Verdict : non traitable dans un scan.** Un scan est un instant ; le transitoire
+se révèle entre deux instants. Pendant le scan, l'ad est réellement là, sur la
+même victime, à chaque rejeu — le moteur ne peut pas savoir qu'il est
+transitoire. Ralentir les rejeux ne le révélerait pas (même session ; délai
+suffisant inconnu, dépendant du cycle de chaque régie). C'est exactement le
+phénomène **INTER-SCANS** que P2-6 a situé (n°47) et dont il a suspendu la
+branche d'action.
+
+**Condition de réouverture (celle de P2-6) : une MÉMOIRE INTER-SCANS qui se
+souvient d'un recouvrement d'un scan au suivant et compare les victimes.**
+DEMI-CONDITION LEVÉE : le churn est désormais **mesuré** (les 4 cas réels
+`#aswift_N`, confirmés intra-scan, cliquables à un chargement ultérieur). Reste
+à construire la mémoire (voir l'entrée « mémoire inter-scans » ci-dessous).
+Distinct de #2bis (nommer un cadre pub quand il EST un vrai recouvrement sans
+ancre) : ici le recouvrement n'est pas persistant du tout.
+
+### La MÉMOIRE INTER-SCANS — une capacité nouvelle, pas un petit cahier
+
+Un magasin de persistance entre scans : se souvenir des recouvrements (et de
+leurs victimes) d'un scan au suivant, pour distinguer un défaut **persistant**
+(même victime, scan après scan) d'un **transitoire** (victime changeante au
+même emplacement). Elle débloque DEUX problèmes d'un seul mécanisme : (B)
+ci-dessus (les pubs transitoires, churn mesuré), ET la **continuité du
+bestiaire** (« six nouveaux défauts chaque semaine », nommée de longue date).
+Substantielle, à concevoir à froid. Condition de valeur : un churn de victimes
+mesuré entre scans (acquis pour les pubs via le grand tableau).
 
 ### C. LE CALQUE DE COMPOSANT — 1 FP, mineur
 

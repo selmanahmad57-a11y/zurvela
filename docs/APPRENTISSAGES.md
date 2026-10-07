@@ -1877,3 +1877,35 @@ regardé.
   affirmé « the-internet mesuré » un soir où il ne l'est pas. Le fix P2-10 reste
   correct pour SA classe (ressource bloquant le `load`, pas le parseur, prouvé
   par L05) ; seule la claim sur the-internet était fausse.
+
+## 55. Une suspension prise AU BON NIVEAU est confirmée par le réel quand le cas arrive (2026-10-07, ouverture mesurée de (B))
+
+- **Ce qui s'est passé.** P2-6 (persistance d'un recouvrement) avait, sans cas
+  réel probant, mesuré intra-scan que le palier 3 (victime différente) = 0,
+  conclu « le churn de victimes est INTER-SCANS, non traitable dans un scan »,
+  et SUSPENDU la branche d'action avec une condition de réouverture précise
+  (une mémoire inter-scans montrant un churn mesuré). Des sessions plus tard, le
+  grand tableau a fourni le cas réel : 4 faux positifs `#aswift_N` sur
+  expandtesting, confirmés intra-scan par le rejeu (même victime à chaque
+  rejeu), `cliquable` à un chargement indépendant ultérieur. La mesure préalable
+  de (B) a tranché : c'est EXACTEMENT le phénomène inter-scans que P2-6 avait
+  situé — pas un trou du rejeu intra-scan.
+- **Pourquoi la suspension était juste.** Un scan est un INSTANT ; un transitoire
+  ne se révèle qu'ENTRE deux instants. Pendant le scan, la pub est réellement là,
+  sur la même victime, à chaque rejeu (contexte neuf compris) : le moteur ne peut
+  pas, dans un seul scan, savoir qu'elle est transitoire. Forcer une branche
+  d'action intra-scan « pour faire quelque chose » aurait produit les faux
+  positifs qu'on évite — ou pire, écarté de vrais recouvrements persistants.
+- **La règle** : *suspendre un défaut au bon niveau vaut mieux que le traiter au
+  mauvais ; une suspension fondée sur un raisonnement correctement situé est
+  validée par le réel quand le cas arrive, pas infirmée.* Corollaire : une
+  condition de réouverture précise transforme un « on verra » en dette
+  activable — ici, le grand tableau a LEVÉ la demi-condition (churn mesuré), il
+  reste le mécanisme (mémoire inter-scans).
+- **Ce que la mesure a évité, et le compte.** Ouvrir (B) comme un cahier
+  intra-scan aurait fait construire un mécanisme (comparer par victime au rejeu,
+  re-exécuter plus espacé…) pour un problème que le niveau du scan ne contient
+  pas. La lecture seule l'a évité avant une ligne. C'est le sixième « mesurer
+  avant d'écrire a empêché une mauvaise construction » de la Phase 2 (après le
+  cache-fantôme et le rejeu-sélectionné de P2-4, P2-5 à zéro cas, le fantôme
+  publicitaire de P2-6, et the-internet de P2-10).
