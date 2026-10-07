@@ -69,6 +69,10 @@ describe('toute langue couvre tout statut, et aucune phrase n’est vide', () =>
       expect(libelles.ligneNonVerifies(4).trim()).not.toBe('');
       expect(libelles.partiellementRedige(1, 3).trim()).not.toBe('');
       expect(libelles.partiellementRedige(2, 3).trim()).not.toBe('');
+      // Le constat du mur couvrant (cahier P2-11 b) : paramétré par N, donc une
+      // chaîne vide passerait l'itération des chaînes ci-dessus.
+      expect(libelles.constatMurCouvrant(1, '/a').trim(), `${langue}.constatMurCouvrant(1)`).not.toBe('');
+      expect(libelles.constatMurCouvrant(3, '/a, /b').trim(), `${langue}.constatMurCouvrant(3)`).not.toBe('');
     }
   });
 
@@ -90,5 +94,10 @@ describe('toute langue couvre tout statut, et aucune phrase n’est vide', () =>
       expect(formulerStatut(statut, 'fr', CHIFFRES[1]!)).not.toBe(formulerStatut(statut, 'en', CHIFFRES[1]!));
     }
     expect(LIBELLES_RAPPORT.fr.titre).not.toBe(LIBELLES_RAPPORT.en.titre);
+    // Les phrases du mur couvrant (cahier P2-11 b) : traduites, pas recopiées.
+    expect(LIBELLES_RAPPORT.fr.titreMurCouvrant).not.toBe(LIBELLES_RAPPORT.en.titreMurCouvrant);
+    expect(LIBELLES_RAPPORT.fr.statutMurCouvrant).not.toBe(LIBELLES_RAPPORT.en.statutMurCouvrant);
+    expect(LIBELLES_RAPPORT.fr.actionLabelMurCouvrant).not.toBe(LIBELLES_RAPPORT.en.actionLabelMurCouvrant);
+    expect(LIBELLES_RAPPORT.fr.constatMurCouvrant(2, '/a')).not.toBe(LIBELLES_RAPPORT.en.constatMurCouvrant(2, '/a'));
   });
 });

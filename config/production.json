@@ -202,7 +202,7 @@
       "murCouvrant": {
         "fractionViewport": 0.5,
         "victimesMin": 2,
-        "gravite": "important"
+        "gravite": "mineur"
       },
       "fermeture": {
         "gestes": [

@@ -174,7 +174,10 @@ function rendreSection(section: SectionRapport, langue: LangueRapport, rang: num
     lignes.push(`**${libelles.impact}** — ${echapper(section.impact)}`, '');
   }
   if (section.actionSuggeree !== '') {
-    lignes.push(`**${libelles.action}** — ${echapper(section.actionSuggeree)}`, '');
+    // Le mur a son libellé d'action PROPRE : « Ce qu'il faut vérifier », jamais
+    // « faire corriger » qui présumerait un défaut (cahier P2-11 Q4, 2ᵉ source).
+    const labelAction = section.murCouvrant === true ? libelles.actionLabelMurCouvrant : libelles.action;
+    lignes.push(`**${labelAction}** — ${echapper(section.actionSuggeree)}`, '');
   }
   // Une section sans prose dans un rapport QUI EN A ne se distingue autrement
   // que par ce qui lui manque, et deux sections muettes de même catégorie

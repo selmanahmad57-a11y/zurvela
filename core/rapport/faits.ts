@@ -136,6 +136,11 @@ export function normaliserFaits(
 
   const sections = rapportBusiness.sections
     .slice(0, Math.max(1, config.sectionsMax))
+    // MUR COUVRANT (cahier P2-11, C3-b, Q3) : la section mur porte une prose
+    // FIXE à garantie sémantique ; elle n'est PAS envoyée à la rédaction, qui
+    // la reformulerait. Exclue ici, elle survit par construction (le modèle ne
+    // la voit pas, ne la réécrit pas, ne la paie pas).
+    .filter((section) => section.murCouvrant !== true)
     .map((section): SectionNormalisee => {
       const anomalie = section.groupe === undefined ? undefined : anomaliesParGroupe.get(section.groupe);
       return {

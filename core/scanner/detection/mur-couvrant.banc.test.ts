@@ -88,16 +88,18 @@ describe('P2-11 — un mur couvrant est UNE cause, pas N', () => {
     expect(surDesktop.length, `intercepteurs distincts sur ${desktop} : ${JSON.stringify(intercepteurs)}`).toBe(1);
   }, ECHEANCE_MS + 10_000);
 
-  it('Q15 : un mur masquant une SOUMISSION sort « important », pas « bloquant » (ROUGE aujourd’hui)', async () => {
+  it('Q15 : un mur masquant une SOUMISSION sort « mineur », jamais « bloquant » (le marqueur court-circuite)', async () => {
     const i = await interceptions(['Q15'], 'test--mur--q15');
     const desktop = config.viewports[0]?.nom ?? 'desktop';
     const surDesktop = i.filter((c) => c.viewport === desktop);
     const gravites = surDesktop.map((c) => c.graviteEstimee);
-    // Après le fix : UNE cause, gravité « important » (le marqueur court-circuite
-    // la gravité-par-ce-qui-est-masqué). Aujourd’hui : deux causes, dont une
-    // « bloquant » (la soumission) — le piège du grand tableau.
+    // UNE cause, gravité « mineur » (la plus basse — le moteur ne sait pas si le
+    // mur compte, cahier P2-11 Q4 corrigé). Le marqueur court-circuite la
+    // gravité-par-ce-qui-est-masqué : une soumission masquée ne fait PAS
+    // ressortir « bloquant » (le piège du grand tableau, et la sur-promesse que
+    // « important » rouvrait).
     expect(surDesktop.length, `causes : ${surDesktop.length}, gravités ${JSON.stringify(gravites)}`).toBe(1);
-    expect(surDesktop[0]?.graviteEstimee).toBe('important');
+    expect(surDesktop[0]?.graviteEstimee).toBe('mineur');
   }, ECHEANCE_MS + 10_000);
 
   it('Q16 : un pied légitime à deux victimes NE fond PAS (reste deux causes — le seuil de couverture sépare)', async () => {

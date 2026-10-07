@@ -38,7 +38,7 @@ import {
 import { tauxRejouabilite } from '../scanner/confirmation/rejouabilite.js';
 import { hoteDePreuve } from './faits.js';
 import { AUCUNE_VERIFICATION, chiffresDe, statutDe, type ChiffresStatut } from './statuts.js';
-import { formulerStatut, type LangueRapport } from './voix.js';
+import { LIBELLES_RAPPORT, formulerStatut, type LangueRapport } from './voix.js';
 
 /**
  * Ordre d'affichage des gravités : le plus grave d'abord. Un lecteur qui
@@ -106,6 +106,17 @@ function cheminDe(urlOuEtape: string): string {
  * du viewport : on affiche ceux où le groupe a été observé, ce qui est un
  * constat et non une extrapolation.
  */
+/**
+ * Les éléments masqués par un mur couvrant (cahier P2-11, C3-b) : leur NOMBRE
+ * et les PAGES distinctes où ils se trouvent. Données, pas prose — c'est ce que
+ * la voix du mur interpole. Les pages viennent du site, donc échappées au rendu
+ * comme tout `constat`.
+ */
+function elementsMasques(anomalie: Anomalie): { nb: number; pages: string } {
+  const locs = anomalie.localisations ?? [];
+  return { nb: locs.length, pages: [...new Set(locs.map((loc) => cheminDe(loc.urlOuEtape)))].join(', ') };
+}
+
 export function localisationsLisibles(anomalie: Anomalie): LocalisationLisible[] {
   const sources =
     anomalie.localisations !== undefined && anomalie.localisations.length > 0
@@ -265,23 +276,38 @@ export function construireStructure(rapport: Rapport, langue: LangueRapport): St
         gauche.rang - droite.rang,
     );
 
-  const sections: SectionRapport[] = triees.map(({ anomalie, statut }, rang) => ({
-    id: `s${rang + 1}`,
-    // L'hôte du service extérieur en cause, quand il y en a un : un fait de la
-    // preuve, posé ici et rendu à côté de la prose (P2-2, contrat 3).
-    ...(hoteDePreuve(anomalie) === undefined ? {} : { origine: hoteDePreuve(anomalie) }),
-    ...(anomalie.groupe === undefined ? {} : { groupe: anomalie.groupe }),
-    categorie: anomalie.categorie,
-    gravite: anomalie.graviteEstimee,
-    statut,
-    statutFormule: formulerStatut(statut, langue, chiffresPour(anomalie, index)),
-    localisations: localisationsLisibles(anomalie),
-    // `impactChiffre` : ABSENT, et c'est la décision, pas un oubli (voir l'en-tête).
-    titre: '',
-    constat: '',
-    impact: '',
-    actionSuggeree: '',
-  }));
+  const libelles = LIBELLES_RAPPORT[langue];
+  const sections: SectionRapport[] = triees.map(({ anomalie, statut }, rang) => {
+    // MUR COUVRANT (cahier P2-11, C3-b) : prose FIXE à garantie sémantique,
+    // posée ici hors rédaction IA (comme `statutFormule`), via les accesseurs
+    // de VOIX (`libelles.xxxMurCouvrant`) — jamais par un accès en point à un
+    // champ de prose, que la garde « prose terminale » réserve à la lecture de
+    // contenu. Sinon prose vide, que la rédaction remplira.
+    const mur = anomalie.murCouvrant === true;
+    const masque = mur ? elementsMasques(anomalie) : { nb: 0, pages: '' };
+    return {
+      id: `s${rang + 1}`,
+      // L'hôte du service extérieur en cause, quand il y en a un : un fait de la
+      // preuve, posé ici et rendu à côté de la prose (P2-2, contrat 3).
+      ...(hoteDePreuve(anomalie) === undefined ? {} : { origine: hoteDePreuve(anomalie) }),
+      ...(anomalie.groupe === undefined ? {} : { groupe: anomalie.groupe }),
+      ...(mur ? { murCouvrant: true } : {}),
+      categorie: anomalie.categorie,
+      gravite: anomalie.graviteEstimee,
+      statut,
+      // Le mur a sa phrase de statut PROPRE (reproductibilité sans promesse de
+      // défaut vérifié, cahier P2-11 Q4), routée par le marqueur ; sinon la
+      // phrase épistémique générique.
+      statutFormule: mur ? libelles.statutMurCouvrant : formulerStatut(statut, langue, chiffresPour(anomalie, index)),
+      localisations: localisationsLisibles(anomalie),
+      // `impactChiffre` : ABSENT, et c'est la décision, pas un oubli (voir l'en-tête).
+      titre: mur ? libelles.titreMurCouvrant : '',
+      constat: mur ? libelles.constatMurCouvrant(masque.nb, masque.pages) : '',
+      // PAS d'impact pour un mur : on ne prétend aucune conséquence (Q2).
+      impact: '',
+      actionSuggeree: mur ? libelles.actionMurCouvrant : '',
+    };
+  });
 
   const clesPubliees = new Set(sections.map((section) => section.groupe).filter((cle): cle is string => cle !== undefined));
 

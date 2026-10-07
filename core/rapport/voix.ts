@@ -225,6 +225,32 @@ export const LIBELLES_RAPPORT: Readonly<
       ligneEcartements: (nbEcartements: number) => string;
       /** TEXTE À GARANTIE SÉMANTIQUE : quand aucun groupe n'a pu être rejoué, le rapport ne peut pas se lire comme « le site va bien ». */
       rienVerifie: (nbNonVerifies: number) => string;
+      /**
+       * TEXTES À GARANTIE SÉMANTIQUE (cahier P2-11, C3-b) : un MUR COUVRANT —
+       * une occlusion qui recouvre l'interface et masque des éléments
+       * interactifs. Le moteur ne sait PAS sa nature (consentement voulu, ou
+       * vrai piège) : il nomme ce qu'il OBSERVE, jamais la conséquence (pas
+       * d'impact), et l'action INVITE à juger sans prescrire — nommant les deux
+       * possibilités. C'est l'honnêteté stricte : rien qu'on ne mesure pas.
+       */
+      titreMurCouvrant: string;
+      constatMurCouvrant: (nbElements: number, pages: string) => string;
+      actionMurCouvrant: string;
+      /**
+       * STATUT propre au mur couvrant : il dit la REPRODUCTIBILITÉ (vu à chaque
+       * passage, donc pas un hasard de rendu) SANS la promesse « défaut vérifié »
+       * de la phrase `confirmee`. « Constaté, puis reproduit lors de nos
+       * vérifications » est la garantie du différenciateur n°1 (un défaut
+       * re-testé) ; sur un mur qu'on ne juge pas, elle mentirait par
+       * juxtaposition (cahier P2-11, C3-b, Q4).
+       */
+      statutMurCouvrant: string;
+      /**
+       * LIBELLÉ d'action propre au mur : « Ce qu'il faut vérifier », pas « Ce
+       * qu'il faut faire corriger » — qui présumerait un défaut sous une action
+       * qui dit « c'est peut-être normal » (cahier P2-11, C3-b, Q4, 2ᵉ source).
+       */
+      actionLabelMurCouvrant: string;
     }
   >
 > = {
@@ -284,6 +310,15 @@ export const LIBELLES_RAPPORT: Readonly<
       nbNonVerifies === 1
         ? 'Rien n’a pu être vérifié sur ce site : notre seul signalement n’a pas pu être rejoué, et aucun n’est publié. Ce rapport ne dit pas que le site va bien ; il dit que nous n’avons pas pu le vérifier.'
         : `Rien n’a pu être vérifié sur ce site : aucun de nos ${nbNonVerifies} signalements n’a pu être rejoué, et aucun n’est publié. Ce rapport ne dit pas que le site va bien ; il dit que nous n’avons pas pu le vérifier.`,
+    titreMurCouvrant: 'Élément recouvrant l’interface',
+    constatMurCouvrant: (nbElements, pages) =>
+      nbElements === 1
+        ? `Un élément recouvre l’interface et masque 1 élément interactif sur ${pages}.`
+        : `Un élément recouvre l’interface et masque ${nbElements} éléments interactifs sur ${pages}.`,
+    actionMurCouvrant:
+      'Vérifiez si ce recouvrement est intentionnel : s’il s’agit d’un bandeau de consentement ou d’une fenêtre que vous avez placée, ce constat est normal ; sinon, un élément masque une partie de votre interface.',
+    statutMurCouvrant: 'Observé de façon constante lors de nos passages.',
+    actionLabelMurCouvrant: 'Ce qu’il faut vérifier',
   },
   en: {
     titre: 'Verification report',
@@ -329,5 +364,14 @@ export const LIBELLES_RAPPORT: Readonly<
       nbNonVerifies === 1
         ? 'Nothing could be verified on this site: our 1 report could not be replayed, and none is published. This report does not say the site is fine; it says we could not check it.'
         : `Nothing could be verified on this site: none of our ${nbNonVerifies} reports could be replayed, and none is published. This report does not say the site is fine; it says we could not check it.`,
+    titreMurCouvrant: 'Overlay covering the interface',
+    constatMurCouvrant: (nbElements, pages) =>
+      nbElements === 1
+        ? `An element covers the interface and hides 1 interactive element on ${pages}.`
+        : `An element covers the interface and hides ${nbElements} interactive elements on ${pages}.`,
+    actionMurCouvrant:
+      'Check whether this overlay is intentional: if it is a consent banner or a window you placed, this finding is expected; otherwise, an element is hiding part of your interface.',
+    statutMurCouvrant: 'Consistently observed across our passes.',
+    actionLabelMurCouvrant: 'What to check',
   },
 };

@@ -47,7 +47,7 @@ export const CONFIG_TEST: ConfigScanner['detecteurs'] = {
     motifIdInstable: '[0-9]+$',
     gravite: 'important',
     graviteParNature: { actionCritique: 'bloquant', controleOrdinaire: 'important', contenuSecondaire: 'mineur' },
-    murCouvrant: { fractionViewport: 0.5, victimesMin: 2, gravite: 'important' },
+    murCouvrant: { fractionViewport: 0.5, victimesMin: 2, gravite: 'mineur' },
     fermeture: {
       gestes: ['echap', 'dialog-natif', 'controle-ferme', 'clic-hors-zone'],
       partMaxSurfaceControle: 0.15,

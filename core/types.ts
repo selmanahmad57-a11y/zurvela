@@ -1156,6 +1156,13 @@ export interface SectionRapport {
   id: string;
   /** Clé du groupe de cause racine d'où vient la section : la traçabilité descend jusqu'au moteur. */
   groupe?: string;
+  /**
+   * MUR COUVRANT (cahier P2-11, C3-b) : cette section porte une prose FIXE à
+   * garantie sémantique (titre + constat + action), posée par le code au
+   * montage, et elle est EXCLUE de la rédaction IA (qui, sinon, la
+   * reformulerait). Marqueur structurant, pas de la prose.
+   */
+  murCouvrant?: boolean;
   // --- FAITS (posés par le code, jamais par le modèle) ---
   categorie: Categorie;
   gravite: Gravite;
