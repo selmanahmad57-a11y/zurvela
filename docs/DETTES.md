@@ -814,7 +814,28 @@ pour un run, aucun ne tient pour la comparabilité des runs ; les deux se lèven
 au même jalon (avant le prochain grand tableau), n°32 après le run, n°31 pouvant
 l'être dès maintenant.
 
-## 33. Le banc n'est pas déterministe sur `site-charge` — l'oracle d'équivalence crie faux (2026-10-07, révélée par la vérification de P2-12)
+## 33. Le banc n'est pas déterministe sur `site-charge` — l'oracle d'équivalence crie faux (2026-10-07, révélée par la vérification de P2-12) — **LEVÉE le 2026-10-07 (exclusion documentée)**
+
+> **LEVÉE le 2026-10-07 — par EXCLUSION, pas stabilisation.** La mesure a
+> tranché (lecture seule) : `site-charge` sature la confirmation sur l'ÉCHÉANCE
+> (48 rejeux de pages retardées ≈ 29 s > les ~21 s du budget confirmation à
+> 60 s), donc QUELS groupes passent avant le mur dépend du timing — son
+> identité par-groupe est non déterministe PAR CONCEPTION. Stabiliser aurait
+> été pire des deux façons : élargir le budget = changement large sur
+> l'échéance de TOUS les scans ; réduire la charge = vider le gabarit de sa
+> raison d'être (« mettre le budget sous tension », cahier P2-4). Et aucun test
+> n'exige la saturation (`p2-4.test.ts` le dit : « pas un attendu permanent » ;
+> il ne teste que la CONSTRUCTION). L'oracle d'équivalence écarte donc le
+> gabarit `site-charge` du décompte comparé (`GABARITS_HORS_EQUIVALENCE` dans
+> `banc/equivalence-optimisation.ts`, invariant en code), **et l'ANNONCE à
+> chaque run** (message `equivalence.exclusion`) : un oracle qui DÉCLARE ce
+> qu'il ne vérifie pas est honnête ; le skip muet aurait été le mort-vivant.
+> Rien de vérifiable n'est perdu — la construction reste couverte par
+> `p2-4.test.ts`, la performance par les métriques, et l'axe identité n'était
+> pas fiable sur lui. Témoin : `banc/equivalence-exclusion.test.ts`.
+> **Condition de SORTIE de la liste d'exclusion** (si un jour on le veut dans
+> l'équivalence) : rendre `site-charge` déterministe sur son identité — tant
+> qu'il sature un budget-temps, il reste exclu.
 
 Trouvée EN VÉRIFIANT (C) : l'équivalence de P2-12 ne touchait que le
 recouvrement, mais la comparaison brute sur les 97 scénarios ressortait « NON
@@ -853,9 +874,11 @@ l'outil. Ne PAS trancher maintenant lequel : c'est de la conception (stabiliser
 vs exclure), à froid, par la mesure — qui dira si l'échéance est trop serrée ou
 si c'est le timing de l'image-404 qu'il faut fixer. Probablement petit.
 
-Les trois verrous du prochain grand tableau sont désormais : **n°31 (oracle de
+Les trois verrous du prochain grand tableau étaient : **n°31 (oracle de
 jugement committé) + n°32 (dépouilleur committé) + n°33 (`site-charge`
-déterministe ou exclu de l'équivalence)**. Un tableau jugé par un oracle
-jetable, lu par un dépouilleur jetable, et comparé par un banc qui crie faux,
-n'est pas un tableau fiable. Les trois se mettent en ordre à froid, un par un,
-avant la mesure réelle.
+déterministe ou exclu de l'équivalence)**. **n°33 LEVÉE le 2026-10-07**
+(exclusion documentée et annoncée). Restent **n°31 et n°32** — committer les
+deux instruments jetables du scratchpad en instruments testés sous `banc/`.
+Un tableau jugé par un oracle jetable et lu par un dépouilleur jetable n'est
+pas fiable ; les deux se mettent en ordre à froid, un par un, avant la mesure
+réelle.

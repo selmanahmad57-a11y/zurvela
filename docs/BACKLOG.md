@@ -294,13 +294,13 @@ de deux heures). Le cahier (A) seul fera tomber le bruit de ~80 % à ~25 %.
 > **État (2026-10-07) : les trois faux positifs sont traités ou classés.**
 > (A) mur de consentement : 15 FP → 1 constat honnête (P2-11). (B) pub
 > transitoire : 4 FP → suspendu, inter-scans, hors périmètre (`4bf8d2a`).
-> (C) proxy invisible : 1 FP → écarté (P2-12, `6e379ab`). **Reste les TROIS
-> verrous instrumentaux avant de refaire le tableau** (un tableau jugé par un
-> oracle jetable, lu par un dépouilleur jetable, comparé par un banc qui crie
-> faux n'est pas fiable) : **dette n°31** (oracle de jugement committé) +
-> **n°32** (dépouilleur committé) + **n°33** (`site-charge` rendu déterministe
-> ou exclu de l'équivalence — révélée en vérifiant P2-12, voir DETTES). Les
-> trois à froid, un par un, avant la mesure réelle.
+> (C) proxy invisible : 1 FP → écarté (P2-12, `6e379ab`). **Verrous
+> instrumentaux avant de refaire le tableau** (un tableau jugé par un oracle
+> jetable, lu par un dépouilleur jetable, comparé par un banc qui crie faux
+> n'est pas fiable) : **n°33 LEVÉE** (`site-charge` exclu de l'équivalence,
+> documenté et annoncé — révélée en vérifiant P2-12, voir DETTES). **Restent
+> n°31** (oracle de jugement committé) + **n°32** (dépouilleur committé) — à
+> froid, un par un, avant la mesure réelle.
 
 ### A. LE MUR DE CONSENTEMENT NON LEVÉ — 15 FP, le gros — **moitié lourde TRAITÉE (P2-11), reste C3-b**
 

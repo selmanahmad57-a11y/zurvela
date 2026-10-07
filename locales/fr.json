@@ -43,6 +43,7 @@
     "apparu": "   APPARU  {{element}}",
     "bilanPerdus": "{{nombre}} identité(s) PERDUE(S) : un gain payé en signal est l’erreur cardinale.",
     "entete": "Référence : {{reference}} scénario(s) · Optimisé : {{optimise}}",
+    "exclusion": "HORS ÉQUIVALENCE — {{nombre}} scénario(s) du gabarit {{gabarits}} exclus : leur identité par-groupe est un artefact de timing PAR CONCEPTION (saturation d’un budget de confirmation), pas un défaut à comparer (dette n°33). Déclaré, jamais tu — un oracle qui dit ce qu’il ne vérifie pas reste fiable ; la construction reste couverte par p2-4.test.ts, la performance par les métriques.",
     "equivalent": "ÉQUIVALENT — {{nombre}} scénario(s) : identité ET effort identiques.",
     "gainMesurable": "Le gain de vitesse peut maintenant se mesurer : il compare désormais deux exécutions dont on a PROUVÉ qu’elles font la même chose (APPRENTISSAGES n°33).",
     "gainNonComparable": "Le gain de vitesse ne se compare PAS tel quel : sur ces scénarios, l’exécution optimisée en a fait DAVANTAGE, et une durée qui tombe pendant qu’on en fait plus ne mesure rien. Mesurez-le sur les scénarios dont l’identité n’a pas bougé (APPRENTISSAGES n°33).",
