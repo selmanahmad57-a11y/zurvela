@@ -26,7 +26,7 @@
  */
 import type { RapportBusiness, SectionRapport } from '../types.js';
 import { STATUTS_SANS_RETEST } from './statuts.js';
-import { LIBELLES_CATEGORIE, LIBELLES_GRAVITE, LIBELLES_RAPPORT, estLangueRapport, type LangueRapport } from './voix.js';
+import { LIBELLES_CATEGORIE, LIBELLES_GRAVITE, LIBELLES_RAPPORT, estLangueRapport, libelleAction, type LangueRapport } from './voix.js';
 
 export interface OptionsRendu {
   /** URL scannée, affichée en tête. Absente : le rapport ne la mentionne pas. */
@@ -174,15 +174,10 @@ function rendreSection(section: SectionRapport, langue: LangueRapport, rang: num
     lignes.push(`**${libelles.impact}** — ${echapper(section.impact)}`, '');
   }
   if (section.actionSuggeree !== '') {
-    // Le mur a son libellé d'action PROPRE : « Ce qu'il faut vérifier », jamais
-    // « faire corriger » qui présumerait un défaut (cahier P2-11 Q4, 2ᵉ source).
-    const labelAction =
-      section.murCouvrant === true
-        ? libelles.actionLabelMurCouvrant
-        : section.preuveFaible === true
-          ? libelles.actionLabelPreuveFaible
-          : libelles.action;
-    lignes.push(`**${labelAction}** — ${echapper(section.actionSuggeree)}`, '');
+    // Le libellé d'action est routé par la voix (mur/preuve-faible → « ce qu'il
+    // faut vérifier », jamais « faire corriger »), via la fonction PARTAGÉE avec
+    // le rendu HTML : une seule source, pas de dérive à la prochaine branche.
+    lignes.push(`**${libelleAction(section, langue)}** — ${echapper(section.actionSuggeree)}`, '');
   }
   // Une section sans prose dans un rapport QUI EN A ne se distingue autrement
   // que par ce qui lui manque, et deux sections muettes de même catégorie

@@ -401,3 +401,20 @@ export const LIBELLES_RAPPORT: Readonly<
     actionLabelPreuveFaible: 'What to check',
   },
 };
+
+/**
+ * LE LIBELLÉ D'ACTION d'une section, routé par la voix — PARTAGÉ entre les
+ * rendus (Markdown et HTML) pour qu'il n'existe qu'en UN endroit. Deux
+ * exemplaires du routage dériveraient le jour d'une quatrième branche (l'écart
+ * « 30 contre 15 » déjà vécu) ; ici une seule source. Le mur et la preuve
+ * faible ont « Ce qu'il faut vérifier » (jamais « faire corriger », qui
+ * présumerait un défaut) ; le reste a le libellé d'action ordinaire.
+ */
+export function libelleAction(section: { murCouvrant?: boolean; preuveFaible?: boolean }, langue: LangueRapport): string {
+  const libelles = LIBELLES_RAPPORT[langue];
+  return section.murCouvrant === true
+    ? libelles.actionLabelMurCouvrant
+    : section.preuveFaible === true
+      ? libelles.actionLabelPreuveFaible
+      : libelles.action;
+}

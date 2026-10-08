@@ -54,6 +54,10 @@ const DOSSIERS_GARDES = ['core', 'banc'];
 const AUTORISES = [
   'core/rapport/index.ts',
   'core/rapport/rendu.ts',
+  // `rendu-html.ts` est le JUMEAU HTML de `rendu.ts` : il AFFICHE la prose
+  // (vers HTML au lieu de Markdown), il ne branche jamais sur son contenu.
+  // Même régime d'autorisation, même raison — afficher n'est pas lire.
+  'core/rapport/rendu-html.ts',
   'banc/correcteur/rapport.ts',
   'banc/correcteur/langue-prose.ts',
 ];
