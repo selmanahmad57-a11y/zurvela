@@ -299,9 +299,12 @@ de deux heures). Le cahier (A) seul fera tomber le bruit de ~80 % à ~25 %.
 > jetable, lu par un dépouilleur jetable, comparé par un banc qui crie faux
 > n'est pas fiable) : **n°33 LEVÉE** (`site-charge` exclu de l'équivalence,
 > documenté et annoncé — révélée en vérifiant P2-12) ; **n°31 LEVÉE** (oracle
-> de jugement committé et testé, `banc/oracle-recouvrement.ts` + témoin 7/7).
-> **Reste n°32** (dépouilleur committé, levée naturellement post-run) — voir
-> DETTES. Dernier verrou avant la mesure réelle, à froid.
+> de jugement committé et testé, `banc/oracle-recouvrement.ts` + témoin 7/7) ;
+> **n°32 LEVÉE** le 2026-10-08 (dépouilleur committé et testé,
+> `banc/depouiller-reel.ts` + 8 contrôles : contrôle `blob:` + bonne page par
+> victime ; validé sur les journaux réels du run). **Les TROIS verrous sont
+> levés** — oracle, équivalence, dépouilleur, tous committés et testés : deux
+> grands tableaux sont enfin comparables de bout en bout. Voir DETTES.
 
 > **GRAND TABLEAU REFAIT le 2026-10-07** (`docs/bilan-reel-2026-10-07.md`,
 > HEAD `340ae3a`, 9 sites, **0,3389 USD** sous l'annoncé, jugé par l'oracle

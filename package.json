@@ -24,7 +24,8 @@
     "lint": "eslint .",
     "banc:reel": "node --env-file-if-exists=.env --env-file-if-exists=.env.local --env-file-if-exists=docs/.env.local --import tsx banc/reel.ts",
     "banc:equivalence-optimisation": "tsx banc/equivalence-optimisation.ts",
-    "banc:scorecard-reelle": "tsx banc/scorecard-reelle.ts"
+    "banc:scorecard-reelle": "tsx banc/scorecard-reelle.ts",
+    "banc:depouiller-reel": "tsx banc/depouiller-reel.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "0.127.0",

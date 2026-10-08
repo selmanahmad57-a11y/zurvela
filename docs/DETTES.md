@@ -788,7 +788,24 @@ ce soir, lui, peut s'appuyer sur le fichier du scratchpad : il existe, il est
 comparabilité de DEUX. (Instrument de ce soir :
 `scratchpad/oracle-recouvrement.mjs`.)
 
-## 32. Le dépouilleur du grand tableau est un instrument du scratchpad, pas un instrument committé (2026-10-06, préparation du grand tableau)
+## 32. Le dépouilleur du grand tableau est un instrument du scratchpad, pas un instrument committé (2026-10-06, préparation du grand tableau) — **LEVÉE le 2026-10-08**
+
+> **LEVÉE le 2026-10-08, post-run comme prévu.** Le dépouilleur vit en
+> instrument committé et testé : `banc/depouiller-reel.ts` (lit les journaux
+> durables, expose les sections publiées et les écartées — la « nature » que
+> `juger.js` donnait est DÉJÀ au journal, pas à recalculer —, tient le contrôle
+> `blob:`, et DONNE À JUGER chaque recouvrement à l'oracle committé n°31 en
+> direct) + `banc/depouiller-reel.test.ts` (8 contrôles). `juger.js` étant perdu
+> du scratchpad, cette partie a été RECONSTRUITE contre ce que le run réel
+> produit (pas un port byte-faithful comme n°31) — raison pour laquelle sa levée
+> était post-run. Les DEUX témoins que la dette et le run ont nommés sont tenus :
+> le **contrôle `blob:`** (une reponse-lente sur schéma local rougit) et la
+> **bonne page par victime** (`cibleAJuger` lit `preuve.page`, jamais une racine
+> — sans quoi les `#item-N` de demoqa seraient « introuvables », le piège du run
+> du 2026-10-07). Validé sur les journaux réels de ce run : le dépouilleur
+> committé reproduit la restitution à la main, demoqa `#item-8` jugé **recouvert**
+> sur `/elements` (plus d'« introuvable » faussement transitoire), contrôle
+> `blob:` TENU. Les trois verrous du grand tableau sont désormais LEVÉS.
 
 Jumelle de n°31, sur l'autre instrument jetable du grand tableau. Là où n°31
 vise l'oracle qui JUGE un recouvrement, celle-ci vise le dépouilleur qui LIT le
@@ -904,9 +921,12 @@ Les trois verrous du prochain grand tableau étaient : **n°31 (oracle de
 jugement committé) + n°32 (dépouilleur committé) + n°33 (`site-charge`
 déterministe ou exclu de l'équivalence)**. **n°33 LEVÉE le 2026-10-07**
 (exclusion documentée et annoncée). **n°31 LEVÉE le 2026-10-07** (oracle
-committé et testé, `banc/oracle-recouvrement.ts` + témoin 7/7). **Reste n°32**
-— committer le dépouilleur (`scratchpad/juger.js` + `depouiller-tableau.js`) en
-instrument testé sous `banc/`, avec le témoin du contrôle `blob:`, qui importera
-`scriptOracle` de n°31 au lieu de le retaper. C'est le dernier verrou avant la
-mesure réelle, et sa levée est NATURELLEMENT POST-RUN (le dépouilleur dépend de
-ce que le tableau révèle), à froid.
+committé et testé, `banc/oracle-recouvrement.ts` + témoin 7/7). **n°32 LEVÉE le
+2026-10-08** (dépouilleur committé et testé, `banc/depouiller-reel.ts` + témoin
+8 contrôles : contrôle `blob:` + bonne page par victime ; importe `scriptOracle`
+de n°31, reconstruit car `juger.js` perdu ; validé sur les journaux réels du
+run). **Les trois verrous du grand tableau sont LEVÉS** : oracle de jugement,
+comparateur d'équivalence, dépouilleur de lecture — tous committés, testés,
+versionnés. Pour la première fois, les trois instruments qui jugent, comparent
+et lisent le tableau le plus important du projet existent et sont fixes, donc
+deux tableaux sont enfin comparables de bout en bout.
