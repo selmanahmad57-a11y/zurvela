@@ -303,6 +303,22 @@ de deux heures). Le cahier (A) seul fera tomber le bruit de ~80 % à ~25 %.
 > **Reste n°32** (dépouilleur committé, levée naturellement post-run) — voir
 > DETTES. Dernier verrou avant la mesure réelle, à froid.
 
+> **GRAND TABLEAU REFAIT le 2026-10-07** (`docs/bilan-reel-2026-10-07.md`,
+> HEAD `340ae3a`, 9 sites, **0,3389 USD** sous l'annoncé, jugé par l'oracle
+> committé n°31). **~80 % → 0 % de faux positif STABLE** sur les comparables.
+> (A) confirmé au réel (automationexercise : `murCouvrant:true` au journal — la
+> fusion a TIRÉ, 15→2 constats mineurs honnêtes) ; (C) confirmé (proxy ACE
+> disparu d'expandtesting) ; (B) déclaré, pas résolu (3 transitoires :
+> `#google_ads_iframe`, `#aswift_6`, mur transitoire — classe suspendue
+> inter-scans). 9 vraies, 3 transitoires déclarées, 0 FP stable net.
+> the-internet non-témoin (0 FP, rejouabilité mangée par la lenteur). Filet du
+> run : la correction de jugement demoqa (le harnais chargeait la racine, les
+> `#item-N` vivent sur `/elements` — re-jugé, 2 vrais footers sauvés d'un
+> « introuvable » faussement transitoire). **Le moteur est montrable ; le
+> chemin critique bascule vers la Phase 3** (page publique, premiers
+> commerçants). Restes moteur : n°32 (post-run), (B) (mémoire inter-scans,
+> gros cahier futur).
+
 ### A. LE MUR DE CONSENTEMENT NON LEVÉ — 15 FP, le gros — **moitié lourde TRAITÉE (P2-11), reste C3-b**
 
 > **État (2026-10-06) : fusion TRAITÉE — cahier P2-11 « le mur couvrant ».** Le

@@ -822,6 +822,18 @@ témoin du contrôle `blob:` : une `reponse-lente` sur schéma local DOIT rougir
 contrôle). Pour UN run, le jetable du scratchpad suffit (il existe, il est
 inspectable) — pas pour la comparabilité de DEUX.
 
+**Cahier des charges, précisé par le run du 2026-10-07** : le dépouilleur devra
+**charger la BONNE PAGE par victime** (lue dans la localisation du journal de
+l'anomalie : `urlOuEtape`), jamais l'URL racine par défaut. Le run l'a montré au
+réel : juger les victimes `#item-N` de demoqa sur la racine les rend
+« introuvables » (les menus latéraux vivent sur `/elements`), un artefact
+d'instrument que le compte brut aurait pris pour une transience — et qui aurait
+fait disparaître deux vrais positifs (les footers recouverts desktop ET mobile).
+Le jugement à la main l'a corrigé en re-jugeant sur la bonne page ; le
+dépouilleur committé doit le faire par construction. `juger.js` étant perdu du
+scratchpad, cette partie se RECONSTRUIT (pas un port byte-faithful comme n°31),
+contre ce que le run réel produit — raison de plus pour la lever post-run.
+
 Inventaire des instruments jetables du grand tableau, désormais complet :
 **n°31 (oracle de jugement) + n°32 (dépouilleur de lecture)**. Les deux tiennent
 pour un run, aucun ne tient pour la comparabilité des runs ; les deux se lèvent
