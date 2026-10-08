@@ -1163,6 +1163,15 @@ export interface SectionRapport {
    * reformulerait). Marqueur structurant, pas de la prose.
    */
   murCouvrant?: boolean;
+  /**
+   * RECOUVREMENT À PREUVE FAIBLE (voie A) : un recouvrement DÉCOUVERT au rejeu
+   * (`decouverte`/`constatee-au-rejeu`), jamais passé par le test de
+   * persistance. Même régime que `murCouvrant` — prose FIXE à garantie
+   * sémantique, posée au montage, EXCLUE de la rédaction IA, gravité `mineur`
+   * posée au rapport (l'anomalie garde sa gravité au journal : minoration de
+   * VOIX, pas de détection). Marqueur structurant, pas de la prose.
+   */
+  preuveFaible?: boolean;
   // --- FAITS (posés par le code, jamais par le modèle) ---
   categorie: Categorie;
   gravite: Gravite;

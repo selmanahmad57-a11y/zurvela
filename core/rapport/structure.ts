@@ -36,8 +36,9 @@ import {
   type StatutSection,
 } from '../types.js';
 import { tauxRejouabilite } from '../scanner/confirmation/rejouabilite.js';
+import { DESCRIPTION_CLIC_INTERCEPTE } from '../scanner/detection/d-recouvrement.js';
 import { hoteDePreuve } from './faits.js';
-import { AUCUNE_VERIFICATION, chiffresDe, statutDe, type ChiffresStatut } from './statuts.js';
+import { AUCUNE_VERIFICATION, chiffresDe, statutDe, STATUTS_SANS_RETEST, type ChiffresStatut } from './statuts.js';
 import { LIBELLES_RAPPORT, formulerStatut, type LangueRapport } from './voix.js';
 
 /**
@@ -284,6 +285,12 @@ export function construireStructure(rapport: Rapport, langue: LangueRapport): St
     // champ de prose, que la garde « prose terminale » réserve à la lecture de
     // contenu. Sinon prose vide, que la rédaction remplira.
     const mur = anomalie.murCouvrant === true;
+    // RECOUVREMENT À PREUVE FAIBLE (voie A) : un clic-intercepte DÉCOUVERT au
+    // rejeu (statut « sans re-test », jamais passé par la persistance). Le mur
+    // GAGNE la préséance (vérifié d'abord, déjà minoré par sa fraction de
+    // viewport) : la preuve-faible ne s'applique qu'aux recouvrements NON-mur,
+    // pas de double-minoration ni de voix en conflit (mesuré disjoints).
+    const preuveFaible = !mur && anomalie.description === DESCRIPTION_CLIC_INTERCEPTE && STATUTS_SANS_RETEST.includes(statut);
     const masque = mur ? elementsMasques(anomalie) : { nb: 0, pages: '' };
     return {
       id: `s${rang + 1}`,
@@ -292,20 +299,27 @@ export function construireStructure(rapport: Rapport, langue: LangueRapport): St
       ...(hoteDePreuve(anomalie) === undefined ? {} : { origine: hoteDePreuve(anomalie) }),
       ...(anomalie.groupe === undefined ? {} : { groupe: anomalie.groupe }),
       ...(mur ? { murCouvrant: true } : {}),
+      ...(preuveFaible ? { preuveFaible: true } : {}),
       categorie: anomalie.categorie,
-      gravite: anomalie.graviteEstimee,
+      // MINORATION DE VOIX (voie A) : une preuve faible sort `mineur` AU
+      // RAPPORT — l'anomalie garde sa gravité au journal (empreinte inchangée,
+      // équivalence additive). Un `confirmee`/`victime-stable` n'est jamais
+      // touché (il n'est pas « sans re-test ») : la garde cardinale.
+      gravite: preuveFaible ? 'mineur' : anomalie.graviteEstimee,
       statut,
       // Le mur a sa phrase de statut PROPRE (reproductibilité sans promesse de
-      // défaut vérifié, cahier P2-11 Q4), routée par le marqueur ; sinon la
+      // défaut vérifié, cahier P2-11 Q4), routée par le marqueur ; la preuve
+      // faible a la sienne (« observé une fois, non reproduit ») ; sinon la
       // phrase épistémique générique.
-      statutFormule: mur ? libelles.statutMurCouvrant : formulerStatut(statut, langue, chiffresPour(anomalie, index)),
+      statutFormule: mur ? libelles.statutMurCouvrant : preuveFaible ? libelles.statutPreuveFaible : formulerStatut(statut, langue, chiffresPour(anomalie, index)),
       localisations: localisationsLisibles(anomalie),
       // `impactChiffre` : ABSENT, et c'est la décision, pas un oubli (voir l'en-tête).
-      titre: mur ? libelles.titreMurCouvrant : '',
-      constat: mur ? libelles.constatMurCouvrant(masque.nb, masque.pages) : '',
-      // PAS d'impact pour un mur : on ne prétend aucune conséquence (Q2).
+      titre: mur ? libelles.titreMurCouvrant : preuveFaible ? libelles.titrePreuveFaible : '',
+      constat: mur ? libelles.constatMurCouvrant(masque.nb, masque.pages) : preuveFaible ? libelles.constatPreuveFaible : '',
+      // PAS d'impact pour un mur ni pour une preuve faible : aucune conséquence
+      // prétendue (on ne juge pas à la place du commerçant).
       impact: '',
-      actionSuggeree: mur ? libelles.actionMurCouvrant : '',
+      actionSuggeree: mur ? libelles.actionMurCouvrant : preuveFaible ? libelles.actionPreuveFaible : '',
     };
   });
 

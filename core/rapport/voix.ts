@@ -251,6 +251,22 @@ export const LIBELLES_RAPPORT: Readonly<
        * qui dit « c'est peut-être normal » (cahier P2-11, C3-b, Q4, 2ᵉ source).
        */
       actionLabelMurCouvrant: string;
+      /**
+       * RECOUVREMENT À PREUVE FAIBLE (voie A). Un recouvrement DÉCOUVERT au
+       * rejeu (`decouverte`/`constatee-au-rejeu`), jamais passé par le test de
+       * persistance : le moteur l'a vu une fois, pas reproduit. Même régime que
+       * le mur (garantie sémantique, hors rédaction IA, gravité `mineur`) :
+       * le STATUT dit exactement la preuve faible — « observé une fois, non
+       * reproduit » — SANS la promesse « défaut vérifié » de `confirmee` ; le
+       * constat décrit ce qu'on a observé ; l'action INVITE à vérifier l'effet
+       * (« s'il gêne l'usage ») sans conclure qu'un élément revu = défaut — le
+       * moteur ne le sait pas. Minorer ≠ taire : la section reste publiée.
+       */
+      titrePreuveFaible: string;
+      constatPreuveFaible: string;
+      statutPreuveFaible: string;
+      actionPreuveFaible: string;
+      actionLabelPreuveFaible: string;
     }
   >
 > = {
@@ -319,6 +335,11 @@ export const LIBELLES_RAPPORT: Readonly<
       'Vérifiez si ce recouvrement est intentionnel : s’il s’agit d’un bandeau de consentement ou d’une fenêtre que vous avez placée, ce constat est normal ; sinon, un élément masque une partie de votre interface.',
     statutMurCouvrant: 'Observé de façon constante lors de nos passages.',
     actionLabelMurCouvrant: 'Ce qu’il faut vérifier',
+    titrePreuveFaible: 'Recouvrement observé une seule fois',
+    constatPreuveFaible: 'Lors d’un seul de nos passages, un élément a reçu le clic à la place de ce contrôle ; nous ne l’avons pas revu ensuite.',
+    statutPreuveFaible: 'Observé une fois, non reproduit lors de nos vérifications.',
+    actionPreuveFaible: 'Si vous le constatez sur votre site, vérifiez s’il gêne l’usage de ce contrôle.',
+    actionLabelPreuveFaible: 'Ce qu’il faut vérifier',
   },
   en: {
     titre: 'Verification report',
@@ -373,5 +394,10 @@ export const LIBELLES_RAPPORT: Readonly<
       'Check whether this overlay is intentional: if it is a consent banner or a window you placed, this finding is expected; otherwise, an element is hiding part of your interface.',
     statutMurCouvrant: 'Consistently observed across our passes.',
     actionLabelMurCouvrant: 'What to check',
+    titrePreuveFaible: 'Overlay observed only once',
+    constatPreuveFaible: 'On a single one of our passes, an element received the click in place of this control; we did not see it again afterwards.',
+    statutPreuveFaible: 'Observed once, not reproduced across our checks.',
+    actionPreuveFaible: 'If you observe it on your site, check whether it hinders the use of this control.',
+    actionLabelPreuveFaible: 'What to check',
   },
 };

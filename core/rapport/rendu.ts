@@ -176,7 +176,12 @@ function rendreSection(section: SectionRapport, langue: LangueRapport, rang: num
   if (section.actionSuggeree !== '') {
     // Le mur a son libellé d'action PROPRE : « Ce qu'il faut vérifier », jamais
     // « faire corriger » qui présumerait un défaut (cahier P2-11 Q4, 2ᵉ source).
-    const labelAction = section.murCouvrant === true ? libelles.actionLabelMurCouvrant : libelles.action;
+    const labelAction =
+      section.murCouvrant === true
+        ? libelles.actionLabelMurCouvrant
+        : section.preuveFaible === true
+          ? libelles.actionLabelPreuveFaible
+          : libelles.action;
     lignes.push(`**${labelAction}** — ${echapper(section.actionSuggeree)}`, '');
   }
   // Une section sans prose dans un rapport QUI EN A ne se distingue autrement
