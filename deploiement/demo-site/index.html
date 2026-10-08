@@ -1,0 +1,17 @@
+<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Boulangerie du Cours — accueil</title><style>body{font-family:ui-sans-serif,system-ui,Arial,sans-serif;margin:0;color:#1d1d1b;background:#fbfaf7;line-height:1.5}header{border-bottom:1px solid #e3e1da;padding:14px 20px}nav a{margin-right:16px;color:#245c4f;text-decoration:none}main{max-width:720px;margin:0 auto;padding:28px 20px}h1{color:#245c4f}.produit{display:flex;gap:16px;align-items:center;margin:18px 0}.produit img{width:90px;height:90px;border-radius:8px;object-fit:cover}footer{border-top:1px solid #e3e1da;padding:18px 20px;color:#6b6a66}</style></head>
+<body>
+<header><nav><a href="/">Accueil</a><a href="/offres.html">Nos offres</a><a href="/contact.html">Contact</a></nav></header>
+<main>
+  <h1>Boulangerie du Cours</h1>
+  <p>Pains au levain, viennoiseries et commandes pour vos évènements.</p>
+  <div class="produit">
+    <img src="/images/pain-de-campagne.jpg" alt="Pain de campagne">
+    <div><strong>Pain de campagne</strong><br>Au levain naturel, cuit au feu de bois.</div>
+  </div>
+  <p>Passez commande en ligne et retirez en boutique.</p>
+</main>
+<footer>Boulangerie du Cours · 12 rue du Cours · Ouvert du mardi au dimanche</footer>
+<!-- Un lien d'action flottant (CTA « Commander »), recouvert en permanence par une barre promo fixe PETITE (couv ~0,08 < 0,5 → recouvrement ORDINAIRE, pas un mur). id distinct → selecteurDe = #promo-bas → identité de consolidation distincte du mur. Le lien est un <a> hors nav/footer → controleOrdinaire → IMPORTANT, et persistant → confirmee (pas minoré). -->
+<a href="/offres.html" class="lien-commander" style="position:fixed;bottom:18px;left:24px;z-index:10;background:#245c4f;color:#fff;padding:12px 20px;border-radius:6px;text-decoration:none">Commander en ligne</a>
+<div id="promo-bas" class="barre-promo" style="position:fixed;bottom:0;left:0;right:0;height:64px;z-index:40;background:#1d1d1b;color:#fff;display:flex;align-items:center;justify-content:center">Livraison offerte dès 20 € — tout le mois</div>
+</body></html>
