@@ -931,7 +931,7 @@ versionnés. Pour la première fois, les trois instruments qui jugent, comparent
 et lisent le tableau le plus important du projet existent et sont fixes, donc
 deux tableaux sont enfin comparables de bout en bout.
 
-## 34. SSRF au moment du scan — le navigateur (Playwright) résout son propre DNS, un hôte prouvé peut rebinder vers une IP interne (2026-10-09, cahier publication-03)
+## 34. SSRF au moment du scan — le navigateur (Playwright) résout son propre DNS, un hôte prouvé peut rebinder vers une IP interne (2026-10-09, cahier publication-03) — **LEVÉE le 2026-10-10 (publication-04)**
 
 - **Quoi** : la vérification de propriété (`core/publication/verification-propriete.ts`,
   étape 3) ferme le SSRF du **GET de vérification** (hôte non public refusé avant
@@ -956,3 +956,18 @@ deux tableaux sont enfin comparables de bout en bout.
   premier DNS). Témoin : un hôte qui rebinde vers une IP interne pendant le scan ne
   doit déclencher AUCUNE connexion du navigateur vers cette IP. **Garde obligatoire
   de l'étape du scan — un scan public ne part pas tant qu'elle n'est pas fermée.**
+
+- **LEVÉE le 2026-10-10 (cahier publication-04)** : la garde cardinale de
+  l'étape 4 est un PROXY FILTRANT D'EGRESS (`core/publication/proxy-filtrant.ts`)
+  derrière lequel tout scan tourne. Il voit chaque connexion du navigateur
+  (page + sous-ressources + redirections), valide l'IP et refuse privé/réservé/
+  metadata — il NE dépend PAS de `--host-resolver-rules` (qui n'épingle que
+  l'origine et laisse passer les sous-ressources : mesuré). Câblage prouvé
+  EFFECTIF : `config.navigateur.proxy` → `lancerNavigateur` →
+  `chromium.launch({ proxy, bypass:'' })` (le `bypass:''` ferme le contournement
+  localhost). Prouvé — pas supposé : Chromium RÉEL, une sous-ressource
+  `<img src=http://169.254.169.254/>` est refusée (0 egress) ; et via le vrai
+  chemin navigateur du scanner, une navigation/sous-ressource privée est
+  refusée tandis qu'un site public passe (transparent). Réutilise l'épinglage
+  `lookupPublicSeulement` de l'étape 3 pour les sorties du proxy (anti-rebinding
+  TOCTOU). Confirmation finale par la validation e2e en conditions réelles.

@@ -153,9 +153,12 @@ export function estIpPublique(ip: string): boolean {
   return false;
 }
 
-/** Erreur marquée « hôte non public » pour que le GET la classe sans ambiguïté. */
-class ErreurHoteNonPublic extends Error {
-  readonly codeZurvela = 'HOTE_NON_PUBLIC';
+/** Code porté par l'erreur d'un `lookup` qui refuse un hôte non public — pour classer un refus SSRF sans ambiguïté (réutilisé par le proxy filtrant, étape 4). */
+export const CODE_HOTE_NON_PUBLIC = 'HOTE_NON_PUBLIC';
+
+/** Erreur marquée « hôte non public » pour que le GET (et le proxy) la classe sans ambiguïté. */
+export class ErreurHoteNonPublic extends Error {
+  readonly codeZurvela = CODE_HOTE_NON_PUBLIC;
 }
 
 /**

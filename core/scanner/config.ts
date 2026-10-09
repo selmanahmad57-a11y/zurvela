@@ -45,7 +45,16 @@ export function verifierRepartitionEcheance(repartition: RepartitionEcheance, so
 }
 
 export interface ConfigScanner {
-  navigateur: { canal: string | null; sansTete: boolean };
+  navigateur: {
+    canal: string | null;
+    sansTete: boolean;
+    /**
+     * Proxy d'egress (`http://127.0.0.1:PORT`), INJECTÉ À L'EXÉCUTION (jamais
+     * dans le JSON : le port est éphémère). Le scan public tourne derrière le
+     * proxy filtrant (étape 4, garde cardinale SSRF-au-scan). Absent = direct.
+     */
+    proxy?: string | null;
+  };
   robot: { userAgent: string; enTete: string; valeurEnTete: string };
   viewports: Viewport[];
   exploration: {

@@ -1,0 +1,126 @@
+/**
+ * ASSEMBLAGE DU SERVEUR DE SCAN PUBLIC (publication, étape 4) — la production.
+ * Démarre le PROXY FILTRANT (garde cardinale), câble le scan DERRIÈRE lui
+ * (`creerScannerParDefaut({ proxy })`, transit prouvé), l'état durable en JSON,
+ * la file 1-à-la-fois, et les routes. Le GET de vérification réutilise
+ * l'épinglage de l'étape 3. Aucun seuil en dur : tout vient de
+ * `config/publication.json`.
+ *
+ * Ce module n'est exercé qu'à la validation réelle de bout en bout (le seul
+ * dollar, ~0,05 $, annoncé avant) et au déploiement — les gardes, elles, sont
+ * prouvées au banc (proxy, transit, serveur, file, IDOR).
+ */
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { chargerConfigScanner, FICHIER_CONFIG_PRODUCTION } from '../scanner/config.js';
+import { chargerSchema, valider } from '../outils/schema.js';
+import { rendreRapportHtml } from '../rapport/rendu-html.js';
+import { creerProxyFiltrant, type ProxyFiltrant } from './proxy-filtrant.js';
+import { lookupPublicSeulement, recupererDirect, resolveurSysteme, type Recuperer } from './verification-propriete.js';
+import { stockScansFichier, stockVerificationFichier } from './stock-fichier.js';
+import { creerOrdonnanceur, creerServeurScan, type ExecuterScan, type ServeurScan } from './serveur-scan.js';
+import { creerScannerParDefaut } from '../scanner/defaut.js';
+
+const RACINE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
+
+export interface ConfigPublicationComplete {
+  octetsJeton: number;
+  expirationJetonMs: number;
+  fenetreValiditeMs: number;
+  prefixeFichier: string;
+  octetsScanId: number;
+  tailleCorpsMax: number;
+  verificationGet: { delaiMs: number; maxOctets: number };
+  proxy: { delaiMs: number };
+  scan: { timeoutMs: number };
+}
+
+export async function chargerConfigPublication(fichier: string = path.join(RACINE, 'config', 'publication.json')): Promise<ConfigPublicationComplete> {
+  const [schema, contenu] = await Promise.all([
+    chargerSchema(path.join(RACINE, 'config', 'publication.schema.json')),
+    (await import('node:fs/promises')).readFile(fichier, 'utf8'),
+  ]);
+  return valider<ConfigPublicationComplete>(schema, JSON.parse(contenu), 'config/publication.json');
+}
+
+/**
+ * L'EXÉCUTEUR RÉEL : scanne DERRIÈRE le proxy (le `proxy` injecté dans la config
+ * du navigateur, transit prouvé) et rend le rapport HTML (rendu de l'étape 1).
+ */
+export function creerExecuterReel(proxyUrl: string, timeoutMs: number, fichierConfig: string = FICHIER_CONFIG_PRODUCTION): ExecuterScan {
+  return async (origine) => {
+    const scanner = await creerScannerParDefaut({ fichierConfig, proxy: proxyUrl });
+    const rapport = await scanner(origine, { timeoutMs });
+    if (rapport.rapportBusiness === undefined) {
+      return { ok: false, erreur: 'aucun-rapport' };
+    }
+    return { ok: true, rapportHtml: rendreRapportHtml(rapport.rapportBusiness, { url: rapport.url }) };
+  };
+}
+
+export interface ServeurPublic {
+  readonly serveur: ServeurScan;
+  readonly proxy: ProxyFiltrant;
+  fermer(): Promise<void>;
+}
+
+export interface OptionsServeurPublic {
+  /** Dossier où vit l'état durable (jetons, preuves, scans). */
+  readonly dossierEtat: string;
+}
+
+export async function demarrerServeurPublic(opts: OptionsServeurPublic): Promise<ServeurPublic> {
+  const cfg = await chargerConfigPublication();
+  const robot = (await chargerConfigScanner(FICHIER_CONFIG_PRODUCTION)).robot;
+
+  // 1. La garde cardinale : le proxy filtrant d'egress.
+  const proxy = await creerProxyFiltrant({ delaiMs: cfg.proxy.delaiMs });
+  const proxyUrl = `http://127.0.0.1:${proxy.port}`;
+
+  // 2. État durable.
+  const stockVerif = stockVerificationFichier(path.join(opts.dossierEtat, 'jetons.json'), path.join(opts.dossierEtat, 'preuves.json'));
+  const stockScans = stockScansFichier(path.join(opts.dossierEtat, 'scans.json'));
+
+  // 3. Le GET de vérification, épinglé (étape 3), sous l'identité ZurvelaBot.
+  const lookup = lookupPublicSeulement(resolveurSysteme());
+  const recuperer: Recuperer = (origine, chemin) =>
+    recupererDirect(origine, chemin, {
+      userAgent: robot.userAgent,
+      enTete: { nom: robot.enTete, valeur: robot.valeurEnTete },
+      delaiMs: cfg.verificationGet.delaiMs,
+      maxOctets: cfg.verificationGet.maxOctets,
+      lookup,
+    });
+
+  // 4. L'exécuteur réel DERRIÈRE le proxy + la file 1-à-la-fois.
+  const executer = creerExecuterReel(proxyUrl, cfg.scan.timeoutMs);
+  const ordonnanceur = creerOrdonnanceur({ stockScans, executer, maintenant: () => Date.now() });
+  // Reprise après redémarrage : un scan resté « en-attente » repart.
+  ordonnanceur.declencher();
+
+  // 5. Le serveur + ses routes.
+  const serveur = await creerServeurScan({
+    stockVerif,
+    stockScans,
+    ordonnanceur,
+    recuperer,
+    maintenant: () => Date.now(),
+    config: {
+      octetsJeton: cfg.octetsJeton,
+      expirationJetonMs: cfg.expirationJetonMs,
+      fenetreValiditeMs: cfg.fenetreValiditeMs,
+      prefixeFichier: cfg.prefixeFichier,
+      octetsScanId: cfg.octetsScanId,
+      tailleCorpsMax: cfg.tailleCorpsMax,
+    },
+  });
+
+  return {
+    serveur,
+    proxy,
+    fermer: async () => {
+      await serveur.fermer();
+      await proxy.fermer();
+    },
+  };
+}

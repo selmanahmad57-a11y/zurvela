@@ -86,7 +86,16 @@ function installerTampon(reglages: ReglagesTampon): void {
 }
 
 export async function lancerNavigateur(config: ConfigScanner): Promise<Browser> {
-  return chromium.launch({ headless: config.navigateur.sansTete, channel: config.navigateur.canal ?? undefined });
+  const proxy = config.navigateur.proxy ?? null;
+  return chromium.launch({
+    headless: config.navigateur.sansTete,
+    channel: config.navigateur.canal ?? undefined,
+    // Derrière le proxy filtrant quand il est injecté (étape 4). `bypass` vide :
+    // AUCUN hôte ne contourne le proxy — pas même localhost (Chromium le
+    // contourne par défaut, ce serait un trou : un scan de 127.0.0.1 sortirait
+    // sans filtre). Tout passe par la garde cardinale.
+    ...(proxy === null ? {} : { proxy: { server: proxy, bypass: '' } }),
+  });
 }
 
 /** Un contexte isolé par viewport : dimensions, identité du robot, tampon de mutations. */

@@ -1,0 +1,33 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "zurvela/config/publication",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["octetsJeton", "expirationJetonMs", "fenetreValiditeMs", "prefixeFichier", "octetsScanId", "tailleCorpsMax", "verificationGet", "proxy", "scan"],
+  "properties": {
+    "octetsJeton": { "type": "integer", "minimum": 16 },
+    "expirationJetonMs": { "type": "integer", "minimum": 1 },
+    "fenetreValiditeMs": { "type": "integer", "minimum": 1 },
+    "prefixeFichier": { "type": "string", "minLength": 1 },
+    "octetsScanId": { "type": "integer", "minimum": 16 },
+    "tailleCorpsMax": { "type": "integer", "minimum": 1 },
+    "verificationGet": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["delaiMs", "maxOctets"],
+      "properties": { "delaiMs": { "type": "integer", "minimum": 1 }, "maxOctets": { "type": "integer", "minimum": 1 } }
+    },
+    "proxy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["delaiMs"],
+      "properties": { "delaiMs": { "type": "integer", "minimum": 1 } }
+    },
+    "scan": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["timeoutMs"],
+      "properties": { "timeoutMs": { "type": "integer", "minimum": 1 } }
+    }
+  }
+}

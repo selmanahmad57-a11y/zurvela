@@ -210,6 +210,12 @@ export interface OptionsAssemblage {
    * seuil ne naît ici (constitution §2).
    */
   exploration?: { politique?: ConfigScanner['exploration']['politique']; pagesMax?: number };
+  /**
+   * Proxy d'egress injecté à l'exécution (`http://127.0.0.1:PORT`). Le serveur
+   * public (étape 4) le passe pour que le scan tourne DERRIÈRE le proxy filtrant
+   * — la garde cardinale SSRF-au-scan. Absent (banc, `pnpm scan`) = direct.
+   */
+  proxy?: string;
 }
 
 /**
@@ -245,7 +251,11 @@ export async function creerScannerParDefaut(options: OptionsAssemblage = {}): Pr
     chargerConfigDiagnostic(),
     chargerConfigRapport(),
   ]);
-  const config = appliquerSurcharges(configChargee, options.exploration, options.interaction);
+  const configSurchargee = appliquerSurcharges(configChargee, options.exploration, options.interaction);
+  // Le proxy d'egress (étape 4) est injecté À L'EXÉCUTION dans la config du
+  // navigateur : le scan public tourne derrière la garde cardinale.
+  const config: ConfigScanner =
+    options.proxy === undefined ? configSurchargee : { ...configSurchargee, navigateur: { ...configSurchargee.navigateur, proxy: options.proxy } };
   // Les bornes de ce que le modèle de navigation VOIT viennent de
   // `exploration` : la config de décision s'assemble donc après elle.
   const configNavigation = await chargerConfigNavigation(config.exploration);

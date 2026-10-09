@@ -1,0 +1,11 @@
+{
+  "octetsJeton": 32,
+  "expirationJetonMs": 86400000,
+  "fenetreValiditeMs": 3600000,
+  "prefixeFichier": "zurvela-verification-",
+  "octetsScanId": 32,
+  "tailleCorpsMax": 8192,
+  "verificationGet": { "delaiMs": 10000, "maxOctets": 65536 },
+  "proxy": { "delaiMs": 15000 },
+  "scan": { "timeoutMs": 300000 }
+}
