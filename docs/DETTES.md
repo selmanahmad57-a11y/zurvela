@@ -930,3 +930,29 @@ comparateur d'équivalence, dépouilleur de lecture — tous committés, testés
 versionnés. Pour la première fois, les trois instruments qui jugent, comparent
 et lisent le tableau le plus important du projet existent et sont fixes, donc
 deux tableaux sont enfin comparables de bout en bout.
+
+## 34. SSRF au moment du scan — le navigateur (Playwright) résout son propre DNS, un hôte prouvé peut rebinder vers une IP interne (2026-10-09, cahier publication-03)
+
+- **Quoi** : la vérification de propriété (`core/publication/verification-propriete.ts`,
+  étape 3) ferme le SSRF du **GET de vérification** (hôte non public refusé avant
+  connexion, IP épinglée par un `lookup` unique validant+résolvant, anti-rebinding —
+  garde 4d, prouvée au témoin). Mais le **scan lui-même** (étapes 4+) passera par
+  Playwright, qui ouvre ses connexions via Chromium et **résout son propre DNS**.
+  Entre la vérification réussie (origine prouvée publique) et le scan, le DNS de
+  l'hôte peut **rebinder** vers une IP interne (`169.254.169.254`, `10.x`, `localhost`),
+  et le navigateur s'y connecterait — SSRF depuis notre serveur, hors du contrôle du
+  `lookup` natif qui garde la vérification.
+- **Pourquoi la garde de vérification ne suffit pas** : l'épinglage de la garde 4d
+  vaut pour le GET fait par `node:http(s)`. Il ne s'étend pas au navigateur, qui est
+  un autre client réseau. La preuve de fichier empêche d'**autoriser** un scan d'IP
+  interne (on ne peut pas poser le jeton dessus), mais une fois l'origine publique
+  prouvée, un rebinding ultérieur rouvre la porte au moment de la navigation.
+- **Portée** : étape du scan public (publication 4+). N'affecte pas la vérification
+  (étape 3), dont c'est explicitement hors périmètre (garde 4e nommée au cahier).
+- **Condition de levée** : avant qu'un scan public parte sur une URL fournie par un
+  tiers — épingler la résolution au niveau du navigateur (IP validée passée à
+  Chromium, ou `--host-resolver-rules`), ou router le trafic de scan par un proxy
+  filtrant qui rejette les plages privées/réservées à chaque connexion (pas qu'au
+  premier DNS). Témoin : un hôte qui rebinde vers une IP interne pendant le scan ne
+  doit déclencher AUCUNE connexion du navigateur vers cette IP. **Garde obligatoire
+  de l'étape du scan — un scan public ne part pas tant qu'elle n'est pas fermée.**
