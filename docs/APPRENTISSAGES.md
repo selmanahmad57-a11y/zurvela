@@ -1909,3 +1909,35 @@ regardé.
   avant d'écrire a empêché une mauvaise construction » de la Phase 2 (après le
   cache-fantôme et le rejeu-sélectionné de P2-4, P2-5 à zéro cas, le fantôme
   publicitaire de P2-6, et the-internet de P2-10).
+
+## 56. Une règle de méthode qui a cédé une fois se corrige en la rendant MÉCANIQUE, pas en la ré-énonçant (2026-10-09, trou de process du commit 6a28926)
+
+- **Ce qui s'est passé.** En préparant le commit de la vérification de propriété
+  (publication-03), la suite complète a été lancée comme gate et a révélé un test
+  ROUGE pré-existant : `banc/depouiller-reel.ts` portait un `console.log` en forme
+  de phrase que la garde `mur-1` (§2) flague. Preuve à l'appui : la ligne a été
+  introduite par `6a28926` (le commit de la dette n°32), `mur-1.test.ts` existait
+  depuis `5f655b4`, et le rouge tenait sans les fichiers neufs. Donc `6a28926` est
+  passé — committé ET poussé — avec un test rouge non détecté.
+- **Pourquoi un apprentissage ne suffisait pas.** La règle « lance la suite avant
+  de committer » était DÉJÀ connue et écrite. Elle n'a pas manqué par ignorance,
+  elle a cédé sous le relâchement d'une session. Ré-inscrire « il faut lancer la
+  suite » ne change rien : c'est exactement n°34 (un apprentissage inscrit n'est
+  pas un réflexe installé) dans sa forme la plus pure.
+- **La correction : la mécaniser.** Un hook `pre-push` (`.githooks/pre-push`,
+  activé par `git config core.hooksPath .githooks`) lance `pnpm test` et REFUSE le
+  push si rouge. La règle devient un refus du programme — n°28 (un invariant que
+  le code impose bat un invariant qu'un test vérifie) appliqué au process lui-même.
+  `pre-push` et non `pre-commit` : la suite fait ~270 s, trop lourde à chaque
+  commit ; le push est le bon grain (le code quitte la machine). Échappatoire
+  CONSCIENTE : `git push --no-verify` — le gate protège du relâchement, pas de la
+  volonté de forcer ; il n'est pas infranchissable, il est non-oubliable.
+- **L'enjeu propre au produit public.** Sur la vitrine ou un cahier interne, un
+  rouge inaperçu coûte un test. Sur le scanner public (étapes 4-7), un rouge
+  inaperçu peut être une des gardes de sécurité du verrou qui a cédé — une FAILLE,
+  pas un test. Le gate est posé JUSTE avant d'entrer dans ces étapes, là où un
+  rouge coûte le plus.
+- **La règle** : *une règle de méthode qui PEUT devenir un refus du programme DOIT
+  le devenir ; une règle qui a cédé une fois ne se ré-énonce pas, elle se
+  mécanise. Et un gate sur un produit public n'est pas une commodité — c'est une
+  barrière de sécurité.*

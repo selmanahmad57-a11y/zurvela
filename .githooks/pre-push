@@ -1,0 +1,45 @@
+#!/bin/sh
+# GATE pre-push — la suite complète doit être VERTE pour pousser.
+#
+# Pourquoi ce fichier existe (apprentissage n°56). Le commit 6a28926 a poussé un
+# test rouge NON DÉTECTÉ, malgré la règle CONNUE « lance la suite avant de
+# committer ». Une règle de méthode qui a cédé une fois ne se ré-énonce pas :
+# elle se rend MÉCANIQUE (n°34 — un apprentissage inscrit n'est pas un réflexe
+# installé ; n°28 — un invariant imposé par le code bat un invariant qu'un test
+# vérifie). Sur un produit public, un rouge inaperçu peut être une FAILLE, pas
+# juste un test — donc le gate n'est pas optionnel.
+#
+# Grain : pre-push, pas pre-commit — la suite fait ~270 s, trop lourde à chaque
+# commit (on committe en petits morceaux) ; le push est le moment où le code
+# quitte la machine vers origin, le bon point de contrôle.
+#
+# Échappatoire CONSCIENTE (urgence, décision assumée) : git push --no-verify.
+# Le gate protège du RELÂCHEMENT (le vrai risque, prouvé par 6a28926), pas de la
+# volonté de forcer. --no-verify existe : le gate n'est pas infranchissable, il
+# est non-oubliable.
+#
+# ACTIVATION (une fois par clone) : git config core.hooksPath .githooks
+
+echo "pre-push : suite complète (pnpm test) avant de pousser…"
+
+if [ -s "$HOME/.nvm/nvm.sh" ]; then
+  # shellcheck disable=SC1091
+  . "$HOME/.nvm/nvm.sh" >/dev/null 2>&1
+fi
+
+racine="$(git rev-parse --show-toplevel)" || exit 1
+cd "$racine" || exit 1
+
+if ! command -v pnpm >/dev/null 2>&1; then
+  echo "pre-push : pnpm introuvable — gate NON concluant, push REFUSÉ par prudence (fail-closed)." >&2
+  echo "          corrige l'environnement, ou pousse en conscience : git push --no-verify" >&2
+  exit 1
+fi
+
+if pnpm test; then
+  echo "pre-push : suite VERTE → push autorisé."
+  exit 0
+fi
+
+echo "pre-push : suite ROUGE → push REFUSÉ. (contournement conscient : git push --no-verify)" >&2
+exit 1
