@@ -237,7 +237,7 @@ async function principal(): Promise<void> {
   }
   const c = controleBlob(journaux);
   console.log(`\n==== ${journaux.reduce((n, j) => n + (j.anomalies?.length ?? 0), 0)} section(s) · ${c.lenteurs} reponse-lente · ${c.suspectes} sur schéma local ====`);
-  console.log(c.tenu ? '✓ CONTRÔLE blob: TENU — aucune reponse-lente publiée sur un schéma local.' : `✗ CONTRÔLE blob: ÉCHOUÉ : ${c.suspectesDetail.join(', ')}`);
+  console.log(c.tenu ? `✓ CONTRÔLE blob: TENU · 0/${c.lenteurs} reponse-lente sur schéma local` : `✗ CONTRÔLE blob: ÉCHOUÉ : ${c.suspectesDetail.join(', ')}`);
   if (!c.tenu) {
     process.exitCode = 1;
   }
