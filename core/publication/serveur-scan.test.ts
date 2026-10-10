@@ -151,13 +151,25 @@ describe('(4) routes', () => {
     expect((await requete(s.port, 'GET', '/sante')).statut).toBe(200);
   });
   it('honore un port FIXE en config (cible stable pour le reverse-proxy)', async () => {
-    // un port libre obtenu puis relâché (fixe, pas éphémère)
-    const sonde = http.createServer();
-    await new Promise<void>((r) => sonde.listen(0, '127.0.0.1', () => r()));
-    const portLibre = (sonde.address() as { port: number }).port;
-    await new Promise<void>((r) => sonde.close(() => r()));
-    const { s } = await monterServeur({ config: { ...CONFIG, port: portLibre } });
-    expect(s.port).toBe(portLibre);
+    // Un port libre obtenu puis relâché (fixe, pas éphémère). La fenêtre
+    // sonde-fermée→serveur-lié est une course rare sous forte parallélisation :
+    // si le port est repris entre-temps, creerServeurScan rejette (EADDRINUSE) —
+    // on réessaie avec un port frais plutôt que de rendre le témoin instable.
+    for (let essai = 0; essai < 6; essai++) {
+      const sonde = http.createServer();
+      await new Promise<void>((r) => sonde.listen(0, '127.0.0.1', () => r()));
+      const portLibre = (sonde.address() as { port: number }).port;
+      await new Promise<void>((r) => sonde.close(() => r()));
+      try {
+        const { s } = await monterServeur({ config: { ...CONFIG, port: portLibre } });
+        expect(s.port).toBe(portLibre);
+        return;
+      } catch (e) {
+        if ((e as NodeJS.ErrnoException).code === 'EADDRINUSE') continue;
+        throw e;
+      }
+    }
+    throw new Error('port fixe : toujours occupé après 6 essais');
   });
   it('POST /verifier → jeton + chemin ; sans url → 400', async () => {
     const { s } = await monterServeur();

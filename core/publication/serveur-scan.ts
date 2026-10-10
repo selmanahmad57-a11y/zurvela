@@ -317,8 +317,12 @@ export function creerServeurScan(deps: DepsServeur): Promise<ServeurScan> {
     return repondre(res, 404, { erreur: 'route-inconnue' });
   });
 
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
+    // Rejeter si le port est déjà pris (EADDRINUSE) plutôt que de rester pendu :
+    // un conflit de port doit échouer FORT, pas silencieusement.
+    serveur.once('error', reject);
     serveur.listen(config.port ?? 0, '127.0.0.1', () => {
+      serveur.removeListener('error', reject);
       resolve({
         port: (serveur.address() as { port: number }).port,
         fermer: () => new Promise((r) => serveur.close(() => r())),
