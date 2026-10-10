@@ -17,8 +17,9 @@ import { chargerSchema, valider } from '../outils/schema.js';
 import { rendreRapportHtml } from '../rapport/rendu-html.js';
 import { creerProxyFiltrant, type ProxyFiltrant } from './proxy-filtrant.js';
 import { lookupPublicSeulement, recupererDirect, resolveurSysteme, type Recuperer } from './verification-propriete.js';
-import { stockScansFichier, stockVerificationFichier } from './stock-fichier.js';
+import { stockQuotaFichier, stockScansFichier, stockVerificationFichier } from './stock-fichier.js';
 import { creerOrdonnanceur, creerServeurScan, type ExecuterScan, type ServeurScan } from './serveur-scan.js';
+import { enregistrerDepense, type ConfigQuota } from './quota.js';
 import { creerScannerParDefaut } from '../scanner/defaut.js';
 
 const RACINE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
@@ -33,6 +34,7 @@ export interface ConfigPublicationComplete {
   verificationGet: { delaiMs: number; maxOctets: number };
   proxy: { delaiMs: number };
   scan: { timeoutMs: number };
+  quota: ConfigQuota;
 }
 
 export async function chargerConfigPublication(fichier: string = path.join(RACINE, 'config', 'publication.json')): Promise<ConfigPublicationComplete> {
@@ -51,10 +53,11 @@ export function creerExecuterReel(proxyUrl: string, timeoutMs: number, fichierCo
   return async (origine) => {
     const scanner = await creerScannerParDefaut({ fichierConfig, proxy: proxyUrl });
     const rapport = await scanner(origine, { timeoutMs });
+    const cout = rapport.coutApi ?? 0;
     if (rapport.rapportBusiness === undefined) {
-      return { ok: false, erreur: 'aucun-rapport' };
+      return { ok: false, erreur: 'aucun-rapport', cout };
     }
-    return { ok: true, rapportHtml: rendreRapportHtml(rapport.rapportBusiness, { url: rapport.url }) };
+    return { ok: true, rapportHtml: rendreRapportHtml(rapport.rapportBusiness, { url: rapport.url }), cout };
   };
 }
 
@@ -80,6 +83,7 @@ export async function demarrerServeurPublic(opts: OptionsServeurPublic): Promise
   // 2. État durable.
   const stockVerif = stockVerificationFichier(path.join(opts.dossierEtat, 'jetons.json'), path.join(opts.dossierEtat, 'preuves.json'));
   const stockScans = stockScansFichier(path.join(opts.dossierEtat, 'scans.json'));
+  const stockQuota = stockQuotaFichier(path.join(opts.dossierEtat, 'quota.json'));
 
   // 3. Le GET de vérification, épinglé (étape 3), sous l'identité ZurvelaBot.
   const lookup = lookupPublicSeulement(resolveurSysteme());
@@ -93,8 +97,14 @@ export async function demarrerServeurPublic(opts: OptionsServeurPublic): Promise
     });
 
   // 4. L'exécuteur réel DERRIÈRE le proxy + la file 1-à-la-fois.
+  //    Le coût réel de chaque scan alimente le plafond de DÉPENSE (étape 5).
   const executer = creerExecuterReel(proxyUrl, cfg.scan.timeoutMs);
-  const ordonnanceur = creerOrdonnanceur({ stockScans, executer, maintenant: () => Date.now() });
+  const ordonnanceur = creerOrdonnanceur({
+    stockScans,
+    executer,
+    maintenant: () => Date.now(),
+    surCout: (cout) => enregistrerDepense({ stock: stockQuota, maintenant: Date.now(), cout }),
+  });
   // Reprise après redémarrage : un scan resté « en-attente » repart.
   ordonnanceur.declencher();
 
@@ -102,6 +112,8 @@ export async function demarrerServeurPublic(opts: OptionsServeurPublic): Promise
   const serveur = await creerServeurScan({
     stockVerif,
     stockScans,
+    stockQuota,
+    configQuota: cfg.quota,
     ordonnanceur,
     recuperer,
     maintenant: () => Date.now(),

@@ -10,6 +10,7 @@ import { readFileSync, writeFileSync, renameSync } from 'node:fs';
 import { randomBytes } from 'node:crypto';
 import type { EntreeJeton, Preuve, StockVerification } from './verification-propriete.js';
 import type { EntreeScan, StockScans } from './serveur-scan.js';
+import type { StockQuota } from './quota.js';
 
 /** Table clé→valeur persistée en un JSON, écriture atomique. */
 export class TableJson<T> {
@@ -49,6 +50,12 @@ export function stockVerificationFichier(cheminJetons: string, cheminPreuves: st
     lirePreuve: (o) => preuves.lire(o),
     ecrirePreuve: (o, p) => preuves.ecrire(o, p),
   };
+}
+
+/** Compteurs de quota adossés à un fichier JSON (clé `jourUTC|portée` → nombre). */
+export function stockQuotaFichier(chemin: string): StockQuota {
+  const table = new TableJson<number>(chemin);
+  return { lire: (c) => table.lire(c), ecrire: (c, n) => table.ecrire(c, n) };
 }
 
 /** File des scans adossée à un fichier JSON ; `prochainEnAttente` = le plus ancien « en-attente ». */

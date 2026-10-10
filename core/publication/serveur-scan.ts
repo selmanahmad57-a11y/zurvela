@@ -18,10 +18,12 @@ import { randomBytes } from 'node:crypto';
 import {
   acheverVerification,
   demarrerVerification,
+  normaliserOrigine,
   peutScanner,
   type Recuperer,
   type StockVerification,
 } from './verification-propriete.js';
+import { reserverScan, type ConfigQuota, type StockQuota } from './quota.js';
 
 // ───────────────────────── File des scans ─────────────────────────
 
@@ -41,8 +43,8 @@ export interface StockScans {
   prochainEnAttente(): EntreeScan | undefined;
 }
 
-/** Exécute un scan derrière le proxy et rend le rapport HTML. Injecté (le banc le double). */
-export type ExecuterScan = (origine: string) => Promise<{ ok: true; rapportHtml: string } | { ok: false; erreur: string }>;
+/** Exécute un scan derrière le proxy et rend le rapport HTML + son coût réel (pour le plafond de dépense). Injecté (le banc le double). */
+export type ExecuterScan = (origine: string) => Promise<{ ok: true; rapportHtml: string; cout: number } | { ok: false; erreur: string; cout: number }>;
 
 // ───────── (2) peutScanner AVANT d'enfiler + (4) IDOR (scanId imprévisible) ─────────
 
@@ -84,7 +86,13 @@ export interface Ordonnanceur {
   /** Promesse résolue quand la file est vidée — pour le témoin. */
   oisif(): Promise<void>;
 }
-export function creerOrdonnanceur(deps: { stockScans: StockScans; executer: ExecuterScan; maintenant: () => number }): Ordonnanceur {
+export function creerOrdonnanceur(deps: {
+  stockScans: StockScans;
+  executer: ExecuterScan;
+  maintenant: () => number;
+  /** APRÈS chaque scan (réussi OU échoué), le coût réel — alimente le plafond de dépense (étape 5). */
+  surCout?: (cout: number) => void;
+}): Ordonnanceur {
   let enCours = false;
   let vague: Promise<void> = Promise.resolve();
   const traiter = async (): Promise<void> => {
@@ -98,6 +106,8 @@ export function creerOrdonnanceur(deps: { stockScans: StockScans; executer: Exec
         try {
           const r = await deps.executer(en.origine);
           deps.stockScans.ecrire(en.scanId, r.ok ? { ...en, etat: 'termine', rapportHtml: r.rapportHtml } : { ...en, etat: 'echoue', erreur: r.erreur });
+          // Le coût réel (même sur échec : des appels IA ont pu être payés) alimente le plafond de dépense.
+          deps.surCout?.(r.cout);
         } catch (e) {
           deps.stockScans.ecrire(en.scanId, { ...en, etat: 'echoue', erreur: (e as Error).message });
         }
@@ -131,6 +141,8 @@ export interface ConfigPublication {
 export interface DepsServeur {
   readonly stockVerif: StockVerification;
   readonly stockScans: StockScans;
+  readonly stockQuota: StockQuota;
+  readonly configQuota: ConfigQuota;
   readonly ordonnanceur: Ordonnanceur;
   readonly recuperer: Recuperer;
   readonly maintenant: () => number;
@@ -216,10 +228,22 @@ export function creerServeurScan(deps: DepsServeur): Promise<ServeurScan> {
         prefixeFichier: config.prefixeFichier,
       });
       if (!verif.ok) return repondre(res, 403, { erreur: verif.raison });
+      const norm = normaliserOrigine(urlSite);
+      if (!norm.ok) return repondre(res, 400, { erreur: norm.raison });
+      // QUOTA DUR + ENFILEMENT, bloc SYNCHRONE (aucun `await` au milieu) :
+      // contrôler → réserver (incrémenter le nombre) → enfiler. L'atomicité de
+      // ce bloc (serveur mono-processus, stock synchrone) ferme la fenêtre de
+      // course — deux requêtes ne peuvent pas réserver la même dernière place.
+      const maintenant = deps.maintenant();
+      const reserve = reserverScan({ stock: deps.stockQuota, maintenant, origine: norm.origine, config: deps.configQuota });
+      if (!reserve.ok) {
+        res.writeHead(429, { 'content-type': 'application/json; charset=utf-8', 'retry-after': String(Math.ceil(reserve.retryApresMs / 1000)) });
+        return res.end(JSON.stringify({ erreur: 'limite-atteinte', portee: reserve.raison }));
+      }
       const dem = demarrerScan(urlSite, {
         stockPreuves: deps.stockVerif,
         stockScans: deps.stockScans,
-        maintenant: deps.maintenant(),
+        maintenant,
         octetsScanId: config.octetsScanId,
         ...(deps.genId === undefined ? {} : { genId: deps.genId }),
       });

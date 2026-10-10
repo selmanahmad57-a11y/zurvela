@@ -17,6 +17,7 @@ import {
   type StockScans,
 } from './serveur-scan.js';
 import type { EntreeJeton, Preuve, Recuperer, StockVerification } from './verification-propriete.js';
+import { enregistrerDepense, type ConfigQuota, type StockQuota } from './quota.js';
 
 // ───────── stocks mémoire ─────────
 function stockVerif(): StockVerification {
@@ -36,6 +37,11 @@ function stockScans(): StockScans & { tout: () => EntreeScan[] } {
 }
 
 const CONFIG = { octetsJeton: 32, expirationJetonMs: 86_400_000, fenetreValiditeMs: 3_600_000, prefixeFichier: 'zurvela-verification-', octetsScanId: 32, tailleCorpsMax: 8192 };
+const CONFIG_QUOTA: ConfigQuota = { global: 50, parOrigine: 3, depenseMaxUsd: 5 };
+function stockQuotaMemoire(initial: Record<string, number> = {}): StockQuota {
+  const m = new Map<string, number>(Object.entries(initial));
+  return { lire: (c) => m.get(c), ecrire: (c, n) => void m.set(c, n) };
+}
 
 const serveurs: ServeurScan[] = [];
 afterEach(async () => {
@@ -64,14 +70,17 @@ const recupererBon = (sv: StockVerification): Recuperer => async (origine) => {
 // recuperer qui ne sert RIEN (fichier absent).
 const recupererAbsent: Recuperer = async () => ({ type: 'absent', statut: 404 });
 
-async function monterServeur(over: Partial<Parameters<typeof creerServeurScan>[0]> = {}): Promise<{ s: ServeurScan; sv: StockVerification; ss: ReturnType<typeof stockScans>; ordonnanceur: ReturnType<typeof creerOrdonnanceur>; executer: ExecuterScan }> {
+async function monterServeur(over: Partial<Parameters<typeof creerServeurScan>[0]> = {}): Promise<{ s: ServeurScan; sv: StockVerification; ss: ReturnType<typeof stockScans>; sq: StockQuota; ordonnanceur: ReturnType<typeof creerOrdonnanceur>; executer: ExecuterScan }> {
   const sv = over.stockVerif ?? stockVerif();
   const ss = (over.stockScans as ReturnType<typeof stockScans>) ?? stockScans();
-  const executer: ExecuterScan = (over as { executer?: ExecuterScan }).executer ?? (async () => ({ ok: true, rapportHtml: '<html>RAPPORT</html>' }));
-  const ordonnanceur = over.ordonnanceur ?? creerOrdonnanceur({ stockScans: ss, executer, maintenant: () => 1000 });
+  const sq = over.stockQuota ?? stockQuotaMemoire();
+  const executer: ExecuterScan = (over as { executer?: ExecuterScan }).executer ?? (async () => ({ ok: true, rapportHtml: '<html>RAPPORT</html>', cout: 0 }));
+  const ordonnanceur = over.ordonnanceur ?? creerOrdonnanceur({ stockScans: ss, executer, maintenant: () => 1000, surCout: (cout) => enregistrerDepense({ stock: sq, maintenant: 1000, cout }) });
   const s = await creerServeurScan({
     stockVerif: sv,
     stockScans: ss,
+    stockQuota: sq,
+    configQuota: over.configQuota ?? CONFIG_QUOTA,
     ordonnanceur,
     recuperer: over.recuperer ?? recupererBon(sv),
     maintenant: over.maintenant ?? (() => 1000),
@@ -79,7 +88,7 @@ async function monterServeur(over: Partial<Parameters<typeof creerServeurScan>[0
     ...(over.genId === undefined ? {} : { genId: over.genId }),
   });
   serveurs.push(s);
-  return { s, sv, ss, ordonnanceur, executer };
+  return { s, sv, ss, sq, ordonnanceur, executer };
 }
 
 // ═══════════════ (2) peutScanner AVANT d'enfiler ═══════════════
@@ -113,7 +122,7 @@ describe('(3) ordonnanceur séquentiel', () => {
       maxSimultane = Math.max(maxSimultane, enCours);
       await new Promise((r) => setTimeout(r, 10));
       enCours -= 1;
-      return { ok: true, rapportHtml: '<html>ok</html>' };
+      return { ok: true, rapportHtml: '<html>ok</html>', cout: 0 };
     };
     const ord = creerOrdonnanceur({ stockScans: ss, executer, maintenant: () => 1 });
     ss.ecrire('a', { scanId: 'a', origine: 'https://a.test', etat: 'en-attente', creeLe: 1 });
@@ -126,7 +135,7 @@ describe('(3) ordonnanceur séquentiel', () => {
   });
   it('un executer qui échoue → « echoue », l’erreur conservée', async () => {
     const ss = stockScans();
-    const ord = creerOrdonnanceur({ stockScans: ss, executer: async () => ({ ok: false, erreur: 'scan-cassé' }), maintenant: () => 1 });
+    const ord = creerOrdonnanceur({ stockScans: ss, executer: async () => ({ ok: false, erreur: 'scan-cassé', cout: 0 }), maintenant: () => 1 });
     ss.ecrire('x', { scanId: 'x', origine: 'https://x.test', etat: 'en-attente', creeLe: 1 });
     ord.declencher();
     await ord.oisif();
@@ -180,5 +189,62 @@ describe('(4) routes', () => {
       expect((await requete(s.port, 'GET', `/statut/${encodeURIComponent(devine)}`)).statut, `id deviné ${devine}`).toBe(404);
     }
     expect((await requete(s.port, 'GET', `/statut/${encodeURIComponent(id)}`)).statut).toBe(200);
+  });
+});
+
+// ═══════════════ (5) QUOTA DUR ═══════════════
+const JOUR = '1970-01-01'; // jourUtc(1000)
+describe('(5) quota — plafonds durs à /scanner', () => {
+  it('quota GLOBAL atteint → 429 MÊME avec preuve valide', async () => {
+    const { s } = await monterServeur({ stockQuota: stockQuotaMemoire({ [`${JOUR}|global`]: 50 }) });
+    await requete(s.port, 'POST', '/verifier', { url: 'https://ok.test' });
+    const r = await requete(s.port, 'POST', '/scanner', { url: 'https://ok.test' });
+    expect(r.statut).toBe(429);
+    expect(r.json['portee']).toBe('global');
+  });
+
+  it('quota PAR ORIGINE atteint → 429 pour cette origine, une AUTRE passe', async () => {
+    const { s } = await monterServeur({ stockQuota: stockQuotaMemoire({ [`${JOUR}|origine:https://a.test`]: 3 }) });
+    await requete(s.port, 'POST', '/verifier', { url: 'https://a.test' });
+    expect((await requete(s.port, 'POST', '/scanner', { url: 'https://a.test' })).statut).toBe(429);
+    await requete(s.port, 'POST', '/verifier', { url: 'https://b.test' });
+    expect((await requete(s.port, 'POST', '/scanner', { url: 'https://b.test' })).statut).toBe(202);
+  });
+
+  it('quota DÉPENSE : un scan lourd (6 $ > 5) pousse le cumul → le scan SUIVANT est refusé 429', async () => {
+    const { s, ordonnanceur } = await monterServeur({ executer: async () => ({ ok: true, rapportHtml: '<html>x</html>', cout: 6 }) } as Parameters<typeof monterServeur>[0]);
+    await requete(s.port, 'POST', '/verifier', { url: 'https://a.test' });
+    expect((await requete(s.port, 'POST', '/scanner', { url: 'https://a.test' })).statut).toBe(202); // 1er passe
+    await ordonnanceur.oisif(); // le scan se termine → 6 $ enregistrés
+    await requete(s.port, 'POST', '/verifier', { url: 'https://b.test' });
+    const r = await requete(s.port, 'POST', '/scanner', { url: 'https://b.test' }); // 2e refusé par la dépense
+    expect(r.statut).toBe(429);
+    expect(r.json['portee']).toBe('depense');
+  });
+
+  it('429 porte un en-tête Retry-After', async () => {
+    const { s } = await monterServeur({ stockQuota: stockQuotaMemoire({ [`${JOUR}|global`]: 50 }) });
+    await requete(s.port, 'POST', '/verifier', { url: 'https://ok.test' });
+    const retry = await new Promise<string | undefined>((resolve) => {
+      const body = JSON.stringify({ url: 'https://ok.test' });
+      const req = http.request({ host: '127.0.0.1', port: s.port, method: 'POST', path: '/scanner', headers: { 'content-type': 'application/json' } }, (res) => {
+        res.resume();
+        resolve(res.headers['retry-after']);
+      });
+      req.end(body);
+    });
+    expect(Number(retry)).toBeGreaterThan(0);
+  });
+
+  it('COURSE : deux /scanner CONCURRENTS à la dernière place → une seule passe (202), l’autre 429', async () => {
+    // global à 49 (cap 50) : une seule place. Les deux requêtes vérifient OK puis se disputent la place.
+    const { s } = await monterServeur({ stockQuota: stockQuotaMemoire({ [`${JOUR}|global`]: 49 }) });
+    await requete(s.port, 'POST', '/verifier', { url: 'https://ok.test' });
+    const [a, b] = await Promise.all([
+      requete(s.port, 'POST', '/scanner', { url: 'https://ok.test' }),
+      requete(s.port, 'POST', '/scanner', { url: 'https://ok.test' }),
+    ]);
+    const statuts = [a.statut, b.statut].sort();
+    expect(statuts).toEqual([202, 429]); // exactement une passe, une refusée
   });
 });

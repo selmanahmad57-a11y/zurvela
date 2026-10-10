@@ -5,7 +5,19 @@
   "prefixeFichier": "zurvela-verification-",
   "octetsScanId": 32,
   "tailleCorpsMax": 8192,
-  "verificationGet": { "delaiMs": 10000, "maxOctets": 65536 },
-  "proxy": { "delaiMs": 15000 },
-  "scan": { "timeoutMs": 300000 }
+  "verificationGet": {
+    "delaiMs": 10000,
+    "maxOctets": 65536
+  },
+  "proxy": {
+    "delaiMs": 15000
+  },
+  "scan": {
+    "timeoutMs": 300000
+  },
+  "quota": {
+    "global": 50,
+    "parOrigine": 3,
+    "depenseMaxUsd": 5
+  }
 }
