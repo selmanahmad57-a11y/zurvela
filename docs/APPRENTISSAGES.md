@@ -1941,3 +1941,38 @@ regardé.
   le devenir ; une règle qui a cédé une fois ne se ré-énonce pas, elle se
   mécanise. Et un gate sur un produit public n'est pas une commodité — c'est une
   barrière de sécurité.*
+
+## 57. Un flake sous le gate POSE une question avant d'être un obstacle : course dans le test, ou défaut dans le code testé ? (2026-10-10, preuve finale de l'étape 7)
+
+- **Ce qui s'est passé.** La preuve publique de bout en bout (étape 7) venait de
+  passer en réel — coût booké au quota, transit proxy prouvé À L'OS (zéro sortie
+  directe du Chromium, pas une assertion applicative), e-mail effacé, rapport en
+  boîte. En committant le bilan (un simple `.md`), le gate pre-push a REFUSÉ le
+  push : suite ROUGE. Relancée, la suite repassait verte. Flake, donc —
+  intermittent, non reproductible sur commande.
+- **Le réflexe à NE PAS avoir.** Un flake au pire moment (tout vient de marcher,
+  on veut clore) appelle le contournement : `git push --no-verify`, « ce n'est
+  qu'un test instable ». C'eût été neutraliser la mécanique de [[56]] sans
+  l'écouter.
+- **Du symptôme à la cause.** Le flake était à MOI : un témoin ajouté à l'étape 7
+  (le port fixe) sondait un port libre puis le reliait — course sous forte
+  parallélisation. « Un bug de test », donc. Mais en remontant : le port occupé
+  ne faisait pas que rougir le test. `creerServeurScan` n'avait AUCUN gestionnaire
+  d'erreur de `listen` → sur conflit de port il restait PENDU (jamais résolu) →
+  timeout → rouge. Le flake pointait un VRAI trou de robustesse du code de prod :
+  si le port 8787 était pris au démarrage, le serveur se serait pendu EN SILENCE
+  au lieu d'échouer. La question « course de test ou défaut de code ? » avait les
+  DEUX réponses — et seule l'enquête le disait.
+- **La correction, aux deux niveaux.** Le code : `once('error', reject)` →
+  échouer FORT, pas se pendre. Le test : réessai sur EADDRINUSE → plus de course.
+  On traite le symptôme ET la cause, pas seulement le premier.
+- **Les deux faces d'une même discipline.** [[56]] a MÉCANISÉ la règle (le hook
+  refuse le rouge) ; n°57 en est la seconde face : *quand la mécanique rougit, on
+  l'écoute avant de la neutraliser*. Un rouge n'est pas un obstacle à franchir,
+  c'est une QUESTION à instruire — même mouvement qu'en [[40]], où l'oracle NOMME
+  une question à laquelle seul le journal répond. Le gate ne conclut pas « le code
+  est cassé » ; il demande « qu'est-ce qui rougit, et pourquoi ? ».
+- **La règle** : *un test qui rougit interroge d'abord le CODE testé, pas
+  seulement lui-même. Avant de contourner un flake, demander ce qu'il mesure — un
+  flake du test peut être le seul témoin d'un défaut du code. Le gate a fait son
+  travail précisément en refusant de passer.*
