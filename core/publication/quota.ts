@@ -30,6 +30,8 @@ export interface ConfigQuota {
   readonly parOrigine: number;
   /** Plafond de dépense cumulée par jour, en USD. */
   readonly depenseMaxUsd: number;
+  /** Plafond de scans par jour et par destinataire e-mail (réputation du domaine, étape 6). */
+  readonly parDestinataire: number;
 }
 
 /** Compteurs persistés (clé → nombre). File JSON en prod (TableJson), mémoire au témoin. */
@@ -38,7 +40,7 @@ export interface StockQuota {
   ecrire(cle: string, valeur: number): void;
 }
 
-export type RaisonQuota = 'global' | 'origine' | 'depense';
+export type RaisonQuota = 'global' | 'origine' | 'depense' | 'destinataire';
 export type ResultatQuota = { ok: true } | { ok: false; raison: RaisonQuota; retryApresMs: number };
 
 /** Le jour UTC `AAAA-MM-JJ` (sans ambiguïté de fuseau) — DANS la clé → reset implicite. */
@@ -56,6 +58,7 @@ export function msJusquaResetUtc(maintenant: number): number {
 const cleGlobal = (jour: string): string => `${jour}|global`;
 const cleOrigine = (jour: string, origine: string): string => `${jour}|origine:${origine}`;
 const cleDepense = (jour: string): string => `${jour}|depense`;
+const cleDestinataire = (jour: string, email: string): string => `${jour}|destinataire:${email}`;
 
 /**
  * CONTRÔLER + RÉSERVER, synchrone. Vérifie les trois plafonds ; si tous
@@ -63,8 +66,12 @@ const cleDepense = (jour: string): string => `${jour}|depense`;
  * `ok`. Sinon rend un refus avec sa raison et le délai jusqu'au reset. Le
  * plafond de DÉPENSE barre en premier (le vrai filet). Appeler dans un bloc
  * sans `await` : c'est ce qui rend la réservation atomique (fenêtre de course).
+ *
+ * Si un `email` est fourni (étape 6), le PLAFOND PAR DESTINATAIRE est vérifié ET
+ * incrémenté dans la même réservation atomique (tout-ou-rien) — mitigation du
+ * destinataire non vérifié, protège la réputation du domaine.
  */
-export function reserverScan(opts: { stock: StockQuota; maintenant: number; origine: string; config: ConfigQuota }): ResultatQuota {
+export function reserverScan(opts: { stock: StockQuota; maintenant: number; origine: string; config: ConfigQuota; email?: string }): ResultatQuota {
   const jour = jourUtc(opts.maintenant);
   const refus = (raison: RaisonQuota): ResultatQuota => ({ ok: false, raison, retryApresMs: msJusquaResetUtc(opts.maintenant) });
 
@@ -79,9 +86,19 @@ export function reserverScan(opts: { stock: StockQuota; maintenant: number; orig
   if (orig >= opts.config.parOrigine) {
     return refus('origine');
   }
-  // RÉSERVER avant d'enfiler : incrémente le nombre. Synchrone → atomique.
+  let dest = 0;
+  if (opts.email !== undefined) {
+    dest = opts.stock.lire(cleDestinataire(jour, opts.email)) ?? 0;
+    if (dest >= opts.config.parDestinataire) {
+      return refus('destinataire');
+    }
+  }
+  // RÉSERVER avant d'enfiler : incrémente le nombre. Synchrone → atomique (tout-ou-rien).
   opts.stock.ecrire(cleGlobal(jour), glob + 1);
   opts.stock.ecrire(cleOrigine(jour, opts.origine), orig + 1);
+  if (opts.email !== undefined) {
+    opts.stock.ecrire(cleDestinataire(jour, opts.email), dest + 1);
+  }
   return { ok: true };
 }
 

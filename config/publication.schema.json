@@ -3,7 +3,7 @@
   "$id": "zurvela/config/publication",
   "type": "object",
   "additionalProperties": false,
-  "required": ["octetsJeton", "expirationJetonMs", "fenetreValiditeMs", "prefixeFichier", "octetsScanId", "tailleCorpsMax", "verificationGet", "proxy", "scan", "quota"],
+  "required": ["octetsJeton", "expirationJetonMs", "fenetreValiditeMs", "prefixeFichier", "octetsScanId", "tailleCorpsMax", "verificationGet", "proxy", "scan", "quota", "courriel"],
   "properties": {
     "octetsJeton": { "type": "integer", "minimum": 16 },
     "expirationJetonMs": { "type": "integer", "minimum": 1 },
@@ -32,11 +32,21 @@
     "quota": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["global", "parOrigine", "depenseMaxUsd"],
+      "required": ["global", "parOrigine", "depenseMaxUsd", "parDestinataire"],
       "properties": {
         "global": { "type": "integer", "minimum": 1 },
         "parOrigine": { "type": "integer", "minimum": 1 },
-        "depenseMaxUsd": { "type": "number", "exclusiveMinimum": 0 }
+        "depenseMaxUsd": { "type": "number", "exclusiveMinimum": 0 },
+        "parDestinataire": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "courriel": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["expediteur", "delaiMs"],
+      "properties": {
+        "expediteur": { "type": "string", "minLength": 3 },
+        "delaiMs": { "type": "integer", "minimum": 1 }
       }
     }
   }

@@ -20,9 +20,16 @@ import { lookupPublicSeulement, recupererDirect, resolveurSysteme, type Recupere
 import { stockQuotaFichier, stockScansFichier, stockVerificationFichier } from './stock-fichier.js';
 import { creerOrdonnanceur, creerServeurScan, type ExecuterScan, type ServeurScan } from './serveur-scan.js';
 import { enregistrerDepense, type ConfigQuota } from './quota.js';
+import { envoyerCourriel, posterHttpsReel } from './courriel.js';
+import { chargerDictionnaire, traduire } from '../i18n.js';
 import { creerScannerParDefaut } from '../scanner/defaut.js';
 
 const RACINE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
+
+/** Langue de livraison par défaut — alignée sur le défaut du rendu de rapport (rendu-html). */
+const LANGUE_LIVRAISON = 'fr';
+/** Variable d'environnement portant la clé Resend (chargée par --env-file-if-exists=docs/.env.local). */
+const VARIABLE_CLE_RESEND = 'RESEND_API_KEY';
 
 export interface ConfigPublicationComplete {
   octetsJeton: number;
@@ -35,6 +42,7 @@ export interface ConfigPublicationComplete {
   proxy: { delaiMs: number };
   scan: { timeoutMs: number };
   quota: ConfigQuota;
+  courriel: { expediteur: string; delaiMs: number };
 }
 
 export async function chargerConfigPublication(fichier: string = path.join(RACINE, 'config', 'publication.json')): Promise<ConfigPublicationComplete> {
@@ -99,11 +107,28 @@ export async function demarrerServeurPublic(opts: OptionsServeurPublic): Promise
   // 4. L'exécuteur réel DERRIÈRE le proxy + la file 1-à-la-fois.
   //    Le coût réel de chaque scan alimente le plafond de DÉPENSE (étape 5).
   const executer = creerExecuterReel(proxyUrl, cfg.scan.timeoutMs);
+
+  // 4bis. Livraison e-mail (étape 6). Mode dégradé (§4) : sans RESEND_API_KEY,
+  //       aucun `envoyer` n'est câblé — les scans tournent, la livraison retombe
+  //       sur l'id (/statut/:id). La clé n'est jamais journalisée ni affichée.
+  const cleResend = process.env[VARIABLE_CLE_RESEND];
+  const dict = await chargerDictionnaire(path.join(RACINE, 'locales'), LANGUE_LIVRAISON);
+  const poster = posterHttpsReel();
+  const envoyer =
+    cleResend === undefined || cleResend === ''
+      ? undefined
+      : async ({ destinataire, origine, rapportHtml }: { destinataire: string; origine: string; rapportHtml: string }): Promise<{ ok: boolean }> =>
+          envoyerCourriel(
+            { destinataire, sujet: traduire(dict, 'courriel.sujet', { origine }), html: rapportHtml },
+            { cleApi: cleResend, expediteur: cfg.courriel.expediteur, delaiMs: cfg.courriel.delaiMs, poster },
+          );
+
   const ordonnanceur = creerOrdonnanceur({
     stockScans,
     executer,
     maintenant: () => Date.now(),
     surCout: (cout) => enregistrerDepense({ stock: stockQuota, maintenant: Date.now(), cout }),
+    ...(envoyer === undefined ? {} : { envoyer }),
   });
   // Reprise après redémarrage : un scan resté « en-attente » repart.
   ordonnanceur.declencher();

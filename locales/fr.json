@@ -208,5 +208,8 @@
     "demarrageCorpus": "Variance du modèle — mesure « {{mesure}} », {{nombre}} cas du corpus × {{appels}} appel(s) RÉELS, modèle {{modele}}",
     "accordCorpus": "{{id}} [diagnostic] : avis « {{modalite}} » {{occurrences}}/{{appels}} ({{distinctes}} valeur(s) distincte(s)), attendu {{attendu}} — {{mesures}} appel(s) exploitable(s), coût : {{cout}}",
     "aucuneMesureCorpus": "⚠ {{id}} [diagnostic] : AUCUN avis sur {{appels}} appel(s) — il n'y a pas d'accord à publier : l'absence de donnée n'est pas un résultat."
+  },
+  "courriel": {
+    "sujet": "Votre rapport Zurvela — {{origine}}"
   }
 }

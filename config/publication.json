@@ -18,6 +18,11 @@
   "quota": {
     "global": 50,
     "parOrigine": 3,
-    "depenseMaxUsd": 5
+    "depenseMaxUsd": 5,
+    "parDestinataire": 3
+  },
+  "courriel": {
+    "expediteur": "rapport@zurvela.com",
+    "delaiMs": 15000
   }
 }

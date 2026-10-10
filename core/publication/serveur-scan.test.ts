@@ -6,7 +6,7 @@
  * IDOR (scanId imprévisible).
  */
 import http from 'node:http';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   creerOrdonnanceur,
   creerServeurScan,
@@ -37,7 +37,7 @@ function stockScans(): StockScans & { tout: () => EntreeScan[] } {
 }
 
 const CONFIG = { octetsJeton: 32, expirationJetonMs: 86_400_000, fenetreValiditeMs: 3_600_000, prefixeFichier: 'zurvela-verification-', octetsScanId: 32, tailleCorpsMax: 8192 };
-const CONFIG_QUOTA: ConfigQuota = { global: 50, parOrigine: 3, depenseMaxUsd: 5 };
+const CONFIG_QUOTA: ConfigQuota = { global: 50, parOrigine: 3, depenseMaxUsd: 5, parDestinataire: 3 };
 function stockQuotaMemoire(initial: Record<string, number> = {}): StockQuota {
   const m = new Map<string, number>(Object.entries(initial));
   return { lire: (c) => m.get(c), ecrire: (c, n) => void m.set(c, n) };
@@ -246,5 +246,103 @@ describe('(5) quota — plafonds durs à /scanner', () => {
     ]);
     const statuts = [a.statut, b.statut].sort();
     expect(statuts).toEqual([202, 429]); // exactement une passe, une refusée
+  });
+});
+
+// ═══════════════ (6) E-MAIL DE LIVRAISON ═══════════════
+type Envoyer = (opts: { destinataire: string; origine: string; rapportHtml: string }) => Promise<{ ok: boolean }>;
+
+// Monte un serveur dont l'ordonnanceur a un `envoyer` doublé (zéro mail réel).
+// `executer` peut bloquer sur une barrière → on observe l'état transitoire.
+async function monterAvecEnvoi(opts: {
+  envoyer?: Envoyer;
+  stockQuota?: StockQuota;
+  executer?: ExecuterScan;
+} = {}): Promise<{ s: ServeurScan; ss: ReturnType<typeof stockScans>; ord: ReturnType<typeof creerOrdonnanceur>; envoyer: ReturnType<typeof vi.fn<Envoyer>> }> {
+  const sv = stockVerif();
+  const ss = stockScans();
+  const sq = opts.stockQuota ?? stockQuotaMemoire();
+  const executer: ExecuterScan = opts.executer ?? (async () => ({ ok: true, rapportHtml: '<html>RAPPORT</html>', cout: 0 }));
+  const envoyer = vi.fn<Envoyer>(opts.envoyer ?? (async () => ({ ok: true })));
+  const ord = creerOrdonnanceur({ stockScans: ss, executer, maintenant: () => 1000, envoyer });
+  const s = await monterServeur({ stockVerif: sv, stockScans: ss, stockQuota: sq, recuperer: recupererBon(sv), ordonnanceur: ord });
+  return { s: s.s, ss, ord, envoyer };
+}
+
+describe('(6) e-mail de livraison', () => {
+  it('collecte + envoi + EFFACEMENT : stocké transitoirement, livré à la fin, PUIS effacé (le rapport reste)', async () => {
+    let liberer!: () => void;
+    const barriere = new Promise<void>((r) => (liberer = r));
+    const { s, ss, ord, envoyer } = await monterAvecEnvoi({
+      executer: async () => {
+        await barriere; // le scan reste « en-cours » tant qu'on n'a pas libéré
+        return { ok: true, rapportHtml: '<html>RAPPORT</html>', cout: 0 };
+      },
+    });
+    await requete(s.port, 'POST', '/verifier', { url: 'https://ok.test' });
+    const scan = await requete(s.port, 'POST', '/scanner', { url: 'https://ok.test', email: 'client@example.com' });
+    expect(scan.statut).toBe(202);
+    const id = String(scan.json['scanId']);
+    // STOCKÉ TRANSITOIREMENT, pendant que le scan tourne encore
+    await new Promise((r) => setTimeout(r, 5));
+    expect(ss.lire(id)?.email).toBe('client@example.com');
+    liberer();
+    await ord.oisif();
+    // LIVRÉ
+    expect(envoyer).toHaveBeenCalledTimes(1);
+    expect(envoyer.mock.calls[0]![0]).toEqual({ destinataire: 'client@example.com', origine: 'https://ok.test', rapportHtml: '<html>RAPPORT</html>' });
+    // EFFACÉ après envoi, le rapport conservé
+    const apres = ss.lire(id);
+    expect(apres?.email).toBeUndefined();
+    expect(apres?.etat).toBe('termine');
+    expect(apres?.rapportHtml).toContain('RAPPORT');
+  });
+
+  it('ANTI-INJECTION (bord d’entrée) : un e-mail à CR/LF → 400, RIEN enfilé', async () => {
+    const { s, ss } = await monterAvecEnvoi();
+    await requete(s.port, 'POST', '/verifier', { url: 'https://ok.test' });
+    const r = await requete(s.port, 'POST', '/scanner', { url: 'https://ok.test', email: 'victime@example.com\r\nBcc: evil@x.com' });
+    expect(r.statut).toBe(400);
+    expect(r.json['erreur']).toBe('email-invalide');
+    expect(ss.tout()).toEqual([]); // aucun scan créé
+  });
+
+  it('PLAFOND DESTINATAIRE : destinataire au plafond → 429 portee « destinataire »', async () => {
+    const { s } = await monterAvecEnvoi({ stockQuota: stockQuotaMemoire({ [`${JOUR}|destinataire:plein@example.com`]: 3 }) });
+    await requete(s.port, 'POST', '/verifier', { url: 'https://ok.test' });
+    const r = await requete(s.port, 'POST', '/scanner', { url: 'https://ok.test', email: 'plein@example.com' });
+    expect(r.statut).toBe(429);
+    expect(r.json['portee']).toBe('destinataire');
+  });
+
+  it('ÉCHEC D’ENVOI n’affecte JAMAIS l’id : le rapport reste à /statut/:id, l’e-mail est quand même effacé', async () => {
+    const { s, ss, ord, envoyer } = await monterAvecEnvoi({
+      envoyer: async () => {
+        throw new Error('Resend indisponible');
+      },
+    });
+    await requete(s.port, 'POST', '/verifier', { url: 'https://ok.test' });
+    const scan = await requete(s.port, 'POST', '/scanner', { url: 'https://ok.test', email: 'client@example.com' });
+    expect(scan.statut).toBe(202);
+    const id = String(scan.json['scanId']);
+    await ord.oisif();
+    expect(envoyer).toHaveBeenCalledTimes(1);
+    // l'id reste le filet : rapport toujours accessible malgré l'échec d'envoi
+    const st = await requete(s.port, 'GET', `/statut/${encodeURIComponent(id)}`);
+    expect(st.statut).toBe(200);
+    expect(st.json['etat']).toBe('termine');
+    expect(String(st.json['rapportHtml'])).toContain('RAPPORT');
+    // et l'e-mail est tout de même effacé (minimisation, même sur échec)
+    expect(ss.lire(id)?.email).toBeUndefined();
+  });
+
+  it('sans e-mail : 202, aucun envoi, aucun compteur destinataire', async () => {
+    const { s, ss, ord, envoyer } = await monterAvecEnvoi();
+    await requete(s.port, 'POST', '/verifier', { url: 'https://ok.test' });
+    const scan = await requete(s.port, 'POST', '/scanner', { url: 'https://ok.test' });
+    expect(scan.statut).toBe(202);
+    await ord.oisif();
+    expect(envoyer).not.toHaveBeenCalled();
+    expect(ss.lire(String(scan.json['scanId']))?.email).toBeUndefined();
   });
 });

@@ -24,6 +24,7 @@ import {
   type StockVerification,
 } from './verification-propriete.js';
 import { reserverScan, type ConfigQuota, type StockQuota } from './quota.js';
+import { emailValide } from './courriel.js';
 
 // ───────────────────────── File des scans ─────────────────────────
 
@@ -35,6 +36,8 @@ export interface EntreeScan {
   readonly creeLe: number;
   readonly rapportHtml?: string;
   readonly erreur?: string;
+  /** E-mail de livraison (étape 6), STOCKÉ TRANSITOIREMENT : effacé après la tentative d'envoi. */
+  readonly email?: string;
 }
 export interface StockScans {
   lire(scanId: string): EntreeScan | undefined;
@@ -53,6 +56,8 @@ export interface OptionsDemarrerScan {
   readonly stockScans: StockScans;
   readonly maintenant: number;
   readonly octetsScanId: number;
+  /** E-mail de livraison optionnel (étape 6), stocké sur l'entrée. Supposé DÉJÀ validé par l'appelant. */
+  readonly email?: string;
   /** Générateur d'id (défaut : crypto). Le témoin injecte un générateur PRÉVISIBLE pour la mutation IDOR. */
   readonly genId?: () => string;
 }
@@ -69,7 +74,13 @@ export function demarrerScan(urlBrute: string, opts: OptionsDemarrerScan): Resul
     return { ok: false, raison: auto.raison };
   }
   const scanId = (opts.genId ?? (() => randomBytes(opts.octetsScanId).toString('base64url')))();
-  opts.stockScans.ecrire(scanId, { scanId, origine: auto.origine, etat: 'en-attente', creeLe: opts.maintenant });
+  opts.stockScans.ecrire(scanId, {
+    scanId,
+    origine: auto.origine,
+    etat: 'en-attente',
+    creeLe: opts.maintenant,
+    ...(opts.email === undefined ? {} : { email: opts.email }),
+  });
   return { ok: true, scanId };
 }
 
@@ -86,12 +97,21 @@ export interface Ordonnanceur {
   /** Promesse résolue quand la file est vidée — pour le témoin. */
   oisif(): Promise<void>;
 }
+/** Retire l'e-mail d'une entrée (minimisation, étape 6) : retourne une copie sans le champ, le reste intact. */
+function entreeSansEmail(e: EntreeScan): EntreeScan {
+  const copie: Partial<Record<keyof EntreeScan, unknown>> = { ...e };
+  delete copie.email;
+  return copie as EntreeScan;
+}
+
 export function creerOrdonnanceur(deps: {
   stockScans: StockScans;
   executer: ExecuterScan;
   maintenant: () => number;
   /** APRÈS chaque scan (réussi OU échoué), le coût réel — alimente le plafond de dépense (étape 5). */
   surCout?: (cout: number) => void;
+  /** LIVRAISON e-mail (étape 6). Injecté (le banc le double). Son échec ne doit JAMAIS casser l'accès par id. */
+  envoyer?: (opts: { destinataire: string; origine: string; rapportHtml: string }) => Promise<{ ok: boolean }>;
 }): Ordonnanceur {
   let enCours = false;
   let vague: Promise<void> = Promise.resolve();
@@ -108,8 +128,25 @@ export function creerOrdonnanceur(deps: {
           deps.stockScans.ecrire(en.scanId, r.ok ? { ...en, etat: 'termine', rapportHtml: r.rapportHtml } : { ...en, etat: 'echoue', erreur: r.erreur });
           // Le coût réel (même sur échec : des appels IA ont pu être payés) alimente le plafond de dépense.
           deps.surCout?.(r.cout);
+          // LIVRAISON e-mail (étape 6) : si un e-mail a été collecté et qu'un rapport existe, l'envoyer.
+          // Son échec est AVALÉ — le rapport reste à /statut/:id, l'id est le filet.
+          if (en.email !== undefined && r.ok && deps.envoyer !== undefined) {
+            try {
+              await deps.envoyer({ destinataire: en.email, origine: en.origine, rapportHtml: r.rapportHtml });
+            } catch {
+              /* l'échec d'envoi ne casse jamais l'accès par id */
+            }
+          }
         } catch (e) {
           deps.stockScans.ecrire(en.scanId, { ...en, etat: 'echoue', erreur: (e as Error).message });
+        }
+        // EFFACEMENT (minimisation, étape 6) : retirer l'e-mail de l'entrée — réussi OU échoué, scan OU envoi.
+        // On relit l'état courant (il porte le rapport/l'erreur) pour ne garder que lui, sans l'e-mail.
+        if (en.email !== undefined) {
+          const courant = deps.stockScans.lire(en.scanId);
+          if (courant !== undefined) {
+            deps.stockScans.ecrire(en.scanId, entreeSansEmail(courant));
+          }
         }
         prochain = deps.stockScans.prochainEnAttente();
       }
@@ -220,6 +257,16 @@ export function creerServeurScan(deps: DepsServeur): Promise<ServeurScan> {
       const corps = await lireCorpsJson(req, config.tailleCorpsMax);
       const urlSite = typeof corps?.['url'] === 'string' ? (corps['url'] as string) : undefined;
       if (urlSite === undefined) return repondre(res, 400, { erreur: 'url-requise' });
+      // E-mail de livraison OPTIONNEL (étape 6). GARDE ANTI-INJECTION, bord d'entrée :
+      // s'il est fourni, il est validé AVANT tout stockage et toute réservation. Invalide → 400.
+      const emailBrut = corps?.['email'];
+      let email: string | undefined;
+      if (emailBrut !== undefined) {
+        if (typeof emailBrut !== 'string' || !emailValide(emailBrut)) {
+          return repondre(res, 400, { erreur: 'email-invalide' });
+        }
+        email = emailBrut;
+      }
       const verif = await acheverVerification(urlSite, {
         stock: deps.stockVerif,
         maintenant: deps.maintenant(),
@@ -235,7 +282,7 @@ export function creerServeurScan(deps: DepsServeur): Promise<ServeurScan> {
       // ce bloc (serveur mono-processus, stock synchrone) ferme la fenêtre de
       // course — deux requêtes ne peuvent pas réserver la même dernière place.
       const maintenant = deps.maintenant();
-      const reserve = reserverScan({ stock: deps.stockQuota, maintenant, origine: norm.origine, config: deps.configQuota });
+      const reserve = reserverScan({ stock: deps.stockQuota, maintenant, origine: norm.origine, config: deps.configQuota, ...(email === undefined ? {} : { email }) });
       if (!reserve.ok) {
         res.writeHead(429, { 'content-type': 'application/json; charset=utf-8', 'retry-after': String(Math.ceil(reserve.retryApresMs / 1000)) });
         return res.end(JSON.stringify({ erreur: 'limite-atteinte', portee: reserve.raison }));
@@ -245,6 +292,7 @@ export function creerServeurScan(deps: DepsServeur): Promise<ServeurScan> {
         stockScans: deps.stockScans,
         maintenant,
         octetsScanId: config.octetsScanId,
+        ...(email === undefined ? {} : { email }),
         ...(deps.genId === undefined ? {} : { genId: deps.genId }),
       });
       if (!dem.ok) return repondre(res, 403, { erreur: dem.raison });

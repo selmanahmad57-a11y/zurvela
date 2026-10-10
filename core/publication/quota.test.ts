@@ -10,7 +10,7 @@ function stockMemoire(initial: Record<string, number> = {}): StockQuota & { tout
   const m = new Map<string, number>(Object.entries(initial));
   return { lire: (c) => m.get(c), ecrire: (c, n) => void m.set(c, n), tout: () => Object.fromEntries(m) };
 }
-const CFG: ConfigQuota = { global: 50, parOrigine: 3, depenseMaxUsd: 5 };
+const CFG: ConfigQuota = { global: 50, parOrigine: 3, depenseMaxUsd: 5, parDestinataire: 3 };
 const T0 = Date.UTC(2026, 9, 10, 12, 0, 0); // 2026-10-10 12:00 UTC
 const J = jourUtc(T0); // '2026-10-10'
 const A = 'https://a.test';
@@ -67,6 +67,39 @@ describe('quota — réservation ATOMIQUE (fenêtre de course)', () => {
     reserverScan({ stock, maintenant: T0, origine: A, config: CFG });
     expect(stock.lire(`${J}|global`)).toBe(1);
     expect(stock.lire(`${J}|origine:${A}`)).toBe(1);
+  });
+});
+
+describe('quota — plafond par DESTINATAIRE (étape 6, réputation du domaine)', () => {
+  const E = 'client@example.com';
+  it('sans e-mail : aucun compteur destinataire touché', () => {
+    const stock = stockMemoire();
+    reserverScan({ stock, maintenant: T0, origine: A, config: CFG });
+    expect(stock.lire(`${J}|destinataire:${E}`)).toBeUndefined();
+  });
+  it('une réservation AVEC e-mail incrémente le compteur destinataire', () => {
+    const stock = stockMemoire();
+    reserverScan({ stock, maintenant: T0, origine: A, config: CFG, email: E });
+    expect(stock.lire(`${J}|destinataire:${E}`)).toBe(1);
+  });
+  it('destinataire au plafond → refus « destinataire », MÊME avec nombre/dépense à zéro', () => {
+    const stock = stockMemoire({ [`${J}|destinataire:${E}`]: 3 });
+    expect(reserverScan({ stock, maintenant: T0, origine: A, config: CFG, email: E })).toEqual({ ok: false, raison: 'destinataire', retryApresMs: expect.any(Number) });
+  });
+  it('un destinataire au plafond ne bloque pas un AUTRE destinataire', () => {
+    const stock = stockMemoire({ [`${J}|destinataire:${E}`]: 3 });
+    expect(reserverScan({ stock, maintenant: T0, origine: A, config: CFG, email: 'autre@example.com' }).ok).toBe(true);
+  });
+  it('refus destinataire = tout-ou-rien : nombre global/origine NON incrémenté', () => {
+    const stock = stockMemoire({ [`${J}|destinataire:${E}`]: 3 });
+    reserverScan({ stock, maintenant: T0, origine: A, config: CFG, email: E });
+    expect(stock.lire(`${J}|global`)).toBeUndefined();
+    expect(stock.lire(`${J}|origine:${A}`)).toBeUndefined();
+  });
+  it('réservation atomique par destinataire : à 2 (cap 3), deux réservations du même e-mail → une seule passe', () => {
+    const stock = stockMemoire({ [`${J}|destinataire:${E}`]: 2 });
+    expect(reserverScan({ stock, maintenant: T0, origine: A, config: CFG, email: E }).ok).toBe(true);
+    expect(reserverScan({ stock, maintenant: T0, origine: B, config: CFG, email: E }).ok).toBe(false);
   });
 });
 
