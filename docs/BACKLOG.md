@@ -539,21 +539,23 @@ surface ni la cible ne sont activables. Mineur, mais nommé.
   (l'`ExecuterScan` devrait alors remonter la langue jusqu'à l'envoi). Pas une
   dette de sécurité. Origine : étape 6.
 
-## Interface marchande (prochain chantier — à ouvrir en cahier)
+## Interface marchande (prochain chantier — CADRÉ, cahier figé)
 
 *Le moteur et l'API publique (étapes 1-7) tiennent de bout en bout en prod
-(`api.zurvela.com`). Reste la page où un commerçant colle une URL. À CADRER
-AVANT d'écrire une ligne — deux questions commandent toute l'archi, posées par
-le propriétaire le 2026-10-10, non tranchées :*
+(`api.zurvela.com`). Reste la page où un commerçant colle une URL. CADRAGE FIGÉ
+le 2026-10-11 dans `docs/cahiers/interface-marchande-cadrage.md` (les deux
+questions d'archi tranchées par le propriétaire). À OUVRIR la prochaine session,
+code en main, red-first.*
 
-1. **Où vit l'interface ?** Page statique sur la vitrine OVH (`zurvela.com`) qui
-   appelle `api.zurvela.com` en **cross-origin** → il faudra du **CORS côté
-   serveur** (inexistant aujourd'hui). OU servie directement par le serveur de
-   scan sur `api.zurvela.com` (**même origine, pas de CORS**, mais mélange
-   vitrine et moteur). Ce choix commande l'architecture.
-2. **Le flux de propriété pour un vrai commerçant.** En test on possédait
-   zurvela.com (déposer le jeton était trivial). Un commerçant lambda doit
-   comprendre « télécharge ce fichier, mets-le à la racine de ton site, PUIS
-   clique scanner ». **C'est là qu'un utilisateur réel échoue** — l'UX de cette
-   étape EST le vrai problème de l'interface ; le reste est de la glue. (Relié
-   au constat CDN : jeton frais par tentative + ordre dépôt-puis-scan imposé.)
+- **Q1 : B — même origine.** UI statique servie par Caddy (`file_server`) sous
+  `api.zurvela.com`, routes API proxiées vers Node. Zéro CORS. Raison décisive :
+  l'UI (jetons + budget) doit être SOUS le gate (dépôt + `git pull`), pas hors
+  pipeline par FTP. Point sensible : matching Caddy API-vs-page en liste blanche
+  explicite. Vitrine OVH liera vers l'UI (URL `api` assumée au MVP).
+- **Q2 : Minimal.** Flux URL→`/verifier`(jeton frais)→download 1-clic→dépôt
+  racine→« vérifier & scanner »→`/scanner`→202+e-mail. Jeton frais par réessai
+  (mitigation CDN). **Exigence centrale : l'échec de vérification DISCRIMINE les
+  causes** (le serveur produit déjà `fichier-absent`/`mauvais-contenu`/
+  `redirection-refusee`/`jeton-expire`/… ; l'UI ne les aplatit pas, et pour le
+  seau ambigu `fichier-absent` montre l'URL exacte au marchand = auto-diagnostic).
+  Aide par plateforme : plus tard, après mesure.
