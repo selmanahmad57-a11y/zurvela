@@ -505,3 +505,21 @@ surface ni la cible ne sont activables. Mineur, mais nommé.
   sur un même site. La mesurer d'abord, concevoir ensuite — c'est la règle
   des métriques jumelles appliquée par avance à une optimisation qui
   n'existe pas encore. Origine : brique 4b (2026-09-23).
+
+## Publication (étapes 5-7)
+
+- **Robustesse de la vérification de propriété face au cache négatif d'un
+  CDN (constat e2e du 2026-10-10, `docs/bilan-e2e-2026-10-10.md`).** Sur un
+  site derrière un CDN (Cloudflare, mesuré sur zurvela.com), un GET sur le
+  chemin du jeton AVANT que le fichier existe fige un **404** (cache négatif,
+  indépendant d'une query anti-cache). En flux normal (déposer PUIS scanner),
+  le premier GET est post-dépôt → 200, aucun souci. Mais un `/scanner`
+  prématuré empoisonne le chemin de SON jeton : les vérifications suivantes de
+  ce jeton revoient le 404 périmé jusqu'à expiration du cache. **Ce n'est PAS
+  un trou de sécurité** — la vérification échoue FERMÉE (pas de scan sans
+  preuve), le bon côté. C'est de l'UX/robustesse : un visiteur impatient
+  pourrait bloquer un jeton. **Mitigation à câbler avec l'interface** :
+  émettre un jeton FRAIS à chaque tentative de `/scanner` (chemin neuf, jamais
+  empoisonné), ou forcer l'ordre « déposer puis scanner » dans l'UI. Cible :
+  étape du câblage de l'interface publique (6-7). Origine : validation e2e de
+  l'étape 4.
