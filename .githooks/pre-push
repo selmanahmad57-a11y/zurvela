@@ -36,10 +36,22 @@ if ! command -v pnpm >/dev/null 2>&1; then
   exit 1
 fi
 
-if pnpm test; then
+# On CONSERVE la sortie complète dans un log : un rouge sous le gate (surtout un
+# flake rare, qui ne se reproduit pas à la relance) doit laisser une trace
+# diagnosticable — sinon on répare au hasard (apprentissage n°57 : un flake est
+# une question ; encore faut-il pouvoir lire laquelle). `tee` garde le direct ;
+# le `$?` du sous-shell donne le VRAI code de pnpm (le pipe masquerait celui de tee).
+log="$(mktemp -t zurvela-gate.XXXXXX 2>/dev/null || echo "/tmp/zurvela-gate.$$")"
+{ pnpm test 2>&1; echo "$?" >"$log.rc"; } | tee "$log"
+status="$(cat "$log.rc" 2>/dev/null || echo 1)"
+rm -f "$log.rc"
+
+if [ "$status" -eq 0 ]; then
   echo "pre-push : suite VERTE → push autorisé."
+  rm -f "$log"
   exit 0
 fi
 
-echo "pre-push : suite ROUGE → push REFUSÉ. (contournement conscient : git push --no-verify)" >&2
+echo "pre-push : suite ROUGE → push REFUSÉ. Détail COMPLET conservé : $log" >&2
+echo "          (contournement conscient : git push --no-verify)" >&2
 exit 1
