@@ -5,6 +5,7 @@
   "prefixeFichier": "zurvela-verification-",
   "octetsScanId": 32,
   "tailleCorpsMax": 8192,
+  "port": 8787,
   "verificationGet": {
     "delaiMs": 10000,
     "maxOctets": 65536

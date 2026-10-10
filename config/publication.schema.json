@@ -3,7 +3,7 @@
   "$id": "zurvela/config/publication",
   "type": "object",
   "additionalProperties": false,
-  "required": ["octetsJeton", "expirationJetonMs", "fenetreValiditeMs", "prefixeFichier", "octetsScanId", "tailleCorpsMax", "verificationGet", "proxy", "scan", "quota", "courriel"],
+  "required": ["octetsJeton", "expirationJetonMs", "fenetreValiditeMs", "prefixeFichier", "octetsScanId", "tailleCorpsMax", "port", "verificationGet", "proxy", "scan", "quota", "courriel"],
   "properties": {
     "octetsJeton": { "type": "integer", "minimum": 16 },
     "expirationJetonMs": { "type": "integer", "minimum": 1 },
@@ -11,6 +11,7 @@
     "prefixeFichier": { "type": "string", "minLength": 1 },
     "octetsScanId": { "type": "integer", "minimum": 16 },
     "tailleCorpsMax": { "type": "integer", "minimum": 1 },
+    "port": { "type": "integer", "minimum": 1, "maximum": 65535 },
     "verificationGet": {
       "type": "object",
       "additionalProperties": false,

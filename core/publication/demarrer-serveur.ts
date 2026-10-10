@@ -38,6 +38,7 @@ export interface ConfigPublicationComplete {
   prefixeFichier: string;
   octetsScanId: number;
   tailleCorpsMax: number;
+  port: number;
   verificationGet: { delaiMs: number; maxOctets: number };
   proxy: { delaiMs: number };
   scan: { timeoutMs: number };
@@ -149,6 +150,7 @@ export async function demarrerServeurPublic(opts: OptionsServeurPublic): Promise
       prefixeFichier: cfg.prefixeFichier,
       octetsScanId: cfg.octetsScanId,
       tailleCorpsMax: cfg.tailleCorpsMax,
+      port: cfg.port,
     },
   });
 

@@ -173,6 +173,8 @@ export interface ConfigPublication {
   readonly prefixeFichier: string;
   readonly octetsScanId: number;
   readonly tailleCorpsMax: number;
+  /** Port d'écoute (toujours sur 127.0.0.1, derrière le reverse-proxy). Absent → port éphémère (tests). */
+  readonly port?: number;
 }
 
 export interface DepsServeur {
@@ -316,7 +318,7 @@ export function creerServeurScan(deps: DepsServeur): Promise<ServeurScan> {
   });
 
   return new Promise((resolve) => {
-    serveur.listen(0, '127.0.0.1', () => {
+    serveur.listen(config.port ?? 0, '127.0.0.1', () => {
       resolve({
         port: (serveur.address() as { port: number }).port,
         fermer: () => new Promise((r) => serveur.close(() => r())),

@@ -84,7 +84,7 @@ async function monterServeur(over: Partial<Parameters<typeof creerServeurScan>[0
     ordonnanceur,
     recuperer: over.recuperer ?? recupererBon(sv),
     maintenant: over.maintenant ?? (() => 1000),
-    config: CONFIG,
+    config: over.config ?? CONFIG,
     ...(over.genId === undefined ? {} : { genId: over.genId }),
   });
   serveurs.push(s);
@@ -149,6 +149,15 @@ describe('(4) routes', () => {
   it('GET /sante → 200', async () => {
     const { s } = await monterServeur();
     expect((await requete(s.port, 'GET', '/sante')).statut).toBe(200);
+  });
+  it('honore un port FIXE en config (cible stable pour le reverse-proxy)', async () => {
+    // un port libre obtenu puis relâché (fixe, pas éphémère)
+    const sonde = http.createServer();
+    await new Promise<void>((r) => sonde.listen(0, '127.0.0.1', () => r()));
+    const portLibre = (sonde.address() as { port: number }).port;
+    await new Promise<void>((r) => sonde.close(() => r()));
+    const { s } = await monterServeur({ config: { ...CONFIG, port: portLibre } });
+    expect(s.port).toBe(portLibre);
   });
   it('POST /verifier → jeton + chemin ; sans url → 400', async () => {
     const { s } = await monterServeur();
