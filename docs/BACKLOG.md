@@ -523,3 +523,18 @@ surface ni la cible ne sont activables. Mineur, mais nommé.
   empoisonné), ou forcer l'ordre « déposer puis scanner » dans l'UI. Cible :
   étape du câblage de l'interface publique (6-7). Origine : validation e2e de
   l'étape 4.
+
+- **Délivrabilité e-mail vers un fournisseur EXTERNE (constat validation du
+  2026-10-10, `docs/bilan-email-2026-10-10.md`).** La livraison a été validée
+  en réel vers `contact@zurvela.com` — mais même domaine que l'expéditeur
+  `rapport@zurvela.com`. Test réel de SPF/DKIM/rendu, un peu plus clément côté
+  filtrage spam qu'un fournisseur externe. **À durcir** : un envoi de contrôle
+  vers Gmail/Outlook pour prouver le pas-spam cross-provider (et chauffer la
+  réputation du domaine avant le trafic réel). Pas bloquant. Origine : étape 6.
+
+- **Langue du SUJET de l'e-mail suit celle du rapport.** Aujourd'hui le sujet
+  est dans la langue de livraison par défaut (`fr`, alignée sur le défaut du
+  rendu) ; le CORPS est déjà localisé par `rendu-html`. Quand la livraison
+  multi-langue arrivera, faire suivre la langue du sujet à celle du rapport
+  (l'`ExecuterScan` devrait alors remonter la langue jusqu'à l'envoi). Pas une
+  dette de sécurité. Origine : étape 6.
