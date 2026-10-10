@@ -350,7 +350,22 @@ describe('couverture de l’exploration', () => {
       const news = soumissions.find((action) => action.action.type === 'soumettre' && action.action.formulaire.selecteur === '#news');
       expect(news?.resultat).toBe('ok');
       expect(new URL(news?.page ?? '').pathname).toBe('/');
-      expect(resultat.journal.some((entree) => entree.type === 'exploration.page.revisite')).toBe(true);
+      // Assertion INCHANGÉE (le revisite DOIT se produire). Diagnostic ajouté pour
+      // trancher (a) test-fragile vs (b) trou de ré-exploration AU prochain rouge
+      // rare sous le gate : le fait décisif est « le navigateur a-t-il QUITTÉ / pour
+      // /recherche ? ». Si oui sans revisite → (b). Si non → la navigation n'a pas
+      // eu lieu (budget sous contention) → (a), l'engin n'avait rien à revisiter.
+      const navVersRecherche = resultat.parcours.pages.some((p) => {
+        try {
+          return new URL(p.url).pathname === '/recherche';
+        } catch {
+          return false;
+        }
+      });
+      expect(
+        resultat.journal.some((entree) => entree.type === 'exploration.page.revisite'),
+        `revisite absente — nav→/recherche=${navVersRecherche} | pages=[${chemins(resultat).join(',')}] | journal=[${resultat.journal.map((e) => e.type).join(',')}]`,
+      ).toBe(true);
     } finally {
       await serveur.arreter();
     }
