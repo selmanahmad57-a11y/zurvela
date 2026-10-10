@@ -106,3 +106,9 @@ Red-first, chaque garde par mutation, présent avant commit, gate vert avant
 push, un commit par brique. Mesure avant d'écrire. Le témoin du matching Caddy
 (API-vs-page) et celui de la discrimination des échecs sont les deux morceaux où
 le soin compte le plus.
+
+**Ordre de construction : la DISCRIMINATION DES ÉCHECS mérite le PREMIER
+red-first** — c'est elle le vrai problème de l'interface. Le download 1-clic et
+le happy-path sont triviaux ; ne pas les laisser passer devant. Si en rouvrant
+ce cahier la discrimination paraît noyée dans le flux happy-path, la REMONTER :
+c'est l'exigence centrale, pas une étape parmi d'autres.
