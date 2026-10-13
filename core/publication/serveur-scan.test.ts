@@ -197,6 +197,18 @@ describe('(4) routes', () => {
     expect(scan.statut).toBe(403);
   });
 
+  // DISCRIMINATION : l'échec de /scanner porte la CATÉGORIE MARCHAND (pas juste la
+  // cause interne), et pour le seau irréductible `absent` il porte l'URL EXACTE
+  // testée — sans elle, l'auto-diagnostic de l'UI (« ouvre cette URL ») est creux.
+  it('échec « fichier absent » → 403 porte categorie:absent + urlVerifiee (l’URL à auto-diagnostiquer)', async () => {
+    const { s } = await monterServeur({ recuperer: recupererAbsent });
+    await requete(s.port, 'POST', '/verifier', { url: 'https://ok.test' });
+    const scan = await requete(s.port, 'POST', '/scanner', { url: 'https://ok.test' });
+    expect(scan.statut).toBe(403);
+    expect(scan.json['categorie']).toBe('absent');
+    expect(String(scan.json['urlVerifiee'])).toContain('https://ok.test/zurvela-verification-');
+  });
+
   // IDOR : l'id imprévisible EST la capacité. L'énumération classique ne donne rien.
   it('IDOR : un id deviné/voisin ne rend AUCUN rapport ; seul l’id exact', async () => {
     const { s } = await monterServeur();

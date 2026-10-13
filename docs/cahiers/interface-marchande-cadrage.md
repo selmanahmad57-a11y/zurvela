@@ -77,8 +77,31 @@ spécifique avant la mesure.
 
 Le vrai problème de l'interface n'est pas le happy path, c'est le **message
 d'échec**. Un « fichier non trouvé » générique laisse le marchand tourner en
-rond. Le serveur produit DÉJÀ des causes distinctes ; l'UI doit les traduire en
-actions, **sans les aplatir** :
+rond. Le serveur produit DÉJÀ des causes distinctes (`RaisonEchec`) ; le moteur
+les mappe en **catégorie marchand** (`CatégorieÉchecMarchand`, en `core`, typée
+et exhaustive) que `/scanner` renvoie ; l'UI ne fait que **traduire** (français
+via `locales/`) et **équiper** l'auto-diagnostic.
+
+**LE CRITÈRE UNIQUE qui gouverne toute la table (à ne jamais perdre) :**
+*deux causes partagent une catégorie SI ET SEULEMENT SI elles appellent la même
+ACTION du marchand* (la catégorie est une partition par action requise, PAS une
+taxonomie des causes techniques) ; *une catégorie porte `urlVerifiee` SI ET
+SEULEMENT SI son action est « inspecte cette URL toi-même »*. Ce critère rend
+tout ajout futur décidable sans rouvrir le débat.
+
+Mapping validé (`categoriserEchec`, exhaustivité imposée par `tsc`) :
+
+| `RaisonEchec` | → Catégorie marchand | `urlVerifiee` ? (action = inspecter l'URL) |
+|---|---|---|
+| `fichier-absent` | `absent` | **oui** (seau irréductible : pas-encore-là/mauvais-endroit/mauvais-nom) |
+| `mauvais-contenu` | `contenu-inattendu` | **oui** (page d'accueil servie à la place ? fichier modifié ?) |
+| `redirection-refusee` | `redirection` | non (action : retirer la redirection) |
+| `erreur-reseau` | `injoignable` | non (action : vérifier que le site est en ligne) |
+| `hote-non-public` | `non-public` | non (action : exposer le site publiquement) |
+| `jeton-absent` · `jeton-expire` | `session-expiree` | non (action : recommencer la vérification) |
+| `url-invalide` · `schema-non-supporte` · `userinfo-interdit` · `ip-litterale-interdite` | `url-invalide` | non (action : corriger l'adresse saisie) |
+
+Et le détail d'UI, cause par cause :
 
 | `RaisonEchec` serveur | Ce que vit le marchand | Message / action |
 |---|---|---|
@@ -91,7 +114,16 @@ actions, **sans les aplatir** :
 
 Le serveur ne peut pas lever l'ambiguïté du seau `fichier-absent` ; l'UI la lève
 en **montrant au marchand ce que le serveur voit** (l'URL exacte). C'est ÇA,
-l'exigence — écrite comme centrale, pas lissée.
+l'exigence — écrite comme centrale, pas lissée. Conséquences de contrat : la
+réponse d'échec `absent` de `/scanner` **doit porter `urlVerifiee`** (l'URL
+exacte testée), sinon l'UI n'a rien à montrer et l'auto-diagnostic est creux.
+
+**La mitigation CDN se raccorde ICI, et nulle part ailleurs.** Sur le seau
+`absent`, le bouton « réessayer » de l'UI **repart de `/verifier`** (jeton frais
+→ nouveau nom → nouvelle URL, jamais GETée avant dépôt → pas de 404 figé au
+cache), **JAMAIS un simple re-GET de la même URL** (qui, derrière un CDN, relirait
+le 404 empoisonné). Le futur-toi qui écrira le réessai : ne recâble pas un re-GET
+naïf — c'est le seul point où la discipline CDN touche l'interface.
 
 ## Hors cadrage (noté, pas tranché)
 

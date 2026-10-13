@@ -17,12 +17,14 @@ import http from 'node:http';
 import { randomBytes } from 'node:crypto';
 import {
   acheverVerification,
+  cheminVerification,
   demarrerVerification,
   normaliserOrigine,
   peutScanner,
   type Recuperer,
   type StockVerification,
 } from './verification-propriete.js';
+import { categoriserEchec } from './categorie-echec.js';
 import { reserverScan, type ConfigQuota, type StockQuota } from './quota.js';
 import { emailValide } from './courriel.js';
 
@@ -276,7 +278,16 @@ export function creerServeurScan(deps: DepsServeur): Promise<ServeurScan> {
         fenetreValiditeMs: config.fenetreValiditeMs,
         prefixeFichier: config.prefixeFichier,
       });
-      if (!verif.ok) return repondre(res, 403, { erreur: verif.raison });
+      if (!verif.ok) {
+        // DISCRIMINATION : au-delà de la cause interne, on renvoie la CATÉGORIE
+        // MARCHAND (partition par action requise), et pour le seau `absent`/
+        // `contenu-inattendu` l'URL EXACTE testée (l'outil d'auto-diagnostic — le
+        // serveur l'a vue, l'UI ne peut pas la refaire). `erreur` reste pour le debug.
+        const normEchec = normaliserOrigine(urlSite);
+        const jetonEchec = normEchec.ok ? deps.stockVerif.lireJeton(normEchec.origine)?.jeton : undefined;
+        const urlVerifiee = normEchec.ok && jetonEchec !== undefined ? `${normEchec.origine}${cheminVerification(config.prefixeFichier, jetonEchec)}` : '';
+        return repondre(res, 403, { erreur: verif.raison, ...categoriserEchec(verif.raison, urlVerifiee) });
+      }
       const norm = normaliserOrigine(urlSite);
       if (!norm.ok) return repondre(res, 400, { erreur: norm.raison });
       // QUOTA DUR + ENFILEMENT, bloc SYNCHRONE (aucun `await` au milieu) :
