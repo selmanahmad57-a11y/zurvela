@@ -286,7 +286,16 @@ export function creerServeurScan(deps: DepsServeur): Promise<ServeurScan> {
         const normEchec = normaliserOrigine(urlSite);
         const jetonEchec = normEchec.ok ? deps.stockVerif.lireJeton(normEchec.origine)?.jeton : undefined;
         const urlVerifiee = normEchec.ok && jetonEchec !== undefined ? `${normEchec.origine}${cheminVerification(config.prefixeFichier, jetonEchec)}` : '';
-        return repondre(res, 403, { erreur: verif.raison, ...categoriserEchec(verif.raison, urlVerifiee) });
+        const echec = categoriserEchec(verif.raison, urlVerifiee);
+        // `reessai` : les FAITS serveur (constats du GET) pour la décision de réessai
+        // de l'UI — groupés à part des champs marchand (categorie/urlVerifiee), autre
+        // public. ABSENT pour `url-invalide` (rejet à la saisie : re-saisir l'URL, pas
+        // un réessai de jeton). Les faits sont bénins : dérivables de la catégorie
+        // déjà publique, ils décrivent le site cible et le jeton, pas nos défenses.
+        const reessai = echec.categorie === 'url-invalide' ? {} : { reessai: { reponseServie: verif.reponseServie, jetonMort: verif.jetonMort } };
+        // La `RaisonEchec` BRUTE ne fuit pas dans le contrat public : `categorie` est
+        // le descripteur marchand. Rien côté UI ne lit la raison interne.
+        return repondre(res, 403, { ...echec, ...reessai });
       }
       const norm = normaliserOrigine(urlSite);
       if (!norm.ok) return repondre(res, 400, { erreur: norm.raison });

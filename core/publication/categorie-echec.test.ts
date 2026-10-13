@@ -84,3 +84,21 @@ describe('categoriserEchec — catégorie par ACTION marchand', () => {
     expect(true).toBe(true);
   });
 });
+
+// COHÉRENCE categorie ⟺ reponseServie. Les faits (`reessai`) et la catégorie sont
+// DEUX représentations du même échec dans la réponse ; `reponseServie` est une pure
+// fonction de la catégorie (servie ⟺ absent/contenu-inattendu/redirection). On
+// transporte quand même les faits (β : l'UI ne re-dérive pas), donc la cohérence
+// devient un INVARIANT à tenir — sinon l'UI aurait deux sources qui se contredisent.
+// Ce témoin la tient : une raison « servie » (res.type ok/absent/redirection côté
+// acheverVerification) DOIT tomber dans une catégorie servie, et réciproquement.
+describe('cohérence categorie ⟺ reponseServie (pas deux sources divergentes)', () => {
+  const RAISONS_SERVIES = new Set<RaisonEchec>(['fichier-absent', 'mauvais-contenu', 'redirection-refusee']);
+  const CATEGORIES_SERVIES = new Set(['absent', 'contenu-inattendu', 'redirection']);
+  it('raison servie ⟺ catégorie servie, pour les 11 causes', () => {
+    for (const raison of Object.keys(ATTENDU) as RaisonEchec[]) {
+      const categorieServie = CATEGORIES_SERVIES.has(categoriserEchec(raison, '').categorie);
+      expect(categorieServie, raison).toBe(RAISONS_SERVIES.has(raison));
+    }
+  });
+});

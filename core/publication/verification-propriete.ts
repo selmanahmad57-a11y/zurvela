@@ -328,33 +328,50 @@ export interface OptionsAchevement {
   readonly prefixeFichier: string;
 }
 
-export type ResultatVerification = { ok: true; preuve: Preuve } | { ok: false; raison: RaisonEchec };
+/**
+ * Les FAITS STABLES de l'échec, remontés pour la décision de réessai (β). Ils
+ * sont constatés PAR le serveur (seul témoin du GET) et ne bougent plus :
+ *  - `reponseServie` : une réponse HTTP a été REÇUE à l'URL du jeton (donc
+ *    cachable au CDN) → un re-GET la relirait ;
+ *  - `jetonMort` : le jeton était déjà mort À L'ÉCHEC (absent/expiré). Stable (un
+ *    jeton mort le reste), contrairement à « valide-maintenant » qui expire.
+ * Note : `{ reponseServie: true, jetonMort: true }` est STRUCTURELLEMENT
+ * impossible — un jeton mort retourne AVANT le GET, donc rien n'est servi.
+ */
+export type ResultatVerification =
+  | { ok: true; preuve: Preuve }
+  | { ok: false; raison: RaisonEchec; reponseServie: boolean; jetonMort: boolean };
 
 export async function acheverVerification(urlBrute: string, opts: OptionsAchevement): Promise<ResultatVerification> {
   const norm = normaliserOrigine(urlBrute);
   if (!norm.ok) {
-    return { ok: false, raison: norm.raison };
+    // URL rejetée à la saisie : jamais de GET, jamais de jeton.
+    return { ok: false, raison: norm.raison, reponseServie: false, jetonMort: false };
   }
   const entree = opts.stock.lireJeton(norm.origine);
   if (entree === undefined) {
-    return { ok: false, raison: 'jeton-absent' };
+    return { ok: false, raison: 'jeton-absent', reponseServie: false, jetonMort: true };
   }
   if (opts.maintenant > entree.expireLe) {
-    return { ok: false, raison: 'jeton-expire' };
+    // Mort AVANT le GET → rien servi.
+    return { ok: false, raison: 'jeton-expire', reponseServie: false, jetonMort: true };
   }
   const res = await opts.recuperer(norm.origine, cheminVerification(opts.prefixeFichier, entree.jeton));
+  // Une réponse HTTP a été reçue (statut/corps) pour ok/absent/redirection ; rien
+  // pour hote-non-public (refusé avant connexion) / erreur (réseau).
+  const reponseServie = res.type === 'ok' || res.type === 'absent' || res.type === 'redirection';
   switch (res.type) {
     case 'redirection':
-      return { ok: false, raison: 'redirection-refusee' };
+      return { ok: false, raison: 'redirection-refusee', reponseServie, jetonMort: false };
     case 'hote-non-public':
-      return { ok: false, raison: 'hote-non-public' };
+      return { ok: false, raison: 'hote-non-public', reponseServie, jetonMort: false };
     case 'absent':
-      return { ok: false, raison: 'fichier-absent' };
+      return { ok: false, raison: 'fichier-absent', reponseServie, jetonMort: false };
     case 'erreur':
-      return { ok: false, raison: 'erreur-reseau' };
+      return { ok: false, raison: 'erreur-reseau', reponseServie, jetonMort: false };
     case 'ok': {
       if (res.corps.trim() !== entree.jeton) {
-        return { ok: false, raison: 'mauvais-contenu' };
+        return { ok: false, raison: 'mauvais-contenu', reponseServie, jetonMort: false };
       }
       const preuve: Preuve = { origine: norm.origine, prouveeLe: opts.maintenant, valideJusqua: opts.maintenant + opts.fenetreValiditeMs };
       opts.stock.ecrirePreuve(norm.origine, preuve);

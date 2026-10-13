@@ -243,7 +243,7 @@ describe('flux complet (vrai chemin) + garde cardinale', () => {
     const url = `http://pin.test:${srv.port}`;
     demarrerVerification(url, { stock, maintenant: T0, octetsJeton: 32, expirationJetonMs: EXP_JETON, prefixeFichier: PREFIXE });
     const r = await acheverVerification(url, { stock, maintenant: T0 + 10, recuperer: recupVrai(lookupPermissif), fenetreValiditeMs: FENETRE, prefixeFichier: PREFIXE });
-    expect(r).toEqual({ ok: false, raison: 'fichier-absent' });
+    expect(r).toEqual({ ok: false, raison: 'fichier-absent', reponseServie: true, jetonMort: false });
     expect(peutScanner(url, { stock, maintenant: T0 + 20 }).ok).toBe(false);
   });
 
@@ -256,7 +256,7 @@ describe('flux complet (vrai chemin) + garde cardinale', () => {
     const url = `http://pin.test:${srv.port}`;
     demarrerVerification(url, { stock, maintenant: T0, octetsJeton: 32, expirationJetonMs: EXP_JETON, prefixeFichier: PREFIXE });
     const r = await acheverVerification(url, { stock, maintenant: T0 + 10, recuperer: recupVrai(lookupPermissif), fenetreValiditeMs: FENETRE, prefixeFichier: PREFIXE });
-    expect(r).toEqual({ ok: false, raison: 'mauvais-contenu' });
+    expect(r).toEqual({ ok: false, raison: 'mauvais-contenu', reponseServie: true, jetonMort: false });
   });
 
   it('redirection → redirection-refusee', async () => {
@@ -268,7 +268,7 @@ describe('flux complet (vrai chemin) + garde cardinale', () => {
     const url = `http://pin.test:${srv.port}`;
     demarrerVerification(url, { stock, maintenant: T0, octetsJeton: 32, expirationJetonMs: EXP_JETON, prefixeFichier: PREFIXE });
     const r = await acheverVerification(url, { stock, maintenant: T0 + 10, recuperer: recupVrai(lookupPermissif), fenetreValiditeMs: FENETRE, prefixeFichier: PREFIXE });
-    expect(r).toEqual({ ok: false, raison: 'redirection-refusee' });
+    expect(r).toEqual({ ok: false, raison: 'redirection-refusee', reponseServie: true, jetonMort: false });
   });
 
   it('jeton expiré (fenêtre de dépôt dépassée) → jeton-expire', async () => {
@@ -280,13 +280,86 @@ describe('flux complet (vrai chemin) + garde cardinale', () => {
     const url = `http://pin.test:${srv.port}`;
     demarrerVerification(url, { stock, maintenant: T0, octetsJeton: 32, expirationJetonMs: EXP_JETON, prefixeFichier: PREFIXE });
     const r = await acheverVerification(url, { stock, maintenant: T0 + EXP_JETON + 1, recuperer: recupVrai(lookupPermissif), fenetreValiditeMs: FENETRE, prefixeFichier: PREFIXE });
-    expect(r).toEqual({ ok: false, raison: 'jeton-expire' });
+    expect(r).toEqual({ ok: false, raison: 'jeton-expire', reponseServie: false, jetonMort: true });
     expect(srv.hits).toBe(0); // on ne va même pas chercher le fichier
   });
 
   it('jamais démarré → jeton-absent', async () => {
     const stock = stockMemoire();
     const r = await acheverVerification('http://jamais.test', { stock, maintenant: T0, recuperer: recupVrai(lookupPermissif), fenetreValiditeMs: FENETRE, prefixeFichier: PREFIXE });
-    expect(r).toEqual({ ok: false, raison: 'jeton-absent' });
+    expect(r).toEqual({ ok: false, raison: 'jeton-absent', reponseServie: false, jetonMort: true });
+  });
+
+  // ─── β : les FAITS STABLES remontés depuis la source pour la décision de réessai ───
+  // `reponseServie` = une réponse HTTP a été REÇUE à l'URL du jeton (donc cachable
+  // au CDN). Constat du GET, le seul témoin légitime — l'UI ne le re-devine pas.
+  // `jetonMort` = le jeton était déjà mort À L'ÉCHEC (absent/expiré). STABLE : un
+  // jeton mort le reste (contrairement à « valide-maintenant », qui expire avec le
+  // temps entre l'échec et le clic « réessayer » — vigilance 2).
+  describe('β — reponseServie / jetonMort (faits stables, portés par acheverVerification)', () => {
+    const demarrer = (stock: StockVerification, url: string): void =>
+      void demarrerVerification(url, { stock, maintenant: T0, octetsJeton: 32, expirationJetonMs: EXP_JETON, prefixeFichier: PREFIXE });
+
+    it('réponse SERVIE (404 / 200-mauvais / 3xx) → reponseServie=true, jetonMort=false', async () => {
+      const cas: Array<(res: http.ServerResponse) => void> = [
+        (res) => {
+          res.writeHead(404);
+          res.end();
+        },
+        (res) => {
+          res.writeHead(200);
+          res.end('pas-le-jeton');
+        },
+        (res) => {
+          res.writeHead(301, { location: 'https://ailleurs.fr/' });
+          res.end();
+        },
+      ];
+      for (const servir of cas) {
+        const stock = stockMemoire();
+        const srv = await lancer((_u, res) => servir(res));
+        const url = `http://pin.test:${srv.port}`;
+        demarrer(stock, url);
+        const r = await acheverVerification(url, { stock, maintenant: T0 + 10, recuperer: recupVrai(lookupPermissif), fenetreValiditeMs: FENETRE, prefixeFichier: PREFIXE });
+        expect(r).toMatchObject({ ok: false, reponseServie: true, jetonMort: false });
+      }
+    });
+
+    it('RIEN servi — hote-non-public (bloqué avant tout GET) → reponseServie=false, jetonMort=false', async () => {
+      const stock = stockMemoire();
+      const srv = await lancer((_u, res) => {
+        res.writeHead(200);
+        res.end('ne doit pas être servi');
+      });
+      const url = `http://interne.corp:${srv.port}`;
+      demarrer(stock, url);
+      const lookupPrive = lookupPublicSeulement(async () => [{ address: '10.0.0.1', family: 4 }]);
+      const r = await acheverVerification(url, { stock, maintenant: T0 + 10, recuperer: recupVrai(lookupPrive), fenetreValiditeMs: FENETRE, prefixeFichier: PREFIXE });
+      expect(r).toMatchObject({ ok: false, raison: 'hote-non-public', reponseServie: false, jetonMort: false });
+      expect(srv.hits).toBe(0);
+    });
+
+    it('RIEN servi — erreur réseau (socket coupée) → reponseServie=false, jetonMort=false', async () => {
+      const stock = stockMemoire();
+      const srv = await lancer((_u, res) => res.socket?.destroy());
+      const url = `http://pin.test:${srv.port}`;
+      demarrer(stock, url);
+      const r = await acheverVerification(url, { stock, maintenant: T0 + 10, recuperer: recupVrai(lookupPermissif), fenetreValiditeMs: FENETRE, prefixeFichier: PREFIXE });
+      expect(r).toMatchObject({ ok: false, raison: 'erreur-reseau', reponseServie: false, jetonMort: false });
+    });
+
+    it('JETON MORT à l’échec — expiré (fait stable) → jetonMort=true, reponseServie=false (aucun GET)', async () => {
+      const stock = stockMemoire();
+      const url = 'http://pin.test';
+      demarrer(stock, url);
+      const r = await acheverVerification(url, { stock, maintenant: T0 + EXP_JETON + 1, recuperer: recupVrai(lookupPermissif), fenetreValiditeMs: FENETRE, prefixeFichier: PREFIXE });
+      expect(r).toMatchObject({ ok: false, raison: 'jeton-expire', jetonMort: true, reponseServie: false });
+    });
+
+    it('JETON MORT à l’échec — absent → jetonMort=true, reponseServie=false', async () => {
+      const stock = stockMemoire();
+      const r = await acheverVerification('http://jamais.test', { stock, maintenant: T0, recuperer: recupVrai(lookupPermissif), fenetreValiditeMs: FENETRE, prefixeFichier: PREFIXE });
+      expect(r).toMatchObject({ ok: false, raison: 'jeton-absent', jetonMort: true, reponseServie: false });
+    });
   });
 });

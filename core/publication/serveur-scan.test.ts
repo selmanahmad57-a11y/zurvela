@@ -18,6 +18,7 @@ import {
 } from './serveur-scan.js';
 import type { EntreeJeton, Preuve, Recuperer, StockVerification } from './verification-propriete.js';
 import { enregistrerDepense, type ConfigQuota, type StockQuota } from './quota.js';
+import { decisionReessai, type FaitsReessai } from './decision-reessai.js';
 
 // ───────── stocks mémoire ─────────
 function stockVerif(): StockVerification {
@@ -207,6 +208,26 @@ describe('(4) routes', () => {
     expect(scan.statut).toBe(403);
     expect(scan.json['categorie']).toBe('absent');
     expect(String(scan.json['urlVerifiee'])).toContain('https://ok.test/zurvela-verification-');
+  });
+
+  // RÉESSAI (β) : les FAITS serveur voyagent sous un objet dédié `reessai` (séparé
+  // des champs marchand categorie/urlVerifiee), et la décision UI en découle.
+  it('échec « fichier absent » → reessai {reponseServie:true, jetonMort:false} ; decisionReessai → reverifier (bout en bout)', async () => {
+    const { s } = await monterServeur({ recuperer: recupererAbsent });
+    await requete(s.port, 'POST', '/verifier', { url: 'https://ok.test' });
+    const scan = await requete(s.port, 'POST', '/scanner', { url: 'https://ok.test' });
+    expect(scan.statut).toBe(403);
+    expect(scan.json['reessai']).toEqual({ reponseServie: true, jetonMort: false });
+    // le constat serveur gouverne la décision UI : absent → reverifier, de bout en bout
+    expect(decisionReessai(scan.json['reessai'] as FaitsReessai)).toBe('reverifier');
+  });
+
+  it('url invalide → catégorie url-invalide, AUCUN reessai (saisie, pas un réessai de jeton)', async () => {
+    const { s } = await monterServeur();
+    const scan = await requete(s.port, 'POST', '/scanner', { url: 'ftp://x.fr' });
+    expect(scan.statut).toBe(403);
+    expect(scan.json['categorie']).toBe('url-invalide');
+    expect(scan.json['reessai']).toBeUndefined();
   });
 
   // IDOR : l'id imprévisible EST la capacité. L'énumération classique ne donne rien.
