@@ -12,7 +12,9 @@ api.zurvela.com {
 		reverse_proxy 127.0.0.1:8787
 	}
 	handle {
-		root * /opt/zurvela/app/deploiement/ui
+		# Racine lisible par l'utilisateur `caddy` (pas /opt/zurvela, qui est
+		# 750 zurvela:zurvela). `deployer-caddy.sh` y synchronise deploiement/ui.
+		root * /var/www/zurvela-ui
 		file_server
 	}
 }

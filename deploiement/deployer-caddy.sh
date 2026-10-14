@@ -24,7 +24,12 @@ if ! caddy validate --config "$SRC" --adapter caddyfile >/dev/null 2>&1; then
   exit 1
 fi
 
-echo "### 2/4 backup de l'ancien + mise en place + reload"
+echo "### 2/4 UI → webroot lisible par caddy, backup de l'ancien, mise en place, reload"
+# L'UI vit en /opt/zurvela (750, illisible par caddy) ; on la synchronise vers un
+# webroot lisible. a+rX : lisible par l'utilisateur `caddy`.
+rm -rf /var/www/zurvela-ui && mkdir -p /var/www/zurvela-ui
+cp -r "$APP/deploiement/ui/." /var/www/zurvela-ui/
+chmod -R a+rX /var/www/zurvela-ui
 cp "$DST" "$BAK"            # durcissement 3 : l'ANCIEN (celui qui tourne), avant la copie
 cp "$SRC" "$DST"
 systemctl reload caddy
@@ -42,6 +47,10 @@ verifier_node "POST /scanner"     "$($C -X POST "$BASE/scanner" -H 'content-type
 # L'INVERSE (durcissement 2) : une page INEXISTANTE ne doit PAS atteindre Node.
 page="$($C "$BASE/page-inexistante-de-sonde-$(date +%s)")"
 if echo "$page" | grep -q '"erreur"'; then echo "    page inexistante → atteint Node (@api DÉBORDE ! corps: $page)"; echoue=1; else echo "    page inexistante → statique ✓ (@api ne déborde pas)"; fi
+# Et file_server SERT bien la page (sinon une erreur de permission passerait pour
+# du « statique » sans qu'on le voie) : GET / → 200 HTML.
+racine="$($C -o /dev/null -w '%{http_code}' "$BASE/")"
+if [ "$racine" = "200" ]; then echo "    GET / → page servie ✓ (file_server lit la racine)"; else echo "    GET / → NON servie (code $racine — permission webroot ?)"; echoue=1; fi
 
 echo "### 4/4 verdict"
 if [ "$echoue" -ne 0 ]; then
