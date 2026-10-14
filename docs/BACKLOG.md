@@ -559,3 +559,38 @@ code en main, red-first.*
   `redirection-refusee`/`jeton-expire`/… ; l'UI ne les aplatit pas, et pour le
   seau ambigu `fichier-absent` montre l'URL exacte au marchand = auto-diagnostic).
   Aide par plateforme : plus tard, après mesure.
+
+### Avancement (serveur, posé red-first + mutations)
+
+- ✅ **Discrimination des échecs → catégorie marchand** (`165ab7b`) : `categoriserEchec`
+  (mapping typé exhaustif par `tsc`, union discriminée `absent`/`contenu-inattendu`
+  portent `urlVerifiee`), renvoyée par `/scanner`. Critère : partition par ACTION.
+- ✅ **Décision de réessai, faits depuis la source (β)** (`25a2f27`) : `acheverVerification`
+  porte `reponseServie`/`jetonMort` (constats stables), `/scanner` les groupe sous
+  `reessai` (absent pour `url-invalide`), `decisionReessai(faits)` = critère pur côté UI.
+  Cohérence `categorie ⟺ faits` outillée par témoin.
+
+### POINT DE RÉOUVERTURE (par où reprendre, risque d'abord)
+
+**Le matching Caddy API-vs-page AVANT la page HTML** — c'est le dernier vrai risque
+(un défaut y est silencieux : une page masque `/scanner`, ou l'inverse, et tout
+s'effondre sans erreur franche). Témoin d'abord : prouver qu'une page ne capture
+pas une route d'API ni réciproquement (liste blanche explicite
+`@api path /verifier /scanner /statut/* /sante`). **Question d'archi à trancher à
+la réouverture** (l'équivalent du « isoler la logique de réessai sous vitest ») :
+le matching vit dans le `Caddyfile`, pas en TS — teste-t-on la CONFIG (parser le
+Caddyfile, asserter les règles) ou le COMPORTEMENT (lancer Caddy, taper les routes) ?
+Les deux ont un coût différent sous le gate vitest-only. À trancher avant le HTML.
+Ensuite seulement : la page statique (formulaire → `/verifier` → download 1-clic →
+« vérifier & scanner », rendu de l'échec discriminé, exécution `reverifier`/`resoumettre`
+selon `reessai`) + les textes marchands en `locales/` (un par catégorie).
+
+### Dette tracée (hors brique réessai)
+
+- **Harmoniser le 403 secondaire de `demarrerScan`** (`serveur-scan.ts`, le
+  `if (!dem.ok) return repondre(res, 403, { erreur: dem.raison })` post-vérification) :
+  il porte encore la **`RaisonEchec` brute** (`url-refusee`/`non-prouve`/`preuve-expiree`)
+  dans la réponse publique, **sans catégorie** — incohérent avec le 403 principal qui
+  n'expose plus que `categorie`. Chemin rare (peutScanner échoue APRÈS une vérif réussie,
+  ex. preuve expirée entre-temps). À harmoniser (catégorie + pas de raison brute) quand
+  on touchera ce chemin. Origine : brique réessai (`25a2f27`), finition `erreur`.
