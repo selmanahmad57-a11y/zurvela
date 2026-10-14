@@ -211,5 +211,14 @@
   },
   "courriel": {
     "sujet": "Votre rapport Zurvela — {{origine}}"
+  },
+  "echecMarchand": {
+    "absent": "Le fichier de preuve est introuvable à l'adresse indiquée. Il n'est peut-être pas encore en ligne, ou placé à un autre endroit que celui attendu. Ouvrez vous-même l'adresse ci-dessous pour vérifier.",
+    "contenu-inattendu": "Un fichier répond bien à l'adresse indiquée, mais son contenu ne correspond pas à la preuve attendue. Ouvrez l'adresse ci-dessous pour voir ce qui s'y trouve.",
+    "redirection": "L'adresse de la preuve renvoie ailleurs. Pour garantir que la preuve vient bien de votre site, nous ne suivons pas les redirections : déposez le fichier à l'adresse exacte, sans renvoi.",
+    "injoignable": "Votre site n'a pas répondu pendant la vérification. Il est peut-être momentanément indisponible ; vous pouvez réessayer dans un moment.",
+    "non-public": "L'adresse indiquée n'est pas joignable publiquement (réseau interne ou privé). La vérification ne porte que sur des sites accessibles à tous.",
+    "session-expiree": "Le délai de cette vérification est écoulé. Relancez une vérification pour obtenir une nouvelle preuve à déposer.",
+    "url-invalide": "L'adresse saisie n'est pas une URL valide. Vérifiez la saisie, puis réessayez."
   }
 }

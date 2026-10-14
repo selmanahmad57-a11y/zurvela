@@ -28,6 +28,7 @@
     "prompts/**/*.ts",
     "scripts/**/*.ts",
     "vitest.config.ts",
-    "deploiement/ui/reessai.js"
+    "deploiement/ui/reessai.js",
+    "deploiement/ui/message-echec.js"
   ]
 }

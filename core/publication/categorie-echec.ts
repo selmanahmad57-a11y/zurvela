@@ -47,6 +47,21 @@ export type EchecMarchand =
   | { readonly categorie: 'url-invalide' };
 
 /**
+ * INVARIANT (tsc) : les catégories PRODUCTIBLES (`EchecMarchand`, ce que
+ * `categoriserEchec` fabrique) sont EXACTEMENT la liste source
+ * `CATEGORIES_ECHEC_MARCHAND` (donc exactement ce que le témoin d'exhaustivité
+ * parcourt). Les littéraux de l'union sont écrits EN PARALLÈLE de la liste ; rien ne
+ * les liait. Mesuré : une catégorie `test-fantome` productible (union + switch, hors
+ * liste, sans locale) passait `tsc` ET la ceinture d'exhaustivité → message vide
+ * chez le marchand. Ce `never` rend la désynchronisation IRREPRÉSENTABLE (n°28 :
+ * invariant de code > invariant qu'un test vérifie), et il est gate-caught depuis que
+ * le pre-push lance `pnpm typecheck` (n°59 : une garde « tenue par le compilateur »
+ * n'est tenue au gate que si le gate lance le compilateur).
+ */
+type _MemeEnsemble<A, B> = [A] extends [B] ? ([B] extends [A] ? true : never) : never;
+const _categoriesSynchro: _MemeEnsemble<EchecMarchand['categorie'], CategorieEchecMarchand> = true;
+
+/**
  * Mappe une cause serveur vers sa catégorie marchand. `urlVerifiee` = l'URL
  * exacte testée (le serveur l'a ; l'appelant la fournit). Elle n'est RETENUE que
  * pour les catégories dont l'action est de l'inspecter.
