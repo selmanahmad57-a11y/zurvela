@@ -15,6 +15,11 @@
     "noFallthroughCasesInSwitch": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
+    // allowJs : `tsc` doit RÉSOUDRE l'import de la source unique `reessai.js`
+    // (interface marchande) depuis les témoins .ts. Le type-check de ce .js est
+    // porté par son `// @ts-check` interne (pas de checkJs global : la colle DOM
+    // non typée de deploiement/ui/ n'est pas incluse et reste hors vérification).
+    "allowJs": true,
     "noEmit": true
   },
   "include": [
@@ -22,6 +27,7 @@
     "banc/**/*.ts",
     "prompts/**/*.ts",
     "scripts/**/*.ts",
-    "vitest.config.ts"
+    "vitest.config.ts",
+    "deploiement/ui/reessai.js"
   ]
 }

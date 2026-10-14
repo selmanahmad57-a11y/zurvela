@@ -14,7 +14,9 @@
  * donc PAS un comportement dessus : ce serait meubler une branche fantôme.
  */
 import { describe, expect, it } from 'vitest';
-import { decisionReessai } from './decision-reessai.js';
+// SOURCE UNIQUE : le MÊME fichier que le navigateur importe (servi statique par
+// Caddy). Pas de jumeau TS → pas de divergence possible à détecter (n°44).
+import { decisionReessai } from '../../deploiement/ui/reessai.js';
 
 describe('decisionReessai — LE CRITÈRE (faits serveur → intention)', () => {
   it('resoumettre SSI (rien servi ET jeton pas mort) ; sinon reverifier', () => {

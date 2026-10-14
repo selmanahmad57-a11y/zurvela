@@ -18,7 +18,7 @@ import {
 } from './serveur-scan.js';
 import type { EntreeJeton, Preuve, Recuperer, StockVerification } from './verification-propriete.js';
 import { enregistrerDepense, type ConfigQuota, type StockQuota } from './quota.js';
-import { decisionReessai, type FaitsReessai } from './decision-reessai.js';
+import { decisionReessai, type FaitsReessai } from '../../deploiement/ui/reessai.js';
 
 // ───────── stocks mémoire ─────────
 function stockVerif(): StockVerification {
