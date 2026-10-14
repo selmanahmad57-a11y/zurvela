@@ -20,7 +20,7 @@
 #
 # ACTIVATION (une fois par clone) : git config core.hooksPath .githooks
 
-echo "pre-push : suite complète (pnpm test) avant de pousser…"
+echo "pre-push : typecheck + suite complète avant de pousser…"
 
 if [ -s "$HOME/.nvm/nvm.sh" ]; then
   # shellcheck disable=SC1091
@@ -36,6 +36,21 @@ if ! command -v pnpm >/dev/null 2>&1; then
   exit 1
 fi
 
+# n°59 : une garde « tenue par le compilateur » (le `never` d'exhaustivité, les
+# unions discriminées du contrat /scanner) n'est tenue AU GATE que si le gate lance
+# le compilateur. Le gate ne lançait que `vitest run` → toute une classe d'invariants
+# de type passait au push sans vérification. typecheck AVANT test : plus rapide, et il
+# échoue plus tôt sur une classe d'erreurs plus fondamentale (inutile de lancer ~270 s
+# de suite si le code ne type même pas). Échec de l'un OU l'autre = push refusé.
+echo "pre-push 1/2 : pnpm typecheck…"
+if ! pnpm typecheck; then
+  echo "pre-push : typecheck ROUGE → push REFUSÉ (invariant de type violé — pas un flake)." >&2
+  echo "          (contournement conscient : git push --no-verify)" >&2
+  exit 1
+fi
+echo "pre-push 1/2 : typecheck VERT."
+echo "pre-push 2/2 : pnpm test…"
+
 # On CONSERVE la sortie complète dans un log : un rouge sous le gate (surtout un
 # flake rare, qui ne se reproduit pas à la relance) doit laisser une trace
 # diagnosticable — sinon on répare au hasard (apprentissage n°57 : un flake est
@@ -47,7 +62,7 @@ status="$(cat "$log.rc" 2>/dev/null || echo 1)"
 rm -f "$log.rc"
 
 if [ "$status" -eq 0 ]; then
-  echo "pre-push : suite VERTE → push autorisé."
+  echo "pre-push : typecheck + suite VERTS → push autorisé."
   rm -f "$log"
   exit 0
 fi

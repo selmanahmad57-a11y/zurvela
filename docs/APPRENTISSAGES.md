@@ -2015,3 +2015,46 @@ regardé.
   les routes. Aucun `caddy run` → le canal admin partagé `:2019` n'a PLUS
   d'occasion d'exister. Le process éphémère n'était nécessaire que pour la mesure
   manuelle ponctuelle ; il ne doit jamais réapparaître dans l'outillage rejoué.
+
+## 59. Une garde « tenue par le compilateur » n'est tenue AU GATE que si le gate lance le compilateur (2026-10-14, vérification de la ceinture d'exhaustivité du message marchand)
+
+- **Le symptôme.** En vérifiant la ceinture d'exhaustivité (« chaque catégorie a un
+  message »), j'ai mesuré une catégorie PRODUCTIBLE (`categoriserEchec` la fabrique)
+  absente de la liste source et sans locale : `tsc` VERT, ceinture VERTE. Puis,
+  un cran au-dessus : même une garde de type CORRECTE qui aurait attrapé ça ne serait
+  pas tenue **au gate** — le hook pre-push ne lançait que `vitest run`, jamais `tsc`.
+- **La cause — une illusion partagée, pas un oubli local.** On célébrait des gardes
+  « tenues par le compilateur, pas par la vigilance » — le `never` d'exhaustivité de
+  `categoriserEchec`, les unions discriminées du contrat `/scanner`, le `never` de
+  `message-echec` en version switch. Elles LE SONT — à l'éditeur et sous
+  `pnpm typecheck`. Mais le gate, l'organe qui protège la prod au moment du push, ne
+  les exécutait pas. Elles protégeaient celui qui code, pas le push. Un push depuis un
+  état où `tsc` n'a pas tourné (ou dont on a ignoré l'erreur d'éditeur) passait avec un
+  invariant de type violé.
+- **Ce qui nous a eus : « ça ne compile pas » et « le gate refuse » semblaient
+  synonymes.** Ils ne l'étaient pas. Le gate ne regardait pas les types DU TOUT. La
+  mesure l'a prouvé noir sur blanc (catégorie fantôme productible, `tsc` vert faute de
+  lien entre l'union et la liste, gate aveugle faute de lancer `tsc`). Deux
+  aveuglements superposés, aucun visible. C'est [[34]] à l'échelle d'une CLASSE : un
+  invariant qu'on croit tenu ne l'est, au point qui compte, que si la mécanique l'y
+  exécute — l'inscrire (même dans le type) n'est pas l'armer.
+- **Le principe (large).** *Vérifier non seulement qu'une garde EXISTE, mais que le
+  filet qui compte (le gate) l'EXÉCUTE réellement. Une garde n'appartient au gate que
+  par l'outil que le gate lance : un invariant de type n'est gate-caught que si le gate
+  lance le type-checker, une invariante de contenu que si le gate lit le contenu (d'où
+  la ceinture runtime pour ce que `tsc` ne voit pas — le JSON). Remonter la question
+  jusqu'à l'organe aveugle : « cette garde, quel filet l'exécute, et ce filet est-il
+  celui qui protège ? ».* Famille de [[28]] (invariant de code > invariant qu'un test
+  vérifie — mais encore faut-il que le code SOIT vérifié au bon moment) et de [[56]]
+  (on avait mécanisé UNE règle au gate ; une classe entière restait hors mécanique).
+- **Mécanisé, pas seulement énoncé (dans l'esprit de [[56]]).** `pnpm typecheck` ajouté
+  au hook pre-push, AVANT `pnpm test` (plus rapide, échoue plus tôt sur une classe
+  d'erreurs plus fondamentale), les deux requis. Ça gate-enforce TOUTE la classe d'un
+  coup : la nouvelle assertion `_MemeEnsemble` de `categorie-echec.ts`, les `never`
+  existants, les unions discriminées du contrat. Coût dérisoire (`tsc --noEmit`,
+  quelques secondes), bénéfice : « on espère que `tsc` a tourné quelque part » devient
+  « le push refuse un invariant de type violé ». Vérifié franc sur tout le dépôt avant
+  d'armer (sinon le gate aurait bloqué le prochain push légitime sur une dette cachée —
+  à voir avant, pas au push). Trouvé en poussant la question d'un relecteur de deux
+  crans : il demandait si la ceinture itérait la bonne chose ; la mesure a remonté au
+  producteur hors liste, puis à l'organe (le gate) qui n'exécutait pas la garde.
