@@ -25,6 +25,7 @@ import {
   type StockVerification,
 } from './verification-propriete.js';
 import { categoriserEchec } from './categorie-echec.js';
+import { CHEMINS } from './routes-api.js';
 import { reserverScan, type ConfigQuota, type StockQuota } from './quota.js';
 import { emailValide } from './courriel.js';
 
@@ -236,12 +237,12 @@ export function creerServeurScan(deps: DepsServeur): Promise<ServeurScan> {
     const methode = req.method ?? 'GET';
 
     // GET /santé — vivant/prêt, rien de métier, aucune fuite.
-    if (methode === 'GET' && chemin === '/sante') {
+    if (methode === 'GET' && chemin === CHEMINS.sante) {
       return repondre(res, 200, { ok: true });
     }
 
     // POST /verifier — démarre une vérification de propriété (étape 3).
-    if (methode === 'POST' && chemin === '/verifier') {
+    if (methode === 'POST' && chemin === CHEMINS.verifier) {
       const corps = await lireCorpsJson(req, config.tailleCorpsMax);
       const urlSite = typeof corps?.['url'] === 'string' ? (corps['url'] as string) : undefined;
       if (urlSite === undefined) return repondre(res, 400, { erreur: 'url-requise' });
@@ -257,7 +258,7 @@ export function creerServeurScan(deps: DepsServeur): Promise<ServeurScan> {
     }
 
     // POST /scanner — achève la vérification et, si peutScanner passe, enfile.
-    if (methode === 'POST' && chemin === '/scanner') {
+    if (methode === 'POST' && chemin === CHEMINS.scanner) {
       const corps = await lireCorpsJson(req, config.tailleCorpsMax);
       const urlSite = typeof corps?.['url'] === 'string' ? (corps['url'] as string) : undefined;
       if (urlSite === undefined) return repondre(res, 400, { erreur: 'url-requise' });
@@ -323,8 +324,8 @@ export function creerServeurScan(deps: DepsServeur): Promise<ServeurScan> {
     }
 
     // GET /statut/:id — avancement puis rapport, via l'id IMPRÉVISIBLE (IDOR).
-    if (methode === 'GET' && chemin.startsWith('/statut/')) {
-      const id = decodeURIComponent(chemin.slice('/statut/'.length));
+    if (methode === 'GET' && chemin.startsWith(CHEMINS.statut)) {
+      const id = decodeURIComponent(chemin.slice(CHEMINS.statut.length));
       const entree = id === '' ? undefined : deps.stockScans.lire(id);
       if (entree === undefined) return repondre(res, 404, { erreur: 'introuvable' });
       return repondre(res, 200, {

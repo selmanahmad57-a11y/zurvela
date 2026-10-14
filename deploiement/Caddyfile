@@ -1,0 +1,18 @@
+#  Caddy — api.zurvela.com (archi B : UI statique + API proxiée, même origine).
+#
+#  PRÉCÉDENCE EXPLICITE par `handle` (mutuellement exclusif, évalué dans l'ordre
+#  ÉCRIT) : `@api` d'abord → Node ; sinon → file_server. La précédence est dans le
+#  code, PAS inférée par Caddy — c'est la décision de correction contre l'erreur
+#  silencieuse (une page qui masque une route d'API). Le matcher `@api` doit rester
+#  synchrone de ROUTES_API (témoin `routes-api.test.ts`) ; le ROUTAGE réel est
+#  prouvé au déploiement (`deployer-caddy.sh` : sonde + rollback).
+api.zurvela.com {
+	@api path /verifier /scanner /sante /statut/*
+	handle @api {
+		reverse_proxy 127.0.0.1:8787
+	}
+	handle {
+		root * /opt/zurvela/app/deploiement/ui
+		file_server
+	}
+}
