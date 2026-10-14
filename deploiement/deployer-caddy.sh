@@ -3,6 +3,11 @@
 # en statique (ou l'inverse), ROLLBACK du Caddyfile PRÉCÉDENT : un matching cassé
 # ne RESTE PAS en place (filet bloquant, pas simple alerte).
 #
+# APPRENTISSAGE n°58 (mécanisé) : cette sonde n'instancie JAMAIS un second Caddy.
+# Elle recharge le service systemd EN PLACE (reload-or-restart) et l'interroge par
+# requêtes HTTP. Aucun `caddy run` — le canal admin partagé :2019 n'a pas
+# d'occasion d'exister (un `caddy run` sur l'hôte prendrait la main sur la prod).
+#
 # La sonde est LE témoin du vrai risque (la précédence @api/file_server n'est pas
 # testable sous le gate vitest-only). Trois durcissements :
 #  1. assert sur le CORPS (signature que SEUL Node produit), pas le code HTTP seul ;

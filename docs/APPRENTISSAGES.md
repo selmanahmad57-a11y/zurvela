@@ -1976,3 +1976,42 @@ regardé.
   seulement lui-même. Avant de contourner un flake, demander ce qu'il mesure — un
   flake du test peut être le seul témoin d'un défaut du code. Le gate a fait son
   travail précisément en refusant de passer.*
+
+## 58. Un instrument qui partage un canal de contrôle avec sa cible peut la COMMANDER, pas seulement l'observer — et le canal est souvent invisible (2026-10-14, Caddy de test qui arrête le Caddy de prod)
+
+- **Le symptôme.** Pour MESURER la sémantique de matching de Caddy avant de figer
+  le `Caddyfile`, j'ai lancé un Caddy ÉPHÉMÈRE sur l'hôte (`caddy run`, port 9999,
+  `admin off`). Résultat : le Caddy de PROD (systemd) s'est arrêté — `api.zurvela.com`
+  down ~17 min. L'instrument n'a pas observé le système : il l'a ÉTEINT.
+- **La cause — plus profonde que « j'ai lancé le mauvais process ».** L'instrument
+  (le Caddy de test) et sa cible (le Caddy de prod) partageaient un **canal de
+  contrôle** : l'API admin Caddy sur `localhost:2019`. Un `caddy run` sur l'hôte
+  parle à ce socket et peut PRENDRE LA MAIN sur l'instance en place — « stopped
+  previous server ». L'instrument a commandé la cible au lieu de la mesurer.
+- **Ce qui m'a eu : le canal était INVISIBLE.** Rien dans « je lance un Caddy de
+  test » ne crie « je vais parler au même socket d'admin que la prod ». Le `admin
+  off` que j'avais mis protégeait l'instrument, pas la cible. **L'absence de canal
+  VISIBLE ne prouve pas l'absence de canal.** Je connaissais le principe — je
+  l'avais appliqué DEUX fois cette session en RÉUSSISSANT à l'éviter : la
+  cocotte-minute double-suite REFUSÉE parce qu'elle aurait OOM-killé des
+  navigateurs et manufacturé de fausses pannes ([[57]]) ; la sonde CDN qui aurait
+  pu LIRE un 404 caché et fausser le diagnostic. Même famille : *la méthode de
+  mesure corrompt ce qu'elle mesure*. Les deux fois je l'avais vu par le
+  raisonnement ; cette fois le canal partagé était implicite, et il m'a eu — pas
+  par ignorance du principe, par invisibilité du canal.
+- **Le principe (large).** *Avant de lancer un outil de test CONTRE (ou à CÔTÉ de)
+  un système vivant, identifier TOUT canal partagé — socket d'admin, port, fichier
+  d'état, verrou, ressource système bornée (CPU/RAM) — par lequel l'instrument
+  pourrait AGIR sur la cible au lieu de la mesurer. Le partage est souvent
+  implicite ; l'absence de canal visible ne prouve pas son absence. Un instrument
+  qui altère sa cible est pire qu'absent — ici il ne fausse pas la mesure, il
+  casse le mesuré.* C'est la version ops du principe des instruments ; distinct de
+  [[56]] (qui MÉCANISE une règle qui a cédé ; ici on ISOLE un instrument).
+- **Mécanisé, pas seulement énoncé (dans l'esprit de [[56]]).** Un principe en
+  mémoire protège le futur-moi qui s'en souvient — fragile. La protection
+  STRUCTURELLE : la sonde de routage (`deploiement/deployer-caddy.sh`) n'instancie
+  JAMAIS un second Caddy. Elle recharge le service systemd EN PLACE
+  (`systemctl reload-or-restart`) et l'interroge par de simples requêtes HTTP sur
+  les routes. Aucun `caddy run` → le canal admin partagé `:2019` n'a PLUS
+  d'occasion d'exister. Le process éphémère n'était nécessaire que pour la mesure
+  manuelle ponctuelle ; il ne doit jamais réapparaître dans l'outillage rejoué.
