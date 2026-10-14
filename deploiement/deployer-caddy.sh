@@ -32,7 +32,7 @@ cp -r "$APP/deploiement/ui/." /var/www/zurvela-ui/
 chmod -R a+rX /var/www/zurvela-ui
 cp "$DST" "$BAK"            # durcissement 3 : l'ANCIEN (celui qui tourne), avant la copie
 cp "$SRC" "$DST"
-systemctl reload caddy
+systemctl reload-or-restart caddy
 sleep 2
 
 echo "### 3/4 SONDE du routage réel (corps Node vs page statique)"
@@ -56,7 +56,7 @@ echo "### 4/4 verdict"
 if [ "$echoue" -ne 0 ]; then
   echo "ROUTAGE CASSÉ → ROLLBACK du Caddyfile précédent." >&2
   cp "$BAK" "$DST"
-  systemctl reload caddy
+  systemctl reload-or-restart caddy
   echo "rollback effectué : le matching cassé n'est PAS resté. (exit 2)" >&2
   exit 2
 fi
