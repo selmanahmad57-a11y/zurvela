@@ -7,5 +7,49 @@
     "non-public": "L'adresse indiquée n'est pas joignable publiquement (réseau interne ou privé). La vérification ne porte que sur des sites accessibles à tous.",
     "session-expiree": "Le délai de cette vérification est écoulé. Relancez une vérification pour obtenir une nouvelle preuve à déposer.",
     "url-invalide": "L'adresse saisie n'est pas une URL valide. Vérifiez la saisie, puis réessayez."
+  },
+  "interface": {
+    "titre": "Analyser votre site",
+    "saisie": {
+      "intro": "Entrez l'adresse de votre site. Pour vérifier qu'il vous appartient, vous déposerez un court fichier ; ensuite, l'analyse démarre.",
+      "labelUrl": "Adresse du site",
+      "placeholderUrl": "https://votresite.com",
+      "labelEmail": "Votre e-mail (pour recevoir le rapport)",
+      "placeholderEmail": "vous@exemple.com",
+      "bouton": "Continuer",
+      "vide": "Entrez l'adresse de votre site.",
+      "invalide": "Cette adresse n'est pas valide. Vérifiez-la, puis réessayez.",
+      "emailInvalide": "Cette adresse e-mail n'est pas valide."
+    },
+    "depot": {
+      "titre": "Déposez ce fichier sur votre site",
+      "etape1": "Téléchargez le fichier.",
+      "telecharger": "Télécharger le fichier",
+      "etape2": "Ajoutez ce fichier à votre site — comme vous y ajouteriez une page ou une image — en conservant exactement son nom, pour qu'il s'ouvre à cette adresse :",
+      "etape3": "Quand c'est fait, lancez la vérification et l'analyse.",
+      "aide": "Le fichier doit être accessible publiquement à l'adresse ci-dessus, sans redirection.",
+      "bouton": "C'est déposé — vérifier et analyser"
+    },
+    "suivi": {
+      "enCours": "Analyse en cours…",
+      "avecEmail": "Nous vous enverrons le rapport par e-mail dès qu'il est prêt. Vous pouvez fermer cette page.",
+      "sansEmail": "Gardez cette page ouverte : le rapport s'affichera ici dès qu'il est prêt.",
+      "voir": "Voir le rapport"
+    },
+    "echec": {
+      "titre": "La vérification n'a pas abouti",
+      "urlVerifiee": "Nous avons regardé cette adresse :",
+      "ouvrir": "Ouvrir cette adresse dans un nouvel onglet",
+      "reessayer": "Réessayer",
+      "corrigerUrl": "Corriger l'adresse"
+    },
+    "quota": {
+      "global": "Le service a atteint sa limite d'analyses pour aujourd'hui. Réessayez demain.",
+      "origine": "Vous avez atteint la limite d'analyses pour ce site aujourd'hui. Réessayez demain.",
+      "depense": "Le service a atteint sa limite pour aujourd'hui. Réessayez demain.",
+      "destinataire": "Cette adresse e-mail a déjà reçu le maximum de rapports pour aujourd'hui. Réessayez demain."
+    },
+    "incoherence": "Une erreur est survenue de notre côté. Réessayez dans un moment.",
+    "reseau": "Impossible de joindre le service. Vérifiez votre connexion, puis réessayez."
   }
 }

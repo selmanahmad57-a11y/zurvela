@@ -40,7 +40,14 @@ export interface StockQuota {
   ecrire(cle: string, valeur: number): void;
 }
 
-export type RaisonQuota = 'global' | 'origine' | 'depense' | 'destinataire';
+/**
+ * Vocabulaire fermé des PORTÉES de quota. Liste SOURCE : le type `RaisonQuota` en est
+ * dérivé (comme `CATEGORIES_ECHEC_MARCHAND`), donc toute portée que `reserverScan`
+ * peut renvoyer est forcément ici — et la ceinture `message-quota` exige un message
+ * pour chacune. Ajouter une 5ᵉ portée → le témoin rougit tant qu'elle n'a pas son texte.
+ */
+export const RAISONS_QUOTA = ['global', 'origine', 'depense', 'destinataire'] as const;
+export type RaisonQuota = (typeof RAISONS_QUOTA)[number];
 export type ResultatQuota = { ok: true } | { ok: false; raison: RaisonQuota; retryApresMs: number };
 
 /** Le jour UTC `AAAA-MM-JJ` (sans ambiguïté de fuseau) — DANS la clé → reset implicite. */

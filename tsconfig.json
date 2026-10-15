@@ -30,6 +30,7 @@
     "vitest.config.ts",
     "deploiement/ui/reessai.js",
     "deploiement/ui/message-echec.js",
+    "deploiement/ui/message-quota.js",
     "deploiement/ui/dispatch-scanner.js",
     "deploiement/ui/i18n.js"
   ]

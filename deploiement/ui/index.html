@@ -3,14 +3,85 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Zurvela</title>
+    <title>Zurvela — analyser votre site</title>
+    <style>
+      /* Sobre : un outil, pas une vitrine. Une seule couleur d'accent, espacement
+         généreux, états d'échec nettement distincts du reste. Effort visuel concentré
+         sur l'écran de dépôt (l'URL exacte) et les échecs — le vrai problème d'usage. */
+      :root {
+        --encre: #1a2230;
+        --doux: #5a6676;
+        --accent: #0f766e;        /* teal calme, un seul accent */
+        --accent-fonce: #0b5a53;
+        --bord: #dfe3e8;
+        --fond: #f7f8fa;
+        --echec-bord: #b45309;    /* ambre : agir, pas « tout va bien » */
+        --echec-fond: #fdf6ec;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        background: var(--fond);
+        color: var(--encre);
+        font: 16px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      }
+      main {
+        max-width: 560px;
+        margin: 0 auto;
+        padding: 40px 20px 64px;
+      }
+      h1 { font-size: 1.5rem; margin: 0 0 1.25rem; }
+      h2 { font-size: 1.15rem; margin: 0 0 .75rem; }
+      p { margin: 0 0 1rem; }
+      .intro, .aide { color: var(--doux); }
+      .aide { font-size: .9rem; }
+      label { display: block; font-weight: 600; margin: 1rem 0 .35rem; }
+      input[type="url"], input[type="email"] {
+        width: 100%; padding: .7rem .8rem; font-size: 1rem;
+        border: 1px solid var(--bord); border-radius: 8px; background: #fff;
+      }
+      input:focus { outline: 2px solid var(--accent); border-color: var(--accent); }
+      button {
+        font: inherit; cursor: pointer; border: 0; border-radius: 8px;
+        padding: .75rem 1.1rem; margin-top: 1.25rem;
+      }
+      .bouton { background: var(--accent); color: #fff; font-weight: 600; }
+      .bouton:hover { background: var(--accent-fonce); }
+      .bouton-secondaire { background: #fff; color: var(--accent); border: 1px solid var(--accent); }
+      /* L'URL exacte à déposer : la chose la plus importante de l'écran dépôt.
+         Monospace, cassable, entourée — impossible à mal lire ou tronquer. */
+      .url-boite {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        font-size: .95rem; word-break: break-all;
+        background: #fff; border: 1px solid var(--bord); border-left: 3px solid var(--accent);
+        border-radius: 6px; padding: .7rem .8rem; margin: .5rem 0 1rem;
+      }
+      .etapes { margin: 0 0 1rem; padding: 0; list-style: none; }
+      .etapes li { margin: 0 0 1rem; }
+      .num {
+        display: inline-flex; align-items: center; justify-content: center;
+        width: 1.5rem; height: 1.5rem; border-radius: 50%;
+        background: var(--accent); color: #fff; font-size: .85rem; font-weight: 700;
+        margin-right: .5rem; vertical-align: middle;
+      }
+      /* Échec : nettement distinct. Le marchand doit voir au premier coup d'œil
+         qu'il doit AGIR, pas que tout va bien. */
+      .echec {
+        background: var(--echec-fond); border: 1px solid #f0e0c8;
+        border-left: 4px solid var(--echec-bord); border-radius: 8px; padding: 1.1rem 1.2rem;
+      }
+      .echec h2 { color: var(--echec-bord); }
+      .erreur-saisie { color: var(--echec-bord); font-size: .9rem; margin: .35rem 0 0; }
+      a { color: var(--accent); }
+      .silencieux { color: var(--doux); font-size: .9rem; }
+    </style>
   </head>
   <body>
-    <!-- Placeholder servi par Caddy (file_server). La vraie page marchande
-         (formulaire d'URL → /verifier → dépôt → vérifier & scanner, rendu de
-         l'échec discriminé) est la brique UI suivante. Ce fichier existe pour que
-         `root`/`file_server` aient une racine valide et que la sonde de routage
-         puisse distinguer « page statique » de « réponse Node ». -->
-    <main>Zurvela — interface en construction.</main>
+    <main id="app">
+      <!-- Bootstrap statique : remplacé par app.js dès l'initialisation. S'il reste
+           visible, c'est que l'interface n'a pas pu s'initialiser (voir app.js). -->
+      <p class="silencieux">Chargement de l'interface…</p>
+    </main>
+    <script type="module" src="app.js"></script>
   </body>
 </html>
