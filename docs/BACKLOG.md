@@ -539,7 +539,20 @@ surface ni la cible ne sont activables. Mineur, mais nommé.
   (l'`ExecuterScan` devrait alors remonter la langue jusqu'à l'envoi). Pas une
   dette de sécurité. Origine : étape 6.
 
-## Interface marchande (prochain chantier — CADRÉ, cahier figé)
+## Interface marchande — CLOS le 2026-10-15, prouvé de bout en bout en production
+
+> **État (2026-10-15) : CHANTIER CLOS.** La page est assemblée et prouvée EN
+> PRODUCTION (`api.zurvela.com`). Tout ce qui portait un enjeu a été extrait, prouvé,
+> gardé : discrimination des échecs (`categoriserEchec`), décision de réessai β
+> (`decisionReessai`/`actionReessai`), dispatch par statut (`dispatcherReponseScanner`),
+> `chercher`/texte en source unique par rendeur, inertie CDN, handler fail-closed
+> (`eb37c67`), exhaustivité des catégories ET des portées quota. La page (`index.html`
+> + `app.js`, `efcc5f7`) n'est que du câblage. **E2E réel le 2026-10-15** : les 4 points
+> gratuits (init + content-types, inertie CDN réelle, échec discriminé réel conforme au
+> dispatch, reverifier jeton frais) + le happy-path payant (dépôt→scan→rapport sain→coût
+> réel 0,001158 $ imputé aux 4 plafonds dont `depense`→e-mail effacé→**e-mail reçu,
+> lisible, honnête**) tiennent sans une retouche au contact du réel. Dettes de clôture
+> ci-dessous. L'historique de la conception reste consigné sous ce statut.
 
 *Le moteur et l'API publique (étapes 1-7) tiennent de bout en bout en prod
 (`api.zurvela.com`). Reste la page où un commerçant colle une URL. CADRAGE FIGÉ
@@ -594,3 +607,36 @@ selon `reessai`) + les textes marchands en `locales/` (un par catégorie).
   n'expose plus que `categorie`. Chemin rare (peutScanner échoue APRÈS une vérif réussie,
   ex. preuve expirée entre-temps). À harmoniser (catégorie + pas de raison brute) quand
   on touchera ce chemin. Origine : brique réessai (`25a2f27`), finition `erreur`.
+  > **RÉSOLU le 2026-10-15 (`eb37c67`)** autrement que prévu : mesuré INATTEIGNABLE dans
+  > `/scanner` (acheverVerification écrit la preuve même origine/stock sans await, fenêtre
+  > 1h) ; s'il tire = incohérence serveur, PAS une erreur marchand → reclassé en `throw`
+  > → **500** via la coquille fail-closed (donner une catégorie marchand à notre bug serait
+  > un faux message). Le dispatch route `403 ⟹ echec-verification` en confiance (tout 403
+  > discriminé POST-fix). Plus de `RaisonEchec` brute dans le contrat public.
+
+### Dettes de clôture (révélées par l'e2e réel du 2026-10-15)
+
+- **⚠ L'ENVOI D'E-MAIL DOIT CRIER SUR ÉCHEC — la plus importante.** L'`envoyer` de
+  l'étape 6 AVALE les erreurs (par conception : « l'échec d'envoi ne casse jamais
+  l'accès par id ») **ET** l'e-mail du destinataire est EFFACÉ après la tentative
+  (minimisation étape 6). Conséquence : un envoi **raté** est **totalement invisible** —
+  pas de log (avalé), pas d'e-mail dans l'entrée (effacé), pas de livraison. Le marchand
+  n'aurait pas son rapport ET nous n'en aurions **aucune trace**. C'est l'angle mort
+  fail-closed qu'on a fermé PARTOUT ailleurs (handler fail-closed `eb37c67`, incohérence
+  qui crie, 403 secondaire) — resté ouvert sur le **dernier maillon** de la livraison.
+  Le mail est arrivé le 2026-10-15, mais on ne le saurait pas s'il ne l'était pas. **Fix :
+  l'envoi doit laisser une TRACE durable sur échec** (un cri `console.error`/stderr comme
+  l'incohérence, ou une marque relisible), SANS casser l'accès par id. Touche la fiabilité
+  d'une livraison qu'on ne peut pas vérifier autrement. Origine : e2e du 2026-10-15.
+- **Outillage de dépôt/retrait SFTP : espacer ou réutiliser les connexions.** OVH
+  bannit (fail2ban) les reconnexions SFTP rapprochées : l'e2e a vu `Connection closed
+  by … port 22` au stade mot de passe après dépôt + retraits en rafale (le dépôt sur la
+  1ʳᵉ connexion a marché ; les suivants, droppés). **Pas un artefact jetable** : contrainte
+  réelle de l'hébergement, pertinente le jour où l'e2e se répète automatiquement ou où le
+  dépôt s'assiste côté outillage. Fix : espacer les connexions, ou réutiliser une seule
+  session SFTP pour dépôt + retrait. Origine : e2e du 2026-10-15.
+- **Retrait du fichier de vérification résiduel sur zurvela.com** (`~/www/zurvela-
+  verification-SVuhzmZK…txt`, 43 octets, jeton déjà consommé, inoffensif) — déposé pour
+  l'e2e du point 5, NON retiré car bloqué par le ban fail2ban OVH ci-dessus. **Tâche
+  cosmétique EN ATTENTE d'OVH** : retirer quand le ban aura expiré (tentative programmée
+  en arrière-plan cette session ; sinon prochaine session). Origine : e2e du 2026-10-15.
