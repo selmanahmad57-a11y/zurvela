@@ -53,6 +53,17 @@ sonder_nom() { # $1 = nom (api.zurvela.com / app.zurvela.com) — MÊME service 
   local C="$CURL --resolve $nom:443:127.0.0.1"
   local BASE="https://$nom"
   echo "  — $nom —"
+  # ATTENDRE QUE LE CERT SOIT PRÊT avant de juger le routage. Un nom FRAÎCHEMENT ajouté
+  # n'a pas encore son certificat (ACME Let's Encrypt : résolution LE + challenge HTTP-01,
+  # ~10-60s) ; tant que Caddy n'a AUCUN cert, le TLS échoue (code 000), ce qui ferait un
+  # FAUX négatif de routage → rollback d'un matching pourtant correct. On poll /sante
+  # jusqu'à ce qu'il réponde (cert prêt), max ~120s. Sur un nom déjà certifié : instantané.
+  local pret=0 i
+  for i in $(seq 1 40); do
+    if [ "$($C -o /dev/null -w '%{http_code}' "$BASE/sante")" != "000" ]; then pret=1; break; fi
+    sleep 3
+  done
+  if [ "$pret" -ne 1 ]; then echo "    $nom → jamais serveable en ~120s (cert ACME non obtenu ?)"; echoue=1; return; fi
   verifier_node "GET /sante"     "$($C "$BASE/sante")"                                                       '"ok":true'
   verifier_node "POST /verifier" "$($C -X POST "$BASE/verifier" -H 'content-type: application/json' -d '{}')" '"erreur":"url-requise"'
   # LE CAS CROISÉ : /scanner doit atteindre Node, pas être masqué par le statique.
