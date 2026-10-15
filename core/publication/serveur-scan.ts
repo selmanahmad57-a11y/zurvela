@@ -132,12 +132,22 @@ export function creerOrdonnanceur(deps: {
           // Le coût réel (même sur échec : des appels IA ont pu être payés) alimente le plafond de dépense.
           deps.surCout?.(r.cout);
           // LIVRAISON e-mail (étape 6) : si un e-mail a été collecté et qu'un rapport existe, l'envoyer.
-          // Son échec est AVALÉ — le rapport reste à /statut/:id, l'id est le filet.
+          // Son échec ne casse PAS l'accès par id (le rapport reste à /statut/:id) MAIS il CRIE
+          // (dette de clôture 2026-10-15) — un envoi raté ne doit pas être invisible.
           if (en.email !== undefined && r.ok && deps.envoyer !== undefined) {
+            let envoye = false;
             try {
-              await deps.envoyer({ destinataire: en.email, origine: en.origine, rapportHtml: r.rapportHtml });
+              // Le `{ok}` est LU (un ok:false — Resend non-200 — était auparavant ignoré en silence).
+              envoye = (await deps.envoyer({ destinataire: en.email, origine: en.origine, rapportHtml: r.rapportHtml })).ok;
             } catch {
-              /* l'échec d'envoi ne casse jamais l'accès par id */
+              envoye = false; // l'échec d'envoi ne casse jamais l'accès par id
+            }
+            if (!envoye) {
+              // CRI : un envoi raté (ok:false OU throw) ne doit pas être invisible — l'e-mail
+              // est effacé juste après, le marchand n'a pas son rapport, et sans ce cri rien
+              // n'en garderait trace. §3 : scanId + origine, JAMAIS l'e-mail (identifiants
+              // clients hors des logs) ; sur stderr (diagnostic opérateur, jamais au client).
+              console.error('[envoi-echoue]', en.scanId, en.origine);
             }
           }
         } catch (e) {

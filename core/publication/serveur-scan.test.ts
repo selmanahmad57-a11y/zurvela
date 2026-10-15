@@ -372,6 +372,7 @@ describe('(6) e-mail de livraison', () => {
   });
 
   it('ÉCHEC D’ENVOI n’affecte JAMAIS l’id : le rapport reste à /statut/:id, l’e-mail est quand même effacé', async () => {
+    const cri = vi.spyOn(console, 'error').mockImplementation(() => {}); // l'envoi raté crie désormais — tu
     const { s, ss, ord, envoyer } = await monterAvecEnvoi({
       envoyer: async () => {
         throw new Error('Resend indisponible');
@@ -390,6 +391,43 @@ describe('(6) e-mail de livraison', () => {
     expect(String(st.json['rapportHtml'])).toContain('RAPPORT');
     // et l'e-mail est tout de même effacé (minimisation, même sur échec)
     expect(ss.lire(id)?.email).toBeUndefined();
+    cri.mockRestore();
+  });
+
+  // DETTE DE CLÔTURE (la plus importante) : un envoi RATÉ ne doit pas être INVISIBLE.
+  // L'envoyer avale les throws ET l'e-mail est effacé juste après → sans cri, un rapport
+  // non livré ne laisse AUCUNE trace. Le cri (stderr, comme l'incohérence) rend l'échec
+  // relisible, sans casser l'accès par id. §3 : scanId+origine, JAMAIS l'e-mail dans les logs.
+  it('envoi qui THROW → CRIE (scanId+origine), jamais l’e-mail (§3)', async () => {
+    const cri = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const { s, ord } = await monterAvecEnvoi({ envoyer: async () => { throw new Error('Resend indisponible'); } });
+    await requete(s.port, 'POST', '/verifier', { url: 'https://ok.test' });
+    await requete(s.port, 'POST', '/scanner', { url: 'https://ok.test', email: 'client@example.com' });
+    await ord.oisif();
+    expect(cri).toHaveBeenCalled(); // un envoi raté ne doit pas être invisible
+    expect(cri.mock.calls.flat().join(' ')).not.toContain('client@example.com'); // §3 : jamais l'e-mail
+    cri.mockRestore();
+  });
+
+  it('envoi qui renvoie ok:false (Resend non-200, mode aujourd’hui IGNORÉ) → CRIE aussi', async () => {
+    const cri = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const { s, ss, ord } = await monterAvecEnvoi({ envoyer: async () => ({ ok: false }) });
+    await requete(s.port, 'POST', '/verifier', { url: 'https://ok.test' });
+    const scan = await requete(s.port, 'POST', '/scanner', { url: 'https://ok.test', email: 'client@example.com' });
+    await ord.oisif();
+    expect(cri).toHaveBeenCalled(); // le {ok} est désormais LU, pas ignoré
+    expect(ss.lire(String(scan.json['scanId']))?.email).toBeUndefined(); // l'id reste le filet
+    cri.mockRestore();
+  });
+
+  it('envoi RÉUSSI (ok:true) → AUCUN cri (le cri est spécifique à l’échec)', async () => {
+    const cri = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const { s, ord } = await monterAvecEnvoi(); // défaut : ok:true
+    await requete(s.port, 'POST', '/verifier', { url: 'https://ok.test' });
+    await requete(s.port, 'POST', '/scanner', { url: 'https://ok.test', email: 'client@example.com' });
+    await ord.oisif();
+    expect(cri).not.toHaveBeenCalled();
+    cri.mockRestore();
   });
 
   it('sans e-mail : 202, aucun envoi, aucun compteur destinataire', async () => {

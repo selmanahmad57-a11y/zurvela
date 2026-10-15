@@ -628,6 +628,12 @@ selon `reessai`) + les textes marchands en `locales/` (un par catégorie).
   l'envoi doit laisser une TRACE durable sur échec** (un cri `console.error`/stderr comme
   l'incohérence, ou une marque relisible), SANS casser l'accès par id. Touche la fiabilité
   d'une livraison qu'on ne peut pas vérifier autrement. Origine : e2e du 2026-10-15.
+  > **RÉSOLU le 2026-10-15.** L'ordonnanceur LIT le `{ok}` retourné (un `ok:false` — Resend
+  > non-200 — n'est plus ignoré) ET capte les throws ; sur échec (l'un OU l'autre), il
+  > CRIE `console.error('[envoi-echoue]', scanId, origine)` — stderr, **jamais l'e-mail**
+  > (§3), sans casser l'accès par id ni l'effacement. Témoin 3 cas (throw→crie,
+  > ok:false→crie, succès→aucun cri) + 3 mutations porteuses (cri retiré, `{ok}` ignoré
+  > → seul ok:false rougit, e-mail dans le cri → §3 rougit).
 - **Outillage de dépôt/retrait SFTP : espacer ou réutiliser les connexions.** OVH
   bannit (fail2ban) les reconnexions SFTP rapprochées : l'e2e a vu `Connection closed
   by … port 22` au stade mot de passe après dépôt + retraits en rafale (le dépôt sur la
