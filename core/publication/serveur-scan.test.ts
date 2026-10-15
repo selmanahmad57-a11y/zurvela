@@ -49,7 +49,7 @@ afterEach(async () => {
   while (serveurs.length > 0) await serveurs.pop()!.fermer();
 });
 
-function requete(port: number, methode: string, chemin: string, corps?: unknown): Promise<{ statut: number; json: Record<string, unknown> }> {
+function requete(port: number, methode: string, chemin: string, corps?: unknown, timeoutMs?: number): Promise<{ statut: number; json: Record<string, unknown> }> {
   return new Promise((resolve, reject) => {
     const data = corps === undefined ? undefined : JSON.stringify(corps);
     const req = http.request({ host: '127.0.0.1', port, method: methode, path: chemin, headers: data === undefined ? {} : { 'content-type': 'application/json', 'content-length': Buffer.byteLength(data) } }, (res) => {
@@ -58,6 +58,11 @@ function requete(port: number, methode: string, chemin: string, corps?: unknown)
       res.on('end', () => resolve({ statut: res.statusCode ?? 0, json: c === '' ? {} : (JSON.parse(c) as Record<string, unknown>) }));
     });
     req.on('error', reject);
+    // Garde-temps OPTIONNEL (version test du fail-closed) : armé par le témoin de la
+    // coquille pour que, si le handler cesse de répondre (coquille absente), la requête
+    // ÉCHOUE VITE au lieu de pendre la suite jusqu'au timeout global. `destroy` ferme la
+    // socket → afterEach/close() n'attend pas une connexion fantôme (pas de résidu de port).
+    if (timeoutMs !== undefined) req.setTimeout(timeoutMs, () => req.destroy(new Error(`requête sans réponse en ${timeoutMs} ms`)));
     if (data !== undefined) req.write(data);
     req.end();
   });
@@ -395,5 +400,41 @@ describe('(6) e-mail de livraison', () => {
     await ord.oisif();
     expect(envoyer).not.toHaveBeenCalled();
     expect(ss.lire(String(scan.json['scanId']))?.email).toBeUndefined();
+  });
+});
+
+// ═══════════════ (a) handler fail-closed ═══════════════
+// Le vrai gain (mesuré : le handler n'avait AUCUN try/catch → un throw PENDAIT la
+// requête, motif « serveur qui se pend »). On teste au niveau GÉNÉRIQUE : tout throw
+// → 500 propre + process vivant. L'incohérence interne (acheverVerification ⟹
+// peutScanner violé), reclassée de 403 marchand en 500 honnête, en est une INSTANCE.
+describe('(a) handler fail-closed : tout throw → 500, process vivant', () => {
+  it('throw générique dans le handler → 500 incoherence-interne + cri stderr + process survit', async () => {
+    const cri = vi.spyOn(console, 'error').mockImplementation(() => {});
+    // stockScans dont `lire` LANCE : GET /statut le déclenche (chemin le plus court).
+    const ssExplosif = { ...stockScans(), lire: () => { throw new Error('boum'); } };
+    const { s } = await monterServeur({ stockScans: ssExplosif });
+    const r = await requete(s.port, 'GET', '/statut/abc', undefined, 2000); // garde-temps : si la coquille saute, échec en 2s, pas 120s
+    expect(r.statut).toBe(500);
+    expect(r.json['erreur']).toBe('incoherence-interne');
+    expect(cri).toHaveBeenCalled(); // le cri a eu lieu (stderr, hors locales)
+    // PROCESS VIVANT : une requête suivante répond normalement (pas de crash).
+    expect((await requete(s.port, 'GET', '/sante')).statut).toBe(200);
+    cri.mockRestore();
+  });
+
+  it('incohérence acheverVerification-ok / peutScanner-non → 500, JAMAIS un 403 marchand', async () => {
+    const cri = vi.spyOn(console, 'error').mockImplementation(() => {});
+    // ecrirePreuve NO-OP : acheverVerification réussit (jeton servi, corps = jeton)
+    // mais la preuve n'est pas écrite → peutScanner dit `non-prouve` → l'invariant tire.
+    const sv: StockVerification = { ...stockVerif(), ecrirePreuve: () => {} };
+    const { s } = await monterServeur({ stockVerif: sv, recuperer: recupererBon(sv) });
+    await requete(s.port, 'POST', '/verifier', { url: 'https://ok.test' }); // pose le jeton
+    const scan = await requete(s.port, 'POST', '/scanner', { url: 'https://ok.test' }, 2000); // garde-temps idem
+    expect(scan.statut).toBe(500); // 500, PAS 403
+    expect(scan.json['erreur']).toBe('incoherence-interne');
+    expect(scan.json['categorie']).toBeUndefined(); // surtout : PAS de catégorie marchand (faux message évité)
+    expect(cri).toHaveBeenCalled();
+    cri.mockRestore();
   });
 });

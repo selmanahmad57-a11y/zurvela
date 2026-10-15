@@ -231,7 +231,9 @@ function repondre(res: http.ServerResponse, statut: number, corps: unknown): voi
 export function creerServeurScan(deps: DepsServeur): Promise<ServeurScan> {
   const { config } = deps;
 
-  const serveur = http.createServer(async (req, res) => {
+  // Corps du handler, extrait en fonction nommée : la coquille fail-closed
+  // (ci-dessous) reste lisible — la coquille ATTRAPE, le corps ROUTE.
+  const traiter = async (req: http.IncomingMessage, res: http.ServerResponse): Promise<void> => {
     const url = new URL(req.url ?? '/', 'http://local');
     const chemin = url.pathname;
     const methode = req.method ?? 'GET';
@@ -308,7 +310,8 @@ export function creerServeurScan(deps: DepsServeur): Promise<ServeurScan> {
       const reserve = reserverScan({ stock: deps.stockQuota, maintenant, origine: norm.origine, config: deps.configQuota, ...(email === undefined ? {} : { email }) });
       if (!reserve.ok) {
         res.writeHead(429, { 'content-type': 'application/json; charset=utf-8', 'retry-after': String(Math.ceil(reserve.retryApresMs / 1000)) });
-        return res.end(JSON.stringify({ erreur: 'limite-atteinte', portee: reserve.raison }));
+        res.end(JSON.stringify({ erreur: 'limite-atteinte', portee: reserve.raison }));
+        return;
       }
       const dem = demarrerScan(urlSite, {
         stockPreuves: deps.stockVerif,
@@ -318,7 +321,17 @@ export function creerServeurScan(deps: DepsServeur): Promise<ServeurScan> {
         ...(email === undefined ? {} : { email }),
         ...(deps.genId === undefined ? {} : { genId: deps.genId }),
       });
-      if (!dem.ok) return repondre(res, 403, { erreur: dem.raison });
+      if (!dem.ok) {
+        // INVARIANT : acheverVerification réussi ⟹ peutScanner réussit — la preuve
+        // est écrite sous la MÊME origine, dans le MÊME stock, sans `await`
+        // intermédiaire, et la fenêtre de validité (1h) dépasse tout GET. Les trois
+        // raisons de demarrerScan (url-refusee/non-prouve/preuve-expiree) sont donc
+        // inatteignables ICI. Si cette branche tire, notre garde cardinale s'est
+        // CONTREDITE : bug serveur, PAS une erreur marchand. On ÉCHOUE FORT (la
+        // coquille en fait un 500 honnête + un cri stderr) ; lui donner une catégorie
+        // marchand serait un faux message (§3, zéro faux positif).
+        throw new Error(`incohérence interne : acheverVerification a réussi mais demarrerScan refuse (raison ${dem.raison})`);
+      }
       deps.ordonnanceur.declencher();
       return repondre(res, 202, { scanId: dem.scanId });
     }
@@ -336,6 +349,30 @@ export function creerServeurScan(deps: DepsServeur): Promise<ServeurScan> {
     }
 
     return repondre(res, 404, { erreur: 'route-inconnue' });
+  };
+
+  // COQUILLE FAIL-CLOSED (dernière ligne). Sans elle, un `throw` dans `traiter`
+  // PEND la requête (promesse rejetée en unhandledRejection, Node ne répond jamais —
+  // même motif que « le serveur qui se pendait sur conflit de port »). Tout `throw`
+  // inattendu — dont notre invariant d'incohérence — devient ici un 500 PROPRE :
+  // requête fermée, process vivant. Le détail CRIE sur stderr (diagnostic opérateur,
+  // hors locales/, n°32), jamais au client (pas de fuite).
+  const serveur = http.createServer((req, res) => {
+    traiter(req, res).catch((e: unknown) => {
+      console.error('[incoherence-serveur]', e);
+      // `headersSent` : si une réponse est déjà partie, écrire un 500 par-dessus
+      // relancerait (writeHead) → le catch lancerait LUI-MÊME, sans filet derrière.
+      // INATTEIGNABLE aujourd'hui : AUCUN envoi incrémental dans ce handler (chaque
+      // réponse = writeHead+end atomique SUIVI d'un return ; aucun `throw` après un
+      // envoi). Le garde reste quand même (un catch de dernière ligne ne doit jamais
+      // lancer) et DEVIENDRA ACTIF si un handler se met un jour à streamer — ne pas le
+      // retirer en le croyant mort. Branche documentée inatteignable, donc non testée.
+      if (!res.headersSent) {
+        repondre(res, 500, { erreur: 'incoherence-interne' });
+      } else {
+        res.destroy();
+      }
+    });
   });
 
   return new Promise((resolve, reject) => {
