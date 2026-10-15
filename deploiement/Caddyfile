@@ -1,4 +1,4 @@
-#  Caddy — api.zurvela.com (archi B : UI statique + API proxiée, même origine).
+#  Caddy — api.zurvela.com + app.zurvela.com (archi B : UI statique + API proxiée).
 #
 #  PRÉCÉDENCE EXPLICITE par `handle` (mutuellement exclusif, évalué dans l'ordre
 #  ÉCRIT) : `@api` d'abord → Node ; sinon → file_server. La précédence est dans le
@@ -6,7 +6,10 @@
 #  silencieuse (une page qui masque une route d'API). Le matcher `@api` doit rester
 #  synchrone de ROUTES_API (témoin `routes-api.test.ts`) ; le ROUTAGE réel est
 #  prouvé au déploiement (`deployer-caddy.sh` : sonde + rollback).
-api.zurvela.com {
+# DEUX noms, MÊME service : app.zurvela.com est l'URL PUBLIQUE (celle que la vitrine
+# expose au marchand) ; api.zurvela.com reste l'alias historique. Caddy émet un
+# certificat Let's Encrypt pour CHACUN (DNS-only Cloudflare requis pour les deux).
+api.zurvela.com, app.zurvela.com {
 	@api path /verifier /scanner /sante /statut/*
 	handle @api {
 		reverse_proxy 127.0.0.1:8787

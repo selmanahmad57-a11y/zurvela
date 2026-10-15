@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Zurvela — bientôt disponible</title>
+  <title>Zurvela — analyser votre site</title>
   <meta name="description" content="Zurvela vérifie votre site web comme le ferait un visiteur exigeant, et vous dit en langage clair ce qui ne fonctionne pas.">
   <style>
     :root { color-scheme: light dark; --fond: #fbfaf7; --texte: #1d1d1b; --sourd: #6b6a66; --trait: #e3e1da; --accent: #245c4f; }
@@ -15,7 +15,8 @@
     .carte { max-width: 34rem; text-align: center; }
     h1 { font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Helvetica, Arial, sans-serif; font-weight: 600; letter-spacing: 0.04em; font-size: 2.4rem; margin: 0 0 1rem; color: var(--accent); }
     p { font-size: 1.15rem; margin: 0 0 1.5rem; }
-    .bientot { font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Helvetica, Arial, sans-serif; text-transform: uppercase; letter-spacing: 0.18em; font-size: 0.8rem; color: var(--sourd); }
+    .cta { display: inline-block; font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Helvetica, Arial, sans-serif; font-weight: 600; font-size: 1.05rem; background: var(--accent); color: var(--fond); text-decoration: none; padding: 0.85rem 1.7rem; border-radius: 8px; }
+    .cta:hover { opacity: 0.92; }
     footer { border-top: 1px solid var(--trait); padding: 1rem; text-align: center; font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Helvetica, Arial, sans-serif; font-size: 0.85rem; color: var(--sourd); }
     footer a { color: var(--accent); }
   </style>
@@ -25,7 +26,7 @@
     <div class="carte">
       <h1>Zurvela</h1>
       <p>Zurvela vérifie votre site web comme le ferait un visiteur exigeant — et vous dit, en langage clair, ce qui ne fonctionne pas.</p>
-      <p class="bientot">Bientôt disponible</p>
+      <p style="margin-top:1.8rem;"><a class="cta" href="https://app.zurvela.com/">Analyser mon site →</a></p>
       <p style="margin-top:1.6rem;"><a href="/demo/" style="font-family: ui-sans-serif, system-ui, -apple-system, Helvetica, Arial, sans-serif; color: var(--accent); font-size: 1rem;">Voir un exemple de rapport →</a></p>
     </div>
   </main>
