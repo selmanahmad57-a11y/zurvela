@@ -15,9 +15,9 @@
  * Le délai précis (compte à rebours) est une DETTE, lue par la glue si un jour voulu.
  */
 
-/** @typedef {import('./reessai.js').FaitsReessai} FaitsReessai */
-/** L'échec de vérification discriminé, tel que /scanner le renvoie sous un 403. */
-/** @typedef {{ categorie: string, urlVerifiee?: string, reessai?: FaitsReessai }} EchecVerif */
+/** L'échec de vérification discriminé (403) — défini dans reessai.js (sa maison :
+ * actionReessai le consomme), importé ici où le dispatch le PRODUIT. Source unique. */
+/** @typedef {import('./reessai.js').EchecVerif} EchecVerif */
 /**
  * @typedef {(
  *   | { type: 'scan-lance', scanId: string }

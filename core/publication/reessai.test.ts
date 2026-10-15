@@ -16,7 +16,7 @@
 import { describe, expect, it } from 'vitest';
 // SOURCE UNIQUE : le MÊME fichier que le navigateur importe (servi statique par
 // Caddy). Pas de jumeau TS → pas de divergence possible à détecter (n°44).
-import { decisionReessai } from '../../deploiement/ui/reessai.js';
+import { actionReessai, decisionReessai } from '../../deploiement/ui/reessai.js';
 
 describe('decisionReessai — LE CRITÈRE (faits serveur → intention)', () => {
   it('resoumettre SSI (rien servi ET jeton pas mort) ; sinon reverifier', () => {
@@ -28,5 +28,21 @@ describe('decisionReessai — LE CRITÈRE (faits serveur → intention)', () => 
     expect(decisionReessai({ reponseServie: false, jetonMort: true })).toBe('reverifier');
     // {reponseServie:true, jetonMort:true} : INATTEIGNABLE — non testé (cf. témoin
     // des faits d'acheverVerification, qui prouve qu'aucune RaisonEchec ne le produit).
+  });
+});
+
+describe('actionReessai — action de réessai sur un échec DISCRIMINÉ (contrat du dispatch)', () => {
+  // CONTRAT GARANTI par le dispatch : actionReessai n'est appelé que sur un
+  // `echec-verification` (403) → échec TOUJOURS catégorisé, `reessai` présent SAUF
+  // `url-invalide` (le serveur omet la clé). On teste DANS cet espace réel — jamais un
+  // échec sans catégorie, qui ne franchirait pas le dispatch (pas de branche fantôme).
+  it('url-invalide (reessai absent) → corriger-url (re-saisir l’adresse, HORS decisionReessai)', () => {
+    expect(actionReessai({ categorie: 'url-invalide' })).toBe('corriger-url');
+  });
+  it('absent (réponse cachable servie) → reverifier (jeton frais, échappe au 404 CDN — JAMAIS re-GET)', () => {
+    expect(actionReessai({ categorie: 'absent', urlVerifiee: 'https://site/x', reessai: { reponseServie: true, jetonMort: false } })).toBe('reverifier');
+  });
+  it('injoignable (rien de cachable servi) → resoumettre (re-GET sûr de la même URL)', () => {
+    expect(actionReessai({ categorie: 'injoignable', reessai: { reponseServie: false, jetonMort: false } })).toBe('resoumettre');
   });
 });

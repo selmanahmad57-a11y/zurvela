@@ -30,3 +30,34 @@ export function decisionReessai(faits) {
   const reGetSur = !faits.reponseServie && !faits.jetonMort;
   return reGetSur ? 'resoumettre' : 'reverifier';
 }
+
+/**
+ * L'échec de vérification DISCRIMINÉ, tel que /scanner le renvoie sous un 403 :
+ * `categorie` TOUJOURS présente ; `reessai` présent SAUF `url-invalide` (le serveur
+ * omet la clé). Défini ICI — la maison des décisions de réessai — et importé par le
+ * dispatch (qui le PRODUIT), jamais l'inverse : une seule source de la forme, sans
+ * dépendance circulaire (dispatch → reessai).
+ */
+/** @typedef {{ categorie: string, urlVerifiee?: string, reessai?: FaitsReessai }} EchecVerif */
+
+/** L'action du bouton « réessayer » côté UI. */
+/** @typedef {'corriger-url' | IntentionReessai} ActionReessai */
+
+/**
+ * DÉCISION D'ACTION du réessai — couche fine au-dessus de `decisionReessai`. Appelée
+ * UNIQUEMENT sur un échec discriminé (403), garanti par le dispatch qui ne route que
+ * `echec-verification` vers ici : l'échec porte donc toujours une `categorie`.
+ *
+ * Absence de `reessai` ⟺ `url-invalide` : le serveur OMET la clé pour ce seul cas
+ * (rejet à la saisie, aucun GET → aucun fait de réessai). L'action est alors de
+ * CORRIGER l'adresse — ne JAMAIS tomber dans `decisionReessai`, qui n'a pas de faits.
+ * Sinon, le critère β pur tranche re-GET sûr (`resoumettre`) vs jeton frais
+ * (`reverifier`, à l'épreuve du 404 CDN).
+ *
+ * @param {EchecVerif} echec
+ * @returns {ActionReessai}
+ */
+export function actionReessai(echec) {
+  if (echec.reessai === undefined) return 'corriger-url';
+  return decisionReessai(echec.reessai);
+}
