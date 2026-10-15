@@ -553,6 +553,13 @@ surface ni la cible ne sont activables. Mineur, mais nommé.
 > réel 0,001158 $ imputé aux 4 plafonds dont `depense`→e-mail effacé→**e-mail reçu,
 > lisible, honnête**) tiennent sans une retouche au contact du réel. Dettes de clôture
 > ci-dessous. L'historique de la conception reste consigné sous ce statut.
+>
+> **TUNNEL VITRINE→SCANNER OUVERT le 2026-10-16** (le dernier trou côté visiteur, plus
+> en amont que les durcissements) : la vitrine zurvela.com annonçait « bientôt » sans
+> lien → produit inatteignable. URL publique tranchée = **app.zurvela.com** (calcul de
+> coût : un seul passage par le SFTP OVH). Caddyfile à deux noms + sonde deux noms
+> (`91d7b5f`), fix sonde « attendre le cert ACME d'un nom neuf » (`c5c8865`) ; vitrine
+> déployée avec le CTA « Analyser mon site → ». Tunnel live zurvela.com→app.zurvela.com→/demo.
 
 *Le moteur et l'API publique (étapes 1-7) tiennent de bout en bout en prod
 (`api.zurvela.com`). Reste la page où un commerçant colle une URL. CADRAGE FIGÉ
@@ -641,6 +648,11 @@ selon `reessai`) + les textes marchands en `locales/` (un par catégorie).
   réelle de l'hébergement, pertinente le jour où l'e2e se répète automatiquement ou où le
   dépôt s'assiste côté outillage. Fix : espacer les connexions, ou réutiliser une seule
   session SFTP pour dépôt + retrait. Origine : e2e du 2026-10-15.
+  > **PRÉCISION le 2026-10-16** (déploiement de la vitrine) : au-delà du ban, l'expect
+  > interactif a une FLAKINESS propre — « spawn id not open » au `send bye` quand la
+  > session OVH se ferme juste après le `put`. Le put RÉUSSIT quand même ; le correctif
+  > est `catch { send bye }` (tolérer la fermeture) + vérifier le résultat par un GET,
+  > jamais par le code de retour de l'expect. L'auth, elle, est bonne (pas de mdp changé).
 - **Retrait du fichier de vérification résiduel sur zurvela.com** (`~/www/zurvela-
   verification-SVuhzmZK…txt`, 43 octets, jeton déjà consommé, inoffensif) — déposé pour
   l'e2e du point 5, NON retiré car bloqué par le ban fail2ban OVH ci-dessus. **Tâche
