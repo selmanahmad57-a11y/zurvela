@@ -24,7 +24,9 @@ import { cleMessageEchec } from '../../deploiement/ui/message-echec.js';
 
 describe('message marchand — présentation côté navigateur', () => {
   it('EXHAUSTIVITÉ : chaque catégorie → une entrée de locale NON VIDE (aucun trou)', async () => {
-    const dict = await chargerDictionnaire('locales', 'fr');
+    // Le texte marchand vit auprès de son RENDEUR (le navigateur) : deploiement/ui/locales/,
+    // pas locales/ (serveur/banc). Partition par rendeur, zéro recouvrement — pas une copie.
+    const dict = await chargerDictionnaire('deploiement/ui/locales', 'fr');
     for (const categorie of CATEGORIES_ECHEC_MARCHAND) {
       const texte = chercher(dict, cleMessageEchec(categorie)); // lève si la clé manque
       expect(texte.trim().length).toBeGreaterThan(0);
