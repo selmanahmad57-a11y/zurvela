@@ -43,7 +43,9 @@ function el(tag, props = {}, enfants = []) {
   for (const c of [].concat(enfants)) if (c != null) n.append(c);
   return n;
 }
-function montrer(...noeuds) { app.replaceChildren(...noeuds); }
+// Même règle que `el` : un nœud `null`/`undefined` (ex. `condition ? el(...) : null`) ne
+// devient JAMAIS un enfant — sinon le DOM le coerce en un nœud texte « null » bien visible.
+function montrer(...noeuds) { app.replaceChildren(...noeuds.filter((n) => n != null)); }
 
 // ───────── API Zurvela, MÊME ORIGINE. Jamais l'URL du jeton du marchand. ─────────
 async function apiPost(chemin, corps) {

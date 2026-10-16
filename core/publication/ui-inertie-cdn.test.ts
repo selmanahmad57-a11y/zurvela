@@ -78,15 +78,46 @@ describe('UI — inertie CDN (aucun appel hors API Zurvela, saisie→depot→ech
       return route.continue(); // fichiers statiques de l'UI (même origine)
     });
 
+    // PRÉSENTABILITÉ : aucune fuite `null`/`undefined` RENDUE. Un état non initialisé que
+    // le DOM coerce en « null » (ex. replaceChildren(null) → text node "null") s'affiche sans
+    // casser le fonctionnel — le témoin fonctionnel ne le voyait pas (il vérifie que ça
+    // MARCHE, pas que c'est PRÉSENTABLE). Garde utile et pas chère, PAS une garantie générale
+    // de propreté (texte tronqué, [object Object], encodage → l'œil humain reste le vrai
+    // filet) : elle attrape automatiquement le cas le plus fréquent et le plus laid.
+    //
+    // On parcourt les NŒUDS TEXTE, pas `innerText`. `innerText` COLLE le nœud coercé au texte
+    // voisin (« null » + « Continuer » → « nullContinuer ») : il ne reste alors aucune frontière
+    // de mot, et un `/\bnull\b/` passe À CÔTÉ de la fuite — c'est précisément ce qui a laissé ce
+    // témoin VERT sur un `null` pourtant à l'écran. Par nœud, la frontière est préservée : le
+    // nœud coercé vaut « null » tout court, tandis qu'un vrai mot (« nullement ») garde ses
+    // lettres autour et n'est pas confondu. La coercion JS produit toujours le minuscule exact.
+    const sansFuite = async (ecran: string) => {
+      const fuite = await page.evaluate(() => {
+        const motNu = /(?<![a-zà-ÿ])(null|undefined)(?![a-zà-ÿ])/; // token nu, pas un mot (nullement, annuler…)
+        const marche = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+        for (let n = marche.nextNode(); n; n = marche.nextNode()) {
+          const m = motNu.exec((n.nodeValue ?? ''));
+          if (m) return m[1] ?? m[0];
+        }
+        return null;
+      });
+      if (fuite !== null) {
+        throw new Error(`fuite « ${fuite} » rendue (nœud texte, coercion d'un état non initialisé) sur l'écran « ${ecran} »`);
+      }
+    };
+
     await page.goto(base + '/');
     await page.getByRole('heading').waitFor({ timeout: 15_000 }); // S'INITIALISE (titre, pas le bootstrap <p>)
+    await sansFuite('saisie');
 
     await page.locator('#url').fill(ORIGINE);
     await page.getByRole('button', { name: /continuer/i }).click();
     await page.getByText(/déposez ce fichier/i).waitFor({ timeout: 15_000 }); // écran DEPOT rend
+    await sansFuite('depot');
 
     await page.getByRole('button', { name: /c'est déposé/i }).click();
     await page.getByText(/n'a pas abouti/i).waitFor({ timeout: 15_000 }); // écran ECHEC rend
+    await sansFuite('echec');
 
     await page.close();
     expect(erreurs).toEqual([]); // la glue tourne sans erreur JS
