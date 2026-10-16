@@ -25,9 +25,9 @@
       "titre": "Déposez ce fichier sur votre site",
       "etape1": "Téléchargez le fichier.",
       "telecharger": "Télécharger le fichier",
-      "etape2": "Ajoutez ce fichier à votre site — comme vous y ajouteriez une page ou une image — en conservant exactement son nom, pour qu'il s'ouvre à cette adresse :",
+      "etape2": "Ajoutez ce fichier à votre site comme une page ou une image, à la racine — le dossier principal, celui qui répond à votre adresse d'accueil, pas un sous-dossier — en conservant exactement son nom, pour qu'il s'ouvre à cette adresse :",
       "etape3": "Quand c'est fait, lancez la vérification et l'analyse.",
-      "aide": "Le fichier doit être accessible publiquement à l'adresse ci-dessus, sans redirection.",
+      "aide": "Selon la façon dont votre site est géré : par FTP, déposez le fichier dans le dossier principal ; sur WordPress ou un éditeur de site, cherchez l'option d'ajout de fichier ; si quelqu'un d'autre s'occupe de votre site, transmettez-lui ce fichier et cette adresse — c'est tout ce dont il a besoin. Le fichier doit être accessible publiquement à l'adresse ci-dessus, sans redirection.",
       "bouton": "C'est déposé — vérifier et analyser"
     },
     "suivi": {
