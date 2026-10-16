@@ -2,7 +2,7 @@
 
 > Document de référence du projet Zurvela — plan complet **actualisé**, intégrant toutes les décisions : découverte client supprimée, domaine acquis (zurvela.com ✅), exigence multilingue, murs anti-codage-en-dur, moteur auto-apprenant, et la méthode de travail chat-conception / éditeur-construction.
 >
-> Enregistré le 2026-09-22. **Position actuelle : Phase 1, étape 2** — la constitution du projet, puis le cahier des charges du banc d'essai.
+> Enregistré le 2026-09-22. **Position actuelle (actualisée le 2026-10-16) : Phase 2 — Lancement commercial, côté construction.** Phase 1 (le moteur web) : **jalon ATTEINT** — détection ≥ 80 %, faux positifs ramenés de ~80 % à 0 % stable sur les comparables, ~0,038 $/scan. La **surface d'acquisition de la Phase 2 est FAITE, en prod, et ajustée après relecture en visiteur** (regardée en usage, pas seulement construite : deux défauts d'expérience corrigés — un `null` à la saisie, le texte de dépôt qui dit enfin le « où ») : vitrine `zurvela.com` → scanner `app.zurvela.com` (collez l'URL → preuve de propriété par fichier racine → scan → rapport par e-mail), quotas durs (nombre + dépense), démo figée. **Reste le volet COMMERCIAL de la Phase 2** — son jalon (20 clients payants, churn < 8 %) est à **zéro**, aucun contact marchand encore, par décision (porte d'entrée d'abord) : premiers marchands, écoute de leur lecture du rapport. La **porte d'entrée est ouverte** (vitrine → scanner, en prod) : le durcissement vient APRÈS, par séquencement CHOISI — durcir l'accès n'avait pas de sens tant qu'il n'y avait pas d'accès ; on a inversé cet ordre sciemment (la porte d'abord). Reprise technique prévue maintenant que la porte est ouverte : **CI serveur** (gate non-contournable, indépendant du hook local).
 
 ---
 
