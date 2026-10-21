@@ -1,0 +1,110 @@
+# GATE NEUTRE — « seul du vert arrive sur main », déplacé du hook pre-push local
+# (contournable par --no-verify, absent d'un clone neuf) vers un CI que personne ne
+# peut ni oublier ni contourner. Mêmes DEUX VOIX que le gate local, même ordre :
+# typecheck (invariant de type) PUIS vitest (échec/flake). Une fois la branch
+# protection armée sur `main` (exigeant ce check), `origin/main` devient toujours vert.
+#
+# Pré-requis MESURÉ avant d'écrire ceci : `pnpm test` est hermétique — zéro réseau
+# sortant, zéro secret de prod (ANTHROPIC/RESEND). Le CI n'a donc AUCUN secret ; s'il
+# en fallait un, le test serait à rendre hermétique, pas à recevoir la clé.
+name: gate
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# Un seul run par ref : un nouveau commit annule le run devenu obsolète (le commit
+# suivant a le sien). Sur une PR, pousser un correctif annule l'ancien run.
+concurrency:
+  group: gate-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    # Large : sur un runner 2 cœurs, maxWorkers='50%' (vitest.config.ts) → 1 worker,
+    # les 7 suites Chromium s'exécutent en SÉRIE (plus lent que le local 4 workers),
+    # et la politique flake peut relancer vitest une 2ᵉ fois. Le 1er run réel (étape 3)
+    # mesurera la vraie durée ; cette borne ne sert qu'à couper un blocage franc.
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+
+      # pnpm AVANT setup-node pour que le cache pnpm de setup-node le trouve.
+      - name: pnpm 12.5.1
+        uses: pnpm/action-setup@v4
+        with:
+          version: 12.5.1
+
+      - name: Node 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Dépendances (lockfile GELÉ — le CI ne résout rien de neuf)
+        run: pnpm install --frozen-lockfile
+
+      # Le gate pilote de VRAIS navigateurs (inertie CDN, core/scanner/*) : sans
+      # Chromium ces témoins échoueraient en CI alors qu'ils passent en local.
+      - name: Chromium (+ dépendances système)
+        run: pnpm exec playwright install --with-deps chromium
+
+      # ───────── VOIX 1 : typecheck. DÉTERMINISTE — un échec est un vrai échec,
+      # pas de re-run. Même ordre que le gate local : typecheck d'abord.
+      - name: Gate 1/2 — typecheck
+        run: pnpm typecheck
+
+      # ───────── VOIX 2 : vitest. POLITIQUE FLAKE (le flake d'exploration tient à la
+      # contention ; un runner CI a une charge/I-O différente → il peut le déclencher
+      # plus souvent, jamais, ou enfin LE CAPTURER). Règle tranchée d'avance :
+      #   • vert du 1er coup → OK ;
+      #   • rouge 1×, vert au re-run → FLAKE toléré, merge NON bloqué (pas de mur sur
+      #     un faux négatif) — MAIS le log du 1er rouge est préservé en artefact, car
+      #     il nomme nav→/recherche (explorateur.adversaire.test.ts:367) et c'est
+      #     peut-être la capture attendue depuis le n°57. Avertissement bien visible :
+      #     on NE pousse PAS à travers en aveugle, on s'arrête pour le diagnostiquer ;
+      #   • rouge DEUX fois de suite → ce n'est plus un flake, c'est un vrai échec : BLOQUE.
+      - name: Gate 2/2 — vitest (re-run 1× sur rouge ; rouge 2× = vrai échec)
+        shell: bash
+        run: |
+          set +e
+          echo "::group::vitest — tentative 1"
+          pnpm test 2>&1 | tee vitest-1.log
+          code1=${PIPESTATUS[0]}
+          echo "::endgroup::"
+          if [ "$code1" -eq 0 ]; then
+            rm -f vitest-1.log          # vert du premier coup : aucun log à diagnostiquer
+            echo "vitest vert du premier coup."
+            exit 0
+          fi
+          echo "::warning title=vitest rouge (tentative 1)::Log préservé (artefact vitest-logs). Re-run une fois — politique flake."
+          echo "::group::vitest — tentative 2 (re-run)"
+          pnpm test 2>&1 | tee vitest-2.log
+          code2=${PIPESTATUS[0]}
+          echo "::endgroup::"
+          if [ "$code2" -eq 0 ]; then
+            echo "::warning title=FLAKE capturé — à diagnostiquer::Rouge puis vert. Merge NON bloqué, MAIS le log du 1er rouge est dans l'artefact vitest-logs — cherche 'nav→/recherche' (n°57). Ne pousse pas à travers en aveugle : non revenu != mort, si le CI l'a réveillé on s'arrête pour le traiter."
+            exit 0
+          fi
+          echo "::error title=vitest rouge DEUX fois::Ce n'est plus un flake — vrai échec. Merge bloqué. Logs des deux tentatives dans l'artefact vitest-logs."
+          exit 1
+
+      # Les logs n'existent QUE si un rouge s'est produit (supprimés sur vert du 1er coup)
+      # → artefact seulement en cas de rouge. Préservé que le job passe (flake capturé)
+      # ou échoue (rouge 2×) : le 1er rouge est peut-être la capture attendue.
+      - name: Préserver les logs vitest (si rouge)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: vitest-logs
+          path: |
+            vitest-1.log
+            vitest-2.log
+          if-no-files-found: ignore
+          retention-days: 30
