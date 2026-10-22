@@ -658,3 +658,7 @@ selon `reessai`) + les textes marchands en `locales/` (un par catégorie).
   l'e2e du point 5, NON retiré car bloqué par le ban fail2ban OVH ci-dessus. **Tâche
   cosmétique EN ATTENTE d'OVH** : retirer quand le ban aura expiré (tentative programmée
   en arrière-plan cette session ; sinon prochaine session). Origine : e2e du 2026-10-15.
+
+## CI — maintenance future (non-bloquant, 2026-10-22)
+- Bump des actions GitHub vers leurs majeures ciblant Node 24 (checkout, setup-node, upload-artifact, pnpm/action-setup) — avertissement de dépréciation Node 20 sur les runners, sans effet sur le vert aujourd'hui.
+- `ubuntu-latest` migre vers Ubuntu 26 à partir d'oct. 2026 — surveiller, épingler une version si une divergence apparaît.
