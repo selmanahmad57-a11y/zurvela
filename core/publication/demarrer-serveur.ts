@@ -15,6 +15,7 @@ import { fileURLToPath } from 'node:url';
 import { chargerConfigScanner, FICHIER_CONFIG_PRODUCTION } from '../scanner/config.js';
 import { chargerSchema, valider } from '../outils/schema.js';
 import { rendreRapportHtml } from '../rapport/rendu-html.js';
+import { rendreRapport } from '../rapport/rendu.js';
 import { creerProxyFiltrant, type ProxyFiltrant } from './proxy-filtrant.js';
 import { lookupPublicSeulement, recupererDirect, resolveurSysteme, type Recuperer } from './verification-propriete.js';
 import { stockQuotaFichier, stockScansFichier, stockVerificationFichier } from './stock-fichier.js';
@@ -43,7 +44,7 @@ export interface ConfigPublicationComplete {
   proxy: { delaiMs: number };
   scan: { timeoutMs: number };
   quota: ConfigQuota;
-  courriel: { expediteur: string; delaiMs: number };
+  courriel: { expediteur: string; replyTo: string; delaiMs: number };
 }
 
 export async function chargerConfigPublication(fichier: string = path.join(RACINE, 'config', 'publication.json')): Promise<ConfigPublicationComplete> {
@@ -66,7 +67,15 @@ export function creerExecuterReel(proxyUrl: string, timeoutMs: number, fichierCo
     if (rapport.rapportBusiness === undefined) {
       return { ok: false, erreur: 'aucun-rapport', cout };
     }
-    return { ok: true, rapportHtml: rendreRapportHtml(rapport.rapportBusiness, { url: rapport.url }), cout };
+    // Même source (`rapportBusiness`), même URL, rendue DEUX fois : HTML (corps
+    // riche) et Markdown (part text/plain du multipart) → les deux parts portent
+    // le même message, et un mail html-seul (pénalisé par les filtres) est évité.
+    return {
+      ok: true,
+      rapportHtml: rendreRapportHtml(rapport.rapportBusiness, { url: rapport.url }),
+      rapportTexte: rendreRapport(rapport.rapportBusiness, { url: rapport.url }),
+      cout,
+    };
   };
 }
 
@@ -118,10 +127,10 @@ export async function demarrerServeurPublic(opts: OptionsServeurPublic): Promise
   const envoyer =
     cleResend === undefined || cleResend === ''
       ? undefined
-      : async ({ destinataire, origine, rapportHtml }: { destinataire: string; origine: string; rapportHtml: string }): Promise<{ ok: boolean }> =>
+      : async ({ destinataire, origine, rapportHtml, rapportTexte }: { destinataire: string; origine: string; rapportHtml: string; rapportTexte: string }): Promise<{ ok: boolean }> =>
           envoyerCourriel(
-            { destinataire, sujet: traduire(dict, 'courriel.sujet', { origine }), html: rapportHtml },
-            { cleApi: cleResend, expediteur: cfg.courriel.expediteur, delaiMs: cfg.courriel.delaiMs, poster },
+            { destinataire, sujet: traduire(dict, 'courriel.sujet', { origine }), html: rapportHtml, texte: rapportTexte },
+            { cleApi: cleResend, expediteur: cfg.courriel.expediteur, replyTo: cfg.courriel.replyTo, delaiMs: cfg.courriel.delaiMs, poster },
           );
 
   const ordonnanceur = creerOrdonnanceur({
