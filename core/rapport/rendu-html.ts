@@ -32,7 +32,7 @@
 import type { RapportBusiness, SectionRapport } from '../types.js';
 import { STATUTS_SANS_RETEST } from './statuts.js';
 import { LIBELLES_CATEGORIE, LIBELLES_GRAVITE, LIBELLES_RAPPORT, estLangueRapport, libelleAction, type LangueRapport } from './voix.js';
-import { brut, html, lienHref, prose, type FragmentHtml } from './html.js';
+import { brut, html, prose, type FragmentHtml } from './html.js';
 
 export interface OptionsRenduHtml {
   /** URL scannée, affichée en tête. */
@@ -122,10 +122,11 @@ export function rendreRapportHtml(rapportBusiness: RapportBusiness, options: Opt
   const corps: FragmentHtml[] = [html`<h1 style="margin:0 0 12px 0;font-size:20px;color:#1f2937;">${libelles.titre}</h1>`];
 
   if (options.url !== undefined) {
-    const href = lienHref(options.url);
-    // L'URL ne devient un lien que si son schéma est http(s) ; sinon texte seul
-    // (un `javascript:`/`data:` ne produit jamais de `href`).
-    corps.push(href === null ? html`<p style="margin:0 0 12px 0;color:#6b7280;">${options.url}</p>` : html`<p style="margin:0 0 12px 0;"><a href="${href}" style="color:#245c4f;">${options.url}</a></p>`);
+    // L'URL du site scanné (domaine du MARCHAND) est rendue en TEXTE BRUT, jamais en
+    // lien : un mail qui pointe vers des domaines tiers est pénalisé par les filtres
+    // anti-spam — les seuls liens cliquables du rapport restent sur zurvela.com.
+    // Échappée par construction (`html`), donc aucun `javascript:`/`data:` ne devient actif.
+    corps.push(html`<p style="margin:0 0 12px 0;color:#6b7280;">${options.url}</p>`);
   }
 
   const rienVerifie = rapportBusiness.rejouabilite !== null && rapportBusiness.rejouabilite.groupes > 0 && rapportBusiness.rejouabilite.groupesRejoues === 0;

@@ -44,9 +44,10 @@
     "courriel": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["expediteur", "delaiMs"],
+      "required": ["expediteur", "replyTo", "delaiMs"],
       "properties": {
         "expediteur": { "type": "string", "minLength": 3 },
+        "replyTo": { "type": "string", "minLength": 3 },
         "delaiMs": { "type": "integer", "minimum": 1 }
       }
     }

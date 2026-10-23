@@ -80,7 +80,7 @@ async function monterServeur(over: Partial<Parameters<typeof creerServeurScan>[0
   const sv = over.stockVerif ?? stockVerif();
   const ss = (over.stockScans as ReturnType<typeof stockScans>) ?? stockScans();
   const sq = over.stockQuota ?? stockQuotaMemoire();
-  const executer: ExecuterScan = (over as { executer?: ExecuterScan }).executer ?? (async () => ({ ok: true, rapportHtml: '<html>RAPPORT</html>', cout: 0 }));
+  const executer: ExecuterScan = (over as { executer?: ExecuterScan }).executer ?? (async () => ({ ok: true, rapportHtml: '<html>RAPPORT</html>', rapportTexte: 'RAPPORT (texte)', cout: 0 }));
   const ordonnanceur = over.ordonnanceur ?? creerOrdonnanceur({ stockScans: ss, executer, maintenant: () => 1000, surCout: (cout) => enregistrerDepense({ stock: sq, maintenant: 1000, cout }) });
   const s = await creerServeurScan({
     stockVerif: sv,
@@ -128,7 +128,7 @@ describe('(3) ordonnanceur séquentiel', () => {
       maxSimultane = Math.max(maxSimultane, enCours);
       await new Promise((r) => setTimeout(r, 10));
       enCours -= 1;
-      return { ok: true, rapportHtml: '<html>ok</html>', cout: 0 };
+      return { ok: true, rapportHtml: '<html>ok</html>', rapportTexte: 'ok (texte)', cout: 0 };
     };
     const ord = creerOrdonnanceur({ stockScans: ss, executer, maintenant: () => 1 });
     ss.ecrire('a', { scanId: 'a', origine: 'https://a.test', etat: 'en-attente', creeLe: 1 });
@@ -268,7 +268,7 @@ describe('(5) quota — plafonds durs à /scanner', () => {
   });
 
   it('quota DÉPENSE : un scan lourd (6 $ > 5) pousse le cumul → le scan SUIVANT est refusé 429', async () => {
-    const { s, ordonnanceur } = await monterServeur({ executer: async () => ({ ok: true, rapportHtml: '<html>x</html>', cout: 6 }) } as Parameters<typeof monterServeur>[0]);
+    const { s, ordonnanceur } = await monterServeur({ executer: async () => ({ ok: true, rapportHtml: '<html>x</html>', rapportTexte: 'x (texte)', cout: 6 }) } as Parameters<typeof monterServeur>[0]);
     await requete(s.port, 'POST', '/verifier', { url: 'https://a.test' });
     expect((await requete(s.port, 'POST', '/scanner', { url: 'https://a.test' })).statut).toBe(202); // 1er passe
     await ordonnanceur.oisif(); // le scan se termine → 6 $ enregistrés
@@ -306,7 +306,7 @@ describe('(5) quota — plafonds durs à /scanner', () => {
 });
 
 // ═══════════════ (6) E-MAIL DE LIVRAISON ═══════════════
-type Envoyer = (opts: { destinataire: string; origine: string; rapportHtml: string }) => Promise<{ ok: boolean }>;
+type Envoyer = (opts: { destinataire: string; origine: string; rapportHtml: string; rapportTexte: string }) => Promise<{ ok: boolean }>;
 
 // Monte un serveur dont l'ordonnanceur a un `envoyer` doublé (zéro mail réel).
 // `executer` peut bloquer sur une barrière → on observe l'état transitoire.
@@ -318,7 +318,7 @@ async function monterAvecEnvoi(opts: {
   const sv = stockVerif();
   const ss = stockScans();
   const sq = opts.stockQuota ?? stockQuotaMemoire();
-  const executer: ExecuterScan = opts.executer ?? (async () => ({ ok: true, rapportHtml: '<html>RAPPORT</html>', cout: 0 }));
+  const executer: ExecuterScan = opts.executer ?? (async () => ({ ok: true, rapportHtml: '<html>RAPPORT</html>', rapportTexte: 'RAPPORT (texte)', cout: 0 }));
   const envoyer = vi.fn<Envoyer>(opts.envoyer ?? (async () => ({ ok: true })));
   const ord = creerOrdonnanceur({ stockScans: ss, executer, maintenant: () => 1000, envoyer });
   const s = await monterServeur({ stockVerif: sv, stockScans: ss, stockQuota: sq, recuperer: recupererBon(sv), ordonnanceur: ord });
@@ -332,7 +332,7 @@ describe('(6) e-mail de livraison', () => {
     const { s, ss, ord, envoyer } = await monterAvecEnvoi({
       executer: async () => {
         await barriere; // le scan reste « en-cours » tant qu'on n'a pas libéré
-        return { ok: true, rapportHtml: '<html>RAPPORT</html>', cout: 0 };
+        return { ok: true, rapportHtml: '<html>RAPPORT</html>', rapportTexte: 'RAPPORT (texte)', cout: 0 };
       },
     });
     await requete(s.port, 'POST', '/verifier', { url: 'https://ok.test' });
@@ -346,7 +346,7 @@ describe('(6) e-mail de livraison', () => {
     await ord.oisif();
     // LIVRÉ
     expect(envoyer).toHaveBeenCalledTimes(1);
-    expect(envoyer.mock.calls[0]![0]).toEqual({ destinataire: 'client@example.com', origine: 'https://ok.test', rapportHtml: '<html>RAPPORT</html>' });
+    expect(envoyer.mock.calls[0]![0]).toEqual({ destinataire: 'client@example.com', origine: 'https://ok.test', rapportHtml: '<html>RAPPORT</html>', rapportTexte: 'RAPPORT (texte)' });
     // EFFACÉ après envoi, le rapport conservé
     const apres = ss.lire(id);
     expect(apres?.email).toBeUndefined();

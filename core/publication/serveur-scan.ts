@@ -50,7 +50,7 @@ export interface StockScans {
 }
 
 /** Exécute un scan derrière le proxy et rend le rapport HTML + son coût réel (pour le plafond de dépense). Injecté (le banc le double). */
-export type ExecuterScan = (origine: string) => Promise<{ ok: true; rapportHtml: string; cout: number } | { ok: false; erreur: string; cout: number }>;
+export type ExecuterScan = (origine: string) => Promise<{ ok: true; rapportHtml: string; rapportTexte: string; cout: number } | { ok: false; erreur: string; cout: number }>;
 
 // ───────── (2) peutScanner AVANT d'enfiler + (4) IDOR (scanId imprévisible) ─────────
 
@@ -114,7 +114,7 @@ export function creerOrdonnanceur(deps: {
   /** APRÈS chaque scan (réussi OU échoué), le coût réel — alimente le plafond de dépense (étape 5). */
   surCout?: (cout: number) => void;
   /** LIVRAISON e-mail (étape 6). Injecté (le banc le double). Son échec ne doit JAMAIS casser l'accès par id. */
-  envoyer?: (opts: { destinataire: string; origine: string; rapportHtml: string }) => Promise<{ ok: boolean }>;
+  envoyer?: (opts: { destinataire: string; origine: string; rapportHtml: string; rapportTexte: string }) => Promise<{ ok: boolean }>;
 }): Ordonnanceur {
   let enCours = false;
   let vague: Promise<void> = Promise.resolve();
@@ -138,7 +138,7 @@ export function creerOrdonnanceur(deps: {
             let envoye = false;
             try {
               // Le `{ok}` est LU (un ok:false — Resend non-200 — était auparavant ignoré en silence).
-              envoye = (await deps.envoyer({ destinataire: en.email, origine: en.origine, rapportHtml: r.rapportHtml })).ok;
+              envoye = (await deps.envoyer({ destinataire: en.email, origine: en.origine, rapportHtml: r.rapportHtml, rapportTexte: r.rapportTexte })).ok;
             } catch {
               envoye = false; // l'échec d'envoi ne casse jamais l'accès par id
             }
