@@ -34,9 +34,11 @@ describe('rendu HTML — garde 1 : anti-injection (XSS)', () => {
     expect(sortie).not.toContain('javascript:alert(1)</a>');
   });
 
-  it('une URL http(s) devient un lien (schéma validé)', () => {
+  it('une URL http(s) du marchand est rendue en TEXTE BRUT, jamais en lien (délivrabilité : on n’associe pas le mail à un domaine tiers)', () => {
     const sortie = rendreRapportHtml(rapport([]), { url: 'https://exemple.test' });
-    expect(sortie).toContain('href="https://exemple.test"');
+    expect(sortie).toContain('exemple.test'); // l’URL reste AFFICHÉE au lecteur…
+    expect(sortie).not.toContain('href="https://exemple.test"'); // …mais JAMAIS cliquable…
+    expect(sortie).not.toMatch(/<a[^>]*>https:\/\/exemple\.test/i); // …ni enveloppée dans un <a>.
   });
 });
 

@@ -24,6 +24,7 @@
   },
   "courriel": {
     "expediteur": "rapport@zurvela.com",
+    "replyTo": "contact@zurvela.com",
     "delaiMs": 15000
   }
 }

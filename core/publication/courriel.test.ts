@@ -34,13 +34,13 @@ describe('emailValide — la garde anti-injection', () => {
 });
 
 // ─────────── envoyerCourriel — POST HTTPS structuré vers Resend ───────────
-const OPTS = { cleApi: 'cle-de-test', expediteur: 'rapport@zurvela.com', delaiMs: 5000 };
+const OPTS = { cleApi: 'cle-de-test', expediteur: 'rapport@zurvela.com', replyTo: 'contact@zurvela.com', delaiMs: 5000 };
 
 describe('envoyerCourriel', () => {
-  it('poste un JSON STRUCTURÉ {from,to,subject,html} avec le Bearer, et rend ok sur 2xx', async () => {
+  it('poste un JSON STRUCTURÉ {from,to,subject,html,text,reply_to} avec le Bearer, et rend ok sur 2xx', async () => {
     const poster = vi.fn<PosterHttps>(async () => ({ statut: 200, corps: '{"id":"abc"}' }));
     const r = await envoyerCourriel(
-      { destinataire: 'client@example.com', sujet: 'Votre rapport', html: '<html>R</html>' },
+      { destinataire: 'client@example.com', sujet: 'Votre rapport', html: '<html>R</html>', texte: 'R (texte brut)' },
       { ...OPTS, poster },
     );
     expect(r.ok).toBe(true);
@@ -49,12 +49,22 @@ describe('envoyerCourriel', () => {
     expect(appel.url).toBe('https://api.resend.com/emails');
     expect(appel.enTetes['authorization']).toBe('Bearer cle-de-test');
     const corps = JSON.parse(appel.corps) as Record<string, string>;
-    expect(corps).toEqual({ from: 'rapport@zurvela.com', to: 'client@example.com', subject: 'Votre rapport', html: '<html>R</html>' });
+    // Égalité EXACTE : chaque champ est prouvé porteur. `text` → multipart/alternative
+    // (anti-spam) ; `reply_to` → un marchand qui répond est lu. AUCUN champ de traçage
+    // (open/click) : Resend ne trace pas par défaut, et on n'en demande pas.
+    expect(corps).toEqual({
+      from: 'rapport@zurvela.com',
+      to: 'client@example.com',
+      subject: 'Votre rapport',
+      html: '<html>R</html>',
+      text: 'R (texte brut)',
+      reply_to: 'contact@zurvela.com',
+    });
   });
 
   it('rend échec sur un statut non-2xx', async () => {
     const poster = vi.fn<PosterHttps>(async () => ({ statut: 422, corps: '{"error":"x"}' }));
-    const r = await envoyerCourriel({ destinataire: 'client@example.com', sujet: 'S', html: '<p>h</p>' }, { ...OPTS, poster });
+    const r = await envoyerCourriel({ destinataire: 'client@example.com', sujet: 'S', html: '<p>h</p>', texte: 'h' }, { ...OPTS, poster });
     expect(r.ok).toBe(false);
   });
 
@@ -62,14 +72,14 @@ describe('envoyerCourriel', () => {
     const poster = vi.fn<PosterHttps>(async () => {
       throw new Error('réseau coupé');
     });
-    const r = await envoyerCourriel({ destinataire: 'client@example.com', sujet: 'S', html: '<p>h</p>' }, { ...OPTS, poster });
+    const r = await envoyerCourriel({ destinataire: 'client@example.com', sujet: 'S', html: '<p>h</p>', texte: 'h' }, { ...OPTS, poster });
     expect(r.ok).toBe(false);
   });
 
   it('GARDE DE SORTIE : un `to` à CR/LF n’est JAMAIS posté', async () => {
     const poster = vi.fn<PosterHttps>(async () => ({ statut: 200, corps: '{}' }));
     const r = await envoyerCourriel(
-      { destinataire: 'victime@example.com\r\nBcc: evil@x.com', sujet: 'S', html: '<p>h</p>' },
+      { destinataire: 'victime@example.com\r\nBcc: evil@x.com', sujet: 'S', html: '<p>h</p>', texte: 'h' },
       { ...OPTS, poster },
     );
     expect(r.ok).toBe(false);

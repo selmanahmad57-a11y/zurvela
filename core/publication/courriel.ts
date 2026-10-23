@@ -60,11 +60,19 @@ export interface EnvoiCourriel {
   readonly destinataire: string;
   readonly sujet: string;
   readonly html: string;
+  /**
+   * Version TEXTE BRUT, à côté du `html` → vrai `multipart/alternative`. Un mail
+   * html-seul est pénalisé par les filtres anti-spam ; la part texte doit porter
+   * le MÊME message. Jamais vide : le rendu Markdown du rapport la remplit.
+   */
+  readonly texte: string;
 }
 
 export interface OptionsEnvoi {
   readonly cleApi: string;
   readonly expediteur: string;
+  /** `reply_to` : un marchand qui répond doit tomber dans une boîte RELEVÉE (pas le `from` d'envoi). Réglage de config. */
+  readonly replyTo: string;
   readonly delaiMs: number;
   readonly poster: PosterHttps;
 }
@@ -82,7 +90,11 @@ export async function envoyerCourriel(envoi: EnvoiCourriel, opts: OptionsEnvoi):
   if (!emailValide(envoi.destinataire)) {
     return { ok: false };
   }
-  const corps = JSON.stringify({ from: opts.expediteur, to: envoi.destinataire, subject: envoi.sujet, html: envoi.html });
+  // `text` À CÔTÉ de `html` → multipart/alternative (anti-spam). `reply_to` → les
+  // réponses tombent dans une boîte relevée. AUCUN champ de traçage ouverture/clics :
+  // Resend ne trace pas par défaut, et on n'en demande pas (on n'associe pas le mail
+  // à du pistage, et les pixels de suivi pèsent sur le classement).
+  const corps = JSON.stringify({ from: opts.expediteur, to: envoi.destinataire, subject: envoi.sujet, html: envoi.html, text: envoi.texte, reply_to: opts.replyTo });
   try {
     const rep = await opts.poster({
       url: URL_RESEND,
