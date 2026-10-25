@@ -28,6 +28,7 @@ import { categoriserEchec } from './categorie-echec.js';
 import { CHEMINS } from './routes-api.js';
 import { reserverScan, type ConfigQuota, type StockQuota } from './quota.js';
 import { emailValide } from './courriel.js';
+import { traiterWebhookResend, type EnTetesSvix, type SeuilsWebhook, type StockWebhook } from './webhook-resend.js';
 
 // ───────────────────────── File des scans ─────────────────────────
 
@@ -201,6 +202,10 @@ export interface DepsServeur {
   readonly config: ConfigPublication;
   /** Générateur d'id (tests : prévisible pour la mutation IDOR). */
   readonly genId?: () => string;
+  /** WEBHOOKS Resend (étape 7). Les TROIS absents → route fail-closed (401). Secret jamais journalisé. */
+  readonly stockWebhook?: StockWebhook;
+  readonly secretWebhook?: string;
+  readonly seuilsWebhook?: SeuilsWebhook;
 }
 
 export interface ServeurScan {
@@ -230,6 +235,32 @@ function lireCorpsJson(req: http.IncomingMessage, maxOctets: number): Promise<Re
     });
     req.on('error', () => resolve(null));
   });
+}
+
+/**
+ * Lit le corps BRUT (chaîne). Les webhooks Svix se vérifient sur les OCTETS REÇUS,
+ * pas sur un JSON re-sérialisé : ce lecteur ne parse RIEN (le corps reste donnée
+ * non fiable jusqu'à la vérif de signature). `null` si trop gros.
+ */
+function lireCorpsBrut(req: http.IncomingMessage, maxOctets: number): Promise<string | null> {
+  return new Promise((resolve) => {
+    let brut = '';
+    let trop = false;
+    req.on('data', (d: Buffer) => {
+      brut += d.toString('utf8');
+      if (brut.length > maxOctets) {
+        trop = true;
+        req.destroy();
+      }
+    });
+    req.on('end', () => resolve(trop ? null : brut));
+    req.on('error', () => resolve(null));
+  });
+}
+
+/** Un en-tête HTTP en texte simple (première valeur si répété, '' si absent). */
+function enTeteTexte(v: string | string[] | undefined): string {
+  return Array.isArray(v) ? (v[0] ?? '') : (v ?? '');
 }
 
 function repondre(res: http.ServerResponse, statut: number, corps: unknown): void {
@@ -356,6 +387,38 @@ export function creerServeurScan(deps: DepsServeur): Promise<ServeurScan> {
         ...(entree.rapportHtml === undefined ? {} : { rapportHtml: entree.rapportHtml }),
         ...(entree.erreur === undefined ? {} : { erreur: entree.erreur }),
       });
+    }
+
+    // POST /webhook/resend — la BOUCLE DE RETOUR Resend. MACHINE-À-MACHINE : n'hérite
+    // RIEN du monde marchand (ni peutScanner, ni quota, ni discrimination d'échec).
+    // Ordre : lire le brut → vérifier la signature → PUIS parser (donnée non fiable
+    // jusque-là, §3). Fail-closed : non configuré (un des trois absent) ou corps trop
+    // gros → 401, comme une signature invalide. Un `throw` du store → la coquille fait
+    // un 500 → Svix retente → l'idempotence absorbe.
+    if (methode === 'POST' && chemin === CHEMINS.webhookResend) {
+      const brut = await lireCorpsBrut(req, config.tailleCorpsMax);
+      if (deps.stockWebhook === undefined || deps.seuilsWebhook === undefined || brut === null) {
+        return repondre(res, 401, { erreur: 'signature-invalide' });
+      }
+      const resultat = traiterWebhookResend({
+        secret: deps.secretWebhook,
+        enTetes: {
+          id: enTeteTexte(req.headers['svix-id']),
+          timestamp: enTeteTexte(req.headers['svix-timestamp']),
+          signature: enTeteTexte(req.headers['svix-signature']),
+        } satisfies EnTetesSvix,
+        corps: brut,
+        stock: deps.stockWebhook,
+        maintenant: deps.maintenant(),
+        seuils: deps.seuilsWebhook,
+      });
+      // CRI opérateur (§3 : email_id, JAMAIS l'adresse ; sur stderr, jamais au client).
+      // Rappel : un compteur de plaintes à zéro ≠ zéro plainte (des fournisseurs ne les
+      // remontent pas) — ne pas lire son silence comme un feu vert.
+      for (const a of resultat.alertes) {
+        console.error('[webhook-resend]', a.genre, a.emailId, JSON.stringify(a.detail));
+      }
+      return repondre(res, resultat.statut, resultat.statut === 200 ? { ok: true } : { erreur: 'signature-invalide' });
     }
 
     return repondre(res, 404, { erreur: 'route-inconnue' });

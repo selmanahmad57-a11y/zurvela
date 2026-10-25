@@ -68,6 +68,10 @@ sonder_nom() { # $1 = nom (api.zurvela.com / app.zurvela.com) — MÊME service 
   verifier_node "POST /verifier" "$($C -X POST "$BASE/verifier" -H 'content-type: application/json' -d '{}')" '"erreur":"url-requise"'
   # LE CAS CROISÉ : /scanner doit atteindre Node, pas être masqué par le statique.
   verifier_node "POST /scanner"  "$($C -X POST "$BASE/scanner"  -H 'content-type: application/json' -d '{}')" '"erreur":"url-requise"'
+  # LE WEBHOOK : POST sans signature valide → Node REJETTE (401, fail-closed), pas un
+  # 404 statique. Prouve le ROUTAGE *et* le FAIL-CLOSED d'un coup : un 404 statique dirait
+  # « route non proxiée » ; un 200 dirait « accepté sans vérifier » — un trou de sécurité.
+  verifier_node "POST /webhook/resend (sans sig)" "$($C -X POST "$BASE/webhook/resend" -H 'content-type: application/json' -d '{}')" '"erreur":"signature-invalide"'
   # L'INVERSE (durcissement 2) : une page INEXISTANTE ne doit PAS atteindre Node.
   local page; page="$($C "$BASE/page-inexistante-de-sonde-$(date +%s)")"
   if echo "$page" | grep -q '"erreur"'; then echo "    page inexistante → atteint Node (@api DÉBORDE ! corps: $page)"; echoue=1; else echo "    page inexistante → statique ✓ (@api ne déborde pas)"; fi

@@ -26,5 +26,10 @@
     "expediteur": "rapport@zurvela.com",
     "replyTo": "contact@zurvela.com",
     "delaiMs": 15000
+  },
+  "webhook": {
+    "fenetreMs": 604800000,
+    "tauxBounceMax": 0.02,
+    "bounceMinAbsolu": 3
   }
 }

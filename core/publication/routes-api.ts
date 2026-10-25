@@ -16,6 +16,7 @@ export const CHEMINS = {
   scanner: '/scanner',
   sante: '/sante',
   statut: '/statut/', // PRÉFIXE : /statut/:id
+  webhookResend: '/webhook/resend', // boucle de retour Resend (livré/bounce/plainte) — machine-à-machine, hors monde marchand
 } as const;
 
 /** Chaque route d'API + sa forme (exact|préfixe), pour la synchro Caddy. */
@@ -24,6 +25,7 @@ export const ROUTES_API = [
   { chemin: CHEMINS.scanner, prefixe: false },
   { chemin: CHEMINS.sante, prefixe: false },
   { chemin: CHEMINS.statut, prefixe: true },
+  { chemin: CHEMINS.webhookResend, prefixe: false },
 ] as const;
 
 /**

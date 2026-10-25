@@ -3,7 +3,7 @@
   "$id": "zurvela/config/publication",
   "type": "object",
   "additionalProperties": false,
-  "required": ["octetsJeton", "expirationJetonMs", "fenetreValiditeMs", "prefixeFichier", "octetsScanId", "tailleCorpsMax", "port", "verificationGet", "proxy", "scan", "quota", "courriel"],
+  "required": ["octetsJeton", "expirationJetonMs", "fenetreValiditeMs", "prefixeFichier", "octetsScanId", "tailleCorpsMax", "port", "verificationGet", "proxy", "scan", "quota", "courriel", "webhook"],
   "properties": {
     "octetsJeton": { "type": "integer", "minimum": 16 },
     "expirationJetonMs": { "type": "integer", "minimum": 1 },
@@ -49,6 +49,20 @@
         "expediteur": { "type": "string", "minLength": 3 },
         "replyTo": { "type": "string", "minLength": 3 },
         "delaiMs": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "webhook": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["fenetreMs", "tauxBounceMax", "bounceMinAbsolu"],
+      "properties": {
+        "fenetreMs": {
+          "type": "integer",
+          "minimum": 172800000,
+          "description": "Fenêtre glissante des stats de bounce/plainte ET de l'idempotence des webhooks. Plancher 2 j (IMPOSÉ ici) : elle doit rester ≥ l'horizon de retry de Svix, sinon une redelivery tardive serait recomptée. Défaut : 7 j (604800000)."
+        },
+        "tauxBounceMax": { "type": "number", "exclusiveMinimum": 0, "maximum": 1 },
+        "bounceMinAbsolu": { "type": "integer", "minimum": 1 }
       }
     }
   }
