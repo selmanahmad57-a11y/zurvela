@@ -10,7 +10,7 @@
 # expose au marchand) ; api.zurvela.com reste l'alias historique. Caddy émet un
 # certificat Let's Encrypt pour CHACUN (DNS-only Cloudflare requis pour les deux).
 api.zurvela.com, app.zurvela.com {
-	@api path /verifier /scanner /sante /statut/*
+	@api path /verifier /scanner /sante /statut/* /webhook/resend
 	handle @api {
 		reverse_proxy 127.0.0.1:8787
 	}

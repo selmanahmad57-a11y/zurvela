@@ -18,7 +18,7 @@ import { rendreRapportHtml } from '../rapport/rendu-html.js';
 import { rendreRapport } from '../rapport/rendu.js';
 import { creerProxyFiltrant, type ProxyFiltrant } from './proxy-filtrant.js';
 import { lookupPublicSeulement, recupererDirect, resolveurSysteme, type Recuperer } from './verification-propriete.js';
-import { stockQuotaFichier, stockScansFichier, stockVerificationFichier } from './stock-fichier.js';
+import { stockQuotaFichier, stockScansFichier, stockVerificationFichier, stockWebhookFichier } from './stock-fichier.js';
 import { creerOrdonnanceur, creerServeurScan, type ExecuterScan, type ServeurScan } from './serveur-scan.js';
 import { enregistrerDepense, type ConfigQuota } from './quota.js';
 import { envoyerCourriel, posterHttpsReel } from './courriel.js';
@@ -31,6 +31,8 @@ const RACINE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', 
 const LANGUE_LIVRAISON = 'fr';
 /** Variable d'environnement portant la clé Resend (chargée par --env-file-if-exists=docs/.env.local). */
 const VARIABLE_CLE_RESEND = 'RESEND_API_KEY';
+/** Variable d'environnement portant le secret de webhook Resend/Svix (jamais dans le dépôt). */
+const VARIABLE_SECRET_WEBHOOK = 'RESEND_WEBHOOK_SECRET';
 
 export interface ConfigPublicationComplete {
   octetsJeton: number;
@@ -45,6 +47,7 @@ export interface ConfigPublicationComplete {
   scan: { timeoutMs: number };
   quota: ConfigQuota;
   courriel: { expediteur: string; replyTo: string; delaiMs: number };
+  webhook: { fenetreMs: number; tauxBounceMax: number; bounceMinAbsolu: number };
 }
 
 export async function chargerConfigPublication(fichier: string = path.join(RACINE, 'config', 'publication.json')): Promise<ConfigPublicationComplete> {
@@ -102,6 +105,7 @@ export async function demarrerServeurPublic(opts: OptionsServeurPublic): Promise
   const stockVerif = stockVerificationFichier(path.join(opts.dossierEtat, 'jetons.json'), path.join(opts.dossierEtat, 'preuves.json'));
   const stockScans = stockScansFichier(path.join(opts.dossierEtat, 'scans.json'));
   const stockQuota = stockQuotaFichier(path.join(opts.dossierEtat, 'quota.json'));
+  const stockWebhook = stockWebhookFichier(path.join(opts.dossierEtat, 'webhooks.json'));
 
   // 3. Le GET de vérification, épinglé (étape 3), sous l'identité ZurvelaBot.
   const lookup = lookupPublicSeulement(resolveurSysteme());
@@ -122,6 +126,9 @@ export async function demarrerServeurPublic(opts: OptionsServeurPublic): Promise
   //       aucun `envoyer` n'est câblé — les scans tournent, la livraison retombe
   //       sur l'id (/statut/:id). La clé n'est jamais journalisée ni affichée.
   const cleResend = process.env[VARIABLE_CLE_RESEND];
+  // SECRET DE WEBHOOK (étape 7). Absent → la route /webhook/resend fail-closed (401) :
+  // dégradé = FERMÉ (accepter sans vérifier rouvrirait le trou que Svix ferme). Jamais journalisé.
+  const secretWebhook = process.env[VARIABLE_SECRET_WEBHOOK];
   const dict = await chargerDictionnaire(path.join(RACINE, 'locales'), LANGUE_LIVRAISON);
   const poster = posterHttpsReel();
   const envoyer =
@@ -161,6 +168,9 @@ export async function demarrerServeurPublic(opts: OptionsServeurPublic): Promise
       tailleCorpsMax: cfg.tailleCorpsMax,
       port: cfg.port,
     },
+    stockWebhook,
+    seuilsWebhook: cfg.webhook,
+    ...(secretWebhook === undefined || secretWebhook === '' ? {} : { secretWebhook }),
   });
 
   return {

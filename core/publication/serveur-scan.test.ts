@@ -6,6 +6,7 @@
  * IDOR (scanId imprévisible).
  */
 import http from 'node:http';
+import { createHmac } from 'node:crypto';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   creerOrdonnanceur,
@@ -16,6 +17,7 @@ import {
   type ServeurScan,
   type StockScans,
 } from './serveur-scan.js';
+import type { EvenementHorodate, SeuilsWebhook, StockWebhook } from './webhook-resend.js';
 import type { EntreeJeton, Preuve, Recuperer, StockVerification } from './verification-propriete.js';
 import { enregistrerDepense, type ConfigQuota, type StockQuota } from './quota.js';
 import { decisionReessai, type FaitsReessai } from '../../deploiement/ui/reessai.js';
@@ -92,9 +94,48 @@ async function monterServeur(over: Partial<Parameters<typeof creerServeurScan>[0
     maintenant: over.maintenant ?? (() => 1000),
     config: over.config ?? CONFIG,
     ...(over.genId === undefined ? {} : { genId: over.genId }),
+    ...(over.stockWebhook === undefined ? {} : { stockWebhook: over.stockWebhook }),
+    ...(over.secretWebhook === undefined ? {} : { secretWebhook: over.secretWebhook }),
+    ...(over.seuilsWebhook === undefined ? {} : { seuilsWebhook: over.seuilsWebhook }),
   });
   serveurs.push(s);
   return { s, sv, ss, sq, ordonnanceur, executer };
+}
+
+// ───────── webhook : client brut avec corps EXACT + en-têtes Svix ─────────
+// Le `requete` standard re-sérialise le JSON ; le webhook DOIT être vérifié sur
+// les OCTETS REÇUS. Ce client envoie le corps brut tel quel (preuve de bout en bout
+// que le serveur signe/vérifie sur ce que Svix a envoyé, pas sur un re-JSON).
+function requeteBrute(port: number, chemin: string, corpsBrut: string, enTetes: Record<string, string>): Promise<{ statut: number; json: Record<string, unknown> }> {
+  return new Promise((resolve, reject) => {
+    const req = http.request({ host: '127.0.0.1', port, method: 'POST', path: chemin, headers: { 'content-type': 'application/json', 'content-length': Buffer.byteLength(corpsBrut), ...enTetes } }, (res) => {
+      let c = '';
+      res.on('data', (d) => (c += d));
+      res.on('end', () => resolve({ statut: res.statusCode ?? 0, json: c === '' ? {} : (JSON.parse(c) as Record<string, unknown>) }));
+    });
+    req.on('error', reject);
+    req.write(corpsBrut);
+    req.end();
+  });
+}
+const SECRET_WH = 'whsec_dGVzdHNlY3JldDEyMw==';
+const CLE_WH = Buffer.from('dGVzdHNlY3JldDEyMw==', 'base64');
+const SEUILS_WH: SeuilsWebhook = { fenetreMs: 604_800_000, tauxBounceMax: 0.02, bounceMinAbsolu: 3 };
+function enTetesSvix(id: string, corps: string, ts = '1700000000'): Record<string, string> {
+  return { 'svix-id': id, 'svix-timestamp': ts, 'svix-signature': 'v1,' + createHmac('sha256', CLE_WH).update(`${id}.${ts}.${corps}`).digest('base64') };
+}
+function stockWebhookMemoire(): { stock: StockWebhook; enregistres: EvenementHorodate[] } {
+  const vus = new Set<string>();
+  const evts: EvenementHorodate[] = [];
+  const enregistres: EvenementHorodate[] = [];
+  return {
+    enregistres,
+    stock: {
+      dejaVu: (id) => vus.has(id),
+      enregistrer: (id, evt) => void (vus.add(id), evts.push(evt), enregistres.push(evt)),
+      fenetre: (now, f) => evts.filter((e) => e.creeLe >= now - f),
+    },
+  };
 }
 
 // ═══════════════ (2) peutScanner AVANT d'enfiler ═══════════════
@@ -473,6 +514,51 @@ describe('(a) handler fail-closed : tout throw → 500, process vivant', () => {
     expect(scan.json['erreur']).toBe('incoherence-interne');
     expect(scan.json['categorie']).toBeUndefined(); // surtout : PAS de catégorie marchand (faux message évité)
     expect(cri).toHaveBeenCalled();
+    cri.mockRestore();
+  });
+});
+
+// ═══════════════ (webhook Resend) routage + fail-closed + corps brut ═══════════════
+describe('(webhook) POST /webhook/resend — machine-à-machine, hors monde marchand', () => {
+  it('NON configuré (pas de secret) → 401 signature-invalide, et la route ATTEINT Node (pas un 404 statique)', async () => {
+    // Pas de secretWebhook : fail-closed. La route est quand même MONTÉE (sinon la
+    // sonde de déploiement ne distinguerait pas « non routé » de « fermé »).
+    const { s } = await monterServeur({ stockWebhook: stockWebhookMemoire().stock, seuilsWebhook: SEUILS_WH });
+    const corps = JSON.stringify({ type: 'email.delivered', data: { email_id: 'eid' } });
+    const r = await requeteBrute(s.port, '/webhook/resend', corps, enTetesSvix('m1', corps));
+    expect(r.statut).toBe(401);
+    expect(r.json['erreur']).toBe('signature-invalide'); // corps produit par Node → prouve l'atteinte de Node
+  });
+
+  it('secret configuré + signature FORGÉE → 401, store non touché', async () => {
+    const { stock, enregistres } = stockWebhookMemoire();
+    const { s } = await monterServeur({ stockWebhook: stock, secretWebhook: SECRET_WH, seuilsWebhook: SEUILS_WH });
+    const corps = JSON.stringify({ type: 'email.delivered', data: { email_id: 'eid' } });
+    const r = await requeteBrute(s.port, '/webhook/resend', corps, { 'svix-id': 'm1', 'svix-timestamp': '1700000000', 'svix-signature': 'v1,ZmF1eA==' });
+    expect(r.statut).toBe(401);
+    expect(enregistres).toEqual([]);
+  });
+
+  it('secret + signature VALIDE sur le corps brut EXACT → 200, événement enregistré (preuve de bout en bout du corps brut)', async () => {
+    const { stock, enregistres } = stockWebhookMemoire();
+    const { s } = await monterServeur({ stockWebhook: stock, secretWebhook: SECRET_WH, seuilsWebhook: SEUILS_WH, maintenant: () => 1700000000000 });
+    const corps = JSON.stringify({ type: 'email.delivered', created_at: '2026-01-01', data: { email_id: 'eid_abc' } });
+    const r = await requeteBrute(s.port, '/webhook/resend', corps, enTetesSvix('m1', corps));
+    expect(r.statut).toBe(200);
+    expect(enregistres).toEqual([{ type: 'email.delivered', creeLe: 1700000000000 }]);
+  });
+
+  it('une plainte signée → 200 et CRI opérateur (email_id, jamais l’adresse §3)', async () => {
+    const cri = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const { stock } = stockWebhookMemoire();
+    const { s } = await monterServeur({ stockWebhook: stock, secretWebhook: SECRET_WH, seuilsWebhook: SEUILS_WH });
+    const corps = JSON.stringify({ type: 'email.complained', data: { email_id: 'eid_plainte', to: ['secret@ne-doit-pas-fuir.test'] } });
+    const r = await requeteBrute(s.port, '/webhook/resend', corps, enTetesSvix('m1', corps));
+    expect(r.statut).toBe(200);
+    expect(cri).toHaveBeenCalled();
+    const tousArgs = cri.mock.calls.flat().join(' ');
+    expect(tousArgs).toContain('eid_plainte');
+    expect(tousArgs).not.toContain('ne-doit-pas-fuir'); // §3 : jamais l'adresse
     cri.mockRestore();
   });
 });
