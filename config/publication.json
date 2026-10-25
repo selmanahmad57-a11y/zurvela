@@ -25,6 +25,12 @@
   "courriel": {
     "expediteur": "rapport@zurvela.com",
     "replyTo": "contact@zurvela.com",
-    "delaiMs": 15000
+    "delaiMs": 15000,
+    "pied": {
+      "raisonSociale": "[À COMPLÉTER : ex. Zurvela SASU]",
+      "adresse": "[À COMPLÉTER : siège social]",
+      "lienMentions": "https://zurvela.com/mentions-legales/",
+      "lienConfidentialite": "https://zurvela.com/confidentialite/"
+    }
   }
 }

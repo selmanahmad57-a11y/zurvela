@@ -210,6 +210,11 @@
     "aucuneMesureCorpus": "⚠ {{id}} [diagnostic] : AUCUN avis sur {{appels}} appel(s) — il n'y a pas d'accord à publier : l'absence de donnée n'est pas un résultat."
   },
   "courriel": {
-    "sujet": "Rapport de vérification de votre site {{origine}}"
+    "sujet": "Rapport de vérification de votre site {{origine}}",
+    "pied": {
+      "contexte": "Vous recevez cet e-mail car une vérification de {{origine}} a été demandée sur zurvela.com le {{date}}.",
+      "mentions": "Mentions légales",
+      "confidentialite": "Confidentialité"
+    }
   }
 }

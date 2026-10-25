@@ -44,11 +44,22 @@
     "courriel": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["expediteur", "replyTo", "delaiMs"],
+      "required": ["expediteur", "replyTo", "delaiMs", "pied"],
       "properties": {
         "expediteur": { "type": "string", "minLength": 3 },
         "replyTo": { "type": "string", "minLength": 3 },
-        "delaiMs": { "type": "integer", "minimum": 1 }
+        "delaiMs": { "type": "integer", "minimum": 1 },
+        "pied": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["raisonSociale", "adresse", "lienMentions", "lienConfidentialite"],
+          "properties": {
+            "raisonSociale": { "type": "string", "minLength": 1 },
+            "adresse": { "type": "string", "minLength": 1 },
+            "lienMentions": { "type": "string", "minLength": 3 },
+            "lienConfidentialite": { "type": "string", "minLength": 3 }
+          }
+        }
       }
     }
   }
