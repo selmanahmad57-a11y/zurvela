@@ -306,7 +306,7 @@ describe('(5) quota — plafonds durs à /scanner', () => {
 });
 
 // ═══════════════ (6) E-MAIL DE LIVRAISON ═══════════════
-type Envoyer = (opts: { destinataire: string; origine: string; rapportHtml: string; rapportTexte: string }) => Promise<{ ok: boolean }>;
+type Envoyer = (opts: { destinataire: string; origine: string; rapportHtml: string; rapportTexte: string; creeLe: number }) => Promise<{ ok: boolean }>;
 
 // Monte un serveur dont l'ordonnanceur a un `envoyer` doublé (zéro mail réel).
 // `executer` peut bloquer sur une barrière → on observe l'état transitoire.
@@ -346,7 +346,7 @@ describe('(6) e-mail de livraison', () => {
     await ord.oisif();
     // LIVRÉ
     expect(envoyer).toHaveBeenCalledTimes(1);
-    expect(envoyer.mock.calls[0]![0]).toEqual({ destinataire: 'client@example.com', origine: 'https://ok.test', rapportHtml: '<html>RAPPORT</html>', rapportTexte: 'RAPPORT (texte)' });
+    expect(envoyer.mock.calls[0]![0]).toEqual({ destinataire: 'client@example.com', origine: 'https://ok.test', rapportHtml: '<html>RAPPORT</html>', rapportTexte: 'RAPPORT (texte)', creeLe: 1000 });
     // EFFACÉ après envoi, le rapport conservé
     const apres = ss.lire(id);
     expect(apres?.email).toBeUndefined();

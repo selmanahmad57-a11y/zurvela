@@ -22,6 +22,7 @@ import { stockQuotaFichier, stockScansFichier, stockVerificationFichier } from '
 import { creerOrdonnanceur, creerServeurScan, type ExecuterScan, type ServeurScan } from './serveur-scan.js';
 import { enregistrerDepense, type ConfigQuota } from './quota.js';
 import { envoyerCourriel, posterHttpsReel } from './courriel.js';
+import { insererPiedCourriel } from './pied-courriel.js';
 import { chargerDictionnaire, traduire } from '../i18n.js';
 import { creerScannerParDefaut } from '../scanner/defaut.js';
 
@@ -44,7 +45,12 @@ export interface ConfigPublicationComplete {
   proxy: { delaiMs: number };
   scan: { timeoutMs: number };
   quota: ConfigQuota;
-  courriel: { expediteur: string; replyTo: string; delaiMs: number };
+  courriel: {
+    expediteur: string;
+    replyTo: string;
+    delaiMs: number;
+    pied: { raisonSociale: string; adresse: string; lienMentions: string; lienConfidentialite: string };
+  };
 }
 
 export async function chargerConfigPublication(fichier: string = path.join(RACINE, 'config', 'publication.json')): Promise<ConfigPublicationComplete> {
@@ -127,11 +133,24 @@ export async function demarrerServeurPublic(opts: OptionsServeurPublic): Promise
   const envoyer =
     cleResend === undefined || cleResend === ''
       ? undefined
-      : async ({ destinataire, origine, rapportHtml, rapportTexte }: { destinataire: string; origine: string; rapportHtml: string; rapportTexte: string }): Promise<{ ok: boolean }> =>
-          envoyerCourriel(
-            { destinataire, sujet: traduire(dict, 'courriel.sujet', { origine }), html: rapportHtml, texte: rapportTexte },
+      : async ({ destinataire, origine, rapportHtml, rapportTexte, creeLe }: { destinataire: string; origine: string; rapportHtml: string; rapportTexte: string; creeLe: number }): Promise<{ ok: boolean }> => {
+          // Pied SPÉCIFIQUE à l'e-mail (jamais sur /statut ni la démo) : contexte daté
+          // (date EXACTE de la demande = creeLe), identité (config), liens zurvela.com.
+          const dateDemande = new Intl.DateTimeFormat('fr-FR', { dateStyle: 'long' }).format(new Date(creeLe));
+          const avecPied = insererPiedCourriel(rapportHtml, rapportTexte, {
+            contexte: traduire(dict, 'courriel.pied.contexte', { origine, date: dateDemande }),
+            raisonSociale: cfg.courriel.pied.raisonSociale,
+            adresse: cfg.courriel.pied.adresse,
+            lienMentions: cfg.courriel.pied.lienMentions,
+            libelleMentions: traduire(dict, 'courriel.pied.mentions', {}),
+            lienConfidentialite: cfg.courriel.pied.lienConfidentialite,
+            libelleConfidentialite: traduire(dict, 'courriel.pied.confidentialite', {}),
+          });
+          return envoyerCourriel(
+            { destinataire, sujet: traduire(dict, 'courriel.sujet', { origine }), html: avecPied.html, texte: avecPied.texte },
             { cleApi: cleResend, expediteur: cfg.courriel.expediteur, replyTo: cfg.courriel.replyTo, delaiMs: cfg.courriel.delaiMs, poster },
           );
+        };
 
   const ordonnanceur = creerOrdonnanceur({
     stockScans,
